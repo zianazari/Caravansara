@@ -1,0 +1,12 @@
+erDiagram
+    users ||--o{ listings : hosts
+    users ||--o{ bookings : books
+    users ||--o{ refresh_tokens : has
+    countries ||--o{ cities : has
+    cities ||--o{ listings : "located in"
+    listings ||--o{ listing_photos : shows
+    listings ||--o{ listing_amenities : offers
+    amenity_categories ||--o{ amenities : groups
+    amenities ||--o{ listing_amenities : ""
+    listings ||--o{ bookings : "booked as"
+    bookings ||--o| reviews : "reviewed by"

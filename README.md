@@ -34,91 +34,33 @@ This repository holds the **backend and the database design**. There is no front
 
 One codebase and one database, split into modules with clear borders. The API and the worker run as two processes; photos go from the browser straight to storage.
 
-```mermaid
-flowchart LR
-    client(["Client<br/>web, mobile, Swagger"])
-    browser(["Browser upload"])
-
-    subgraph api["API process · FastAPI"]
-        direction TB
-        identity["identity<br/>accounts, JWT, rate limit"]
-        catalog["catalog<br/>countries, cities, amenities"]
-        search["search<br/>city or radius"]
-        listings["listings<br/>listings, photos, pin"]
-        bookings["bookings<br/>hold, pay, cancel"]
-        reviews["reviews"]
-    end
-
-    worker["worker process<br/>every minute: expire holds,<br/>complete finished stays"]
-    db[("PostgreSQL 16 + PostGIS<br/>EXCLUDE, triggers, GiST")]
-    s3[("MinIO / S3<br/>photos")]
-
-    client -- "HTTPS /api/v1" --> api
-    api --> db
-    worker --> db
-    browser -- "presigned POST" --> s3
-    listings -- "signs the upload,<br/>checks the file" --> s3
-```
+<p align="center">
+  <img src="docs/images/readme/architecture.svg" alt="Architecture: client, API modules, worker, PostgreSQL + PostGIS and MinIO" width="100%">
+</p>
 
 Modules talk to each other only through their `service`; [import-linter](https://import-linter.readthedocs.io/) breaks the build if one reaches into another's tables or repository.
 
 ### A booking's life
 
-```mermaid
-stateDiagram-v2
-    direction LR
-    [*] --> pending: POST /bookings
-    pending --> confirmed: pay within 15 min
-    pending --> expired: hold runs out
-    pending --> cancelled: guest or host
-    confirmed --> cancelled: before check-in day
-    confirmed --> completed: after check-out (city time)
-    completed --> [*]: review within 14 days
-    expired --> [*]
-    cancelled --> [*]
-```
+<p align="center">
+  <img src="docs/images/readme/booking-states.svg" alt="Booking states: pending, confirmed, expired, cancelled, completed" width="100%">
+</p>
 
 `expired` and `cancelled` free the dates; `pending`, `confirmed` and `completed` hold them.
 
 ### Two guests, one night
 
-```mermaid
-sequenceDiagram
-    autonumber
-    actor A as Guest A
-    actor B as Guest B
-    participant API
-    participant DB as PostgreSQL
-    par at the same moment
-        A->>API: POST /bookings (Dec 10–13)
-        B->>API: POST /bookings (Dec 11–12)
-    end
-    API->>DB: INSERT pending (A)
-    API->>DB: INSERT pending (B)
-    DB-->>API: A wins: row saved
-    DB-->>API: B: 23P01 exclusion violation
-    API-->>A: 201 hold until 18:15
-    API-->>B: 409 dates_unavailable
-```
+<p align="center">
+  <img src="docs/images/readme/double-booking-race.svg" alt="Two guests reserve the same nights at once; one gets 201, the other 409" width="100%">
+</p>
 
 A test fires 20 such requests at once and checks that exactly one wins.
 
 ### Data model
 
-```mermaid
-erDiagram
-    users ||--o{ listings : hosts
-    users ||--o{ bookings : books
-    users ||--o{ refresh_tokens : has
-    countries ||--o{ cities : has
-    cities ||--o{ listings : "located in"
-    listings ||--o{ listing_photos : shows
-    listings ||--o{ listing_amenities : offers
-    amenity_categories ||--o{ amenities : groups
-    amenities ||--o{ listing_amenities : ""
-    listings ||--o{ bookings : "booked as"
-    bookings ||--o| reviews : "reviewed by"
-```
+<p align="center">
+  <img src="docs/images/readme/data-model.svg" alt="Data model: 11 tables and their relations" width="100%">
+</p>
 
 12 tables. The full schema with every rule is in [`db/schema.sql`](db/schema.sql); the design and its reasons are in [`docs/backend-design.md`](docs/backend-design.md) (Persian).
 
@@ -159,6 +101,7 @@ All paths start with `/api/v1`. Every error has the same shape, with a stable co
 backend/     FastAPI app, Alembic migrations, tests  → backend/README.md
 db/          schema, search query, seeds, ERD, demo-data builder
 docs/        backend design (fa), database overview, ERD demo deck, future work
+             README graphics: docs/images/readme (diagram sources in diagrams/*.mmd, rebuilt by build_diagrams.py)
 .github/     CI: ruff, mypy --strict, import-linter, tests, Docker build
 ```
 

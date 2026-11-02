@@ -1,0 +1,23 @@
+flowchart LR
+    client(["Client<br/>web, mobile, Swagger"])
+    browser(["Browser upload"])
+
+    subgraph api["API process · FastAPI"]
+        direction TB
+        identity["identity<br/>accounts, JWT, rate limit"]
+        catalog["catalog<br/>countries, cities, amenities"]
+        search["search<br/>city or radius"]
+        listings["listings<br/>listings, photos, pin"]
+        bookings["bookings<br/>hold, pay, cancel"]
+        reviews["reviews"]
+    end
+
+    worker["worker process<br/>every minute: expire holds,<br/>complete finished stays"]
+    db[("PostgreSQL 16 + PostGIS<br/>EXCLUDE, triggers, GiST")]
+    s3[("MinIO / S3<br/>photos")]
+
+    client -- "HTTPS /api/v1" --> api
+    api --> db
+    worker --> db
+    browser -- "presigned POST" --> s3
+    listings -- "signs the upload,<br/>checks the file" --> s3

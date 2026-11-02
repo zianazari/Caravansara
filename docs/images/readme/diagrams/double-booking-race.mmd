@@ -1,0 +1,16 @@
+sequenceDiagram
+    autonumber
+    actor A as Guest A
+    actor B as Guest B
+    participant API
+    participant DB as PostgreSQL
+    par at the same moment
+        A->>API: POST /bookings (Dec 10–13)
+        B->>API: POST /bookings (Dec 11–12)
+    end
+    API->>DB: INSERT pending (A)
+    API->>DB: INSERT pending (B)
+    DB-->>API: A wins: row saved
+    DB-->>API: B: 23P01 exclusion violation
+    API-->>A: 201 hold until 18:15
+    API-->>B: 409 dates_unavailable
