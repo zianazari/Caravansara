@@ -8,8 +8,8 @@ Last updated: 2026-11-02.
 
 ## Goal
 
-Design the **database and ERD only** (no app code yet) for an Airbnb-like place
-reservation site. Requirements came from Airbnb screenshots:
+An Airbnb-like place reservation site. The database design is done; the FastAPI
+backend is designed but not yet built. Requirements came from Airbnb screenshots:
 
 - Search by **Where** (country → city), **When** (check-in/out), **Who**
   (adults, children, infants, pets). Infants don't count toward max guests.
@@ -27,7 +27,7 @@ reservation site. Requirements came from Airbnb screenshots:
 | Scope | Simple: no payments, wishlists, messages, destinations, calendar table |
 | Database | PostgreSQL 13+ (tested on 16) |
 | Table name | Keep `listings` (it's the offer/ad, Airbnb's own term), not `places` |
-| Map | **Changed 2026-11-01:** radial search with PostGIS. Real `latitude` / `longitude` stay private; a stored, fuzzed `public_location geography(Point, 4326)` with a GiST index serves search, distance and the pin, so shrinking the radius can't reveal the address. Replaces the earlier "no PostGIS" bounding-box plan. `schema.sql` updated 2026-11-02. See `docs/backend-design.md` |
+| Map | Radial search with PostGIS. Real `latitude` / `longitude` stay private; a stored, fuzzed `public_location geography(Point, 4326)` with a GiST index serves search, distance and the pin, so shrinking the radius can't reveal the address. See `docs/backend-design.md` |
 | Photos | Files in object storage (S3/R2/GCS) behind a CDN; DB stores `storage_key`, `width`, `height`, `sort_order` (0 = cover), `room_tag` |
 | Amenity icons | `amenities.icon` holds a key like `wifi`; the frontend maps it to an icon. Making it NOT NULL was offered and **declined: leave as is** |
 | Pets | Not an amenity: `listings.pets_allowed` / `max_pets` |
@@ -41,7 +41,7 @@ reservation site. Requirements came from Airbnb screenshots:
 - **Listings:** `listings` (+ `public_location` PostGIS), `listing_photos`, `listing_amenities`
 - **Bookings & reviews:** `bookings`, `reviews`
 
-Also applied 2026-11-02: unique `lower(email)`, `DEFERRABLE` photo order, partial index on pending `hold_expires_at`.
+Also in the schema: unique `lower(email)`, `DEFERRABLE` photo order, partial index on pending `hold_expires_at`.
 `search_query.sql` does city or radial search and returns only the public pin. All tested on PostgreSQL 16 + PostGIS 3.4.
 
 Rules enforced by the database (tested):
@@ -58,7 +58,7 @@ Amenity seed: 12 categories, 31 amenities. Search uses AND logic for amenity fil
 
 ## Files (on Zia's Mac)
 
-`/Users/zia/Caravansara/` (a **git repo** since 2026-11-02; commit changes there; `place_reservation_site` was merged into it on 2026-11-02 and deleted)
+`/Users/zia/Caravansara/` (a **git repo**; commit changes there)
 - `db/README.md`: overview, rules table, how to run
 - `db/schema.sql`: PostgreSQL schema (source of truth)
 - `db/seed_amenities.sql`: amenity catalog
@@ -67,8 +67,8 @@ Amenity seed: 12 categories, 31 amenities. Search uses AND logic for amenity fil
 - `db/search_query.sql`: Where/When/Who + map + multi-amenity search, plus filter counts
 - `db/schema.dbml`: paste into dbdiagram.io
 - `db/erd.mmd`, `db/erd.png`: Mermaid ERD (full columns)
-- `docs/Caravansara Database - Design Overview.md`: overview of the final DB design (updated 2026-11-02, matches the online doc)
-- `docs/ERD-demo-fa.html`: the Persian ERD demo deck as one self-contained HTML file (17 slides, Vazirmatn and ERD image embedded; keys: arrows/space to move, `n` speaker notes, `f` fullscreen). Built 2026-11-02 from the online deck's slides; the old `presentation/` folder (.pptx, slide sources, fonts) was removed and is still in git history
+- `docs/Caravansara Database - Design Overview.md`: overview of the final DB design (matches the online doc)
+- `docs/ERD-demo-fa.html`: the Persian ERD demo deck as one self-contained HTML file (17 slides; keys: arrows/space to move, `n` speaker notes, `f` fullscreen). Use it instead of a PowerPoint export, which loses RTL
 - `screenshots/`: the three Airbnb screenshots the requirements came from
 - `CONTEXT.md`: this file
 - `docs/backend-design.md`: **source of truth** for the backend requirements and design (decided 2026-11-01); diagrams in `docs/images/`
@@ -79,18 +79,17 @@ Amenity seed: 12 categories, 31 amenities. Search uses AND logic for amenity fil
 
 - Design overview doc: https://claude.ai/artifact/Sodin9aFXeXpNtwByq9Eaj
 - Persian ERD demo deck (17 slides, Vazirmatn): https://claude.ai/artifact/9aT5rXEGMY6FqEj4XNGukS
-  - Persian text is wrapped in U+202B…U+202C (RLE…PDF) because the slide format has no RTL support.
-  - Its own PowerPoint export does not keep RTL (the exporter never sets rtlMode). Use `docs/ERD-demo-fa.html` instead; the RTL `.pptx` was removed on 2026-11-02 (recoverable from git history). The deck shows the 10-table design.
+  - Persian text is wrapped in U+202B…U+202C (RLE…PDF) because the slide format has no RTL support. It shows the older 10-table design; `docs/ERD-demo-fa.html` is the maintained copy.
 
-## Known gaps / open items
+## Status and next step
 
-- Done 2026-11-02: schema updated to the backend design, overview doc updated (online + `.md`), PowerPoint deck with RTL.
-- Next per `docs/backend-design.md`: implementation step 1 (project skeleton in `Caravansara`, Docker, CI, first Alembic migration from `schema.sql`, seed).
+- Done: database design, backend design, demo data (`db/seed_demo.sql`). No application code yet.
+- Next: backend step 1 per `docs/backend-design.md` (project skeleton, Docker, CI, first Alembic migration from `schema.sql`, seed). Full plan in `docs/future-work.md`.
 
 ## Working conventions
 
 - Save every project file into `/Users/zia/Caravansara` on Zia's Mac (DB design, backend docs and code all live there).
 - Test SQL on a real PostgreSQL before saving; re-render Mermaid and re-parse DBML after schema changes.
 - Keep `schema.sql`, `schema.dbml`, `erd.mmd`/`erd.png`, `db/README.md` and the docs in sync.
-- Save files only after edits finish (a parallel save once wrote a stale README).
+- Save files only after edits finish, and re-read files before editing: other sessions may work on the repo at the same time.
 - Zia prefers concise answers with real company examples. Conversation may be in Persian or English.
