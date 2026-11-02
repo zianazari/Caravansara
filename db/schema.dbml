@@ -131,7 +131,6 @@ Table listings [headercolor: #1F6FEB] {
 
   indexes {
     city_id
-    (latitude, longitude) [note: 'old bounding-box search; candidate for removal']
     host_id
     public_location [note: 'GiST, partial: WHERE is_active (radial search)']
   }

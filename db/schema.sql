@@ -115,7 +115,6 @@ CREATE TABLE listings (
     CHECK (pets_allowed OR max_pets = 0)
 );
 CREATE INDEX listings_city_idx   ON listings (city_id) WHERE is_active;
-CREATE INDEX listings_latlng_idx ON listings (latitude, longitude);   -- old bounding-box search; first candidate for removal in the index review (docs/future-work.md)
 CREATE INDEX listings_host_idx   ON listings (host_id);
 CREATE INDEX listings_public_location_idx ON listings USING gist (public_location) WHERE is_active;   -- radial search
 
