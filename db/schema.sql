@@ -1,9 +1,19 @@
 -- =====================================================================
--- Place reservation site (Airbnb-style) — PostgreSQL 13+ schema
+-- Place reservation site (Airbnb-style) — PostgreSQL 16 + PostGIS schema
 -- Scope: simple. Rank = star rating. Comments = review text only.
+-- Updated 2026-11-02 to match Airbnb-style/docs/backend-design.md:
+--   + refresh_tokens, auth_attempts          (two new tables)
+--   + users: unique on lower(email)
+--   + listing_photos: (listing_id, sort_order) unique is DEFERRABLE
+--   + cities.timezone
+--   + bookings: partial index on hold_expires_at for pending holds
+--   + listings.public_location (PostGIS geography) for radial search
+-- Once the backend exists, Alembic migrations are the source of truth and
+-- this file is kept in sync with them.
 -- =====================================================================
 
 CREATE EXTENSION IF NOT EXISTS btree_gist;   -- lets "listing_id WITH =" join a GiST exclusion constraint
+CREATE EXTENSION IF NOT EXISTS postgis;      -- geography type, ST_DWithin, ST_Distance
 
 -- ---------- Enums ----------------------------------------------------
 CREATE TYPE property_type  AS ENUM ('entire_place', 'private_room', 'shared_room');
@@ -13,12 +23,36 @@ CREATE TYPE booking_status AS ENUM ('pending', 'confirmed', 'cancelled', 'expire
 -- One table for guests and hosts: a host is simply a user who owns listings.
 CREATE TABLE users (
     id             BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
-    email          TEXT        NOT NULL UNIQUE,
-    password_hash  TEXT        NOT NULL,
+    email          TEXT        NOT NULL,
+    password_hash  TEXT        NOT NULL,                -- argon2
     full_name      TEXT        NOT NULL,
     avatar_url     TEXT,
     created_at     TIMESTAMPTZ NOT NULL DEFAULT now()
 );
+-- 'A@x.com' and 'a@x.com' must not become two accounts
+CREATE UNIQUE INDEX users_email_lower_key ON users (lower(email));
+
+-- Refresh tokens: only a hash is stored; rotation revokes the old row.
+CREATE TABLE refresh_tokens (
+    id          BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    user_id     BIGINT      NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    token_hash  TEXT        NOT NULL UNIQUE,            -- e.g. SHA-256 hex of the token
+    created_at  TIMESTAMPTZ NOT NULL DEFAULT now(),
+    expires_at  TIMESTAMPTZ NOT NULL,
+    revoked_at  TIMESTAMPTZ,                            -- set on logout or rotation
+    CHECK (expires_at > created_at)
+);
+CREATE INDEX refresh_tokens_user_idx ON refresh_tokens (user_id) WHERE revoked_at IS NULL;
+
+-- Rate limit for login and registration: one row per attempt, counted per time window.
+CREATE TABLE auth_attempts (
+    id            BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    action        TEXT        NOT NULL CHECK (action IN ('login', 'register')),
+    identifier    TEXT        NOT NULL,                 -- lower(email) or client IP
+    succeeded     BOOLEAN     NOT NULL,
+    attempted_at  TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+CREATE INDEX auth_attempts_lookup_idx ON auth_attempts (action, identifier, attempted_at DESC);
 
 -- ---------- Location ("Where") ---------------------------------------
 CREATE TABLE countries (
@@ -31,6 +65,7 @@ CREATE TABLE cities (
     id          INT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
     country_id  SMALLINT NOT NULL REFERENCES countries(id),
     name        TEXT     NOT NULL,
+    timezone    TEXT     NOT NULL,      -- IANA name, e.g. 'Europe/Helsinki': "today" and stay end use city time
     UNIQUE (country_id, name)
 );
 
@@ -45,9 +80,13 @@ CREATE TABLE listings (
     -- where + map
     city_id          INT           NOT NULL REFERENCES cities(id),
     neighborhood     TEXT,                                   -- e.g. 'Pasila'
-    address          TEXT          NOT NULL,                 -- shown only after booking
-    latitude         NUMERIC(9,6)  NOT NULL CHECK (latitude  BETWEEN -90  AND 90),
-    longitude        NUMERIC(9,6)  NOT NULL CHECK (longitude BETWEEN -180 AND 180),
+    address          TEXT          NOT NULL,                 -- shown only to the host and confirmed/completed guests
+    latitude         NUMERIC(9,6)  NOT NULL CHECK (latitude  BETWEEN -90  AND 90),    -- real point: private
+    longitude        NUMERIC(9,6)  NOT NULL CHECK (longitude BETWEEN -180 AND 180),   -- real point: private
+    -- Public point: the real point moved ~100–500 m at random by the app, stored once
+    -- and recomputed only when the real point changes. Search, distance and the map pin
+    -- use only this, so shrinking the radius or averaging can't reveal the address.
+    public_location  geography(Point, 4326) NOT NULL,
 
     -- who (capacity)
     max_guests       SMALLINT      NOT NULL CHECK (max_guests >= 1),   -- adults + children
@@ -76,8 +115,9 @@ CREATE TABLE listings (
     CHECK (pets_allowed OR max_pets = 0)
 );
 CREATE INDEX listings_city_idx   ON listings (city_id) WHERE is_active;
-CREATE INDEX listings_latlng_idx ON listings (latitude, longitude);   -- map bounding-box search
+CREATE INDEX listings_latlng_idx ON listings (latitude, longitude);   -- old bounding-box search; first candidate for removal in the index review (docs/future-work.md)
 CREATE INDEX listings_host_idx   ON listings (host_id);
+CREATE INDEX listings_public_location_idx ON listings USING gist (public_location) WHERE is_active;   -- radial search
 
 -- ---------- Photos ---------------------------------------------------
 CREATE TABLE listing_photos (
@@ -90,7 +130,8 @@ CREATE TABLE listing_photos (
     caption     TEXT,
     room_tag    TEXT,                       -- 'Kitchen', 'Bedroom 1' … (photo tour)
     sort_order  SMALLINT NOT NULL,          -- 0 = cover photo
-    UNIQUE (listing_id, sort_order)
+    -- checked at COMMIT, so reordering photos or swapping the cover in one transaction works
+    CONSTRAINT listing_photos_order_key UNIQUE (listing_id, sort_order) DEFERRABLE INITIALLY DEFERRED
 );
 
 -- ---------- Amenities (features) -------------------------------------
@@ -153,6 +194,8 @@ CREATE TABLE bookings (
     ) WHERE (status IN ('pending', 'confirmed', 'completed'))
 );
 CREATE INDEX bookings_guest_idx ON bookings (guest_id);
+-- the worker expires overdue holds every minute without scanning all bookings
+CREATE INDEX bookings_pending_hold_idx ON bookings (hold_expires_at) WHERE status = 'pending';
 
 -- ---------- Reviews (rank + comment) ---------------------------------
 -- One review per booking, written by that booking's guest about that booking's listing.

@@ -1,6 +1,7 @@
 erDiagram
     USERS ||--o{ LISTINGS : "hosts"
     USERS ||--o{ BOOKINGS : "books"
+    USERS ||--o{ REFRESH_TOKENS : "signs in with"
     COUNTRIES ||--o{ CITIES : "has"
     CITIES ||--o{ LISTINGS : "located in"
     LISTINGS ||--o{ LISTING_PHOTOS : "has"
@@ -12,11 +13,26 @@ erDiagram
 
     USERS {
         bigint id PK
-        text email UK
+        text email UK "unique on lower(email)"
         text password_hash
         text full_name
         text avatar_url
         timestamptz created_at
+    }
+    REFRESH_TOKENS {
+        bigint id PK
+        bigint user_id FK
+        text token_hash UK
+        timestamptz created_at
+        timestamptz expires_at
+        timestamptz revoked_at "logout or rotation"
+    }
+    AUTH_ATTEMPTS {
+        bigint id PK
+        text action "login | register"
+        text identifier "email or IP"
+        boolean succeeded
+        timestamptz attempted_at
     }
     COUNTRIES {
         smallint id PK
@@ -27,6 +43,7 @@ erDiagram
         int id PK
         smallint country_id FK
         text name "unique per country"
+        text timezone "Europe/Helsinki"
     }
     LISTINGS {
         bigint id PK
@@ -37,8 +54,9 @@ erDiagram
         int city_id FK
         text neighborhood "e.g. Pasila"
         text address "shown after booking"
-        numeric latitude "map"
-        numeric longitude "map"
+        numeric latitude "real, private"
+        numeric longitude "real, private"
+        geography public_location "fuzzed pin, radial search"
         smallint max_guests "adults + children"
         boolean pets_allowed
         smallint max_pets
