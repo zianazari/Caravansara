@@ -2,3 +2,14 @@
 
 # Inside Airbnb downloads for db/demo/build_demo_seed.py
 .cache/
+
+# Python
+.venv/
+__pycache__/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+coverage.xml
+htmlcov/
+.env

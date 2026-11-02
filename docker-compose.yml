@@ -1,0 +1,83 @@
+# Whole system with one command: docker compose up --build
+# API + Swagger: http://localhost:8000/docs   MinIO console: http://localhost:9001
+# Demo data (optional, empty database only): docker compose run --rm migrate caravansara seed-demo
+x-app: &app
+  build:
+    context: .
+    dockerfile: backend/Dockerfile
+  environment: &app-env
+    CARAVANSARA_DATABASE_URL: postgresql+asyncpg://caravansara:caravansara@db:5432/caravansara
+    CARAVANSARA_JWT_SECRET: ${CARAVANSARA_JWT_SECRET:-dev-only-change-me-dev-only-change-me}
+    CARAVANSARA_S3_ENDPOINT_URL: http://minio:9000
+    CARAVANSARA_S3_PUBLIC_ENDPOINT_URL: http://localhost:9000
+    CARAVANSARA_S3_ACCESS_KEY: caravansara
+    CARAVANSARA_S3_SECRET_KEY: caravansara-secret
+    CARAVANSARA_S3_BUCKET: caravansara-media
+    CARAVANSARA_MEDIA_BASE_URL: http://localhost:9000/caravansara-media
+    CARAVANSARA_SEED_DIR: /app/db
+  depends_on:
+    db:
+      condition: service_healthy
+
+services:
+  db:
+    image: postgis/postgis:16-3.4
+    environment:
+      POSTGRES_USER: caravansara
+      POSTGRES_PASSWORD: caravansara
+      POSTGRES_DB: caravansara
+    ports: ["5432:5432"]
+    volumes: [db-data:/var/lib/postgresql/data]
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -h 127.0.0.1 -U caravansara -d caravansara"]  # TCP: the init-time server is socket-only
+      interval: 2s
+      timeout: 3s
+      retries: 30
+
+  # MinIO stopped publishing images in 2025; this is the last pinned Bitnami build.
+  # The code speaks only the S3 API, so another S3-compatible server is a config change.
+  minio:
+    image: bitnamilegacy/minio:2025.4.22
+    environment:
+      MINIO_ROOT_USER: caravansara
+      MINIO_ROOT_PASSWORD: caravansara-secret
+    ports: ["9000:9000", "9001:9001"]
+    volumes: [minio-data:/bitnami/minio/data]
+    healthcheck:
+      test: ["CMD", "curl", "-fs", "http://localhost:9000/minio/health/live"]
+      interval: 2s
+      timeout: 3s
+      retries: 30
+
+  # Applies migrations, loads the catalog and creates the photo bucket, then exits.
+  migrate:
+    <<: *app
+    command: sh -c "caravansara migrate && caravansara seed && caravansara init-storage --public-read"
+    depends_on:
+      db:
+        condition: service_healthy
+      minio:
+        condition: service_healthy
+
+  api:
+    <<: *app
+    ports: ["8000:8000"]
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/health')"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  worker:
+    <<: *app
+    command: ["caravansara", "worker"]
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+
+volumes:
+  db-data:
+  minio-data:

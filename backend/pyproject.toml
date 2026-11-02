@@ -1,0 +1,144 @@
+[project]
+name = "caravansara"
+version = "0.1.0"
+description = "Add your description here"
+authors = [
+    { name = "Zia", email = "nazari.zia@gmail.com" }
+]
+requires-python = ">=3.13"
+dependencies = [
+    "alembic>=1.20.1",
+    "argon2-cffi>=25.1.0",
+    "asyncpg>=0.32.0",
+    "boto3>=1.43.123",
+    "fastapi>=0.162.0",
+    "geoalchemy2>=0.20.0",
+    "pydantic-settings>=2.16.2",
+    "pydantic[email]>=2.14.2",
+    "pyjwt>=2.15.1",
+    "sqlalchemy[asyncio]>=2.1.6",
+    "uvicorn[standard]>=0.54.0",
+]
+
+[build-system]
+requires = ["uv_build>=0.11.21,<0.12.0"]
+build-backend = "uv_build"
+
+[dependency-groups]
+dev = [
+    "boto3-stubs[s3]>=1.43.123",
+    "httpx>=0.28.1",
+    "import-linter>=2.15",
+    "mypy>=2.4.1",
+    "pytest>=9.2.0",
+    "pytest-asyncio>=1.4.1.post1",
+    "pytest-cov>=7.1.0",
+    "ruff>=0.17.3",
+    "testcontainers[minio,postgres]>=4.15.0",
+]
+
+[project.scripts]
+caravansara = "caravansara.cli:main"
+
+[tool.ruff]
+line-length = 120
+target-version = "py313"
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "B", "UP", "S", "RUF", "N", "ASYNC", "SIM", "PT"]
+# N818: errors read better as NotFound/Conflict; RUF001-3: en dashes and × are intended in docs.
+ignore = ["S101", "N818", "RUF001", "RUF002", "RUF003"]
+
+[tool.ruff.lint.per-file-ignores]
+"tests/**" = ["S105", "S106", "S311"]
+"migrations/**" = ["E501"]
+"src/caravansara/core/config.py" = ["S105"]  # development defaults, overridden by env vars
+"src/caravansara/identity/schemas.py" = ["S105"]  # token_type = "bearer" is not a secret
+
+[tool.mypy]
+python_version = "3.13"
+strict = true
+plugins = ["pydantic.mypy"]
+files = ["src", "tests"]
+
+[[tool.mypy.overrides]]
+module = ["testcontainers.*", "geoalchemy2.*", "asyncpg.*"]
+ignore_missing_imports = true
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+asyncio_mode = "auto"
+asyncio_default_fixture_loop_scope = "session"
+asyncio_default_test_loop_scope = "session"
+addopts = "-ra --strict-markers"
+filterwarnings = ["ignore::DeprecationWarning:testcontainers.*"]
+
+[tool.coverage.run]
+source = ["caravansara"]
+branch = true
+concurrency = ["greenlet", "thread"]
+
+[tool.coverage.report]
+show_missing = true
+skip_covered = true
+fail_under = 90
+exclude_also = ["if TYPE_CHECKING:", "if __name__ == .__main__.:"]
+
+# Module boundaries: a module may reach another one only through its service.
+[tool.importlinter]
+root_package = "caravansara"
+
+[[tool.importlinter.contracts]]
+name = "core does not depend on feature modules"
+type = "forbidden"
+source_modules = ["caravansara.core"]
+forbidden_modules = ["caravansara.identity", "caravansara.catalog", "caravansara.listings", "caravansara.bookings", "caravansara.reviews", "caravansara.search", "caravansara.jobs"]
+
+[[tool.importlinter.contracts]]
+name = "identity uses other modules only through their service"
+type = "forbidden"
+allow_indirect_imports = true
+source_modules = ["caravansara.identity"]
+forbidden_modules = ["caravansara.catalog.models", "caravansara.catalog.repository", "caravansara.catalog.router", "caravansara.listings.models", "caravansara.listings.repository", "caravansara.listings.router", "caravansara.bookings.models", "caravansara.bookings.repository", "caravansara.bookings.router", "caravansara.reviews.models", "caravansara.reviews.repository", "caravansara.reviews.router", "caravansara.search.models", "caravansara.search.repository", "caravansara.search.router", "caravansara.jobs.models", "caravansara.jobs.repository", "caravansara.jobs.router"]
+
+[[tool.importlinter.contracts]]
+name = "catalog uses other modules only through their service"
+type = "forbidden"
+allow_indirect_imports = true
+source_modules = ["caravansara.catalog"]
+forbidden_modules = ["caravansara.identity.models", "caravansara.identity.repository", "caravansara.identity.router", "caravansara.listings.models", "caravansara.listings.repository", "caravansara.listings.router", "caravansara.bookings.models", "caravansara.bookings.repository", "caravansara.bookings.router", "caravansara.reviews.models", "caravansara.reviews.repository", "caravansara.reviews.router", "caravansara.search.models", "caravansara.search.repository", "caravansara.search.router", "caravansara.jobs.models", "caravansara.jobs.repository", "caravansara.jobs.router"]
+
+[[tool.importlinter.contracts]]
+name = "listings uses other modules only through their service"
+type = "forbidden"
+allow_indirect_imports = true
+source_modules = ["caravansara.listings"]
+forbidden_modules = ["caravansara.identity.models", "caravansara.identity.repository", "caravansara.identity.router", "caravansara.catalog.models", "caravansara.catalog.repository", "caravansara.catalog.router", "caravansara.bookings.models", "caravansara.bookings.repository", "caravansara.bookings.router", "caravansara.reviews.models", "caravansara.reviews.repository", "caravansara.reviews.router", "caravansara.search.models", "caravansara.search.repository", "caravansara.search.router", "caravansara.jobs.models", "caravansara.jobs.repository", "caravansara.jobs.router"]
+
+[[tool.importlinter.contracts]]
+name = "bookings uses other modules only through their service"
+type = "forbidden"
+allow_indirect_imports = true
+source_modules = ["caravansara.bookings"]
+forbidden_modules = ["caravansara.identity.models", "caravansara.identity.repository", "caravansara.identity.router", "caravansara.catalog.models", "caravansara.catalog.repository", "caravansara.catalog.router", "caravansara.listings.models", "caravansara.listings.repository", "caravansara.listings.router", "caravansara.reviews.models", "caravansara.reviews.repository", "caravansara.reviews.router", "caravansara.search.models", "caravansara.search.repository", "caravansara.search.router", "caravansara.jobs.models", "caravansara.jobs.repository", "caravansara.jobs.router"]
+
+[[tool.importlinter.contracts]]
+name = "reviews uses other modules only through their service"
+type = "forbidden"
+allow_indirect_imports = true
+source_modules = ["caravansara.reviews"]
+forbidden_modules = ["caravansara.identity.models", "caravansara.identity.repository", "caravansara.identity.router", "caravansara.catalog.models", "caravansara.catalog.repository", "caravansara.catalog.router", "caravansara.listings.models", "caravansara.listings.repository", "caravansara.listings.router", "caravansara.bookings.models", "caravansara.bookings.repository", "caravansara.bookings.router", "caravansara.search.models", "caravansara.search.repository", "caravansara.search.router", "caravansara.jobs.models", "caravansara.jobs.repository", "caravansara.jobs.router"]
+
+[[tool.importlinter.contracts]]
+name = "search uses other modules only through their service"
+type = "forbidden"
+allow_indirect_imports = true
+source_modules = ["caravansara.search"]
+forbidden_modules = ["caravansara.identity.models", "caravansara.identity.repository", "caravansara.identity.router", "caravansara.catalog.models", "caravansara.catalog.repository", "caravansara.catalog.router", "caravansara.listings.models", "caravansara.listings.repository", "caravansara.listings.router", "caravansara.bookings.models", "caravansara.bookings.repository", "caravansara.bookings.router", "caravansara.reviews.models", "caravansara.reviews.repository", "caravansara.reviews.router", "caravansara.jobs.models", "caravansara.jobs.repository", "caravansara.jobs.router"]
+
+[[tool.importlinter.contracts]]
+name = "jobs uses other modules only through their service"
+type = "forbidden"
+allow_indirect_imports = true
+source_modules = ["caravansara.jobs"]
+forbidden_modules = ["caravansara.identity.models", "caravansara.identity.repository", "caravansara.identity.router", "caravansara.catalog.models", "caravansara.catalog.repository", "caravansara.catalog.router", "caravansara.listings.models", "caravansara.listings.repository", "caravansara.listings.router", "caravansara.bookings.models", "caravansara.bookings.repository", "caravansara.bookings.router", "caravansara.reviews.models", "caravansara.reviews.repository", "caravansara.reviews.router", "caravansara.search.models", "caravansara.search.repository", "caravansara.search.router"]
