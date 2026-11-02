@@ -1,7 +1,7 @@
-# Place Reservation Site: ERD
+# Caravansara: ERD
 
 Decisions: **rank** = star rating · **comments** = review text only · **scope** = simple (no payments, wishlists, messages).
-Updated 2026-11-02 to match `Airbnb-style/docs/backend-design.md` (the backend design is the source of truth; once the
+Updated 2026-11-02 to match `Caravansara/docs/backend-design.md` (the backend design is the source of truth; once the
 backend exists, Alembic migrations are, and these files follow them).
 
 ![ERD](erd.png)

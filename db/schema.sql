@@ -1,7 +1,7 @@
 -- =====================================================================
--- Place reservation site (Airbnb-style) — PostgreSQL 16 + PostGIS schema
+-- Caravansara (Airbnb-like place reservation site) — PostgreSQL 16 + PostGIS schema
 -- Scope: simple. Rank = star rating. Comments = review text only.
--- Updated 2026-11-02 to match Airbnb-style/docs/backend-design.md:
+-- Updated 2026-11-02 to match Caravansara/docs/backend-design.md:
 --   + refresh_tokens, auth_attempts          (two new tables)
 --   + users: unique on lower(email)
 --   + listing_photos: (listing_id, sort_order) unique is DEFERRABLE

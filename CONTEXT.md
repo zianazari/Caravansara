@@ -1,7 +1,9 @@
-# Airbnb-style place reservation site: project context
+# Caravansara: project context
+
+Caravansara (کاروانسرا) is an Airbnb-like place reservation site. It was called "Airbnb-style" until 2026-11-02.
 
 Handoff file for continuing this project in a new session.
-To resume: read this file first, then `/Users/zia/Airbnb-style/db/README.md`.
+To resume: read this file first, then `/Users/zia/Caravansara/db/README.md`.
 Last updated: 2026-11-02.
 
 ## Goal
@@ -56,14 +58,14 @@ Amenity seed: 12 categories, 31 amenities. Search uses AND logic for amenity fil
 
 ## Files (on Zia's Mac)
 
-`/Users/zia/Airbnb-style/` (a **git repo** since 2026-11-02; commit changes there; `place_reservation_site` was merged into it on 2026-11-02 and deleted)
+`/Users/zia/Caravansara/` (a **git repo** since 2026-11-02; commit changes there; `place_reservation_site` was merged into it on 2026-11-02 and deleted)
 - `db/README.md`: overview, rules table, how to run
 - `db/schema.sql`: PostgreSQL schema (source of truth)
 - `db/seed_amenities.sql`: amenity catalog
 - `db/search_query.sql`: Where/When/Who + map + multi-amenity search, plus filter counts
 - `db/schema.dbml`: paste into dbdiagram.io
 - `db/erd.mmd`, `db/erd.png`: Mermaid ERD (full columns)
-- `docs/Airbnb-style Database - Design Overview.md`: overview of the final DB design (updated 2026-11-02, matches the online doc)
+- `docs/Caravansara Database - Design Overview.md`: overview of the final DB design (updated 2026-11-02, matches the online doc)
 - `docs/ERD-demo-fa.html`: the Persian ERD demo deck as one self-contained HTML file (17 slides, Vazirmatn and ERD image embedded; keys: arrows/space to move, `n` speaker notes, `f` fullscreen). Built 2026-11-02 from the online deck's slides; the old `presentation/` folder (.pptx, slide sources, fonts) was removed and is still in git history
 - `screenshots/`: the three Airbnb screenshots the requirements came from
 - `CONTEXT.md`: this file
@@ -81,11 +83,11 @@ Amenity seed: 12 categories, 31 amenities. Search uses AND logic for amenity fil
 ## Known gaps / open items
 
 - Done 2026-11-02: schema updated to the backend design, overview doc updated (online + `.md`), PowerPoint deck with RTL.
-- Next per `docs/backend-design.md`: implementation step 1 (project skeleton in `Airbnb-style`, Docker, CI, first Alembic migration from `schema.sql`, seed).
+- Next per `docs/backend-design.md`: implementation step 1 (project skeleton in `Caravansara`, Docker, CI, first Alembic migration from `schema.sql`, seed).
 
 ## Working conventions
 
-- Save every project file into `/Users/zia/Airbnb-style` on Zia's Mac (DB design, backend docs and code all live there).
+- Save every project file into `/Users/zia/Caravansara` on Zia's Mac (DB design, backend docs and code all live there).
 - Test SQL on a real PostgreSQL before saving; re-render Mermaid and re-parse DBML after schema changes.
 - Keep `schema.sql`, `schema.dbml`, `erd.mmd`/`erd.png`, `db/README.md` and the docs in sync.
 - Save files only after edits finish (a parallel save once wrote a stale README).

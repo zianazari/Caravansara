@@ -1,8 +1,8 @@
-// Place reservation site (Airbnb-style) — paste into https://dbdiagram.io
+// Caravansara (Airbnb-like place reservation site) — paste into https://dbdiagram.io
 // Mirrors db/schema.sql (updated 2026-11-02). EXCLUDE, triggers, partial/GiST indexes and
 // DEFERRABLE can't be drawn in DBML; they are written in the notes.
 
-Project place_reservation {
+Project caravansara {
   database_type: 'PostgreSQL'
   Note: 'Simple scope. Rank = star rating. Comments = review text only.'
 }

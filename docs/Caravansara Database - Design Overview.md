@@ -1,8 +1,8 @@
-# Airbnb-style Database: Design Overview
+# Caravansara Database: Design Overview
 
 Nov 2, 2026 · Zia · Online version: https://claude.ai/artifact/Sodin9aFXeXpNtwByq9Eaj
 
-Final database design as of November 2, 2026: 12 tables in four modules on PostgreSQL 16 with PostGIS, matching `db/schema.sql`. The backend design (`Airbnb-style/docs/backend-design.md`) is the source of truth for APIs and service rules; this page summarises the database.
+Final database design as of November 2, 2026: 12 tables in four modules on PostgreSQL 16 with PostGIS, matching `db/schema.sql`. The backend design (`Caravansara/docs/backend-design.md`) is the source of truth for APIs and service rules; this page summarises the database.
 
 ## Domain map
 
@@ -159,7 +159,7 @@ erDiagram
         text comment }
 ```
 
-The full column list is in `db/erd.mmd`, `db/schema.sql` and `db/schema.dbml` in `Airbnb-style`.
+The full column list is in `db/erd.mmd`, `db/schema.sql` and `db/schema.dbml` in `Caravansara`.
 
 ## What the database guarantees
 
@@ -189,6 +189,6 @@ All tested on PostgreSQL 16 with PostGIS 3.4.
 
 ## Files
 
-- `Airbnb-style/db/`: `schema.sql`, `seed_amenities.sql`, `search_query.sql`, `schema.dbml` (for dbdiagram.io), `erd.mmd` and `erd.png`, and a README
-- `Airbnb-style/docs/backend-design.md`: backend requirements, API and service rules (source of truth)
-- `Airbnb-style/docs/future-work.md`: index review, UI, Playwright tests, microservices
+- `Caravansara/db/`: `schema.sql`, `seed_amenities.sql`, `search_query.sql`, `schema.dbml` (for dbdiagram.io), `erd.mmd` and `erd.png`, and a README
+- `Caravansara/docs/backend-design.md`: backend requirements, API and service rules (source of truth)
+- `Caravansara/docs/future-work.md`: index review, UI, Playwright tests, microservices
