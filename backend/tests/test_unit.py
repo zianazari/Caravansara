@@ -136,14 +136,16 @@ class TestSecurity:
         return jwt.encode(payload, SETTINGS.jwt_secret, algorithm="HS256")
 
     @pytest.mark.parametrize(
-        ("payload", "code"),
+        ("claims", "minutes_left", "code"),
         [
-            ({"sub": "1", "type": "access", "exp": datetime.now(UTC) - timedelta(minutes=1)}, "token_expired"),
-            ({"sub": "1", "type": "refresh", "exp": datetime.now(UTC) + timedelta(minutes=1)}, "invalid_token"),
-            ({"sub": "abc", "type": "access", "exp": datetime.now(UTC) + timedelta(minutes=1)}, "invalid_token"),
+            ({"sub": "1", "type": "access"}, -1, "token_expired"),
+            ({"sub": "1", "type": "refresh"}, 1, "invalid_token"),
+            ({"sub": "abc", "type": "access"}, 1, "invalid_token"),
         ],
     )
-    def test_bad_tokens(self, payload: dict[str, object], code: str) -> None:
+    def test_bad_tokens(self, claims: dict[str, object], minutes_left: int, code: str) -> None:
+        # exp is computed here, not at collection time: a slow suite must not expire the token first.
+        payload = {**claims, "exp": datetime.now(UTC) + timedelta(minutes=minutes_left)}
         with pytest.raises(Unauthorized) as err:
             decode_access_token(SETTINGS, self._encode(payload))
         assert err.value.code == code
