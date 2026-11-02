@@ -1,0 +1,195 @@
+// Place reservation site (Airbnb-style) — paste into https://dbdiagram.io
+// Mirrors db/schema.sql. The exclusion constraint and triggers can't be drawn in DBML; see notes.
+
+Project place_reservation {
+  database_type: 'PostgreSQL'
+  Note: 'Simple scope. Rank = star rating. Comments = review text only.'
+}
+
+Enum property_type {
+  entire_place
+  private_room
+  shared_room
+}
+
+Enum booking_status {
+  pending
+  confirmed
+  cancelled
+  expired
+  completed
+}
+
+TableGroup people_and_places [color: #1F6FEB] {
+  users
+  countries
+  cities
+  listings
+}
+
+TableGroup listing_details [color: #8250DF] {
+  listing_photos
+  amenity_categories
+  amenities
+  listing_amenities
+}
+
+TableGroup booking_and_reviews [color: #D9822B] {
+  bookings
+  reviews
+}
+
+Table users [headercolor: #1F6FEB] {
+  id bigint [pk, increment]
+  email text [not null, unique]
+  password_hash text [not null]
+  full_name text [not null]
+  avatar_url text
+  created_at timestamptz [not null, default: `now()`]
+  Note: 'Guests and hosts. A host is a user who owns listings.'
+}
+
+Table countries [headercolor: #1F6FEB] {
+  id smallint [pk, increment]
+  code char(2) [not null, unique, note: 'ISO 3166-1, e.g. FI']
+  name text [not null, unique]
+}
+
+Table cities [headercolor: #1F6FEB] {
+  id int [pk, increment]
+  country_id smallint [not null, ref: > countries.id]
+  name text [not null]
+
+  indexes {
+    (country_id, name) [unique]
+  }
+}
+
+Table listings [headercolor: #1F6FEB] {
+  id bigint [pk, increment]
+  host_id bigint [not null, ref: > users.id]
+  title text [not null]
+  description text
+  property_type property_type [not null]
+  city_id int [not null, ref: > cities.id]
+  neighborhood text [note: 'e.g. Pasila']
+  address text [not null, note: 'shown only after booking']
+  latitude "numeric(9,6)" [not null]
+  longitude "numeric(9,6)" [not null]
+  max_guests smallint [not null, note: 'adults + children; infants not counted']
+  pets_allowed boolean [not null, default: false]
+  max_pets smallint [not null, default: 0]
+  bedrooms smallint [not null, default: 0]
+  beds smallint [not null, default: 1]
+  bathrooms "numeric(3,1)" [not null, default: 1]
+  price_per_night "numeric(10,2)" [not null]
+  cleaning_fee "numeric(10,2)" [not null, default: 0]
+  currency char(3) [not null, default: 'EUR']
+  check_in_time time [not null, default: '15:00']
+  check_out_time time [not null, default: '11:00']
+  avg_rating "numeric(3,2)" [note: 'rank, cached by trigger on reviews']
+  review_count int [not null, default: 0]
+  is_active boolean [not null, default: true]
+  created_at timestamptz [not null, default: `now()`]
+
+  indexes {
+    city_id
+    (latitude, longitude) [note: 'map bounding-box search']
+    host_id
+  }
+}
+
+Table listing_photos [headercolor: #8250DF] {
+  id bigint [pk, increment]
+  listing_id bigint [not null, ref: > listings.id]
+  storage_key text [not null, unique, note: 'object-storage key, e.g. listings/42/7f3a.jpg; app builds the CDN URL']
+  width int [not null, note: 'px of the original']
+  height int [not null, note: 'px of the original']
+  caption text
+  room_tag text [note: 'Kitchen, Bedroom 1 …']
+  sort_order smallint [not null, note: '0 = cover photo']
+
+  indexes {
+    (listing_id, sort_order) [unique]
+  }
+}
+
+Table amenity_categories [headercolor: #8250DF] {
+  id smallint [pk, increment]
+  name text [not null, unique, note: 'Kitchen and dining']
+  sort_order smallint [not null, default: 0]
+}
+
+Table amenities [headercolor: #8250DF] {
+  id smallint [pk, increment]
+  category_id smallint [not null, ref: > amenity_categories.id]
+  name text [not null, unique, note: 'Wifi, Microwave …']
+  icon text
+}
+
+Table listing_amenities [headercolor: #8250DF] {
+  listing_id bigint [not null, ref: > listings.id]
+  amenity_id smallint [not null, ref: > amenities.id]
+
+  indexes {
+    (listing_id, amenity_id) [pk]
+    amenity_id
+  }
+}
+
+Table bookings [headercolor: #D9822B] {
+  id bigint [pk, increment]
+  listing_id bigint [not null, ref: > listings.id]
+  guest_id bigint [not null, ref: > users.id]
+  check_in date [not null]
+  check_out date [not null]
+  stay daterange [note: 'generated: [check_in, check_out)']
+  adults smallint [not null, note: '>= 1']
+  children smallint [not null, default: 0]
+  infants smallint [not null, default: 0]
+  pets smallint [not null, default: 0]
+  nightly_price "numeric(10,2)" [not null, note: 'price snapshot']
+  cleaning_fee "numeric(10,2)" [not null, default: 0]
+  total_price "numeric(10,2)" [not null]
+  currency char(3) [not null]
+  status booking_status [not null, default: 'pending']
+  hold_expires_at timestamptz [note: 'pending hold while paying']
+  idempotency_key uuid [not null, unique]
+  created_at timestamptz [not null, default: `now()`]
+
+  indexes {
+    guest_id
+    (id, listing_id, guest_id) [unique]
+  }
+
+  Note: '''
+  NO DOUBLE BOOKING:
+  EXCLUDE USING gist (listing_id WITH =, stay WITH &&)
+  WHERE status IN (pending, confirmed, completed)
+  '''
+}
+
+Table reviews [headercolor: #D9822B] {
+  id bigint [pk, increment]
+  booking_id bigint [not null, unique]
+  listing_id bigint [not null]
+  guest_id bigint [not null]
+  rating smallint [not null, note: '1-5 stars']
+  cleanliness_rating smallint
+  accuracy_rating smallint
+  check_in_rating smallint
+  communication_rating smallint
+  location_rating smallint
+  value_rating smallint
+  comment text [not null]
+  created_at timestamptz [not null, default: `now()`]
+
+  indexes {
+    (listing_id, created_at)
+  }
+
+  Note: 'One review per completed booking (trigger). Composite FK ties listing and guest to the booking.'
+}
+
+// Composite FK: the review's listing and guest must be the booking's
+Ref review_belongs_to_booking: reviews.(booking_id, listing_id, guest_id) > bookings.(id, listing_id, guest_id)

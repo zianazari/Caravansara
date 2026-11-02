@@ -1,0 +1,19 @@
+{
+  "v": 4,
+  "createdOnFiles": {"v": 1, "at": "2026-10-30T09:40:00Z"},
+  "lists": "css",
+  "title": "دموی ERD سامانه رزرو اقامتگاه",
+  "cover": "cover",
+  "order": ["cover", "goal", "erd", "t-users", "t-location", "t-listings", "t-photos", "t-amenities", "t-bookings", "t-reviews", "race-divider", "race-what", "race-solutions", "race-ours", "race-test", "race-helpers", "summary"],
+  "sections": {
+    "s1": {"description": "هدف پروژه و نمای کلی ERD", "start": "cover"},
+    "s2": {"description": "جدول‌ها: چرا هستند، هدفشان و کاربردهای اصلی", "start": "t-users"},
+    "s3": {"description": "رزرو هم‌زمان: مشکل، راه‌حل‌ها و راه‌حل پایگاه داده", "start": "race-divider"},
+    "s4": {"description": "جمع‌بندی", "start": "summary"}
+  },
+  "faces": {
+    "vazirmatn": {"family": "Vazirmatn", "href": "https://fonts.googleapis.com/css2?family=Vazirmatn:wght@300..800&display=swap"},
+    "jetbrains-mono": {"family": "JetBrains Mono", "href": "https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600&display=swap"}
+  },
+  "designSystems": []
+}
