@@ -8,8 +8,8 @@
 --   + cities.timezone
 --   + bookings: partial index on hold_expires_at for pending holds
 --   + listings.public_location (PostGIS geography) for radial search
--- Once the backend exists, Alembic migrations are the source of truth and
--- this file is kept in sync with them.
+-- Alembic migrations in backend/migrations are the source of truth; 0001 is
+-- this file, and this file is kept in sync with later migrations.
 -- =====================================================================
 
 CREATE EXTENSION IF NOT EXISTS btree_gist;   -- lets "listing_id WITH =" join a GiST exclusion constraint
