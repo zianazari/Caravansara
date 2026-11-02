@@ -73,7 +73,7 @@ Amenity seed: 12 categories, 31 amenities. Search uses AND logic for amenity fil
 - `CONTEXT.md`: this file
 - `docs/backend-design.md`: **source of truth** for the backend requirements and design (decided 2026-11-01); diagrams in `docs/images/`
 - `docs/backend-design.pdf`: PDF export of that file; regenerate after changes
-- `docs/future-work.md`: planned work after the backend: database index review, UI, Playwright tests, microservices
+- `docs/future-work.md`: planned work: backend v1 implementation, more test and mock data, monitoring (logs, metrics, traces; Prometheus, Grafana), then database index review, UI, Playwright tests, microservices
 
 ## Online artifacts (claude.ai)
 

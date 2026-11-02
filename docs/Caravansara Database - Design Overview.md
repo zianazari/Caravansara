@@ -191,4 +191,4 @@ All tested on PostgreSQL 16 with PostGIS 3.4.
 
 - `Caravansara/db/`: `schema.sql`, `seed_amenities.sql`, `search_query.sql`, `schema.dbml` (for dbdiagram.io), `erd.mmd` and `erd.png`, and a README
 - `Caravansara/docs/backend-design.md`: backend requirements, API and service rules (source of truth)
-- `Caravansara/docs/future-work.md`: index review, UI, Playwright tests, microservices
+- `Caravansara/docs/future-work.md`: backend implementation, index review, UI, Playwright tests, microservices
