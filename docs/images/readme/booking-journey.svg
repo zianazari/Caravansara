@@ -1,0 +1,75 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 330" width="1200" height="330" role="img" aria-labelledby="t d">
+  <title id="t">Booking journey</title>
+  <desc id="d">Search, reserve with a 15-minute hold, pay, stay, review. Overlapping reservations get 409 dates_unavailable.</desc>
+  <style>
+    text { font-family: -apple-system, "Segoe UI", Helvetica, Arial, sans-serif; }
+    .flow { stroke-dasharray: 10 10; animation: march 1.2s linear infinite; }
+    @keyframes march { to { stroke-dashoffset: -20; } }
+    .node circle:first-child { animation: pulse 6s ease-in-out infinite; animation-delay: inherit; transform-box: fill-box; transform-origin: center; }
+    @keyframes pulse { 0%, 12%, 100% { transform: scale(1); } 5% { transform: scale(1.12); } }
+    .countdown { animation: countdown 6s linear infinite; }
+    @keyframes countdown { 0%, 20% { stroke-dashoffset: 0; } 40%, 100% { stroke-dashoffset: 276.5; } }
+    .blocked { animation: bounce 6s ease-in-out infinite; }
+    @keyframes bounce { 0%, 18% { transform: translateX(-60px); opacity: 0; } 24% { transform: translateX(0); opacity: 1; } 30% { transform: translateX(-28px); opacity: 1; } 40%, 100% { transform: translateX(-60px); opacity: 0; } }
+    @media (prefers-reduced-motion: reduce) { .flow, .node circle:first-child, .countdown, .blocked { animation: none; } .blocked { opacity: 1; transform: translateX(-28px); } }
+  </style>
+  <rect width="1200" height="330" rx="18" fill="#f8efe1"/>
+  <rect x="1" y="1" width="1198" height="328" rx="17" fill="none" stroke="#e3cfae"/>
+  <text x="40" y="44" font-size="13" letter-spacing="3" font-weight="700" fill="#b5651d">THE BOOKING JOURNEY</text>
+  <path d="M130,120 L1070,120" stroke="#d9b27c" stroke-width="4" fill="none"/>
+  <path d="M130,120 L1070,120" class="flow" stroke="#b5651d" stroke-width="4" fill="none"/>
+  <circle r="9" fill="#e08a2e" stroke="#fffaf2" stroke-width="3">
+    <animateMotion dur="6s" repeatCount="indefinite" path="M130,120 L1070,120" keyPoints="0;0;0.25;0.25;0.5;0.75;1;1" keyTimes="0;0.1;0.2;0.4;0.55;0.7;0.85;1" calcMode="linear"/>
+  </circle>
+  
+    <g class="node" style="animation-delay:0.0s">
+      <circle cx="130" cy="120" r="36" fill="#fffaf2" stroke="#b5651d" stroke-width="2.5"/>
+      
+      <text x="130" y="126" text-anchor="middle" font-size="17" font-weight="700" fill="#5a2e0c">1</text>
+      <text x="130" y="192" text-anchor="middle" font-size="18" font-weight="700" fill="#3b1f08">Search</text>
+      <text x="130" y="215" text-anchor="middle" font-size="13.5" fill="#6b4a2b">city or radius,</text>
+      <text x="130" y="233" text-anchor="middle" font-size="13.5" fill="#6b4a2b">dates, guests, amenities</text>
+      <text x="130" y="260" text-anchor="middle" font-size="12" fill="#8a5a2b" font-family="ui-monospace, SFMono-Regular, Menlo, monospace">GET /search/listings</text>
+    </g>
+    <g class="node" style="animation-delay:1.2s">
+      <circle cx="365" cy="120" r="36" fill="#fffaf2" stroke="#b5651d" stroke-width="2.5"/>
+      <circle cx="365" cy="120" r="44" fill="none" stroke="#c8792e" stroke-width="4" stroke-linecap="round" stroke-dasharray="276.5" class="countdown" transform="rotate(-90 365 120)"/>
+      <text x="365" y="126" text-anchor="middle" font-size="17" font-weight="700" fill="#5a2e0c">2</text>
+      <text x="365" y="192" text-anchor="middle" font-size="18" font-weight="700" fill="#3b1f08">Reserve</text>
+      <text x="365" y="215" text-anchor="middle" font-size="13.5" fill="#6b4a2b">15-minute hold,</text>
+      <text x="365" y="233" text-anchor="middle" font-size="13.5" fill="#6b4a2b">Idempotency-Key</text>
+      <text x="365" y="260" text-anchor="middle" font-size="12" fill="#8a5a2b" font-family="ui-monospace, SFMono-Regular, Menlo, monospace">POST /bookings</text>
+    </g>
+    <g class="node" style="animation-delay:2.4s">
+      <circle cx="600" cy="120" r="36" fill="#fffaf2" stroke="#b5651d" stroke-width="2.5"/>
+      
+      <text x="600" y="126" text-anchor="middle" font-size="17" font-weight="700" fill="#5a2e0c">3</text>
+      <text x="600" y="192" text-anchor="middle" font-size="18" font-weight="700" fill="#3b1f08">Pay</text>
+      <text x="600" y="215" text-anchor="middle" font-size="13.5" fill="#6b4a2b">simulated payment</text>
+      <text x="600" y="233" text-anchor="middle" font-size="13.5" fill="#6b4a2b">confirms the hold</text>
+      <text x="600" y="260" text-anchor="middle" font-size="12" fill="#8a5a2b" font-family="ui-monospace, SFMono-Regular, Menlo, monospace">POST /bookings/{id}/pay</text>
+    </g>
+    <g class="node" style="animation-delay:3.5999999999999996s">
+      <circle cx="835" cy="120" r="36" fill="#fffaf2" stroke="#b5651d" stroke-width="2.5"/>
+      
+      <text x="835" y="126" text-anchor="middle" font-size="17" font-weight="700" fill="#5a2e0c">4</text>
+      <text x="835" y="192" text-anchor="middle" font-size="18" font-weight="700" fill="#3b1f08">Stay</text>
+      <text x="835" y="215" text-anchor="middle" font-size="13.5" fill="#6b4a2b">worker completes it</text>
+      <text x="835" y="233" text-anchor="middle" font-size="13.5" fill="#6b4a2b">at check-out, city time</text>
+      <text x="835" y="260" text-anchor="middle" font-size="12" fill="#8a5a2b" font-family="ui-monospace, SFMono-Regular, Menlo, monospace">caravansara worker</text>
+    </g>
+    <g class="node" style="animation-delay:4.8s">
+      <circle cx="1070" cy="120" r="36" fill="#fffaf2" stroke="#b5651d" stroke-width="2.5"/>
+      
+      <text x="1070" y="126" text-anchor="middle" font-size="17" font-weight="700" fill="#5a2e0c">5</text>
+      <text x="1070" y="192" text-anchor="middle" font-size="18" font-weight="700" fill="#3b1f08">Review</text>
+      <text x="1070" y="215" text-anchor="middle" font-size="13.5" fill="#6b4a2b">1–5 stars + text,</text>
+      <text x="1070" y="233" text-anchor="middle" font-size="13.5" fill="#6b4a2b">within 14 days</text>
+      <text x="1070" y="260" text-anchor="middle" font-size="12" fill="#8a5a2b" font-family="ui-monospace, SFMono-Regular, Menlo, monospace">POST /bookings/{id}/review</text>
+    </g>
+  <g class="blocked">
+    <circle cx="295" cy="68" r="8" fill="#9c3b28"/>
+    <text x="309" y="73" font-size="12.5" font-weight="700" fill="#9c3b28">409 dates_unavailable</text>
+  </g>
+  <text x="1160" y="308" text-anchor="end" font-size="12.5" fill="#8a6a48">A second guest on the same nights is stopped by PostgreSQL's EXCLUDE constraint, not by app code.</text>
+</svg>
