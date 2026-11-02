@@ -62,6 +62,8 @@ Amenity seed: 12 categories, 31 amenities. Search uses AND logic for amenity fil
 - `db/README.md`: overview, rules table, how to run
 - `db/schema.sql`: PostgreSQL schema (source of truth)
 - `db/seed_amenities.sql`: amenity catalog
+- `db/seed_locations.sql`: countries and cities (NL, PT, DK, SE; with timezones)
+- `db/seed_demo.sql`: demo data generated on 2026-11-02 from Inside Airbnb (CC BY 4.0) by `db/demo/build_demo_seed.py`; see `db/demo/README.md`. Raw downloads live in the git-ignored `.cache/insideairbnb/`
 - `db/search_query.sql`: Where/When/Who + map + multi-amenity search, plus filter counts
 - `db/schema.dbml`: paste into dbdiagram.io
 - `db/erd.mmd`, `db/erd.png`: Mermaid ERD (full columns)

@@ -12,6 +12,8 @@ backend exists, Alembic migrations are, and these files follow them).
 | --- | --- |
 | `schema.sql` | PostgreSQL 16 + PostGIS schema: 12 tables, the no-double-booking constraint, review triggers |
 | `seed_amenities.sql` | 12 amenity categories and 31 amenities (Wifi, Kitchen, Microwave …) |
+| `seed_locations.sql` | 4 countries and 4 cities with IANA timezones (Amsterdam, Lisbon, Copenhagen, Stockholm) |
+| `seed_demo.sql` | Demo data from Inside Airbnb, **generated**: 200 listings, 598 users, 1,793 bookings, 1,491 reviews. See [`demo/README.md`](demo/README.md) |
 | `search_query.sql` | City **or** radial (centre + 1–100 km) search + When + Who + multi-amenity filter (must have ALL), sort by rating or distance; plus filter-panel counts |
 | `schema.dbml` | Paste into [dbdiagram.io](https://dbdiagram.io) |
 | `erd.mmd` | Mermaid source (also below; GitHub and VS Code render it) |
@@ -66,9 +68,10 @@ Uploads go browser → presigned URL → storage, then the API checks the file e
 Needs PostgreSQL 16 with the PostGIS extension available (e.g. the `postgis/postgis:16-3.4` Docker image).
 
 ```bash
-createdb airbnb
-psql -d airbnb -f schema.sql -f seed_amenities.sql
-psql -d airbnb -f search_query.sql
+createdb caravansara
+psql -d caravansara -f schema.sql -f seed_amenities.sql -f seed_locations.sql
+psql -d caravansara -f seed_demo.sql      # optional demo data, empty database only
+psql -d caravansara -f search_query.sql
 ```
 
 ## Mermaid source

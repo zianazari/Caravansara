@@ -1,1 +1,4 @@
 .DS_Store
+
+# Inside Airbnb downloads for db/demo/build_demo_seed.py
+.cache/
