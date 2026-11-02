@@ -1,5 +1,6 @@
 from geoalchemy2 import Geometry
 from sqlalchemy import cast, delete, func, select
+from sqlalchemy.dialects.postgresql import distinct_on
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from caravansara.listings.models import Listing, ListingAmenity, ListingPhoto
@@ -20,7 +21,7 @@ async def pins(session: AsyncSession, listing_ids: list[int]) -> dict[int, tuple
     rows = await session.execute(
         select(Listing.id, func.ST_Y(point), func.ST_X(point)).where(Listing.id.in_(listing_ids))
     )
-    return {lid: (float(lat), float(lng)) for lid, lat, lng in rows.tuples()}
+    return {lid: (float(lat), float(lng)) for lid, lat, lng in rows.all()}
 
 
 async def host_listings(session: AsyncSession, host_id: int, limit: int, offset: int) -> tuple[list[Listing], int]:
@@ -46,10 +47,10 @@ async def cover_keys(session: AsyncSession, listing_ids: list[int]) -> dict[int,
     rows = await session.execute(
         select(ListingPhoto.listing_id, ListingPhoto.storage_key)
         .where(ListingPhoto.listing_id.in_(listing_ids))
-        .distinct(ListingPhoto.listing_id)
+        .ext(distinct_on(ListingPhoto.listing_id))
         .order_by(ListingPhoto.listing_id, ListingPhoto.sort_order)
     )
-    return {lid: key for lid, key in rows.tuples()}
+    return {lid: key for lid, key in rows.all()}
 
 
 async def get_photo(session: AsyncSession, listing_id: int, photo_id: int) -> ListingPhoto | None:

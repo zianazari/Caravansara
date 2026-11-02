@@ -1,0 +1,47 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+defaults:
+  run:
+    working-directory: backend
+
+jobs:
+  checks:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v6
+        with:
+          version: "0.11.21"
+          enable-cache: true
+      - name: Install
+        run: uv sync --frozen
+      - name: Lint
+        run: |
+          uv run ruff check src tests migrations
+          uv run ruff format --check src tests migrations
+      - name: Types
+        run: uv run mypy
+      - name: Module boundaries
+        run: uv run lint-imports
+      # testcontainers starts PostgreSQL + PostGIS and MinIO on the runner's Docker.
+      - name: Tests (coverage >= 90%)
+        run: uv run pytest --cov --cov-report=term --cov-report=xml
+
+  image:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build the image
+        working-directory: .
+        run: docker build -f backend/Dockerfile -t caravansara:ci .
