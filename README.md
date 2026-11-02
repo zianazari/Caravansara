@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="docs/images/readme/hero.svg" alt="Caravansara: a caravansara courtyard at sunset" width="100%">
+  <img src="docs/images/readme/hero.svg" alt="Caravansara: a lit caravansara courtyard at dusk, seen through a pointed arch" width="100%">
 </p>
 
 <p align="center">
