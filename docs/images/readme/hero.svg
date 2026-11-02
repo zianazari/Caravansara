@@ -1,6 +1,6 @@
 <svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" viewBox="0 0 1200 440" width="1200" height="440" role="img" aria-labelledby="t d">
   <title id="t">Caravansara</title>
-  <desc id="d">A caravanserai courtyard at sunset with the project name: a place reservation backend.</desc>
+  <desc id="d">A caravansara courtyard at sunset with the project name: a place reservation backend.</desc>
   <style>
     .photo { transform-origin: 600px 260px; animation: drift 24s ease-in-out infinite alternate; }
     @keyframes drift { from { transform: scale(1.02) translate(0, 0); } to { transform: scale(1.14) translate(-18px, -8px); } }
