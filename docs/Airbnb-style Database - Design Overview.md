@@ -159,7 +159,7 @@ erDiagram
         text comment }
 ```
 
-The full column list is in `db/erd.mmd`, `db/schema.sql` and `db/schema.dbml` in `place_reservation_site`.
+The full column list is in `db/erd.mmd`, `db/schema.sql` and `db/schema.dbml` in `Airbnb-style`.
 
 ## What the database guarantees
 
@@ -189,6 +189,6 @@ All tested on PostgreSQL 16 with PostGIS 3.4.
 
 ## Files
 
-- `place_reservation_site/db/`: `schema.sql`, `seed_amenities.sql`, `search_query.sql`, `schema.dbml` (for dbdiagram.io), `erd.mmd` and `erd.png`, and a README
+- `Airbnb-style/db/`: `schema.sql`, `seed_amenities.sql`, `search_query.sql`, `schema.dbml` (for dbdiagram.io), `erd.mmd` and `erd.png`, and a README
 - `Airbnb-style/docs/backend-design.md`: backend requirements, API and service rules (source of truth)
 - `Airbnb-style/docs/future-work.md`: index review, UI, Playwright tests, microservices
