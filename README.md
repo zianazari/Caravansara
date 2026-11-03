@@ -107,37 +107,17 @@ All paths start with `/api/v1`. Every error has the same shape, with a stable co
 {"error": {"code": "dates_unavailable", "message": "These dates were just booked."}}
 ```
 
-| Area | Method | Endpoint | What it does | Access |
-| --- | --- | --- | --- | --- |
-| **Auth** | `POST` | `/auth/register` | Create an account and log in | Public |
-|  | `POST` | `/auth/login` | Get access and refresh tokens | Public |
-|  | `POST` | `/auth/refresh` | Swap a refresh token for a new pair | Refresh token |
-|  | `POST` | `/auth/logout` | Revoke a refresh token | Refresh token |
-|  | `GET` | `/me` | My profile | User |
-|  | `PATCH` | `/me` | Update my profile | User |
-| **Catalog** | `GET` | `/countries` | Countries | Public |
-|  | `GET` | `/cities?q=` | City autocomplete | Public |
-|  | `GET` | `/amenities` | Amenities by category | Public |
-| **Search** | `GET` | `/search/listings` | City or radius, dates, guests, amenities | Public |
-|  | `GET` | `/search/filters` | Amenity counts for the filter panel | Public |
-| **Listings** | `POST` | `/listings` | Create a listing | User |
-|  | `GET` | `/me/listings` | My listings | User |
-|  | `GET` | `/listings/{id}` | Listing details | Public |
-|  | `PATCH` | `/listings/{id}` | Edit or deactivate | Host |
-|  | `PUT` | `/listings/{id}/amenities` | Set amenities | Host |
-|  | `GET` | `/listings/{id}/bookings` | Bookings of my listing | Host |
-| **Photos** | `POST` | `/listings/{id}/photos/upload-url` | Get a presigned upload | Host |
-|  | `POST` | `/listings/{id}/photos` | Register an uploaded photo | Host |
-|  | `PATCH` | `/listings/{id}/photos/{photo_id}` | Edit caption or room tag | Host |
-|  | `DELETE` | `/listings/{id}/photos/{photo_id}` | Delete a photo | Host |
-|  | `PUT` | `/listings/{id}/photos/order` | Reorder, pick the cover | Host |
-| **Bookings** | `POST` | `/bookings` | Reserve: 15-minute hold (`Idempotency-Key`) | User |
-|  | `GET` | `/me/bookings` | My trips | User |
-|  | `GET` | `/bookings/{id}` | Booking details | Guest or host |
-|  | `POST` | `/bookings/{id}/pay` | Pay (simulated) | Guest |
-|  | `POST` | `/bookings/{id}/cancel` | Cancel before the check-in day | Guest or host |
-| **Reviews** | `POST` | `/bookings/{id}/review` | Review a completed stay | Guest |
-|  | `GET` | `/listings/{id}/reviews` | Reviews of a listing | Public |
+| Area | Method | Endpoint | Access |
+| --- | --- | --- | --- |
+| **Auth** | `POST`<br>`POST`<br>`POST`<br>`POST`<br>`GET`<br>`PATCH` | `/auth/register`<br>`/auth/login`<br>`/auth/refresh`<br>`/auth/logout`<br>`/me`<br>`/me` | Public<br>Public<br>Refresh token<br>Refresh token<br>User<br>User |
+| **Catalog** | `GET`<br>`GET`<br>`GET` | `/countries`<br>`/cities?q=`<br>`/amenities` | Public<br>Public<br>Public |
+| **Search** | `GET`<br>`GET` | `/search/listings`<br>`/search/filters` | Public<br>Public |
+| **Listings** | `POST`<br>`GET`<br>`GET`<br>`PATCH`<br>`PUT`<br>`GET` | `/listings`<br>`/me/listings`<br>`/listings/{id}`<br>`/listings/{id}`<br>`/listings/{id}/amenities`<br>`/listings/{id}/bookings` | User<br>User<br>Public<br>Host<br>Host<br>Host |
+| **Photos** | `POST`<br>`POST`<br>`PATCH`<br>`DELETE`<br>`PUT` | `/listings/{id}/photos/upload-url`<br>`/listings/{id}/photos`<br>`/listings/{id}/photos/{photo_id}`<br>`/listings/{id}/photos/{photo_id}`<br>`/listings/{id}/photos/order` | Host<br>Host<br>Host<br>Host<br>Host |
+| **Bookings** | `POST`<br>`GET`<br>`GET`<br>`POST`<br>`POST` | `/bookings`<br>`/me/bookings`<br>`/bookings/{id}`<br>`/bookings/{id}/pay`<br>`/bookings/{id}/cancel` | User<br>User<br>Guest or host<br>Guest<br>Guest or host |
+| **Reviews** | `POST`<br>`GET` | `/bookings/{id}/review`<br>`/listings/{id}/reviews` | Guest<br>Public |
+
+Every endpoint, with its parameters, examples and errors, is described and can be tried in Swagger UI at `/docs`.
 
 ## Repository
 
