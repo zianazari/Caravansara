@@ -52,17 +52,69 @@ This repository holds the **backend and the database design**. There is no front
   <img src="docs/images/readme/booking-journey.svg" alt="Booking journey: search, reserve, pay, stay, review" width="100%">
 </p>
 
-## How it fits together
+## Architecture
 
-One codebase and one database, split into modules with clear borders. The API and the worker run as two processes; photos go from the browser straight to storage.
+Caravansara is a **modular monolith**: one FastAPI codebase and one PostgreSQL database, split into modules with strict borders. It runs as two processes, and photos never pass through the API.
 
 <p align="center">
   <img src="docs/images/readme/architecture.svg" alt="Architecture: client, API modules, worker, PostgreSQL + PostGIS and MinIO" width="100%">
 </p>
 
-Modules talk to each other only through their `service`; [import-linter](https://import-linter.readthedocs.io/) breaks the build if one reaches into another's tables or repository.
+### Runtime
 
-### A booking's life
+| Process / service | Role | Why it's separate |
+| --- | --- | --- |
+| **API** (FastAPI, uvicorn) | All endpoints under `/api/v1`, Swagger at `/docs` | Stateless, so any number of copies can run behind a load balancer |
+| **Worker** (`caravansara worker`) | Every minute: expire unpaid holds, complete finished stays | Scheduled jobs would run once per API copy if they lived in the API |
+| **PostgreSQL 16 + PostGIS** | The single source of truth; enforces the critical rules | The only place every API copy shares, so the only safe place for race-proof rules |
+| **MinIO / S3** | Photo files | Browsers upload directly with presigned URLs, so large files don't load the API |
+
+### Modules
+
+| Module | Owns | Uses |
+| --- | --- | --- |
+| `core` | settings, DB sessions, error shape, JWT, storage client | nothing; the base layer |
+| `identity` | `users`, `refresh_tokens`, `auth_attempts` | `core` |
+| `catalog` | `countries`, `cities`, `amenities` (read-only) | `core` |
+| `listings` | `listings`, photos, amenities per listing, fuzzed pin | `catalog`, `identity` |
+| `bookings` | `bookings`: hold, pay, cancel, worker queries | `listings` |
+| `reviews` | `reviews`, rating cache | `bookings`, `listings`, `identity` |
+| `search` | read-only search queries | `listings` (types only) |
+| `jobs` | the worker loop | `bookings` |
+
+Every module has the same layers:
+
+```
+router.py      HTTP: paths, status codes, Swagger docs
+   ↓
+service.py     business rules; the only file other modules may import
+   ↓
+repository.py  SQL queries
+   ↓
+models.py      tables          schemas.py  request and response shapes
+```
+
+**The border rule:** a module may call another module only through its `service`. For example, `bookings` asks `listings.service` for capacity and price, and never queries the listings table itself. [import-linter](https://import-linter.readthedocs.io/) checks this in CI, so the borders can't quietly erode. It's also what makes a later split into services possible.
+
+### Where each rule lives
+
+| Rule | Enforced in | Why there |
+| --- | --- | --- |
+| No overlapping bookings | PostgreSQL `EXCLUDE` constraint | App-level "check, then insert" races between API copies |
+| A retried reservation books once | `UNIQUE (idempotency_key)` | Holds even when two retries arrive at the same moment |
+| Reviews only for completed stays; rating cache | Triggers | Stays correct whatever code writes the rows |
+| Capacity, dates in city time, own listing, state transitions | `service` layer | Need logic and context the database doesn't have |
+| Payment vs. expiry race | Conditional `UPDATE … WHERE status = 'pending' AND hold_expires_at > now()` | Exactly one of the two wins |
+
+### A reservation, step by step
+
+1. `POST /bookings` arrives with a JWT and an `Idempotency-Key`.
+2. **router** validates the body and the token.
+3. **bookings.service** returns the earlier booking if this key was already used; otherwise it asks `listings.service` for the listing and checks capacity, dates (city time) and that the guest isn't the host.
+4. In **one transaction**, it expires stale holds on that listing and inserts a `pending` row with a 15-minute `hold_expires_at`.
+5. **PostgreSQL** saves it (201) or rejects an overlap with error `23P01` (409 `dates_unavailable`).
+
+#### A booking's life
 
 <p align="center">
   <img src="docs/images/readme/booking-states.svg" alt="Booking states: pending, confirmed, expired, cancelled, completed" width="100%">
@@ -70,7 +122,7 @@ Modules talk to each other only through their `service`; [import-linter](https:/
 
 `expired` and `cancelled` free the dates; `pending`, `confirmed` and `completed` hold them.
 
-### Two guests, one night
+#### Two guests, one night
 
 <p align="center">
   <img src="docs/images/readme/double-booking-race.svg" alt="Two guests reserve the same nights at once; one gets 201, the other 409" width="100%">
@@ -78,13 +130,23 @@ Modules talk to each other only through their `service`; [import-linter](https:/
 
 A test fires 20 such requests at once and checks that exactly one wins.
 
+### Key decisions
+
+| Decision | Reason |
+| --- | --- |
+| Monolith, not microservices | Booking and review share one transaction and one deploy; module borders keep a later split open |
+| Async SQLAlchemy + asyncpg | The API mostly waits on the database, and FastAPI is async |
+| No Redis | PostgreSQL already covers locks, holds, idempotency, the job queue and rate limiting |
+| Fuzzed public pin stored once | Search and the map never touch the real address; a fresh offset per request could be averaged away |
+| Tests on real PostgreSQL and MinIO | `EXCLUDE`, triggers and PostGIS can't be mocked or run on SQLite |
+
 ### Data model
 
 <p align="center">
   <img src="docs/images/readme/data-model.svg" alt="Data model: 11 tables and their relations" width="100%">
 </p>
 
-12 tables. The full schema with every rule is in [`db/schema.sql`](db/schema.sql); the design and its reasons are in [`docs/backend-design.md`](docs/backend-design.md) (Persian).
+12 tables; `auth_attempts`, the rate-limit log, is left out of the diagram because nothing references it. The full schema with every rule is in [`db/schema.sql`](db/schema.sql); the design and its reasons are in [`docs/backend-design.md`](docs/backend-design.md) (Persian).
 
 ## Try it
 
