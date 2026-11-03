@@ -4,15 +4,37 @@
 
 <p align="center">
   <a href="https://github.com/zianazari/Caravansara/actions/workflows/ci.yml"><img src="https://github.com/zianazari/Caravansara/actions/workflows/ci.yml/badge.svg" alt="CI"></a>
-  <img src="https://img.shields.io/badge/python-3.13-b5651d" alt="Python 3.13">
-  <img src="https://img.shields.io/badge/FastAPI-modular%20monolith-b5651d" alt="FastAPI">
-  <img src="https://img.shields.io/badge/PostgreSQL-16%20%2B%20PostGIS-b5651d" alt="PostgreSQL 16 + PostGIS">
   <img src="https://img.shields.io/badge/tests-124%20%C2%B7%2097.8%25%20coverage-b5651d" alt="124 tests, 97.8% coverage">
 </p>
 
 A *caravansara* (کاروانسرا) was a roadside inn on the Silk Road: travellers arrived at dusk, took a room for the night and moved on at dawn. **Caravansara** is the same idea for today: an Airbnb-like site where guests find a place, hold it, pay and leave a review, and hosts list their homes.
 
 This repository holds the **backend and the database design**. There is no frontend yet; everything below is reachable through the API and tried out in **Swagger UI**.
+
+## Technology
+
+<p align="left">
+  <img src="https://skillicons.dev/icons?i=python,fastapi,postgres,docker,githubactions&theme=dark" alt="Python, FastAPI, PostgreSQL, Docker and GitHub Actions" />
+  <img src="https://img.shields.io/badge/PostGIS-336791?style=for-the-badge" alt="PostGIS" />
+  <img src="https://img.shields.io/badge/SQLAlchemy-D71F00?style=for-the-badge&logo=sqlalchemy&logoColor=white" alt="SQLAlchemy" />
+  <img src="https://img.shields.io/badge/Pydantic-E92063?style=for-the-badge&logo=pydantic&logoColor=white" alt="Pydantic" />
+  <img src="https://img.shields.io/badge/MinIO-C72E49?style=for-the-badge&logo=minio&logoColor=white" alt="MinIO" />
+  <img src="https://img.shields.io/badge/Swagger-85EA2D?style=for-the-badge&logo=swagger&logoColor=black" alt="Swagger" />
+  <img src="https://img.shields.io/badge/JWT-000000?style=for-the-badge&logo=jsonwebtokens&logoColor=white" alt="JSON Web Tokens" />
+  <img src="https://img.shields.io/badge/pytest-0A9EDC?style=for-the-badge&logo=pytest&logoColor=white" alt="pytest" />
+  <img src="https://img.shields.io/badge/uv-DE5FE9?style=for-the-badge&logo=uv&logoColor=white" alt="uv" />
+  <img src="https://img.shields.io/badge/Ruff-D7FF64?style=for-the-badge&logo=ruff&logoColor=black" alt="Ruff" />
+  <img src="https://img.shields.io/badge/mypy-2A6DB2?style=for-the-badge" alt="mypy" />
+</p>
+
+| Layer | Tools |
+| --- | --- |
+| API | Python 3.13, FastAPI, Pydantic v2, Swagger UI and ReDoc |
+| Data | PostgreSQL 16 with PostGIS, SQLAlchemy 2 (async) with asyncpg, Alembic |
+| Security | argon2 password hashing, JWT access tokens with rotating refresh tokens |
+| Files | S3 API with presigned uploads; MinIO in development and tests |
+| Quality | pytest with testcontainers, Ruff, mypy (strict), import-linter |
+| Delivery | uv, Docker and Docker Compose, GitHub Actions |
 
 ## What it does
 
@@ -85,15 +107,37 @@ All paths start with `/api/v1`. Every error has the same shape, with a stable co
 {"error": {"code": "dates_unavailable", "message": "These dates were just booked."}}
 ```
 
-| Area | Endpoints |
-| --- | --- |
-| Auth | `POST /auth/register` · `/auth/login` · `/auth/refresh` · `/auth/logout` · `GET/PATCH /me` |
-| Catalog | `GET /countries` · `/cities?q=` · `/amenities` |
-| Search | `GET /search/listings` · `/search/filters` |
-| Listings | `POST /listings` · `GET/PATCH /listings/{id}` · `GET /me/listings` · `PUT /listings/{id}/amenities` |
-| Photos | `POST /listings/{id}/photos/upload-url` · `POST /listings/{id}/photos` · `PATCH/DELETE …/photos/{photo_id}` · `PUT …/photos/order` |
-| Bookings | `POST /bookings` · `GET /me/bookings` · `GET /bookings/{id}` · `POST /bookings/{id}/pay` · `/cancel` · `GET /listings/{id}/bookings` |
-| Reviews | `POST /bookings/{id}/review` · `GET /listings/{id}/reviews` |
+| Area | Method | Endpoint | What it does | Access |
+| --- | --- | --- | --- | --- |
+| **Auth** | `POST` | `/auth/register` | Create an account and log in | Public |
+|  | `POST` | `/auth/login` | Get access and refresh tokens | Public |
+|  | `POST` | `/auth/refresh` | Swap a refresh token for a new pair | Refresh token |
+|  | `POST` | `/auth/logout` | Revoke a refresh token | Refresh token |
+|  | `GET` | `/me` | My profile | User |
+|  | `PATCH` | `/me` | Update my profile | User |
+| **Catalog** | `GET` | `/countries` | Countries | Public |
+|  | `GET` | `/cities?q=` | City autocomplete | Public |
+|  | `GET` | `/amenities` | Amenities by category | Public |
+| **Search** | `GET` | `/search/listings` | City or radius, dates, guests, amenities | Public |
+|  | `GET` | `/search/filters` | Amenity counts for the filter panel | Public |
+| **Listings** | `POST` | `/listings` | Create a listing | User |
+|  | `GET` | `/me/listings` | My listings | User |
+|  | `GET` | `/listings/{id}` | Listing details | Public |
+|  | `PATCH` | `/listings/{id}` | Edit or deactivate | Host |
+|  | `PUT` | `/listings/{id}/amenities` | Set amenities | Host |
+|  | `GET` | `/listings/{id}/bookings` | Bookings of my listing | Host |
+| **Photos** | `POST` | `/listings/{id}/photos/upload-url` | Get a presigned upload | Host |
+|  | `POST` | `/listings/{id}/photos` | Register an uploaded photo | Host |
+|  | `PATCH` | `/listings/{id}/photos/{photo_id}` | Edit caption or room tag | Host |
+|  | `DELETE` | `/listings/{id}/photos/{photo_id}` | Delete a photo | Host |
+|  | `PUT` | `/listings/{id}/photos/order` | Reorder, pick the cover | Host |
+| **Bookings** | `POST` | `/bookings` | Reserve: 15-minute hold (`Idempotency-Key`) | User |
+|  | `GET` | `/me/bookings` | My trips | User |
+|  | `GET` | `/bookings/{id}` | Booking details | Guest or host |
+|  | `POST` | `/bookings/{id}/pay` | Pay (simulated) | Guest |
+|  | `POST` | `/bookings/{id}/cancel` | Cancel before the check-in day | Guest or host |
+| **Reviews** | `POST` | `/bookings/{id}/review` | Review a completed stay | Guest |
+|  | `GET` | `/listings/{id}/reviews` | Reviews of a listing | Public |
 
 ## Repository
 
