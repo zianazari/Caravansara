@@ -105,6 +105,7 @@ models.py      tables          schemas.py  request and response shapes
 | Reviews only for completed stays; rating cache | Triggers | Stays correct whatever code writes the rows |
 | Capacity, dates in city time, own listing, state transitions | `service` layer | Need logic and context the database doesn't have |
 | Payment vs. expiry race | Conditional `UPDATE … WHERE status = 'pending' AND hold_expires_at > now()` | Exactly one of the two wins |
+| An overdue unpaid hold doesn't block search | Search query: a `pending` hold counts only until `hold_expires_at` | A free place isn't shown as taken while the worker catches up |
 
 ### A reservation, step by step
 
@@ -195,4 +196,4 @@ Tests run against real PostgreSQL + PostGIS and MinIO in containers, because the
 
 ## What's next
 
-Tests for the remaining race handlers and edge cases, more and bulkier test data, monitoring (logs, metrics, traces with Prometheus and Grafana), an index review on real load, a web UI with right-to-left Persian, browser tests with Playwright, and splitting out services only if the numbers ask for it. The plan and its order are in [`docs/future-work.md`](docs/future-work.md).
+More and bulkier test data, monitoring (logs, metrics, traces with Prometheus and Grafana), an index review on real load, a web UI with right-to-left Persian, browser tests with Playwright, and splitting out services only if the numbers ask for it. The plan and its order are in [`docs/future-work.md`](docs/future-work.md).
