@@ -1,6 +1,9 @@
 """Catalog endpoints, health, Swagger/OpenAPI and the error shape."""
 
-from httpx import AsyncClient
+from httpx import ASGITransport, AsyncClient
+
+from caravansara.core.config import Settings
+from caravansara.main import create_app
 
 
 async def test_countries(client: AsyncClient) -> None:
@@ -57,3 +60,21 @@ async def test_unknown_route_uses_the_error_shape(client: AsyncClient) -> None:
     assert r.json() == {"error": {"code": "not_found", "message": "Not Found"}}
     wrong_method = await client.delete("/countries")
     assert wrong_method.json()["error"]["code"] == "method_not_allowed"
+
+
+async def test_cors_allows_only_configured_origins(prepared: Settings) -> None:
+    app = create_app(prepared.model_copy(update={"cors_origins": ["https://app.example.com"]}))
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+        preflight = {"Access-Control-Request-Method": "POST", "Access-Control-Request-Headers": "authorization"}
+        allowed = await client.options("/api/v1/bookings", headers={"Origin": "https://app.example.com", **preflight})
+        assert allowed.status_code == 200
+        assert allowed.headers["access-control-allow-origin"] == "https://app.example.com"
+        other = await client.options("/api/v1/bookings", headers={"Origin": "https://evil.example.com", **preflight})
+        assert "access-control-allow-origin" not in other.headers
+
+
+async def test_no_cors_headers_by_default(client: AsyncClient) -> None:
+    r = await client.options(
+        "/bookings", headers={"Origin": "https://app.example.com", "Access-Control-Request-Method": "POST"}
+    )
+    assert "access-control-allow-origin" not in r.headers

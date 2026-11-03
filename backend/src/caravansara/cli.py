@@ -11,6 +11,7 @@ from caravansara.core.config import Settings, get_settings
 
 CATALOG_SEEDS = ("seed_amenities.sql", "seed_locations.sql")
 DEMO_SEED = "seed_demo.sql"
+ALEMBIC_INI = Path(__file__).resolve().parents[2] / "alembic.ini"
 
 
 def _dsn(settings: Settings) -> str:
@@ -21,7 +22,7 @@ def migrate(settings: Settings, revision: str = "head") -> None:
     from alembic import command
     from alembic.config import Config
 
-    config = Config(str(Path(__file__).resolve().parents[2] / "alembic.ini"))
+    config = Config(str(ALEMBIC_INI))
     config.attributes["database_url"] = settings.database_url
     command.upgrade(config, revision)
 

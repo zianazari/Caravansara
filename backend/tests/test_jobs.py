@@ -5,9 +5,11 @@ from datetime import UTC, date, datetime, timedelta
 from typing import Any
 from zoneinfo import ZoneInfo
 
+import pytest
 from httpx import AsyncClient
 from sqlalchemy.ext.asyncio import AsyncEngine
 
+from caravansara.bookings import repository as bookings_repo
 from caravansara.core.config import Settings
 from caravansara.jobs.runner import run_forever, run_once
 from tests.helpers import create_listing, insert_booking, register, reserve, sql
@@ -89,3 +91,27 @@ async def test_worker_survives_a_failed_run(prepared: Settings) -> None:
     assert not task.done()  # the error was logged, the loop goes on
     stop.set()
     await asyncio.wait_for(task, timeout=5)
+
+
+@pytest.mark.parametrize(
+    ("check_out", "deadline_utc"),
+    [
+        # Amsterdam leaves summer time on 2026-10-25: 11:00 local is 10:00 UTC (CET, UTC+1).
+        (date(2026, 10, 25), datetime(2026, 10, 25, 10, 0, tzinfo=UTC)),
+        # It starts summer time on 2027-03-28: 11:00 local is 09:00 UTC (CEST, UTC+2).
+        (date(2027, 3, 28), datetime(2027, 3, 28, 9, 0, tzinfo=UTC)),
+    ],
+)
+async def test_completion_on_daylight_saving_days(
+    client: AsyncClient, app: Any, db: AsyncEngine, check_out: date, deadline_utc: datetime
+) -> None:
+    host = await register(client, "host")
+    guest = await register(client, "guest")
+    listing = await create_listing(client, host)  # Amsterdam, check-out 11:00
+    booking = await insert_booking(db, listing["id"], guest.id, check_out - timedelta(days=2), check_out, "confirmed")
+
+    async with app.state.sessionmaker() as session:
+        assert await bookings_repo.complete_finished_stays(session, deadline_utc - timedelta(minutes=1)) == 0
+        assert await bookings_repo.complete_finished_stays(session, deadline_utc) == 1
+        await session.commit()
+    assert (await sql(db, "SELECT status::text FROM bookings WHERE id = :id", id=booking))[0][0] == "completed"

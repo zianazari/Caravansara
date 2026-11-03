@@ -4,7 +4,7 @@
 
 <p align="center">
   <a href="https://github.com/zianazari/Caravansara/actions/workflows/ci.yml"><img src="https://github.com/zianazari/Caravansara/actions/workflows/ci.yml/badge.svg" alt="CI"></a>
-  <img src="https://img.shields.io/badge/tests-124%20%C2%B7%2097.8%25%20coverage-b5651d" alt="124 tests, 97.8% coverage">
+  <img src="https://img.shields.io/badge/tests-140%20%C2%B7%2098.3%25%20coverage-b5651d" alt="140 tests, 98.3% coverage">
 </p>
 
 A *caravansara* (کاروانسرا) was a roadside inn on the Silk Road: travellers arrived at dusk, took a room for the night and moved on at dawn. **Caravansara** is the same idea for today: an Airbnb-like site where guests find a place, hold it, pay and leave a review, and hosts list their homes.

@@ -1,9 +1,12 @@
 """Listings: create, privacy of the real point, edits, amenities and photo uploads to MinIO."""
 
+from typing import Any
+
 import httpx
 from httpx import AsyncClient
 from sqlalchemy.ext.asyncio import AsyncEngine
 
+from caravansara.core.config import Settings
 from caravansara.listings.geo import haversine_m
 from tests.helpers import AMSTERDAM, amenity_ids, city_id, create_listing, listing_body, register
 
@@ -193,3 +196,27 @@ async def test_photo_must_be_uploaded_to_its_own_listing(client: AsyncClient) ->
     assert denied.status_code == 403
     gif = await client.post(f"/listings/{lid}/photos/upload-url", json={"content_type": "image/gif"}, headers=host.auth)
     assert gif.status_code == 422
+
+
+async def test_upload_over_the_size_limit_is_refused(client: AsyncClient, settings: Settings) -> None:
+    host = await register(client)
+    listing = await create_listing(client, host)
+    r = await client.post(
+        f"/listings/{listing['id']}/photos/upload-url", json={"content_type": "image/jpeg"}, headers=host.auth
+    )
+    signed = r.json()
+    too_big = b"x" * (settings.max_photo_bytes + 1)
+    async with httpx.AsyncClient() as storage:
+        up = await storage.post(
+            signed["url"], data=signed["fields"], files={"file": ("big.jpg", too_big, "image/jpeg")}
+        )
+    assert up.status_code == 400
+    assert "EntityTooLarge" in up.text
+    wrong_type = await _post_file(signed, b"tiny", "image/png")  # the policy pins the content type too
+    assert wrong_type.status_code == 403
+
+
+async def _post_file(signed: dict[str, Any], content: bytes, content_type: str) -> httpx.Response:
+    fields = dict(signed["fields"]) | {"Content-Type": content_type}
+    async with httpx.AsyncClient() as storage:
+        return await storage.post(signed["url"], data=fields, files={"file": ("f", content, content_type)})

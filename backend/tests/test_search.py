@@ -156,3 +156,16 @@ async def test_radial_search_across_the_180_meridian(client: AsyncClient, db: As
         await sql(db, "DELETE FROM listings WHERE city_id IN (SELECT id FROM cities WHERE name = 'Taveuni')")
         await sql(db, "DELETE FROM cities WHERE name = 'Taveuni'")
         await sql(db, "DELETE FROM countries WHERE code = 'FJ'")
+
+
+async def test_an_overdue_hold_does_not_hide_a_listing(
+    client: AsyncClient, db: AsyncEngine, listings: dict[str, Any]
+) -> None:
+    guest = await register(client, "guest")
+    hold = (await reserve(client, guest, listings["near"]["id"], 10, 13)).json()
+    params: dict[str, Any] = {**CENTER, "radius_km": 3, "check_in": days(11), "check_out": days(12)}
+    assert titles(await client.get("/search/listings", params=params)) == []  # a live hold blocks
+    await sql(db, "UPDATE bookings SET hold_expires_at = now() - interval '1 second' WHERE id = :id", id=hold["id"])
+    assert titles(await client.get("/search/listings", params=params)) == ["Near"]  # before the worker runs
+    filters = await client.get("/search/filters", params=params)
+    assert filters.json()["total"] == 1

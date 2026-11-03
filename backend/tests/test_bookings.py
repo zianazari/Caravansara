@@ -196,3 +196,21 @@ async def test_trip_and_host_lists(client: AsyncClient, world: tuple[User, User,
     denied = await client.get(f"/listings/{lid}/bookings", headers=guest.auth)
     assert denied.status_code == 403
     assert days(10) == listing_view["items"][0]["check_in"]
+
+
+async def test_deactivating_a_listing_keeps_its_bookings(
+    client: AsyncClient, db: AsyncEngine, world: tuple[User, User, int]
+) -> None:
+    host, guest, lid = world
+    booking = (await reserve(client, guest, lid)).json()
+    await client.post(f"/bookings/{booking['id']}/pay", headers=guest.auth)
+    await client.patch(f"/listings/{lid}", json={"is_active": False}, headers=host.auth)
+
+    trip = (await client.get(f"/bookings/{booking['id']}", headers=guest.auth)).json()
+    assert trip["status"] == "confirmed"
+    assert trip["address"] is not None  # the guest can still find the place
+    assert (await client.get("/me/bookings", headers=guest.auth)).json()["total"] == 1
+    assert (await client.get(f"/listings/{lid}/bookings", headers=host.auth)).json()["total"] == 1
+    assert (await reserve(client, guest, lid, 30, 32)).status_code == 404  # but no new bookings
+    cancel = await client.post(f"/bookings/{booking['id']}/cancel", headers=host.auth)
+    assert cancel.json()["status"] == "cancelled"

@@ -6,6 +6,7 @@ import pytest
 from httpx import AsyncClient
 from sqlalchemy.ext.asyncio import AsyncEngine
 
+from caravansara.core.timeutil import today_in
 from tests.helpers import User, create_listing, insert_booking, register, reserve
 
 REVIEW = {"rating": 4, "cleanliness_rating": 5, "comment": "Great stay."}
@@ -69,3 +70,16 @@ async def test_review_validation_and_unknowns(client: AsyncClient, stay: tuple[U
     assert bad.status_code == 422
     assert (await client.post("/bookings/999/review", json=REVIEW, headers=guest.auth)).status_code == 404
     assert (await client.get("/listings/999/reviews")).status_code == 404
+
+
+async def test_review_window_is_14_days_in_city_time(
+    client: AsyncClient, db: AsyncEngine, stay: tuple[User, User, int, int]
+) -> None:
+    _, guest, lid, _ = stay
+    today = today_in("Europe/Amsterdam")  # the listing's city decides "today"
+    last_day = await insert_booking(db, lid, guest.id, today - timedelta(days=15), today - timedelta(days=14))
+    too_late = await insert_booking(db, lid, guest.id, today - timedelta(days=17), today - timedelta(days=15))
+    assert (await client.post(f"/bookings/{last_day}/review", json=REVIEW, headers=guest.auth)).status_code == 201
+    late = await client.post(f"/bookings/{too_late}/review", json=REVIEW, headers=guest.auth)
+    assert late.status_code == 403
+    assert late.json()["error"]["code"] == "review_window_closed"

@@ -86,8 +86,8 @@ Amenity seed: 12 categories, 31 amenities. Search uses AND logic for amenity fil
 
 ## Status and next step
 
-- Done: database design, backend design, demo data, backend v1 (all 8 steps of `docs/backend-design.md`; 124 tests, 97.8% coverage).
-- Next: section 2 of `docs/future-work.md` (close the backend test gaps), then section 3 (more test and mock data).
+- Done: database design, backend design, demo data, backend v1 (all 8 steps of `docs/backend-design.md`; 124 tests, 97.8% coverage) and the backend test gaps (section 2 of `docs/future-work.md`; now 140 tests, 98.3% coverage).
+- Next: section 3 of `docs/future-work.md` (more test and mock data).
 
 ## Working conventions
 

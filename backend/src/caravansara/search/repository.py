@@ -47,6 +47,8 @@ def _where(c: Criteria, *, with_amenities: bool) -> tuple[list[str], dict[str, A
                  SELECT 1 FROM bookings b
                  WHERE  b.listing_id = l.id
                    AND  b.status IN ('pending', 'confirmed', 'completed')
+                   -- an unpaid hold past its deadline no longer blocks, even before the worker runs
+                   AND  (b.status <> 'pending' OR b.hold_expires_at > now())
                    AND  b.stay && daterange(CAST(:check_in AS date), CAST(:check_out AS date), '[)'))"""
         )
         params |= {"check_in": c.check_in, "check_out": c.check_out}
