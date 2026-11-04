@@ -5,6 +5,7 @@
 <p align="center">
   <a href="https://github.com/zianazari/Caravansara/actions/workflows/ci.yml"><img src="https://github.com/zianazari/Caravansara/actions/workflows/ci.yml/badge.svg" alt="CI"></a>
   <img src="https://img.shields.io/badge/tests-142%20%C2%B7%2098.3%25%20coverage-b5651d" alt="142 tests, 98.3% coverage">
+  <img src="https://img.shields.io/badge/e2e-48%20Playwright%20API%20tests-2EAD33" alt="48 Playwright API tests">
 </p>
 
 A *caravansara* (کاروانسرا) was a roadside inn on the Silk Road: travellers arrived at dusk, took a room for the night and moved on at dawn. **Caravansara** is the same idea for today: an Airbnb-like site where guests find a place, hold it, pay and leave a review, and hosts list their homes.
@@ -15,6 +16,7 @@ This repository holds the **backend and the database design**. There is no front
 
 <p align="left">
   <img src="https://skillicons.dev/icons?i=python,fastapi,postgres,docker,githubactions&theme=dark" alt="Python, FastAPI, PostgreSQL, Docker and GitHub Actions" />
+  <img src="https://cdn.jsdelivr.net/gh/devicons/devicon@v2.16.0/icons/playwright/playwright-original.svg" alt="Playwright" height="48" />
   <img src="https://img.shields.io/badge/PostGIS-336791?style=for-the-badge" alt="PostGIS" />
   <img src="https://img.shields.io/badge/SQLAlchemy-D71F00?style=for-the-badge&logo=sqlalchemy&logoColor=white" alt="SQLAlchemy" />
   <img src="https://img.shields.io/badge/Pydantic-E92063?style=for-the-badge&logo=pydantic&logoColor=white" alt="Pydantic" />
@@ -33,7 +35,7 @@ This repository holds the **backend and the database design**. There is no front
 | Data | PostgreSQL 16 with PostGIS, SQLAlchemy 2 (async) with asyncpg, Alembic |
 | Security | argon2 password hashing, JWT access tokens with rotating refresh tokens |
 | Files | S3 API with presigned uploads; MinIO in development and tests |
-| Quality | pytest with testcontainers, Ruff, mypy (strict), import-linter |
+| Quality | pytest with testcontainers, Playwright API tests, Ruff, mypy (strict), import-linter |
 | Delivery | uv, Docker and Docker Compose, GitHub Actions |
 
 ## What it does
@@ -162,6 +164,39 @@ Open **http://localhost:8000/docs**, log in with `POST /auth/login` as `guest@ex
 
 The demo data comes from [Inside Airbnb](https://insideairbnb.com/) (CC BY 4.0): real titles, prices, amenities and review text from Amsterdam, Lisbon, Copenhagen and Stockholm; people, addresses and bookings are synthetic. See [`db/demo/README.md`](db/demo/README.md).
 
+## Tests
+
+<p align="left">
+  <img src="https://cdn.jsdelivr.net/gh/devicons/devicon@v2.16.0/icons/playwright/playwright-original.svg" alt="Playwright" height="48" />
+  <img src="https://img.shields.io/badge/pytest-0A9EDC?style=for-the-badge&logo=pytest&logoColor=white" alt="pytest" />
+</p>
+
+Two layers, because each one catches what the other can't:
+
+| | pytest (`backend/tests`) | Playwright (`e2e/`) |
+| --- | --- | --- |
+| **Runs against** | PostgreSQL + PostGIS and MinIO that testcontainers starts for each run | The real `docker compose` stack, from outside, over HTTP |
+| **Proves** | Every rule in each module, exact race moments, DST, migrations, the API contract | The built image, real settings and wiring: all 30 endpoints, photo upload to MinIO, the whole host and guest story |
+| **Size** | 142 tests, 98.3% coverage | 48 tests, a few seconds |
+
+The Playwright tests use its `request` fixture, so they need no browser yet; browser tests for the UI will join the same project. Some highlights:
+
+- 🏁 **Booking race:** six guests reserve the same nights at the same moment, and exactly one wins (the others get `409 dates_unavailable`).
+- 🔁 **Idempotency:** a retried reservation with the same `Idempotency-Key` returns the same booking.
+- 🔐 **Privacy:** the real address appears only after payment; a reused refresh token revokes every session of that user.
+- 📸 **Photos:** a real presigned upload to MinIO, then reorder, cover and delete.
+- ⭐ **Reviews:** accepted on day 14 after check-out, refused on day 15.
+
+Each test creates its own users and listings, so the tests run in parallel and never depend on each other. The data is kept, so it can be inspected in the database afterwards.
+
+```bash
+docker compose -f docker-compose.yml -f e2e/compose.e2e.yml up -d --build   # higher per-IP limits for the run
+cd e2e && npm ci && npx playwright test
+npx playwright show-report                                                   # HTML report, traces of failures
+```
+
+More in [`e2e/README.md`](e2e/README.md). To try the API by hand instead, import [`postman/Caravansara.postman_collection.json`](postman/Caravansara.postman_collection.json) into Postman.
+
 ## API at a glance
 
 All paths start with `/api/v1`. Every error has the same shape, with a stable code a client can translate:
@@ -196,7 +231,7 @@ docs/        backend design (fa), database overview, ERD demo deck, future work
 .github/     CI: ruff, mypy --strict, import-linter, tests, Docker build
 ```
 
-Tests run against real PostgreSQL + PostGIS and MinIO in containers, because the most important rules live in the database and can't be mocked. Details in [`backend/README.md`](backend/README.md).
+Tests run against real PostgreSQL + PostGIS and MinIO in containers, because the most important rules live in the database and can't be mocked. Details in [`backend/README.md`](backend/README.md) and [Tests](#tests).
 
 ## What's next
 
