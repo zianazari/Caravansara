@@ -1,7 +1,11 @@
-"""Command line: ``caravansara migrate | seed | seed-demo | init-storage | worker | run-jobs | serve``."""
+"""Command line: ``caravansara <command>``.
+
+migrate, seed, seed-demo, init-storage, worker, run-jobs, serve and export-openapi.
+"""
 
 import argparse
 import asyncio
+import json
 import logging
 from pathlib import Path
 
@@ -12,6 +16,8 @@ from caravansara.core.config import Settings, get_settings
 CATALOG_SEEDS = ("seed_amenities.sql", "seed_locations.sql")
 DEMO_SEED = "seed_demo.sql"
 ALEMBIC_INI = Path(__file__).resolve().parents[2] / "alembic.ini"
+# The API contract the frontend builds against. A test fails when it no longer matches the code.
+OPENAPI_FILE = Path(__file__).resolve().parents[2] / "openapi.json"
 
 
 def _dsn(settings: Settings) -> str:
@@ -63,6 +69,13 @@ async def seed_demo(settings: Settings) -> None:
     await _run_sql_files(settings, [settings.seed_dir / DEMO_SEED], wrap=False)
 
 
+def openapi_document() -> str:
+    """The OpenAPI document as stable, diff-friendly JSON."""
+    from caravansara.main import create_app
+
+    return json.dumps(create_app(Settings()).openapi(), indent=2, ensure_ascii=False) + "\n"
+
+
 def main(argv: list[str] | None = None) -> None:
     parser = argparse.ArgumentParser(prog="caravansara")
     sub = parser.add_subparsers(dest="command", required=True)
@@ -77,6 +90,8 @@ def main(argv: list[str] | None = None) -> None:
     serve.add_argument("--host", default="0.0.0.0")  # noqa: S104 (container default)
     serve.add_argument("--port", type=int, default=8000)
     serve.add_argument("--reload", action="store_true")
+    export = sub.add_parser("export-openapi", help="write the API contract (openapi.json) after an intended API change")
+    export.add_argument("--output", type=Path, default=OPENAPI_FILE)
     args = parser.parse_args(argv)
 
     logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(name)s: %(message)s")
@@ -110,6 +125,9 @@ def main(argv: list[str] | None = None) -> None:
             print(f"expired {result.expired} holds, completed {result.completed} stays")
 
         asyncio.run(_once())
+    elif args.command == "export-openapi":
+        args.output.write_text(openapi_document(), encoding="utf-8")
+        print(f"wrote {args.output}")
     elif args.command == "serve":
         import uvicorn
 

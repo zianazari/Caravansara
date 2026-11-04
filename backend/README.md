@@ -43,6 +43,11 @@ Settings come from `CARAVANSARA_*` environment variables; see `src/caravansara/c
 | `caravansara seed-demo` | demo data from `db/seed_demo.sql` |
 | `caravansara init-storage [--public-read]` | create the photo bucket |
 | `caravansara worker` / `run-jobs` | expire holds and complete stays, in a loop / once |
+| `caravansara export-openapi` | rewrite `openapi.json` after an intended API change |
+
+### API contract
+
+[`openapi.json`](openapi.json) is the API contract, committed next to the code. The frontend builds its client from this file. `tests/test_openapi_contract.py` fails when the code and the file disagree, so no endpoint, field or error changes by accident. After an intended change, run `uv run caravansara export-openapi` and commit the new file. The contract diff then shows up in the pull request, where it can be reviewed.
 
 ## Checks
 

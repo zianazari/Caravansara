@@ -4,7 +4,7 @@
 
 <p align="center">
   <a href="https://github.com/zianazari/Caravansara/actions/workflows/ci.yml"><img src="https://github.com/zianazari/Caravansara/actions/workflows/ci.yml/badge.svg" alt="CI"></a>
-  <img src="https://img.shields.io/badge/tests-140%20%C2%B7%2098.3%25%20coverage-b5651d" alt="140 tests, 98.3% coverage">
+  <img src="https://img.shields.io/badge/tests-142%20%C2%B7%2098.3%25%20coverage-b5651d" alt="142 tests, 98.3% coverage">
 </p>
 
 A *caravansara* (کاروانسرا) was a roadside inn on the Silk Road: travellers arrived at dusk, took a room for the night and moved on at dawn. **Caravansara** is the same idea for today: an Airbnb-like site where guests find a place, hold it, pay and leave a review, and hosts list their homes.
@@ -181,6 +181,8 @@ All paths start with `/api/v1`. Every error has the same shape, with a stable co
 | **Reviews** | `POST`<br>`GET` | `/bookings/{id}/review`<br>`/listings/{id}/reviews` | Guest<br>Public |
 
 Every endpoint, with its parameters, examples and errors, is described and can be tried in Swagger UI at `/docs`.
+
+The same description is committed as [`backend/openapi.json`](backend/openapi.json), the contract a frontend builds its client from. A test fails when the code and this file disagree, so the API never changes by accident; an intended change shows up as a diff in the pull request.
 
 ## Repository
 

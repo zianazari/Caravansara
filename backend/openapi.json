@@ -1,0 +1,4774 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "Caravansara API",
+    "description": "\nBackend of **Caravansara**, an Airbnb-like place reservation site.\n\n**How to try it here**\n\n1. `POST /api/v1/auth/login` with a demo account, e.g. `guest@example.com` / `caravansara-demo`\n   (after `caravansara seed-demo`), or register a new one.\n2. Copy `access_token`, click **Authorize** and paste it.\n3. Search, open a listing, reserve with `POST /bookings`, then pay within 15 minutes.\n\n**Errors** always look like `{\"error\": {\"code\": \"dates_unavailable\", \"message\": \"...\"}}`.\n`code` is stable, so clients can show their own text.\n",
+    "version": "1.0.0"
+  },
+  "paths": {
+    "/api/v1/auth/register": {
+      "post": {
+        "tags": [
+          "Auth and profile"
+        ],
+        "summary": "Register",
+        "description": "Create an account and log in. Any user can be a guest and a host.",
+        "operationId": "register_api_v1_auth_register_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RegisterIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RegisterOut"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict with the current state",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Invalid input or a broken business rule",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too many attempts",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/auth/login": {
+      "post": {
+        "tags": [
+          "Auth and profile"
+        ],
+        "summary": "Log in",
+        "description": "Returns a short-lived access token and a refresh token. Send the access token as `Authorization: Bearer <token>` (in Swagger: the **Authorize** button).",
+        "operationId": "login_api_v1_auth_login_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/LoginIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TokensOut"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, invalid or expired access token",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Invalid input or a broken business rule",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too many attempts",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/auth/refresh": {
+      "post": {
+        "tags": [
+          "Auth and profile"
+        ],
+        "summary": "Rotate tokens",
+        "description": "Exchange a refresh token for a new pair. The old refresh token stops working.",
+        "operationId": "refresh_api_v1_auth_refresh_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RefreshIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TokensOut"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, invalid or expired access token",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Invalid input or a broken business rule",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/auth/logout": {
+      "post": {
+        "tags": [
+          "Auth and profile"
+        ],
+        "summary": "Log out",
+        "description": "Revoke a refresh token. Unknown or already revoked tokens are accepted silently.",
+        "operationId": "logout_api_v1_auth_logout_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RefreshIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "422": {
+            "description": "Invalid input or a broken business rule",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/me": {
+      "get": {
+        "tags": [
+          "Auth and profile"
+        ],
+        "summary": "My profile",
+        "operationId": "get_me_api_v1_me_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UserOut"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, invalid or expired access token",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ]
+      },
+      "patch": {
+        "tags": [
+          "Auth and profile"
+        ],
+        "summary": "Update my profile",
+        "operationId": "update_me_api_v1_me_patch",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ProfileUpdate"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UserOut"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, invalid or expired access token",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Invalid input or a broken business rule",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ]
+      }
+    },
+    "/api/v1/countries": {
+      "get": {
+        "tags": [
+          "Catalog"
+        ],
+        "summary": "Countries",
+        "operationId": "list_countries_api_v1_countries_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/CountryOut"
+                  },
+                  "type": "array",
+                  "title": "Response List Countries Api V1 Countries Get"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/cities": {
+      "get": {
+        "tags": [
+          "Catalog"
+        ],
+        "summary": "Cities (autocomplete)",
+        "description": "Cities whose name starts with `q`, optionally within one country.",
+        "operationId": "list_cities_api_v1_cities_get",
+        "parameters": [
+          {
+            "name": "q",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "maxLength": 100
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Start of the city name.",
+              "examples": [
+                "Ams"
+              ],
+              "title": "Q"
+            },
+            "description": "Start of the city name."
+          },
+          {
+            "name": "country",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "minLength": 2,
+                  "maxLength": 2
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "ISO country code.",
+              "examples": [
+                "NL"
+              ],
+              "title": "Country"
+            },
+            "description": "ISO country code."
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 50,
+              "minimum": 1,
+              "default": 10,
+              "title": "Limit"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/CityOut"
+                  },
+                  "title": "Response List Cities Api V1 Cities Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Invalid input or a broken business rule",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/amenities": {
+      "get": {
+        "tags": [
+          "Catalog"
+        ],
+        "summary": "Amenity catalog",
+        "description": "Amenities grouped by category.",
+        "operationId": "list_amenities_api_v1_amenities_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/AmenityCategoryOut"
+                  },
+                  "type": "array",
+                  "title": "Response List Amenities Api V1 Amenities Get"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/search/listings": {
+      "get": {
+        "tags": [
+          "Search"
+        ],
+        "summary": "Search listings",
+        "description": "Send **either** `city_id` **or** `lat` + `lng` + `radius_km` (1–100 km).\n\nResults show only the approximate public pin. Default order is rating then review count; `sort=distance` works in radial mode.",
+        "operationId": "search_listings_api_v1_search_listings_get",
+        "parameters": [
+          {
+            "name": "sort",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "enum": [
+                "rating",
+                "distance"
+              ],
+              "type": "string",
+              "default": "rating",
+              "title": "Sort"
+            }
+          },
+          {
+            "name": "city_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "integer"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "City mode.",
+              "examples": [
+                1
+              ],
+              "title": "City Id"
+            },
+            "description": "City mode."
+          },
+          {
+            "name": "lat",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "number",
+                  "maximum": 90,
+                  "minimum": -90
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Radial mode: centre latitude.",
+              "examples": [
+                52.37
+              ],
+              "title": "Lat"
+            },
+            "description": "Radial mode: centre latitude."
+          },
+          {
+            "name": "lng",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "number",
+                  "maximum": 180,
+                  "minimum": -180
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Radial mode: centre longitude.",
+              "examples": [
+                4.89
+              ],
+              "title": "Lng"
+            },
+            "description": "Radial mode: centre longitude."
+          },
+          {
+            "name": "radius_km",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "number",
+                  "exclusiveMinimum": 0
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Radial mode: radius, 1–100 km.",
+              "examples": [
+                5
+              ],
+              "title": "Radius Km"
+            },
+            "description": "Radial mode: radius, 1–100 km."
+          },
+          {
+            "name": "check_in",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "date"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "With check_out: only listings free for these nights.",
+              "title": "Check In"
+            },
+            "description": "With check_out: only listings free for these nights."
+          },
+          {
+            "name": "check_out",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "date"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Check Out"
+            }
+          },
+          {
+            "name": "adults",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 50,
+              "minimum": 1,
+              "default": 1,
+              "title": "Adults"
+            }
+          },
+          {
+            "name": "children",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 50,
+              "minimum": 0,
+              "default": 0,
+              "title": "Children"
+            }
+          },
+          {
+            "name": "infants",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 10,
+              "minimum": 0,
+              "description": "Accepted for the UI; infants don't count.",
+              "default": 0,
+              "title": "Infants"
+            },
+            "description": "Accepted for the UI; infants don't count."
+          },
+          {
+            "name": "pets",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 10,
+              "minimum": 0,
+              "default": 0,
+              "title": "Pets"
+            }
+          },
+          {
+            "name": "amenity_ids",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "array",
+              "items": {
+                "type": "integer"
+              },
+              "description": "Repeat the parameter; listings must have **all** of them.",
+              "default": [],
+              "title": "Amenity Ids"
+            },
+            "description": "Repeat the parameter; listings must have **all** of them."
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 100,
+              "minimum": 1,
+              "description": "Items per page.",
+              "default": 20,
+              "title": "Limit"
+            },
+            "description": "Items per page."
+          },
+          {
+            "name": "offset",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 0,
+              "description": "Items to skip.",
+              "default": 0,
+              "title": "Offset"
+            },
+            "description": "Items to skip."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SearchPage"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Invalid input or a broken business rule",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/search/filters": {
+      "get": {
+        "tags": [
+          "Search"
+        ],
+        "summary": "Amenity counts for the filter panel",
+        "description": "Send **either** `city_id` **or** `lat` + `lng` + `radius_km` (1–100 km).\n\nCounts over listings matching every filter except amenities.",
+        "operationId": "filters_api_v1_search_filters_get",
+        "parameters": [
+          {
+            "name": "city_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "integer"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "City mode.",
+              "examples": [
+                1
+              ],
+              "title": "City Id"
+            },
+            "description": "City mode."
+          },
+          {
+            "name": "lat",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "number",
+                  "maximum": 90,
+                  "minimum": -90
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Radial mode: centre latitude.",
+              "examples": [
+                52.37
+              ],
+              "title": "Lat"
+            },
+            "description": "Radial mode: centre latitude."
+          },
+          {
+            "name": "lng",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "number",
+                  "maximum": 180,
+                  "minimum": -180
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Radial mode: centre longitude.",
+              "examples": [
+                4.89
+              ],
+              "title": "Lng"
+            },
+            "description": "Radial mode: centre longitude."
+          },
+          {
+            "name": "radius_km",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "number",
+                  "exclusiveMinimum": 0
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Radial mode: radius, 1–100 km.",
+              "examples": [
+                5
+              ],
+              "title": "Radius Km"
+            },
+            "description": "Radial mode: radius, 1–100 km."
+          },
+          {
+            "name": "check_in",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "date"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "With check_out: only listings free for these nights.",
+              "title": "Check In"
+            },
+            "description": "With check_out: only listings free for these nights."
+          },
+          {
+            "name": "check_out",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "date"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Check Out"
+            }
+          },
+          {
+            "name": "adults",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 50,
+              "minimum": 1,
+              "default": 1,
+              "title": "Adults"
+            }
+          },
+          {
+            "name": "children",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 50,
+              "minimum": 0,
+              "default": 0,
+              "title": "Children"
+            }
+          },
+          {
+            "name": "infants",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 10,
+              "minimum": 0,
+              "description": "Accepted for the UI; infants don't count.",
+              "default": 0,
+              "title": "Infants"
+            },
+            "description": "Accepted for the UI; infants don't count."
+          },
+          {
+            "name": "pets",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 10,
+              "minimum": 0,
+              "default": 0,
+              "title": "Pets"
+            }
+          },
+          {
+            "name": "amenity_ids",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "array",
+              "items": {
+                "type": "integer"
+              },
+              "description": "Repeat the parameter; listings must have **all** of them.",
+              "default": [],
+              "title": "Amenity Ids"
+            },
+            "description": "Repeat the parameter; listings must have **all** of them."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FilterCounts"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Invalid input or a broken business rule",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/listings": {
+      "post": {
+        "tags": [
+          "Listings"
+        ],
+        "summary": "Create a listing",
+        "description": "The caller becomes its host. The public map pin is the real point moved 100–500 m.",
+        "operationId": "create_listing_api_v1_listings_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ListingCreate"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ListingOut"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, invalid or expired access token",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Invalid input or a broken business rule",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ]
+      }
+    },
+    "/api/v1/me/listings": {
+      "get": {
+        "tags": [
+          "Listings"
+        ],
+        "summary": "My listings",
+        "description": "Active and inactive.",
+        "operationId": "my_listings_api_v1_me_listings_get",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 100,
+              "minimum": 1,
+              "description": "Items per page.",
+              "default": 20,
+              "title": "Limit"
+            },
+            "description": "Items per page."
+          },
+          {
+            "name": "offset",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 0,
+              "description": "Items to skip.",
+              "default": 0,
+              "title": "Offset"
+            },
+            "description": "Items to skip."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ListingPage"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, invalid or expired access token",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/listings/{listing_id}": {
+      "get": {
+        "tags": [
+          "Listings"
+        ],
+        "summary": "Listing details",
+        "description": "Public. An inactive listing is visible only to its host. `private_location` is only for the host.",
+        "operationId": "get_listing_api_v1_listings__listing_id__get",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "listing_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Listing Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ListingOut"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, invalid or expired access token",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "patch": {
+        "tags": [
+          "Listings"
+        ],
+        "summary": "Edit or deactivate a listing",
+        "description": "Listings are never deleted: `is_active: false` hides them and keeps their bookings.",
+        "operationId": "update_listing_api_v1_listings__listing_id__patch",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "listing_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Listing Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ListingUpdate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ListingOut"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, invalid or expired access token",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Not allowed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Invalid input or a broken business rule",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/listings/{listing_id}/amenities": {
+      "put": {
+        "tags": [
+          "Listings"
+        ],
+        "summary": "Set amenities",
+        "description": "Replaces the whole set with these catalog ids.",
+        "operationId": "set_amenities_api_v1_listings__listing_id__amenities_put",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "listing_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Listing Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AmenitiesIn"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ListingOut"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, invalid or expired access token",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Not allowed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Invalid input or a broken business rule",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/listings/{listing_id}/photos/upload-url": {
+      "post": {
+        "tags": [
+          "Listing photos"
+        ],
+        "summary": "1. Get an upload URL",
+        "description": "Returns a presigned POST. Upload the file straight to storage as multipart/form-data with the returned `fields` and then a `file` field (max 10 MB), then call `POST /listings/{id}/photos`.",
+        "operationId": "upload_url_api_v1_listings__listing_id__photos_upload_url_post",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "listing_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Listing Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UploadUrlIn"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UploadUrlOut"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, invalid or expired access token",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Not allowed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Invalid input or a broken business rule",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/listings/{listing_id}/photos": {
+      "post": {
+        "tags": [
+          "Listing photos"
+        ],
+        "summary": "2. Register an uploaded photo",
+        "description": "Checks that the file exists in storage. The new photo goes last; the first photo is the cover.",
+        "operationId": "add_photo_api_v1_listings__listing_id__photos_post",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "listing_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Listing Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PhotoCreate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PhotoOut"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, invalid or expired access token",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Not allowed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Invalid input or a broken business rule",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/listings/{listing_id}/photos/{photo_id}": {
+      "patch": {
+        "tags": [
+          "Listing photos"
+        ],
+        "summary": "Edit caption or room tag",
+        "operationId": "update_photo_api_v1_listings__listing_id__photos__photo_id__patch",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "listing_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Listing Id"
+            }
+          },
+          {
+            "name": "photo_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Photo Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PhotoUpdate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PhotoOut"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, invalid or expired access token",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Not allowed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Invalid input or a broken business rule",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "Listing photos"
+        ],
+        "summary": "Delete a photo",
+        "operationId": "delete_photo_api_v1_listings__listing_id__photos__photo_id__delete",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "listing_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Listing Id"
+            }
+          },
+          {
+            "name": "photo_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Photo Id"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "401": {
+            "description": "Missing, invalid or expired access token",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Not allowed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/listings/{listing_id}/photos/order": {
+      "put": {
+        "tags": [
+          "Listing photos"
+        ],
+        "summary": "Reorder photos and pick the cover",
+        "description": "Send every photo id once; the first becomes the cover.",
+        "operationId": "reorder_photos_api_v1_listings__listing_id__photos_order_put",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "listing_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Listing Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PhotoOrderIn"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/PhotoOut"
+                  },
+                  "title": "Response Reorder Photos Api V1 Listings  Listing Id  Photos Order Put"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, invalid or expired access token",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Not allowed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Invalid input or a broken business rule",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/bookings": {
+      "post": {
+        "tags": [
+          "Bookings"
+        ],
+        "summary": "Reserve (start a 15-minute hold)",
+        "description": "Creates a `pending` booking that holds the dates until `hold_expires_at`; then call `POST /bookings/{id}/pay`.\n\nSend a new UUID in `Idempotency-Key` for every reservation. Retrying with the same key and body returns the same booking with **200** instead of creating a second one.\n\nTwo guests can never hold overlapping nights: the loser of a race gets **409 dates_unavailable**.",
+        "operationId": "create_booking_api_v1_bookings_post",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "description": "A new UUID per reservation.",
+              "title": "Idempotency-Key"
+            },
+            "description": "A new UUID per reservation."
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/BookingCreate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BookingOut"
+                }
+              }
+            }
+          },
+          "200": {
+            "description": "Replay of an earlier request with the same key",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BookingOut"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, invalid or expired access token",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Not allowed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict with the current state",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Invalid input or a broken business rule",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/me/bookings": {
+      "get": {
+        "tags": [
+          "Bookings"
+        ],
+        "summary": "My trips",
+        "description": "Bookings where I am the guest.",
+        "operationId": "my_bookings_api_v1_me_bookings_get",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "status",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "$ref": "#/components/schemas/BookingStatus"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Only bookings in this status.",
+              "title": "Status"
+            },
+            "description": "Only bookings in this status."
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 100,
+              "minimum": 1,
+              "description": "Items per page.",
+              "default": 20,
+              "title": "Limit"
+            },
+            "description": "Items per page."
+          },
+          {
+            "name": "offset",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 0,
+              "description": "Items to skip.",
+              "default": 0,
+              "title": "Offset"
+            },
+            "description": "Items to skip."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BookingPage"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, invalid or expired access token",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/bookings/{booking_id}": {
+      "get": {
+        "tags": [
+          "Bookings"
+        ],
+        "summary": "Booking details",
+        "description": "For the guest or the host. The exact address appears once the booking is confirmed.",
+        "operationId": "get_booking_api_v1_bookings__booking_id__get",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "booking_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Booking Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BookingOut"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, invalid or expired access token",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/bookings/{booking_id}/pay": {
+      "post": {
+        "tags": [
+          "Bookings"
+        ],
+        "summary": "Pay (simulated)",
+        "description": "Confirms a pending hold. After `hold_expires_at` it fails with **409 hold_expired**.",
+        "operationId": "pay_api_v1_bookings__booking_id__pay_post",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "booking_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Booking Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BookingOut"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, invalid or expired access token",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Not allowed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict with the current state",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/bookings/{booking_id}/cancel": {
+      "post": {
+        "tags": [
+          "Bookings"
+        ],
+        "summary": "Cancel",
+        "description": "Guest or host, before the check-in day (city time). No fee and no refund.",
+        "operationId": "cancel_api_v1_bookings__booking_id__cancel_post",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "booking_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Booking Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BookingOut"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, invalid or expired access token",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict with the current state",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/listings/{listing_id}/bookings": {
+      "get": {
+        "tags": [
+          "Bookings",
+          "Listings"
+        ],
+        "summary": "Bookings of my listing",
+        "operationId": "listing_bookings_api_v1_listings__listing_id__bookings_get",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "listing_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Listing Id"
+            }
+          },
+          {
+            "name": "status",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "$ref": "#/components/schemas/BookingStatus"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Only bookings in this status.",
+              "title": "Status"
+            },
+            "description": "Only bookings in this status."
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 100,
+              "minimum": 1,
+              "description": "Items per page.",
+              "default": 20,
+              "title": "Limit"
+            },
+            "description": "Items per page."
+          },
+          {
+            "name": "offset",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 0,
+              "description": "Items to skip.",
+              "default": 0,
+              "title": "Offset"
+            },
+            "description": "Items to skip."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BookingPage"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, invalid or expired access token",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Not allowed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/bookings/{booking_id}/review": {
+      "post": {
+        "tags": [
+          "Reviews"
+        ],
+        "summary": "Review a stay",
+        "description": "Only the guest, only for a `completed` booking, at most once, and within 14 days of check-out. Reviews cannot be edited or deleted.",
+        "operationId": "create_review_api_v1_bookings__booking_id__review_post",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "booking_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Booking Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ReviewCreate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ReviewOut"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, invalid or expired access token",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Not allowed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict with the current state",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Invalid input or a broken business rule",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/listings/{listing_id}/reviews": {
+      "get": {
+        "tags": [
+          "Reviews"
+        ],
+        "summary": "Reviews of a listing",
+        "description": "Newest first.",
+        "operationId": "listing_reviews_api_v1_listings__listing_id__reviews_get",
+        "parameters": [
+          {
+            "name": "listing_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Listing Id"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 100,
+              "minimum": 1,
+              "description": "Items per page.",
+              "default": 20,
+              "title": "Limit"
+            },
+            "description": "Items per page."
+          },
+          {
+            "name": "offset",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 0,
+              "description": "Items to skip.",
+              "default": 0,
+              "title": "Offset"
+            },
+            "description": "Items to skip."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ReviewPage"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/health": {
+      "get": {
+        "tags": [
+          "System"
+        ],
+        "summary": "Liveness and database check",
+        "operationId": "health_health_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Health"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "AmenitiesIn": {
+        "properties": {
+          "amenity_ids": {
+            "items": {
+              "type": "integer"
+            },
+            "type": "array",
+            "maxItems": 100,
+            "title": "Amenity Ids"
+          }
+        },
+        "type": "object",
+        "required": [
+          "amenity_ids"
+        ],
+        "title": "AmenitiesIn"
+      },
+      "AmenityCategoryOut": {
+        "properties": {
+          "id": {
+            "type": "integer",
+            "title": "Id"
+          },
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "amenities": {
+            "items": {
+              "$ref": "#/components/schemas/AmenityOut"
+            },
+            "type": "array",
+            "title": "Amenities"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "name",
+          "amenities"
+        ],
+        "title": "AmenityCategoryOut"
+      },
+      "AmenityCount": {
+        "properties": {
+          "id": {
+            "type": "integer",
+            "title": "Id"
+          },
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "category": {
+            "type": "string",
+            "title": "Category"
+          },
+          "listings": {
+            "type": "integer",
+            "title": "Listings"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "name",
+          "category",
+          "listings"
+        ],
+        "title": "AmenityCount"
+      },
+      "AmenityOut": {
+        "properties": {
+          "id": {
+            "type": "integer",
+            "title": "Id"
+          },
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "icon": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Icon"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "name",
+          "icon"
+        ],
+        "title": "AmenityOut"
+      },
+      "BookingAddress": {
+        "properties": {
+          "address": {
+            "type": "string",
+            "title": "Address"
+          },
+          "latitude": {
+            "type": "number",
+            "title": "Latitude"
+          },
+          "longitude": {
+            "type": "number",
+            "title": "Longitude"
+          },
+          "check_in_time": {
+            "type": "string",
+            "title": "Check In Time"
+          },
+          "check_out_time": {
+            "type": "string",
+            "title": "Check Out Time"
+          }
+        },
+        "type": "object",
+        "required": [
+          "address",
+          "latitude",
+          "longitude",
+          "check_in_time",
+          "check_out_time"
+        ],
+        "title": "BookingAddress",
+        "description": "Only on a confirmed or completed booking."
+      },
+      "BookingCreate": {
+        "properties": {
+          "listing_id": {
+            "type": "integer",
+            "title": "Listing Id"
+          },
+          "check_in": {
+            "type": "string",
+            "format": "date",
+            "title": "Check In"
+          },
+          "check_out": {
+            "type": "string",
+            "format": "date",
+            "title": "Check Out"
+          },
+          "adults": {
+            "type": "integer",
+            "maximum": 50.0,
+            "minimum": 1.0,
+            "title": "Adults",
+            "default": 1
+          },
+          "children": {
+            "type": "integer",
+            "maximum": 50.0,
+            "minimum": 0.0,
+            "title": "Children",
+            "default": 0
+          },
+          "infants": {
+            "type": "integer",
+            "maximum": 10.0,
+            "minimum": 0.0,
+            "title": "Infants",
+            "description": "Don't count toward max_guests.",
+            "default": 0
+          },
+          "pets": {
+            "type": "integer",
+            "maximum": 10.0,
+            "minimum": 0.0,
+            "title": "Pets",
+            "default": 0
+          }
+        },
+        "type": "object",
+        "required": [
+          "listing_id",
+          "check_in",
+          "check_out"
+        ],
+        "title": "BookingCreate",
+        "example": {
+          "adults": 2,
+          "check_in": "2026-12-10",
+          "check_out": "2026-12-13",
+          "children": 0,
+          "infants": 0,
+          "listing_id": 1,
+          "pets": 0
+        }
+      },
+      "BookingListing": {
+        "properties": {
+          "id": {
+            "type": "integer",
+            "title": "Id"
+          },
+          "title": {
+            "type": "string",
+            "title": "Title"
+          },
+          "city": {
+            "type": "string",
+            "title": "City"
+          },
+          "country_code": {
+            "type": "string",
+            "title": "Country Code"
+          },
+          "timezone": {
+            "type": "string",
+            "title": "Timezone"
+          },
+          "cover_url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Cover Url"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "title",
+          "city",
+          "country_code",
+          "timezone",
+          "cover_url"
+        ],
+        "title": "BookingListing"
+      },
+      "BookingOut": {
+        "properties": {
+          "id": {
+            "type": "integer",
+            "title": "Id"
+          },
+          "status": {
+            "$ref": "#/components/schemas/BookingStatus"
+          },
+          "listing": {
+            "$ref": "#/components/schemas/BookingListing"
+          },
+          "guest_id": {
+            "type": "integer",
+            "title": "Guest Id"
+          },
+          "host_id": {
+            "type": "integer",
+            "title": "Host Id"
+          },
+          "check_in": {
+            "type": "string",
+            "format": "date",
+            "title": "Check In"
+          },
+          "check_out": {
+            "type": "string",
+            "format": "date",
+            "title": "Check Out"
+          },
+          "nights": {
+            "type": "integer",
+            "title": "Nights"
+          },
+          "adults": {
+            "type": "integer",
+            "title": "Adults"
+          },
+          "children": {
+            "type": "integer",
+            "title": "Children"
+          },
+          "infants": {
+            "type": "integer",
+            "title": "Infants"
+          },
+          "pets": {
+            "type": "integer",
+            "title": "Pets"
+          },
+          "nightly_price": {
+            "type": "string",
+            "title": "Nightly Price"
+          },
+          "cleaning_fee": {
+            "type": "string",
+            "title": "Cleaning Fee"
+          },
+          "total_price": {
+            "type": "string",
+            "title": "Total Price"
+          },
+          "currency": {
+            "type": "string",
+            "title": "Currency"
+          },
+          "hold_expires_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Hold Expires At",
+            "description": "Pay before this time, or the hold expires."
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Created At"
+          },
+          "address": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/BookingAddress"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "status",
+          "listing",
+          "guest_id",
+          "host_id",
+          "check_in",
+          "check_out",
+          "nights",
+          "adults",
+          "children",
+          "infants",
+          "pets",
+          "nightly_price",
+          "cleaning_fee",
+          "total_price",
+          "currency",
+          "hold_expires_at",
+          "created_at",
+          "address"
+        ],
+        "title": "BookingOut"
+      },
+      "BookingPage": {
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/BookingOut"
+            },
+            "type": "array",
+            "title": "Items"
+          },
+          "total": {
+            "type": "integer",
+            "title": "Total"
+          }
+        },
+        "type": "object",
+        "required": [
+          "items",
+          "total"
+        ],
+        "title": "BookingPage"
+      },
+      "BookingStatus": {
+        "type": "string",
+        "enum": [
+          "pending",
+          "confirmed",
+          "cancelled",
+          "expired",
+          "completed"
+        ],
+        "title": "BookingStatus"
+      },
+      "CityOut": {
+        "properties": {
+          "id": {
+            "type": "integer",
+            "title": "Id"
+          },
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "timezone": {
+            "type": "string",
+            "title": "Timezone"
+          },
+          "country": {
+            "$ref": "#/components/schemas/CountryOut"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "name",
+          "timezone",
+          "country"
+        ],
+        "title": "CityOut"
+      },
+      "CountryOut": {
+        "properties": {
+          "id": {
+            "type": "integer",
+            "title": "Id"
+          },
+          "code": {
+            "type": "string",
+            "title": "Code"
+          },
+          "name": {
+            "type": "string",
+            "title": "Name"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "code",
+          "name"
+        ],
+        "title": "CountryOut"
+      },
+      "ErrorBody": {
+        "properties": {
+          "code": {
+            "type": "string",
+            "title": "Code"
+          },
+          "message": {
+            "type": "string",
+            "title": "Message"
+          },
+          "details": {
+            "title": "Details"
+          }
+        },
+        "type": "object",
+        "required": [
+          "code",
+          "message"
+        ],
+        "title": "ErrorBody"
+      },
+      "ErrorResponse": {
+        "properties": {
+          "error": {
+            "$ref": "#/components/schemas/ErrorBody"
+          }
+        },
+        "type": "object",
+        "required": [
+          "error"
+        ],
+        "title": "ErrorResponse"
+      },
+      "FilterCounts": {
+        "properties": {
+          "total": {
+            "type": "integer",
+            "title": "Total",
+            "description": "Listings that match without amenity filters."
+          },
+          "amenities": {
+            "items": {
+              "$ref": "#/components/schemas/AmenityCount"
+            },
+            "type": "array",
+            "title": "Amenities"
+          }
+        },
+        "type": "object",
+        "required": [
+          "total",
+          "amenities"
+        ],
+        "title": "FilterCounts"
+      },
+      "HTTPValidationError": {
+        "properties": {
+          "detail": {
+            "items": {
+              "$ref": "#/components/schemas/ValidationError"
+            },
+            "type": "array",
+            "title": "Detail"
+          }
+        },
+        "type": "object",
+        "title": "HTTPValidationError"
+      },
+      "Health": {
+        "properties": {
+          "status": {
+            "type": "string",
+            "title": "Status"
+          },
+          "database": {
+            "type": "string",
+            "title": "Database"
+          }
+        },
+        "type": "object",
+        "required": [
+          "status",
+          "database"
+        ],
+        "title": "Health"
+      },
+      "HostOut": {
+        "properties": {
+          "id": {
+            "type": "integer",
+            "title": "Id"
+          },
+          "full_name": {
+            "type": "string",
+            "title": "Full Name"
+          },
+          "avatar_url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Avatar Url"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "full_name",
+          "avatar_url"
+        ],
+        "title": "HostOut"
+      },
+      "ListingCreate": {
+        "properties": {
+          "title": {
+            "type": "string",
+            "maxLength": 200,
+            "minLength": 1,
+            "title": "Title"
+          },
+          "description": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 5000
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Description"
+          },
+          "property_type": {
+            "$ref": "#/components/schemas/PropertyType"
+          },
+          "city_id": {
+            "type": "integer",
+            "title": "City Id"
+          },
+          "neighborhood": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 100
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Neighborhood"
+          },
+          "address": {
+            "type": "string",
+            "maxLength": 300,
+            "minLength": 1,
+            "title": "Address",
+            "description": "Private: only the host and confirmed guests see it."
+          },
+          "latitude": {
+            "type": "number",
+            "maximum": 90.0,
+            "minimum": -90.0,
+            "title": "Latitude",
+            "description": "Real point. Private."
+          },
+          "longitude": {
+            "type": "number",
+            "maximum": 180.0,
+            "minimum": -180.0,
+            "title": "Longitude",
+            "description": "Real point. Private."
+          },
+          "max_guests": {
+            "type": "integer",
+            "maximum": 50.0,
+            "minimum": 1.0,
+            "title": "Max Guests",
+            "description": "Adults and children; infants don't count."
+          },
+          "pets_allowed": {
+            "type": "boolean",
+            "title": "Pets Allowed",
+            "default": false
+          },
+          "max_pets": {
+            "type": "integer",
+            "maximum": 10.0,
+            "minimum": 0.0,
+            "title": "Max Pets",
+            "default": 0
+          },
+          "bedrooms": {
+            "type": "integer",
+            "maximum": 50.0,
+            "minimum": 0.0,
+            "title": "Bedrooms",
+            "default": 0
+          },
+          "beds": {
+            "type": "integer",
+            "maximum": 100.0,
+            "minimum": 0.0,
+            "title": "Beds",
+            "default": 1
+          },
+          "bathrooms": {
+            "anyOf": [
+              {
+                "type": "number",
+                "maximum": 50.0,
+                "minimum": 0.0
+              },
+              {
+                "type": "string"
+              }
+            ],
+            "title": "Bathrooms",
+            "default": "1"
+          },
+          "price_per_night": {
+            "anyOf": [
+              {
+                "type": "number",
+                "exclusiveMinimum": 0.0
+              },
+              {
+                "type": "string"
+              }
+            ],
+            "title": "Price Per Night"
+          },
+          "cleaning_fee": {
+            "anyOf": [
+              {
+                "type": "number",
+                "minimum": 0.0
+              },
+              {
+                "type": "string"
+              }
+            ],
+            "title": "Cleaning Fee",
+            "default": "0"
+          },
+          "currency": {
+            "type": "string",
+            "pattern": "^[A-Z]{3}$",
+            "title": "Currency",
+            "description": "ISO 4217 code, e.g. EUR.",
+            "default": "EUR"
+          },
+          "check_in_time": {
+            "type": "string",
+            "format": "time",
+            "title": "Check In Time",
+            "default": "15:00:00"
+          },
+          "check_out_time": {
+            "type": "string",
+            "format": "time",
+            "title": "Check Out Time",
+            "default": "11:00:00"
+          },
+          "amenity_ids": {
+            "items": {
+              "type": "integer"
+            },
+            "type": "array",
+            "maxItems": 100,
+            "title": "Amenity Ids"
+          }
+        },
+        "type": "object",
+        "required": [
+          "title",
+          "property_type",
+          "city_id",
+          "address",
+          "latitude",
+          "longitude",
+          "max_guests",
+          "price_per_night"
+        ],
+        "title": "ListingCreate",
+        "example": {
+          "address": "12 Demo Street, Amsterdam",
+          "amenity_ids": [
+            17,
+            19
+          ],
+          "bathrooms": 1,
+          "bedrooms": 1,
+          "beds": 2,
+          "city_id": 1,
+          "cleaning_fee": "30.00",
+          "currency": "EUR",
+          "description": "Bright loft by the Prinsengracht.",
+          "latitude": 52.3731,
+          "longitude": 4.8838,
+          "max_guests": 3,
+          "max_pets": 1,
+          "neighborhood": "Jordaan",
+          "pets_allowed": true,
+          "price_per_night": "145.00",
+          "property_type": "entire_place",
+          "title": "Canal-side loft"
+        }
+      },
+      "ListingOut": {
+        "properties": {
+          "id": {
+            "type": "integer",
+            "title": "Id"
+          },
+          "title": {
+            "type": "string",
+            "title": "Title"
+          },
+          "description": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Description"
+          },
+          "property_type": {
+            "$ref": "#/components/schemas/PropertyType"
+          },
+          "city": {
+            "$ref": "#/components/schemas/CityOut"
+          },
+          "neighborhood": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Neighborhood"
+          },
+          "pin": {
+            "$ref": "#/components/schemas/Pin"
+          },
+          "max_guests": {
+            "type": "integer",
+            "title": "Max Guests"
+          },
+          "pets_allowed": {
+            "type": "boolean",
+            "title": "Pets Allowed"
+          },
+          "max_pets": {
+            "type": "integer",
+            "title": "Max Pets"
+          },
+          "bedrooms": {
+            "type": "integer",
+            "title": "Bedrooms"
+          },
+          "beds": {
+            "type": "integer",
+            "title": "Beds"
+          },
+          "bathrooms": {
+            "type": "string",
+            "title": "Bathrooms"
+          },
+          "price_per_night": {
+            "type": "string",
+            "title": "Price Per Night"
+          },
+          "cleaning_fee": {
+            "type": "string",
+            "title": "Cleaning Fee"
+          },
+          "currency": {
+            "type": "string",
+            "title": "Currency"
+          },
+          "check_in_time": {
+            "type": "string",
+            "format": "time",
+            "title": "Check In Time"
+          },
+          "check_out_time": {
+            "type": "string",
+            "format": "time",
+            "title": "Check Out Time"
+          },
+          "avg_rating": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Avg Rating"
+          },
+          "review_count": {
+            "type": "integer",
+            "title": "Review Count"
+          },
+          "is_active": {
+            "type": "boolean",
+            "title": "Is Active"
+          },
+          "host": {
+            "$ref": "#/components/schemas/HostOut"
+          },
+          "photos": {
+            "items": {
+              "$ref": "#/components/schemas/PhotoOut"
+            },
+            "type": "array",
+            "title": "Photos"
+          },
+          "amenities": {
+            "items": {
+              "$ref": "#/components/schemas/AmenityCategoryOut"
+            },
+            "type": "array",
+            "title": "Amenities"
+          },
+          "private_location": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/PrivateLocation"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Only for the host. Guests see the address on a confirmed booking."
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "title",
+          "description",
+          "property_type",
+          "city",
+          "neighborhood",
+          "pin",
+          "max_guests",
+          "pets_allowed",
+          "max_pets",
+          "bedrooms",
+          "beds",
+          "bathrooms",
+          "price_per_night",
+          "cleaning_fee",
+          "currency",
+          "check_in_time",
+          "check_out_time",
+          "avg_rating",
+          "review_count",
+          "is_active",
+          "host",
+          "photos",
+          "amenities",
+          "private_location"
+        ],
+        "title": "ListingOut"
+      },
+      "ListingPage": {
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/ListingSummary"
+            },
+            "type": "array",
+            "title": "Items"
+          },
+          "total": {
+            "type": "integer",
+            "title": "Total"
+          }
+        },
+        "type": "object",
+        "required": [
+          "items",
+          "total"
+        ],
+        "title": "ListingPage"
+      },
+      "ListingSummary": {
+        "properties": {
+          "id": {
+            "type": "integer",
+            "title": "Id"
+          },
+          "title": {
+            "type": "string",
+            "title": "Title"
+          },
+          "city": {
+            "$ref": "#/components/schemas/CityOut"
+          },
+          "price_per_night": {
+            "type": "string",
+            "title": "Price Per Night"
+          },
+          "currency": {
+            "type": "string",
+            "title": "Currency"
+          },
+          "avg_rating": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Avg Rating"
+          },
+          "review_count": {
+            "type": "integer",
+            "title": "Review Count"
+          },
+          "is_active": {
+            "type": "boolean",
+            "title": "Is Active"
+          },
+          "cover_url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Cover Url"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "title",
+          "city",
+          "price_per_night",
+          "currency",
+          "avg_rating",
+          "review_count",
+          "is_active",
+          "cover_url"
+        ],
+        "title": "ListingSummary"
+      },
+      "ListingUpdate": {
+        "properties": {
+          "title": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 200,
+                "minLength": 1
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Title"
+          },
+          "description": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 5000
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Description"
+          },
+          "property_type": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/PropertyType"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "city_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "City Id"
+          },
+          "neighborhood": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 100
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Neighborhood"
+          },
+          "address": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 300,
+                "minLength": 1
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Address"
+          },
+          "latitude": {
+            "anyOf": [
+              {
+                "type": "number",
+                "maximum": 90.0,
+                "minimum": -90.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Latitude"
+          },
+          "longitude": {
+            "anyOf": [
+              {
+                "type": "number",
+                "maximum": 180.0,
+                "minimum": -180.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Longitude"
+          },
+          "max_guests": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "maximum": 50.0,
+                "minimum": 1.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Max Guests"
+          },
+          "pets_allowed": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Pets Allowed"
+          },
+          "max_pets": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "maximum": 10.0,
+                "minimum": 0.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Max Pets"
+          },
+          "bedrooms": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "maximum": 50.0,
+                "minimum": 0.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Bedrooms"
+          },
+          "beds": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "maximum": 100.0,
+                "minimum": 0.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Beds"
+          },
+          "bathrooms": {
+            "anyOf": [
+              {
+                "type": "number",
+                "maximum": 50.0,
+                "minimum": 0.0
+              },
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Bathrooms"
+          },
+          "price_per_night": {
+            "anyOf": [
+              {
+                "type": "number",
+                "exclusiveMinimum": 0.0
+              },
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Price Per Night"
+          },
+          "cleaning_fee": {
+            "anyOf": [
+              {
+                "type": "number",
+                "minimum": 0.0
+              },
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Cleaning Fee"
+          },
+          "currency": {
+            "anyOf": [
+              {
+                "type": "string",
+                "pattern": "^[A-Z]{3}$",
+                "description": "ISO 4217 code, e.g. EUR."
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Currency"
+          },
+          "check_in_time": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Check In Time"
+          },
+          "check_out_time": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Check Out Time"
+          },
+          "is_active": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Is Active"
+          }
+        },
+        "type": "object",
+        "title": "ListingUpdate",
+        "description": "Only the fields sent change. ``is_active: false`` hides the listing; it is never deleted."
+      },
+      "LoginIn": {
+        "properties": {
+          "email": {
+            "type": "string",
+            "format": "email",
+            "title": "Email"
+          },
+          "password": {
+            "type": "string",
+            "maxLength": 128,
+            "minLength": 1,
+            "title": "Password"
+          }
+        },
+        "type": "object",
+        "required": [
+          "email",
+          "password"
+        ],
+        "title": "LoginIn",
+        "example": {
+          "email": "guest@example.com",
+          "password": "caravansara-demo"
+        }
+      },
+      "PhotoCreate": {
+        "properties": {
+          "storage_key": {
+            "type": "string",
+            "maxLength": 300,
+            "title": "Storage Key"
+          },
+          "width": {
+            "type": "integer",
+            "maximum": 20000.0,
+            "exclusiveMinimum": 0.0,
+            "title": "Width"
+          },
+          "height": {
+            "type": "integer",
+            "maximum": 20000.0,
+            "exclusiveMinimum": 0.0,
+            "title": "Height"
+          },
+          "caption": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 300
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Caption"
+          },
+          "room_tag": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 50
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Room Tag",
+            "examples": [
+              "Kitchen"
+            ]
+          }
+        },
+        "type": "object",
+        "required": [
+          "storage_key",
+          "width",
+          "height"
+        ],
+        "title": "PhotoCreate"
+      },
+      "PhotoOrderIn": {
+        "properties": {
+          "photo_ids": {
+            "items": {
+              "type": "integer"
+            },
+            "type": "array",
+            "minItems": 1,
+            "title": "Photo Ids",
+            "description": "Every photo of the listing, cover first."
+          }
+        },
+        "type": "object",
+        "required": [
+          "photo_ids"
+        ],
+        "title": "PhotoOrderIn"
+      },
+      "PhotoOut": {
+        "properties": {
+          "id": {
+            "type": "integer",
+            "title": "Id"
+          },
+          "url": {
+            "type": "string",
+            "title": "Url"
+          },
+          "storage_key": {
+            "type": "string",
+            "title": "Storage Key"
+          },
+          "width": {
+            "type": "integer",
+            "title": "Width"
+          },
+          "height": {
+            "type": "integer",
+            "title": "Height"
+          },
+          "caption": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Caption"
+          },
+          "room_tag": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Room Tag"
+          },
+          "sort_order": {
+            "type": "integer",
+            "title": "Sort Order",
+            "description": "0 is the cover photo."
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "url",
+          "storage_key",
+          "width",
+          "height",
+          "caption",
+          "room_tag",
+          "sort_order"
+        ],
+        "title": "PhotoOut"
+      },
+      "PhotoUpdate": {
+        "properties": {
+          "caption": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 300
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Caption"
+          },
+          "room_tag": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 50
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Room Tag"
+          }
+        },
+        "type": "object",
+        "title": "PhotoUpdate"
+      },
+      "Pin": {
+        "properties": {
+          "lat": {
+            "type": "number",
+            "title": "Lat"
+          },
+          "lng": {
+            "type": "number",
+            "title": "Lng"
+          }
+        },
+        "type": "object",
+        "required": [
+          "lat",
+          "lng"
+        ],
+        "title": "Pin",
+        "description": "Approximate public point (moved 100–500 m from the real one)."
+      },
+      "PrivateLocation": {
+        "properties": {
+          "address": {
+            "type": "string",
+            "title": "Address"
+          },
+          "latitude": {
+            "type": "number",
+            "title": "Latitude"
+          },
+          "longitude": {
+            "type": "number",
+            "title": "Longitude"
+          }
+        },
+        "type": "object",
+        "required": [
+          "address",
+          "latitude",
+          "longitude"
+        ],
+        "title": "PrivateLocation"
+      },
+      "ProfileUpdate": {
+        "properties": {
+          "full_name": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 100,
+                "minLength": 1
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Full Name"
+          },
+          "avatar_url": {
+            "anyOf": [
+              {
+                "type": "string",
+                "minLength": 1,
+                "format": "uri"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Avatar Url"
+          }
+        },
+        "type": "object",
+        "title": "ProfileUpdate"
+      },
+      "PropertyType": {
+        "type": "string",
+        "enum": [
+          "entire_place",
+          "private_room",
+          "shared_room"
+        ],
+        "title": "PropertyType"
+      },
+      "RefreshIn": {
+        "properties": {
+          "refresh_token": {
+            "type": "string",
+            "maxLength": 200,
+            "minLength": 1,
+            "title": "Refresh Token"
+          }
+        },
+        "type": "object",
+        "required": [
+          "refresh_token"
+        ],
+        "title": "RefreshIn"
+      },
+      "RegisterIn": {
+        "properties": {
+          "email": {
+            "type": "string",
+            "format": "email",
+            "title": "Email"
+          },
+          "password": {
+            "type": "string",
+            "maxLength": 128,
+            "minLength": 8,
+            "title": "Password"
+          },
+          "full_name": {
+            "type": "string",
+            "maxLength": 100,
+            "minLength": 1,
+            "title": "Full Name"
+          }
+        },
+        "type": "object",
+        "required": [
+          "email",
+          "password",
+          "full_name"
+        ],
+        "title": "RegisterIn",
+        "example": {
+          "email": "guest@example.com",
+          "full_name": "Omar Haddad",
+          "password": "caravansara-demo"
+        }
+      },
+      "RegisterOut": {
+        "properties": {
+          "user": {
+            "$ref": "#/components/schemas/UserOut"
+          },
+          "tokens": {
+            "$ref": "#/components/schemas/TokensOut"
+          }
+        },
+        "type": "object",
+        "required": [
+          "user",
+          "tokens"
+        ],
+        "title": "RegisterOut"
+      },
+      "ReviewAuthor": {
+        "properties": {
+          "id": {
+            "type": "integer",
+            "title": "Id"
+          },
+          "full_name": {
+            "type": "string",
+            "title": "Full Name"
+          },
+          "avatar_url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Avatar Url"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "full_name",
+          "avatar_url"
+        ],
+        "title": "ReviewAuthor"
+      },
+      "ReviewCreate": {
+        "properties": {
+          "rating": {
+            "type": "integer",
+            "maximum": 5.0,
+            "minimum": 1.0,
+            "title": "Rating"
+          },
+          "cleanliness_rating": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "maximum": 5.0,
+                "minimum": 1.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Cleanliness Rating"
+          },
+          "accuracy_rating": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "maximum": 5.0,
+                "minimum": 1.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Accuracy Rating"
+          },
+          "check_in_rating": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "maximum": 5.0,
+                "minimum": 1.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Check In Rating"
+          },
+          "communication_rating": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "maximum": 5.0,
+                "minimum": 1.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Communication Rating"
+          },
+          "location_rating": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "maximum": 5.0,
+                "minimum": 1.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Location Rating"
+          },
+          "value_rating": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "maximum": 5.0,
+                "minimum": 1.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Value Rating"
+          },
+          "comment": {
+            "type": "string",
+            "maxLength": 5000,
+            "minLength": 1,
+            "title": "Comment"
+          }
+        },
+        "type": "object",
+        "required": [
+          "rating",
+          "comment"
+        ],
+        "title": "ReviewCreate",
+        "example": {
+          "accuracy_rating": 4,
+          "check_in_rating": 5,
+          "cleanliness_rating": 5,
+          "comment": "Lovely place, great host.",
+          "communication_rating": 5,
+          "location_rating": 5,
+          "rating": 5,
+          "value_rating": 4
+        }
+      },
+      "ReviewOut": {
+        "properties": {
+          "id": {
+            "type": "integer",
+            "title": "Id"
+          },
+          "booking_id": {
+            "type": "integer",
+            "title": "Booking Id"
+          },
+          "listing_id": {
+            "type": "integer",
+            "title": "Listing Id"
+          },
+          "author": {
+            "$ref": "#/components/schemas/ReviewAuthor"
+          },
+          "rating": {
+            "type": "integer",
+            "title": "Rating"
+          },
+          "cleanliness_rating": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Cleanliness Rating"
+          },
+          "accuracy_rating": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Accuracy Rating"
+          },
+          "check_in_rating": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Check In Rating"
+          },
+          "communication_rating": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Communication Rating"
+          },
+          "location_rating": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Location Rating"
+          },
+          "value_rating": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Value Rating"
+          },
+          "comment": {
+            "type": "string",
+            "title": "Comment"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Created At"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "booking_id",
+          "listing_id",
+          "author",
+          "rating",
+          "cleanliness_rating",
+          "accuracy_rating",
+          "check_in_rating",
+          "communication_rating",
+          "location_rating",
+          "value_rating",
+          "comment",
+          "created_at"
+        ],
+        "title": "ReviewOut"
+      },
+      "ReviewPage": {
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/ReviewOut"
+            },
+            "type": "array",
+            "title": "Items"
+          },
+          "total": {
+            "type": "integer",
+            "title": "Total"
+          }
+        },
+        "type": "object",
+        "required": [
+          "items",
+          "total"
+        ],
+        "title": "ReviewPage"
+      },
+      "SearchPage": {
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/SearchResult"
+            },
+            "type": "array",
+            "title": "Items"
+          },
+          "total": {
+            "type": "integer",
+            "title": "Total"
+          },
+          "limit": {
+            "type": "integer",
+            "title": "Limit"
+          },
+          "offset": {
+            "type": "integer",
+            "title": "Offset"
+          }
+        },
+        "type": "object",
+        "required": [
+          "items",
+          "total",
+          "limit",
+          "offset"
+        ],
+        "title": "SearchPage"
+      },
+      "SearchPin": {
+        "properties": {
+          "lat": {
+            "type": "number",
+            "title": "Lat"
+          },
+          "lng": {
+            "type": "number",
+            "title": "Lng"
+          }
+        },
+        "type": "object",
+        "required": [
+          "lat",
+          "lng"
+        ],
+        "title": "SearchPin",
+        "description": "Approximate public point; the real address is never used in search."
+      },
+      "SearchResult": {
+        "properties": {
+          "id": {
+            "type": "integer",
+            "title": "Id"
+          },
+          "title": {
+            "type": "string",
+            "title": "Title"
+          },
+          "property_type": {
+            "$ref": "#/components/schemas/PropertyType"
+          },
+          "city": {
+            "type": "string",
+            "title": "City"
+          },
+          "country_code": {
+            "type": "string",
+            "title": "Country Code"
+          },
+          "pin": {
+            "$ref": "#/components/schemas/SearchPin"
+          },
+          "distance_km": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Distance Km",
+            "description": "From the search centre to the public pin, radial search only."
+          },
+          "avg_rating": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Avg Rating"
+          },
+          "review_count": {
+            "type": "integer",
+            "title": "Review Count"
+          },
+          "max_guests": {
+            "type": "integer",
+            "title": "Max Guests"
+          },
+          "price_per_night": {
+            "type": "string",
+            "title": "Price Per Night"
+          },
+          "cleaning_fee": {
+            "type": "string",
+            "title": "Cleaning Fee"
+          },
+          "currency": {
+            "type": "string",
+            "title": "Currency"
+          },
+          "total_price": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Total Price",
+            "description": "nights × price + cleaning fee, when dates are given."
+          },
+          "cover_url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Cover Url"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "title",
+          "property_type",
+          "city",
+          "country_code",
+          "pin",
+          "distance_km",
+          "avg_rating",
+          "review_count",
+          "max_guests",
+          "price_per_night",
+          "cleaning_fee",
+          "currency",
+          "total_price",
+          "cover_url"
+        ],
+        "title": "SearchResult"
+      },
+      "TokensOut": {
+        "properties": {
+          "access_token": {
+            "type": "string",
+            "title": "Access Token"
+          },
+          "refresh_token": {
+            "type": "string",
+            "title": "Refresh Token"
+          },
+          "token_type": {
+            "type": "string",
+            "title": "Token Type",
+            "default": "bearer"
+          },
+          "expires_in": {
+            "type": "integer",
+            "title": "Expires In",
+            "description": "Access token lifetime in seconds."
+          }
+        },
+        "type": "object",
+        "required": [
+          "access_token",
+          "refresh_token",
+          "expires_in"
+        ],
+        "title": "TokensOut"
+      },
+      "UploadUrlIn": {
+        "properties": {
+          "content_type": {
+            "type": "string",
+            "enum": [
+              "image/jpeg",
+              "image/png",
+              "image/webp"
+            ],
+            "title": "Content Type"
+          }
+        },
+        "type": "object",
+        "required": [
+          "content_type"
+        ],
+        "title": "UploadUrlIn"
+      },
+      "UploadUrlOut": {
+        "properties": {
+          "storage_key": {
+            "type": "string",
+            "title": "Storage Key",
+            "description": "Send this to `POST /listings/{id}/photos` after the upload."
+          },
+          "url": {
+            "type": "string",
+            "title": "Url",
+            "description": "POST the file here as multipart/form-data."
+          },
+          "fields": {
+            "additionalProperties": {
+              "type": "string"
+            },
+            "type": "object",
+            "title": "Fields",
+            "description": "Form fields to send before the `file` field."
+          },
+          "expires_in": {
+            "type": "integer",
+            "title": "Expires In"
+          }
+        },
+        "type": "object",
+        "required": [
+          "storage_key",
+          "url",
+          "fields",
+          "expires_in"
+        ],
+        "title": "UploadUrlOut"
+      },
+      "UserOut": {
+        "properties": {
+          "id": {
+            "type": "integer",
+            "title": "Id"
+          },
+          "email": {
+            "type": "string",
+            "title": "Email"
+          },
+          "full_name": {
+            "type": "string",
+            "title": "Full Name"
+          },
+          "avatar_url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Avatar Url"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Created At"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "email",
+          "full_name",
+          "avatar_url",
+          "created_at"
+        ],
+        "title": "UserOut"
+      },
+      "ValidationError": {
+        "properties": {
+          "loc": {
+            "items": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "integer"
+                }
+              ]
+            },
+            "type": "array",
+            "title": "Location"
+          },
+          "msg": {
+            "type": "string",
+            "title": "Message"
+          },
+          "type": {
+            "type": "string",
+            "title": "Error Type"
+          },
+          "input": {
+            "title": "Input"
+          },
+          "ctx": {
+            "type": "object",
+            "title": "Context"
+          }
+        },
+        "type": "object",
+        "required": [
+          "loc",
+          "msg",
+          "type"
+        ],
+        "title": "ValidationError"
+      }
+    },
+    "securitySchemes": {
+      "HTTPBearer": {
+        "type": "http",
+        "description": "Access token from `POST /api/v1/auth/login`.",
+        "scheme": "bearer"
+      }
+    }
+  },
+  "tags": [
+    {
+      "name": "Auth and profile",
+      "description": "Register, log in, rotate and revoke tokens, profile."
+    },
+    {
+      "name": "Catalog",
+      "description": "Countries, cities and amenities. Changed only by the seed command."
+    },
+    {
+      "name": "Search",
+      "description": "Where (city or radius), when, who and amenity filters."
+    },
+    {
+      "name": "Listings",
+      "description": "Listing details for everyone; create and edit for hosts."
+    },
+    {
+      "name": "Listing photos",
+      "description": "Direct uploads to storage with presigned URLs."
+    },
+    {
+      "name": "Bookings",
+      "description": "15-minute hold, simulated payment, trips and cancellation."
+    },
+    {
+      "name": "Reviews",
+      "description": "One review per completed stay, within 14 days."
+    },
+    {
+      "name": "System",
+      "description": "Health checks."
+    }
+  ]
+}
