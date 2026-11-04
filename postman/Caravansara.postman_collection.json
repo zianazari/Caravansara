@@ -1,0 +1,1603 @@
+{
+  "info": {
+    "_postman_id": "ceb38b90-49af-42e8-bfe0-79e3790214b9",
+    "name": "Caravansara API",
+    "description": "Backend of **Caravansara**, an Airbnb-like place reservation site.\n\n**How to try it here**\n\n1. `POST /api/v1/auth/login` with a demo account, e.g. `guest@example.com` / `caravansara-demo`\n   (after `caravansara seed-demo`), or register a new one.\n2. Copy `access_token`, click **Authorize** and paste it.\n3. Search, open a listing, reserve with `POST /bookings`, then pay within 15 minutes.\n\n**Errors** always look like `{\"error\": {\"code\": \"dates_unavailable\", \"message\": \"...\"}}`.\n`code` is stable, so clients can show their own text.\n\n**How to use**\n\n1. Start the stack: `docker compose up -d` (API on `{{baseUrl}}`).\n2. Run **Auth and profile → Register** (or set `email`/`password` and run **Log in**). Tokens are saved to collection variables and sent as a Bearer token automatically.\n3. Run **Catalog → List cities** and **List amenities** to fill `cityId` and `amenityId`.\n4. Requests that create things save their ids (`listingId`, `photoId`, `bookingId`, `storageKey`) for the next requests.\n\nA host cannot book their own listing: register a second user to book.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "auth": {
+    "type": "bearer",
+    "bearer": [
+      {
+        "key": "token",
+        "value": "{{accessToken}}",
+        "type": "string"
+      }
+    ]
+  },
+  "event": [
+    {
+      "listen": "prerequest",
+      "script": {
+        "type": "text/javascript",
+        "exec": [
+          "if (!pm.collectionVariables.get(\"checkIn\")) {",
+          "  const day = (n) => new Date(Date.now() + n * 86400000).toISOString().slice(0, 10);",
+          "  pm.collectionVariables.set(\"checkIn\", day(30));",
+          "  pm.collectionVariables.set(\"checkOut\", day(33));",
+          "}"
+        ]
+      }
+    }
+  ],
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:8000"
+    },
+    {
+      "key": "email",
+      "value": "demo@example.com"
+    },
+    {
+      "key": "password",
+      "value": "correct-horse-battery"
+    },
+    {
+      "key": "accessToken",
+      "value": ""
+    },
+    {
+      "key": "hostToken",
+      "value": ""
+    },
+    {
+      "key": "refreshToken",
+      "value": ""
+    },
+    {
+      "key": "propertyType",
+      "value": "entire_place"
+    },
+    {
+      "key": "cityId",
+      "value": "1"
+    },
+    {
+      "key": "amenityId",
+      "value": "1"
+    },
+    {
+      "key": "listingId",
+      "value": ""
+    },
+    {
+      "key": "photoId",
+      "value": ""
+    },
+    {
+      "key": "storageKey",
+      "value": ""
+    },
+    {
+      "key": "uploadUrl",
+      "value": ""
+    },
+    {
+      "key": "uploadFields",
+      "value": ""
+    },
+    {
+      "key": "bookingId",
+      "value": ""
+    },
+    {
+      "key": "guestEmail",
+      "value": ""
+    },
+    {
+      "key": "checkIn",
+      "value": ""
+    },
+    {
+      "key": "checkOut",
+      "value": ""
+    }
+  ],
+  "item": [
+    {
+      "name": "System",
+      "item": [
+        {
+          "name": "Liveness and database check",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/health",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "health"
+              ]
+            },
+            "description": "Liveness and database check",
+            "auth": {
+              "type": "noauth"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Auth and profile",
+      "item": [
+        {
+          "name": "Register",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/auth/register",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "auth",
+                "register"
+              ]
+            },
+            "description": "Create an account and log in. Any user can be a guest and a host.\n\nUses the `email` collection variable. Sending it again with the same email returns `409 email_taken`; change `email` to register another user.",
+            "auth": {
+              "type": "noauth"
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{email}}\",\n  \"password\": \"{{password}}\",\n  \"full_name\": \"Demo User\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const body = pm.response.json();",
+                  "const tokens = body.tokens || body;",
+                  "if (tokens.access_token) {",
+                  "  pm.collectionVariables.set(\"accessToken\", tokens.access_token);",
+                  "  pm.collectionVariables.set(\"refreshToken\", tokens.refresh_token);",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Log in",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/auth/login",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "auth",
+                "login"
+              ]
+            },
+            "description": "Returns a short-lived access token and a refresh token. Send the access token as `Authorization: Bearer <token>` (in Swagger: the **Authorize** button).",
+            "auth": {
+              "type": "noauth"
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{email}}\",\n  \"password\": \"{{password}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const body = pm.response.json();",
+                  "const tokens = body.tokens || body;",
+                  "if (tokens.access_token) {",
+                  "  pm.collectionVariables.set(\"accessToken\", tokens.access_token);",
+                  "  pm.collectionVariables.set(\"refreshToken\", tokens.refresh_token);",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Rotate tokens",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/auth/refresh",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "auth",
+                "refresh"
+              ]
+            },
+            "description": "Exchange a refresh token for a new pair. The old refresh token stops working.",
+            "auth": {
+              "type": "noauth"
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"refresh_token\": \"{{refreshToken}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const body = pm.response.json();",
+                  "const tokens = body.tokens || body;",
+                  "if (tokens.access_token) {",
+                  "  pm.collectionVariables.set(\"accessToken\", tokens.access_token);",
+                  "  pm.collectionVariables.set(\"refreshToken\", tokens.refresh_token);",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Log out",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/auth/logout",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "auth",
+                "logout"
+              ]
+            },
+            "description": "Revoke a refresh token. Unknown or already revoked tokens are accepted silently.",
+            "auth": {
+              "type": "noauth"
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"refresh_token\": \"{{refreshToken}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "My profile",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/me",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "me"
+              ]
+            },
+            "description": "My profile"
+          }
+        },
+        {
+          "name": "Update my profile",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/me",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "me"
+              ]
+            },
+            "description": "Update my profile",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"full_name\": \"Demo User Renamed\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Catalog",
+      "item": [
+        {
+          "name": "Countries",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/countries",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "countries"
+              ]
+            },
+            "description": "Countries",
+            "auth": {
+              "type": "noauth"
+            }
+          }
+        },
+        {
+          "name": "Cities (autocomplete)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/cities?q=Amst",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "cities"
+              ],
+              "query": [
+                {
+                  "key": "q",
+                  "value": "Amst",
+                  "disabled": false,
+                  "description": "Start of the city name."
+                },
+                {
+                  "key": "country",
+                  "value": "NL",
+                  "disabled": true,
+                  "description": "ISO country code."
+                },
+                {
+                  "key": "limit",
+                  "value": "20",
+                  "disabled": true,
+                  "description": ""
+                }
+              ]
+            },
+            "description": "Cities whose name starts with `q`, optionally within one country.",
+            "auth": {
+              "type": "noauth"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const cities = pm.response.json();",
+                  "const list = Array.isArray(cities) ? cities : (cities.items || []);",
+                  "if (list.length) pm.collectionVariables.set(\"cityId\", list[0].id);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Amenity catalog",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/amenities",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "amenities"
+              ]
+            },
+            "description": "Amenities grouped by category.",
+            "auth": {
+              "type": "noauth"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const data = pm.response.json();",
+                  "const list = Array.isArray(data) ? data : (data.items || []);",
+                  "const first = list.length && (list[0].amenities ? list[0].amenities[0] : list[0]);",
+                  "if (first) pm.collectionVariables.set(\"amenityId\", first.id);"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Search",
+      "item": [
+        {
+          "name": "Search listings",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/search/listings?city_id={{cityId}}&check_in={{checkIn}}&check_out={{checkOut}}&adults=2",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "search",
+                "listings"
+              ],
+              "query": [
+                {
+                  "key": "sort",
+                  "value": "distance",
+                  "disabled": true,
+                  "description": ""
+                },
+                {
+                  "key": "city_id",
+                  "value": "{{cityId}}",
+                  "disabled": false,
+                  "description": "City mode."
+                },
+                {
+                  "key": "lat",
+                  "value": "52.3731",
+                  "disabled": true,
+                  "description": "Radial mode: centre latitude."
+                },
+                {
+                  "key": "lng",
+                  "value": "4.8922",
+                  "disabled": true,
+                  "description": "Radial mode: centre longitude."
+                },
+                {
+                  "key": "radius_km",
+                  "value": "5",
+                  "disabled": true,
+                  "description": "Radial mode: radius, 1–100 km."
+                },
+                {
+                  "key": "check_in",
+                  "value": "{{checkIn}}",
+                  "disabled": false,
+                  "description": "With check_out: only listings free for these nights."
+                },
+                {
+                  "key": "check_out",
+                  "value": "{{checkOut}}",
+                  "disabled": false,
+                  "description": ""
+                },
+                {
+                  "key": "adults",
+                  "value": "2",
+                  "disabled": false,
+                  "description": ""
+                },
+                {
+                  "key": "children",
+                  "value": "0",
+                  "disabled": true,
+                  "description": ""
+                },
+                {
+                  "key": "infants",
+                  "value": "0",
+                  "disabled": true,
+                  "description": "Accepted for the UI; infants don't count."
+                },
+                {
+                  "key": "pets",
+                  "value": "0",
+                  "disabled": true,
+                  "description": ""
+                },
+                {
+                  "key": "amenity_ids",
+                  "value": "{{amenityId}}",
+                  "disabled": true,
+                  "description": "Repeat the parameter; listings must have **all** of them."
+                },
+                {
+                  "key": "limit",
+                  "value": "20",
+                  "disabled": true,
+                  "description": "Items per page."
+                },
+                {
+                  "key": "offset",
+                  "value": "0",
+                  "disabled": true,
+                  "description": "Items to skip."
+                }
+              ]
+            },
+            "description": "Send **either** `city_id` **or** `lat` + `lng` + `radius_km` (1–100 km).\n\nResults show only the approximate public pin. Default order is rating then review count; `sort=distance` works in radial mode.",
+            "auth": {
+              "type": "noauth"
+            }
+          }
+        },
+        {
+          "name": "Amenity counts for the filter panel",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/search/filters?city_id={{cityId}}&check_in={{checkIn}}&check_out={{checkOut}}&adults=2",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "search",
+                "filters"
+              ],
+              "query": [
+                {
+                  "key": "city_id",
+                  "value": "{{cityId}}",
+                  "disabled": false,
+                  "description": "City mode."
+                },
+                {
+                  "key": "lat",
+                  "value": "52.3731",
+                  "disabled": true,
+                  "description": "Radial mode: centre latitude."
+                },
+                {
+                  "key": "lng",
+                  "value": "4.8922",
+                  "disabled": true,
+                  "description": "Radial mode: centre longitude."
+                },
+                {
+                  "key": "radius_km",
+                  "value": "5",
+                  "disabled": true,
+                  "description": "Radial mode: radius, 1–100 km."
+                },
+                {
+                  "key": "check_in",
+                  "value": "{{checkIn}}",
+                  "disabled": false,
+                  "description": "With check_out: only listings free for these nights."
+                },
+                {
+                  "key": "check_out",
+                  "value": "{{checkOut}}",
+                  "disabled": false,
+                  "description": ""
+                },
+                {
+                  "key": "adults",
+                  "value": "2",
+                  "disabled": false,
+                  "description": ""
+                },
+                {
+                  "key": "children",
+                  "value": "0",
+                  "disabled": true,
+                  "description": ""
+                },
+                {
+                  "key": "infants",
+                  "value": "0",
+                  "disabled": true,
+                  "description": "Accepted for the UI; infants don't count."
+                },
+                {
+                  "key": "pets",
+                  "value": "0",
+                  "disabled": true,
+                  "description": ""
+                },
+                {
+                  "key": "amenity_ids",
+                  "value": "{{amenityId}}",
+                  "disabled": true,
+                  "description": "Repeat the parameter; listings must have **all** of them."
+                }
+              ]
+            },
+            "description": "Send **either** `city_id` **or** `lat` + `lng` + `radius_km` (1–100 km).\n\nCounts over listings matching every filter except amenities.",
+            "auth": {
+              "type": "noauth"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Listings",
+      "item": [
+        {
+          "name": "Create a listing",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/listings",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "listings"
+              ]
+            },
+            "description": "The caller becomes its host. The public map pin is the real point moved 100–500 m.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"Quiet room near the old bazaar\",\n  \"description\": \"A bright room in a courtyard house.\",\n  \"property_type\": \"{{propertyType}}\",\n  \"city_id\": \"{{cityId}}\",\n  \"neighborhood\": \"Centre\",\n  \"address\": \"1 Example Street\",\n  \"latitude\": 52.3731,\n  \"longitude\": 4.8922,\n  \"max_guests\": 3,\n  \"pets_allowed\": true,\n  \"max_pets\": 1,\n  \"bedrooms\": 1,\n  \"beds\": 2,\n  \"bathrooms\": 1,\n  \"price_per_night\": 95,\n  \"cleaning_fee\": 20,\n  \"currency\": \"EUR\",\n  \"check_in_time\": \"15:00:00\",\n  \"check_out_time\": \"11:00:00\",\n  \"amenity_ids\": []\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (pm.response.code === 201) pm.collectionVariables.set(\"listingId\", pm.response.json().id);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "My listings",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/me/listings",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "me",
+                "listings"
+              ],
+              "query": [
+                {
+                  "key": "limit",
+                  "value": "20",
+                  "disabled": true,
+                  "description": "Items per page."
+                },
+                {
+                  "key": "offset",
+                  "value": "0",
+                  "disabled": true,
+                  "description": "Items to skip."
+                }
+              ]
+            },
+            "description": "Active and inactive."
+          }
+        },
+        {
+          "name": "Listing details",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/listings/{{listingId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "listings",
+                "{{listingId}}"
+              ]
+            },
+            "description": "Public. An inactive listing is visible only to its host. `private_location` is only for the host."
+          }
+        },
+        {
+          "name": "Edit or deactivate a listing",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/listings/{{listingId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "listings",
+                "{{listingId}}"
+              ]
+            },
+            "description": "Listings are never deleted: `is_active: false` hides them and keeps their bookings.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"price_per_night\": 110,\n  \"is_active\": true\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "Set amenities",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/listings/{{listingId}}/amenities",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "listings",
+                "{{listingId}}",
+                "amenities"
+              ]
+            },
+            "description": "Replaces the whole set with these catalog ids.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"amenity_ids\": [\n    \"{{amenityId}}\"\n  ]\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Listing photos",
+      "item": [
+        {
+          "name": "1. Get an upload URL",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/listings/{{listingId}}/photos/upload-url",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "listings",
+                "{{listingId}}",
+                "photos",
+                "upload-url"
+              ]
+            },
+            "description": "Returns a presigned POST. Upload the file straight to storage as multipart/form-data with the returned `fields` and then a `file` field (max 10 MB), then call `POST /listings/{id}/photos`.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"content_type\": \"image/jpeg\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const body = pm.response.json();",
+                  "pm.collectionVariables.set(\"storageKey\", body.storage_key);",
+                  "pm.collectionVariables.set(\"uploadUrl\", body.url);",
+                  "pm.collectionVariables.set(\"uploadFields\", JSON.stringify(body.fields));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Upload the file to storage (presigned POST)",
+          "request": {
+            "method": "POST",
+            "auth": {
+              "type": "noauth"
+            },
+            "header": [],
+            "url": {
+              "raw": "{{uploadUrl}}",
+              "host": [
+                "{{uploadUrl}}"
+              ]
+            },
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "file",
+                  "type": "file",
+                  "src": "sample-photo.jpg"
+                }
+              ]
+            },
+            "description": "Run **1. Get an upload URL** first. The pre-request script adds the signed policy fields; the `file` field points to `sample-photo.jpg` next to the collection file; if Postman can't find it, pick any JPEG there (Body tab). Then run **2. Register an uploaded photo**."
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const fields = JSON.parse(pm.collectionVariables.get(\"uploadFields\") || \"{}\");",
+                  "const file = pm.request.body.formdata.find(f => f.key === \"file\");",
+                  "pm.request.body.formdata.clear();",
+                  "Object.entries(fields).forEach(([key, value]) => pm.request.body.formdata.add({ key, value, type: \"text\" }));",
+                  "if (file) pm.request.body.formdata.add(file);  // the file must be the last field"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "2. Register an uploaded photo",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/listings/{{listingId}}/photos",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "listings",
+                "{{listingId}}",
+                "photos"
+              ]
+            },
+            "description": "Checks that the file exists in storage. The new photo goes last; the first photo is the cover.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"storage_key\": \"{{storageKey}}\",\n  \"width\": 800,\n  \"height\": 394,\n  \"caption\": \"Living room\",\n  \"room_tag\": \"Living room\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (pm.response.code === 201) pm.collectionVariables.set(\"photoId\", pm.response.json().id);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Edit caption or room tag",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/listings/{{listingId}}/photos/{{photoId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "listings",
+                "{{listingId}}",
+                "photos",
+                "{{photoId}}"
+              ]
+            },
+            "description": "Edit caption or room tag",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"caption\": \"Living room, morning light\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "Reorder photos and pick the cover",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/listings/{{listingId}}/photos/order",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "listings",
+                "{{listingId}}",
+                "photos",
+                "order"
+              ]
+            },
+            "description": "Send every photo id once; the first becomes the cover.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"photo_ids\": [\n    \"{{photoId}}\"\n  ]\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "Delete a photo",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/listings/{{listingId}}/photos/{{photoId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "listings",
+                "{{listingId}}",
+                "photos",
+                "{{photoId}}"
+              ]
+            },
+            "description": "Delete a photo"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Bookings",
+      "item": [
+        {
+          "name": "Register a guest (switch from host to guest)",
+          "request": {
+            "method": "POST",
+            "auth": {
+              "type": "noauth"
+            },
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/auth/register",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "auth",
+                "register"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{guestEmail}}\",\n  \"password\": \"{{password}}\",\n  \"full_name\": \"Demo Guest\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "description": "Saves the current (host) token as `hostToken`, registers a new guest and makes the guest the current user. Hosts can't book their own listing, so run this before **Reserve**."
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (pm.collectionVariables.get(\"accessToken\")) pm.collectionVariables.set(\"hostToken\", pm.collectionVariables.get(\"accessToken\"));",
+                  "pm.collectionVariables.set(\"guestEmail\", `guest+${Date.now()}@example.com`);"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const body = pm.response.json();",
+                  "const tokens = body.tokens || body;",
+                  "if (tokens.access_token) {",
+                  "  pm.collectionVariables.set(\"accessToken\", tokens.access_token);",
+                  "  pm.collectionVariables.set(\"refreshToken\", tokens.refresh_token);",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Reserve (start a 15-minute hold)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Idempotency-Key",
+                "value": "{{$guid}}",
+                "description": "A new UUID per reservation."
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/bookings",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "bookings"
+              ]
+            },
+            "description": "Creates a `pending` booking that holds the dates until `hold_expires_at`; then call `POST /bookings/{id}/pay`.\n\nSend a new UUID in `Idempotency-Key` for every reservation. Retrying with the same key and body returns the same booking with **200** instead of creating a second one.\n\nTwo guests can never hold overlapping nights: the loser of a race gets **409 dates_unavailable**.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"listing_id\": \"{{listingId}}\",\n  \"check_in\": \"{{checkIn}}\",\n  \"check_out\": \"{{checkOut}}\",\n  \"adults\": 2,\n  \"children\": 0,\n  \"infants\": 0,\n  \"pets\": 0\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (pm.response.code < 300) pm.collectionVariables.set(\"bookingId\", pm.response.json().id);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "My trips",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/me/bookings",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "me",
+                "bookings"
+              ],
+              "query": [
+                {
+                  "key": "status",
+                  "value": "confirmed",
+                  "disabled": true,
+                  "description": "Only bookings in this status."
+                },
+                {
+                  "key": "limit",
+                  "value": "20",
+                  "disabled": true,
+                  "description": "Items per page."
+                },
+                {
+                  "key": "offset",
+                  "value": "0",
+                  "disabled": true,
+                  "description": "Items to skip."
+                }
+              ]
+            },
+            "description": "Bookings where I am the guest."
+          }
+        },
+        {
+          "name": "Booking details",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/bookings/{{bookingId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "bookings",
+                "{{bookingId}}"
+              ]
+            },
+            "description": "For the guest or the host. The exact address appears once the booking is confirmed."
+          }
+        },
+        {
+          "name": "Pay (simulated)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/bookings/{{bookingId}}/pay",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "bookings",
+                "{{bookingId}}",
+                "pay"
+              ]
+            },
+            "description": "Confirms a pending hold. After `hold_expires_at` it fails with **409 hold_expired**."
+          }
+        },
+        {
+          "name": "Cancel",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/bookings/{{bookingId}}/cancel",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "bookings",
+                "{{bookingId}}",
+                "cancel"
+              ]
+            },
+            "description": "Guest or host, before the check-in day (city time). No fee and no refund."
+          }
+        },
+        {
+          "name": "Bookings of my listing",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/listings/{{listingId}}/bookings",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "listings",
+                "{{listingId}}",
+                "bookings"
+              ],
+              "query": [
+                {
+                  "key": "status",
+                  "value": "confirmed",
+                  "disabled": true,
+                  "description": "Only bookings in this status."
+                },
+                {
+                  "key": "limit",
+                  "value": "20",
+                  "disabled": true,
+                  "description": "Items per page."
+                },
+                {
+                  "key": "offset",
+                  "value": "0",
+                  "disabled": true,
+                  "description": "Items to skip."
+                }
+              ]
+            },
+            "description": "Bookings of my listing\n\nSent with `hostToken`: only the listing's host may see its bookings.",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{hostToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Reviews",
+      "item": [
+        {
+          "name": "Review a stay",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/bookings/{{bookingId}}/review",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "bookings",
+                "{{bookingId}}",
+                "review"
+              ]
+            },
+            "description": "Only the guest, only for a `completed` booking, at most once, and within 14 days of check-out. Reviews cannot be edited or deleted.\n\nOnly a **completed** stay can be reviewed (after check-out, within 14 days), so this returns an error for the booking just made above.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"rating\": 5,\n  \"cleanliness_rating\": 5,\n  \"accuracy_rating\": 5,\n  \"check_in_rating\": 5,\n  \"communication_rating\": 5,\n  \"location_rating\": 4,\n  \"value_rating\": 5,\n  \"comment\": \"Lovely stay, exactly as described.\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "Reviews of a listing",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/listings/{{listingId}}/reviews",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "listings",
+                "{{listingId}}",
+                "reviews"
+              ],
+              "query": [
+                {
+                  "key": "limit",
+                  "value": "20",
+                  "disabled": true,
+                  "description": "Items per page."
+                },
+                {
+                  "key": "offset",
+                  "value": "0",
+                  "disabled": true,
+                  "description": "Items to skip."
+                }
+              ]
+            },
+            "description": "Newest first.",
+            "auth": {
+              "type": "noauth"
+            }
+          }
+        }
+      ]
+    }
+  ]
+}
