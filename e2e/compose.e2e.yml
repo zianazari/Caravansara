@@ -1,0 +1,8 @@
+# Overrides for the API tests: every test registers its own users, so the
+# per-IP limits (10 registrations an hour by default) would stop the run.
+#   docker compose -f docker-compose.yml -f e2e/compose.e2e.yml up -d --build
+services:
+  api:
+    environment:
+      CARAVANSARA_REGISTER_MAX_PER_IP: "100000"
+      CARAVANSARA_LOGIN_MAX_PER_IP: "100000"
