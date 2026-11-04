@@ -188,6 +188,8 @@ The same description is committed as [`backend/openapi.json`](backend/openapi.js
 
 ```
 backend/     FastAPI app, Alembic migrations, tests  → backend/README.md
+e2e/         Playwright API tests against the running stack (48 tests)  → e2e/README.md
+postman/     Postman collection of all endpoints, with saved ids and tokens
 db/          schema, search query, seeds, ERD, demo-data builder
 docs/        backend design (fa), database overview, ERD demo deck, future work
              README graphics: docs/images/readme (diagram sources in diagrams/*.mmd, rebuilt by build_diagrams.py)

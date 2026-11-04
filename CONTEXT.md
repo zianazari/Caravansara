@@ -75,6 +75,8 @@ Amenity seed: 12 categories, 31 amenities. Search uses AND logic for amenity fil
 - `docs/backend-design.pdf`: PDF export of that file; regenerate after changes
 - `docs/future-work.md`: planned work: more test and mock data, monitoring (logs, metrics, traces; Prometheus, Grafana), then database index review, UI, Playwright tests, microservices. It lists only unstarted work; finished work goes into the design docs
 - `backend/`: FastAPI app, Alembic migrations, tests; how to run in `backend/README.md`. Swagger UI at `/docs` (a requirement); the API contract is `backend/openapi.json`, checked by a test, rewritten with `caravansara export-openapi`
+- `e2e/`: Playwright API tests (48) against the running `docker compose` stack; `e2e/compose.e2e.yml` raises the per-IP register/login limits; test users are `e2e.*@caravansara.example.com`, password `E2e-Pass-2026!`, and are never deleted
+- `postman/`: Postman collection of all endpoints (import into Postman or the VS Code extension) and `sample-photo.jpg` for the upload request
 - `docker-compose.yml`: db, MinIO (`bitnamilegacy/minio:2025.4.22`, since MinIO stopped publishing images), migrate, API, worker
 - `.github/workflows/ci.yml`: ruff, mypy, import-linter, tests (coverage ≥ 90%), Docker build
 
