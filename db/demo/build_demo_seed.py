@@ -213,7 +213,8 @@ FA_FIRST = """آرش بهاره پرستو تینا جواد حمید داریو
 FA_LAST = """احمدی اکبری امینی بهرامی پارسا تهرانی جعفری حسینی خسروی رحیمی رستمی زمانی سلیمانی شریفی صادقی
 طاهری عزیزی فرهادی قاسمی کریمی محمدی مرادی نوری هاشمی یزدانی""".split()
 FA_GUEST_POOL = 80
-MAX_PRICE_COLUMN = 99_999_999.99          # NUMERIC(10,2): the widest value a price column holds (R6)
+MAX_STORED_AMOUNT = 999_999_999_999.99   # NUMERIC(14,2): the widest amount a price column holds (specs/002)
+MAX_PRICE = 1_000_000_000               # the API's limit for a nightly price or cleaning fee (specs/002)
 PHOTO_MANIFEST = ROOT / "db" / "demo" / "photos" / "manifest.json"
 FA_LISTINGS = ROOT / "db" / "demo" / "fa_listings.json"
 OUT_EDGE = ROOT / "db" / "demo" / "edge_cases.json"
@@ -481,8 +482,13 @@ def add_persian_listings(rng, add_user, fake_person, listings, photos, amen_rows
             problems.append(f"{where}: title must be 1–100 characters")
         if len(it["description"]) > 1500:
             problems.append(f"{where}: description over 1500 characters")
-        if not 2_500_000 <= it["price_per_night"] <= 20_000_000:
-            problems.append(f"{where}: price_per_night outside 2,500,000–20,000,000 IRR")
+        # Market prices (specs/002 research R7, Jabama, 2026-11-05): whole places 10–100 million IRR
+        # a night, rooms 2.5–10 million.
+        low, high = (10_000_000, 100_000_000) if it["property_type"] == "entire_place" else (2_500_000, 10_000_000)
+        if not low <= it["price_per_night"] <= high:
+            problems.append(f"{where}: price_per_night outside {low:,}–{high:,} IRR for {it['property_type']}")
+        if not 0 <= it["cleaning_fee"] <= MAX_PRICE:
+            problems.append(f"{where}: cleaning_fee outside 0–{MAX_PRICE:,} IRR")
         if not 2 <= len(it["reviews"]) <= 4:
             problems.append(f"{where}: needs 2–4 reviews")
         if it["property_type"] not in ("entire_place", "private_room", "shared_room"):
@@ -518,7 +524,7 @@ def add_persian_listings(rng, add_user, fake_person, listings, photos, amen_rows
         # past stays, newest first, one behind each review
         check_out = dt.date(2026, 10, 1) - dt.timedelta(days=rng.randint(5, 40))
         for r in it["reviews"]:
-            nights = rng.randint(1, 4)
+            nights = rng.randint(1, 14)  # as in the rest of the demo; the columns now hold IRR totals
             check_in = check_out - dt.timedelta(days=nights)
             guest = rng.choice(fa_guests)
             bid = len(bookings) + 1
@@ -534,7 +540,7 @@ def add_persian_listings(rng, add_user, fake_person, listings, photos, amen_rows
             check_out = check_in - dt.timedelta(days=rng.randint(3, 60))
         offset = rng.randint(5, 30)
         for _ in range(rng.randint(0, 2)):
-            nights = rng.randint(1, 4)
+            nights = rng.randint(1, 14)  # as in the rest of the demo; the columns now hold IRR totals
             bid = len(bookings) + 1
             bk = make_booking(bid, lid, rng.choice(fa_guests), offset, offset + nights, it["max_guests"], x, price,
                               cleaning, "IRR", "confirmed", rng)
@@ -542,9 +548,9 @@ def add_persian_listings(rng, add_user, fake_person, listings, photos, amen_rows
             bk[-1] = Raw(f"now() - interval '{rng.randint(1, 30)} days'")
             bookings.append(bk)
             offset += nights + rng.randint(2, 20)
-    too_big = [b[0] for b in bookings if b[12] == "IRR" and float(b[11]) > MAX_PRICE_COLUMN]
+    too_big = [b[0] for b in bookings if b[12] == "IRR" and float(b[11]) > MAX_STORED_AMOUNT]
     if too_big:
-        raise SystemExit(f"IRR total_price over NUMERIC(10,2) for bookings {too_big[:5]} (R6)")
+        raise SystemExit(f"IRR total_price over NUMERIC(14,2) for bookings {too_big[:5]} (specs/002)")
     return {"first_listing_id": first_id, "listings": len(items)}
 
 
