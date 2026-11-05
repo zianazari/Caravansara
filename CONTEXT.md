@@ -92,9 +92,9 @@ Amenity seed: 12 categories, 31 amenities. Search uses AND logic for amenity fil
 
 ## Status and next step
 
-- Done: database design, backend design, demo data, backend v1 (all 8 steps of `docs/backend-design.md`; 124 tests, 97.8% coverage) and the backend test gaps (recorded in the test strategy of `docs/backend-design.md`; now 142 tests, 98.3% coverage) and monitoring (logs, metrics, traces, dashboard and alerts; `observability/README.md`; 161 tests, 98.3% coverage) and more test and mock data, the first Spec Kit feature (`specs/001-test-mock-data/`: demo in 9 cities with photos, Persian content and edge cases, `seed-bulk`, the test factory; 202 tests, 98.0% coverage).
+- Done: database design, backend design, demo data, backend v1 (all 8 steps of `docs/backend-design.md`; 124 tests, 97.8% coverage) and the backend test gaps (recorded in the test strategy of `docs/backend-design.md`; now 142 tests, 98.3% coverage) and monitoring (logs, metrics, traces, dashboard and alerts; `observability/README.md`; 161 tests, 98.3% coverage) and more test and mock data, the first Spec Kit feature (`specs/001-test-mock-data/`: demo in 9 cities with photos, Persian content and edge cases, `seed-bulk`, the test factory; 202 tests, 98.0% coverage) and wider price columns for rials, the second Spec Kit feature (`specs/002-rial-price-columns/`: migration `0002` to `NUMERIC(14,2)`, a price limit of 1,000,000,000 in every currency, `amount_too_large` instead of a 500, market-level Iranian demo prices; 216 tests, 98.0% coverage).
 - Spec Kit is set up and the constitution written (2026-11-05). Constitution v1.1.0 (2026-11-05) adds rules for tooling packages (Principle II) and for hand-measured timing criteria (Principle IV).
-- Next: section 1 of `docs/future-work.md`: decide on the deferred Spec Kit workflow proposals and the git extension; then section 2, wider price columns for rials. Finished work is recorded in `docs/backend-design.md` (test strategy, implementation steps), not in future work.
+- Next: section 1 of `docs/future-work.md`: decide on the deferred Spec Kit workflow proposals and the git extension; then section 2, the index review on the bulk data. Finished work is recorded in `docs/backend-design.md` (test strategy, implementation steps), not in future work.
 
 ## Working conventions
 

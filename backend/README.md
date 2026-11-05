@@ -85,7 +85,7 @@ src/caravansara/
   reviews/    reviews and the rating cache
   search/     city or radial search and filter counts
   jobs/       the worker loop
-migrations/   Alembic; 0001 is db/schema.sql
+migrations/   Alembic; 0001 is db/schema.sql, 0002 widens the price columns for rials
 tests/
 ```
 
