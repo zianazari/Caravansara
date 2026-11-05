@@ -8,7 +8,8 @@ import pytest
 from httpx import AsyncClient
 from sqlalchemy.ext.asyncio import AsyncEngine
 
-from tests.helpers import User, create_listing, days, insert_booking, register, reserve, sql
+from tests.factories import Factory
+from tests.helpers import User, create_listing, days, register, reserve
 
 
 @pytest.fixture
@@ -118,10 +119,12 @@ async def test_pay_confirms_and_reveals_the_address(client: AsyncClient, world: 
     assert by_host.status_code == 403
 
 
-async def test_pay_after_the_hold_expired(client: AsyncClient, db: AsyncEngine, world: tuple[User, User, int]) -> None:
+async def test_pay_after_the_hold_expired(
+    client: AsyncClient, db: AsyncEngine, world: tuple[User, User, int], factory: Factory
+) -> None:
     _, guest, lid = world
     booking = (await reserve(client, guest, lid)).json()
-    await sql(db, "UPDATE bookings SET hold_expires_at = now() - interval '1 second' WHERE id = :id", id=booking["id"])
+    await factory.expire_hold(booking["id"], timedelta(seconds=1))
     late = await client.post(f"/bookings/{booking['id']}/pay", headers=guest.auth)
     assert late.status_code == 409
     assert late.json()["error"]["code"] == "hold_expired"
@@ -132,12 +135,12 @@ async def test_pay_after_the_hold_expired(client: AsyncClient, db: AsyncEngine, 
 
 
 async def test_an_overdue_hold_does_not_block_new_bookings(
-    client: AsyncClient, db: AsyncEngine, world: tuple[User, User, int]
+    client: AsyncClient, db: AsyncEngine, world: tuple[User, User, int], factory: Factory
 ) -> None:
     _, guest, lid = world
     other = await register(client, "other")
     first = (await reserve(client, guest, lid)).json()
-    await sql(db, "UPDATE bookings SET hold_expires_at = now() - interval '1 second' WHERE id = :id", id=first["id"])
+    await factory.expire_hold(first["id"], timedelta(seconds=1))
     # The worker hasn't run, yet the same transaction expires the stale hold first.
     assert (await reserve(client, other, lid)).status_code == 201
 
@@ -157,13 +160,19 @@ async def test_cancel(client: AsyncClient, world: tuple[User, User, int]) -> Non
 
 
 async def test_cancel_on_the_check_in_day_is_refused(
-    client: AsyncClient, db: AsyncEngine, world: tuple[User, User, int]
+    client: AsyncClient, db: AsyncEngine, world: tuple[User, User, int], factory: Factory
 ) -> None:
     _, guest, lid = world
     today = date.today()
-    booking_id = await insert_booking(
-        db, lid, guest.id, today - timedelta(days=1), today + timedelta(days=2), "confirmed"
-    )
+    booking_id = (
+        await factory.booking(
+            listing=lid,
+            guest=guest.id,
+            check_in=today - timedelta(days=1),
+            check_out=today + timedelta(days=2),
+            status="confirmed",
+        )
+    ).id
     r = await client.post(f"/bookings/{booking_id}/cancel", headers=guest.auth)
     assert r.status_code == 409
     assert "before the check-in day" in r.json()["error"]["message"]

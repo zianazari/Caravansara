@@ -13,7 +13,8 @@ from caravansara.bookings import repository as bookings_repo
 from caravansara.identity import repository as identity_repo
 from caravansara.jobs.runner import run_once
 from caravansara.reviews import repository as reviews_repo
-from tests.helpers import PASSWORD, User, create_listing, insert_booking, register, reserve, sql
+from tests.factories import Factory
+from tests.helpers import PASSWORD, User, create_listing, register, reserve, sql
 
 
 async def test_twenty_concurrent_requests_give_exactly_one_booking(client: AsyncClient, db: AsyncEngine) -> None:
@@ -39,15 +40,15 @@ async def test_the_same_key_twice_at_once_books_once(client: AsyncClient, db: As
     assert (await sql(db, "SELECT count(*) FROM bookings"))[0][0] == 1
 
 
-async def test_payment_racing_expiry_has_one_winner(client: AsyncClient, app: object, db: AsyncEngine) -> None:
+async def test_payment_racing_expiry_has_one_winner(
+    client: AsyncClient, app: object, db: AsyncEngine, factory: Factory
+) -> None:
     host = await register(client, "host")
     listing = await create_listing(client, host)
     guest = await register(client, "guest")
     booking = (await reserve(client, guest, listing["id"])).json()
     # Hold ends right now: payment and the worker reach the row together.
-    await sql(
-        db, "UPDATE bookings SET hold_expires_at = now() + interval '50 milliseconds' WHERE id = :id", id=booking["id"]
-    )
+    await factory.expire_hold(booking["id"], -timedelta(milliseconds=50))
     await asyncio.sleep(0.05)
     pay, _jobs = await asyncio.gather(
         client.post(f"/bookings/{booking['id']}/pay", headers=guest.auth),
@@ -82,8 +83,10 @@ async def test_same_email_at_once_creates_one_account(client: AsyncClient, db: A
     assert (await sql(db, "SELECT count(*) FROM users WHERE lower(email) = 'race@example.com'"))[0][0] == 1
 
 
-async def test_review_losing_the_race(client: AsyncClient, db: AsyncEngine, monkeypatch: pytest.MonkeyPatch) -> None:
-    guest, booking = await _completed_stay(client, db)
+async def test_review_losing_the_race(
+    client: AsyncClient, db: AsyncEngine, monkeypatch: pytest.MonkeyPatch, factory: Factory
+) -> None:
+    guest, booking = await _completed_stay(client, factory)
     review = {"rating": 5, "comment": "Lovely."}
     assert (await client.post(f"/bookings/{booking}/review", json=review, headers=guest.auth)).status_code == 201
     monkeypatch.setattr(reviews_repo, "exists_for_booking", _returns(False))  # the pre-check missed it
@@ -93,8 +96,8 @@ async def test_review_losing_the_race(client: AsyncClient, db: AsyncEngine, monk
     assert (await sql(db, "SELECT count(*) FROM reviews"))[0][0] == 1
 
 
-async def test_two_reviews_at_once_keep_one(client: AsyncClient, db: AsyncEngine) -> None:
-    guest, booking = await _completed_stay(client, db)
+async def test_two_reviews_at_once_keep_one(client: AsyncClient, db: AsyncEngine, factory: Factory) -> None:
+    guest, booking = await _completed_stay(client, factory)
     review = {"rating": 4, "comment": "Fine."}
     results = await asyncio.gather(
         *(client.post(f"/bookings/{booking}/review", json=review, headers=guest.auth) for _ in range(4))
@@ -179,10 +182,18 @@ def _returns(value: Any) -> Any:
     return fake
 
 
-async def _completed_stay(client: AsyncClient, db: AsyncEngine) -> tuple[User, int]:
+async def _completed_stay(client: AsyncClient, factory: Factory) -> tuple[User, int]:
     host = await register(client, "host")
     guest = await register(client, "guest")
     listing = await create_listing(client, host)
     today = date.today()
-    booking = await insert_booking(db, listing["id"], guest.id, today - timedelta(days=3), today - timedelta(days=1))
+    booking = (
+        await factory.booking(
+            listing=listing["id"],
+            guest=guest.id,
+            check_in=today - timedelta(days=3),
+            check_out=today - timedelta(days=1),
+            status="completed",
+        )
+    ).id
     return guest, booking

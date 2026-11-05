@@ -21,6 +21,7 @@ from caravansara.cli import migrate, seed_catalog
 from caravansara.core.config import Settings
 from caravansara.core.storage import Storage
 from caravansara.main import create_app
+from tests.factories import Factory
 
 POSTGIS_IMAGE = "postgis/postgis:16-3.4"
 MINIO_IMAGE = "bitnamilegacy/minio:2025.4.22"  # MinIO no longer publishes images
@@ -97,10 +98,14 @@ async def app(prepared: Settings) -> AsyncIterator[Any]:
         yield application
 
 
+def pytest_configure(config: pytest.Config) -> None:
+    config.addinivalue_line("markers", "keep_data: the module loads shared data once and cleans it up itself")
+
+
 @pytest.fixture(autouse=True)
 async def _clean(request: pytest.FixtureRequest) -> AsyncIterator[None]:
     yield
-    if "engine" in request.fixturenames:
+    if "engine" in request.fixturenames and not request.node.get_closest_marker("keep_data"):
         eng: AsyncEngine = request.getfixturevalue("engine")
         async with eng.begin() as conn:
             await conn.execute(text(f"TRUNCATE {DATA_TABLES} RESTART IDENTITY CASCADE"))
@@ -115,3 +120,9 @@ async def client(app: Any, engine: AsyncEngine) -> AsyncIterator[AsyncClient]:
 @pytest.fixture
 async def db(engine: AsyncEngine) -> AsyncEngine:
     return engine
+
+
+@pytest.fixture
+async def factory(client: AsyncClient, engine: AsyncEngine) -> Factory:
+    """Users, listings and bookings in any state (tests/factories.py)."""
+    return Factory(client, engine)

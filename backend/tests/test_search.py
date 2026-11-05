@@ -1,5 +1,6 @@
 """Search: city or radius, dates, guests, pets, amenities (AND), sorting, paging, privacy."""
 
+from datetime import timedelta
 from typing import Any
 
 import pytest
@@ -7,6 +8,7 @@ from httpx import AsyncClient
 from sqlalchemy.ext.asyncio import AsyncEngine
 
 from caravansara.listings.geo import haversine_m
+from tests.factories import Factory
 from tests.helpers import amenity_ids, city_id, create_listing, days, register, reserve, sql
 
 CENTER = {"lat": 52.3731, "lng": 4.8838}
@@ -159,13 +161,13 @@ async def test_radial_search_across_the_180_meridian(client: AsyncClient, db: As
 
 
 async def test_an_overdue_hold_does_not_hide_a_listing(
-    client: AsyncClient, db: AsyncEngine, listings: dict[str, Any]
+    client: AsyncClient, db: AsyncEngine, listings: dict[str, Any], factory: Factory
 ) -> None:
     guest = await register(client, "guest")
     hold = (await reserve(client, guest, listings["near"]["id"], 10, 13)).json()
     params: dict[str, Any] = {**CENTER, "radius_km": 3, "check_in": days(11), "check_out": days(12)}
     assert titles(await client.get("/search/listings", params=params)) == []  # a live hold blocks
-    await sql(db, "UPDATE bookings SET hold_expires_at = now() - interval '1 second' WHERE id = :id", id=hold["id"])
+    await factory.expire_hold(hold["id"], timedelta(seconds=1))
     assert titles(await client.get("/search/listings", params=params)) == ["Near"]  # before the worker runs
     filters = await client.get("/search/filters", params=params)
     assert filters.json()["total"] == 1
