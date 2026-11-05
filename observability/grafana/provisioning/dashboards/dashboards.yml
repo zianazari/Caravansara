@@ -1,0 +1,11 @@
+# Dashboards come from JSON files in the repo, so every environment has the same ones
+# and a change to a dashboard is reviewed like code.
+apiVersion: 1
+
+providers:
+  - name: caravansara
+    folder: Caravansara
+    type: file
+    allowUiUpdates: false
+    options:
+      path: /var/lib/grafana/dashboards

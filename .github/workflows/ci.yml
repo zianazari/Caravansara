@@ -45,3 +45,28 @@ jobs:
       - name: Build the image
         working-directory: .
         run: docker build -f backend/Dockerfile -t caravansara:ci .
+
+  # Monitoring config is code too: a broken rule or collector config would fail silently at run time.
+  observability:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    defaults:
+      run:
+        working-directory: observability
+    steps:
+      - uses: actions/checkout@v4
+      - name: Prometheus config and alert rules
+        run: |
+          docker run --rm -v "$PWD/prometheus:/etc/prometheus:ro" --entrypoint promtool prom/prometheus:v3.5.0 \
+            check config /etc/prometheus/prometheus.yml
+      - name: Alert rule unit tests
+        run: |
+          docker run --rm -v "$PWD/prometheus:/etc/prometheus:ro" -w /etc/prometheus --entrypoint promtool \
+            prom/prometheus:v3.5.0 test rules alerts.test.yml
+      - name: Alloy config
+        run: docker run --rm -v "$PWD/alloy:/cfg:ro" grafana/alloy:v1.10.1 fmt /cfg/config.alloy > /dev/null
+      - name: Compose file, with and without the profile
+        working-directory: .
+        run: |
+          docker compose config -q
+          docker compose --profile observability config -q

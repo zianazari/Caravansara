@@ -1,0 +1,38 @@
+# Datasources with fixed uids, so dashboards and links between them never break.
+# Loki → Tempo: a log line's trace_id opens its trace. Tempo → Loki: a span opens its logs.
+apiVersion: 1
+
+datasources:
+  - name: Prometheus
+    uid: prometheus
+    type: prometheus
+    url: http://prometheus:9090
+    isDefault: true
+    jsonData:
+      timeInterval: 15s
+
+  - name: Loki
+    uid: loki
+    type: loki
+    url: http://loki:3100
+    jsonData:
+      derivedFields:
+        - name: Trace
+          datasourceUid: tempo
+          matcherType: label  # trace_id is structured metadata, not text in the line
+          matcherRegex: trace_id
+          url: "$${__value.raw}"
+
+  - name: Tempo
+    uid: tempo
+    type: tempo
+    url: http://tempo:3200
+    jsonData:
+      nodeGraph:
+        enabled: true
+      tracesToLogsV2:
+        datasourceUid: loki
+        spanStartTimeShift: -5m
+        spanEndTimeShift: 5m
+        customQuery: true
+        query: '{service=~"api|worker"} | trace_id="$${__span.traceId}"'

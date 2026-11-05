@@ -1,0 +1,61 @@
+# Alert rules. The thresholds are first guesses; tune them after a few weeks of real data,
+# because a guessed threshold either fires all the time or never.
+groups:
+  - name: caravansara
+    rules:
+      - alert: ApiDown
+        # absent(): also fires when no API container exists at all, not only when one fails
+        expr: absent(up{job="api"} == 1)
+        for: 1m
+        labels: { severity: critical }
+        annotations:
+          summary: No API instance answers /metrics.
+
+      - alert: WorkerDown
+        expr: absent(up{job="worker"} == 1)
+        for: 2m
+        labels: { severity: critical }
+        annotations:
+          summary: The worker is not running, so unpaid holds stay locked and stays never complete.
+
+      - alert: WorkerStale
+        # running but failing, e.g. it can't reach the database. job="worker": the API process
+        # also exports this gauge (at 0), because both share one metrics module.
+        expr: time() - max(caravansara_worker_last_success_timestamp_seconds{job="worker"}) > 300
+        for: 2m
+        labels: { severity: critical }
+        annotations:
+          summary: "The worker's last successful run was {{ $value | humanizeDuration }} ago."
+
+      - alert: HighErrorRate
+        expr: |
+          sum(rate(caravansara_http_requests_total{status=~"5.."}[5m]))
+            / sum(rate(caravansara_http_requests_total[5m])) > 0.05
+        for: 5m
+        labels: { severity: warning }
+        annotations:
+          summary: "{{ $value | humanizePercentage }} of API requests fail with 5xx."
+
+      - alert: SlowSearch
+        expr: |
+          histogram_quantile(0.95,
+            sum by (le) (rate(caravansara_http_request_duration_seconds_bucket{route="/api/v1/search/listings"}[5m]))
+          ) > 1
+        for: 10m
+        labels: { severity: warning }
+        annotations:
+          summary: "95% of searches take up to {{ $value | humanizeDuration }}."
+
+      - alert: DatabaseDown
+        expr: pg_up == 0
+        for: 1m
+        labels: { severity: critical }
+        annotations:
+          summary: postgres_exporter cannot reach PostgreSQL.
+
+      - alert: DatabaseConnectionsHigh
+        expr: sum(pg_stat_activity_count) / max(pg_settings_max_connections) > 0.8
+        for: 5m
+        labels: { severity: warning }
+        annotations:
+          summary: "{{ $value | humanizePercentage }} of PostgreSQL connections are in use."
