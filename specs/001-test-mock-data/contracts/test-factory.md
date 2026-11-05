@@ -16,8 +16,8 @@ class Factory:
         status: str = "confirmed",            # pending | confirmed | cancelled | expired | completed
         check_in: date | int = 10,            # date، یا تعداد روز از امروز (منفی = گذشته)
         check_out: date | int | None = None,  # پیش‌فرض: check_in + 3 شب
-        listing: dict[str, Any] | None = None,
-        guest: User | None = None,
+        listing: dict[str, Any] | int | None = None,   # پاسخ API، یا فقط شناسه
+        guest: User | int | None = None,               # User، یا فقط شناسه
         hold_expires_at: datetime | None = None,
         adults: int = 1,
     ) -> Booking: ...
@@ -29,7 +29,7 @@ class Factory:
 class Booking:
     id: int
     listing_id: int
-    guest: User
+    guest_id: int
     host: User | None   # وقتی factory آگهی را ساخته باشد
 
 
@@ -47,4 +47,5 @@ class Stay:
 2. هیچ قید یا triggerی دور زده نمی‌شود. رزرو هم‌پوشان همان `IntegrityError` با SQLSTATE `23P01` را می‌دهد که API می‌گیرد.
 3. به داده‌ی دمو وابسته نیست، و روی پایگاه داده‌ای که فقط catalog دارد کار می‌کند.
 4. پاک‌سازی همان `TRUNCATE` خودکار `conftest._clean` بعد از هر تست است.
-5. `helpers.insert_booking` حذف می‌شود، و تست‌هایی که آن را صدا می‌زنند به `factory.booking` منتقل می‌شوند. `helpers.register`، `create_listing` و `reserve` می‌مانند، چون رفتار API را می‌آزمایند، نه ساخت داده را.
+5. `listing` و `guest` شناسه هم می‌پذیرند، چون تست‌های موجود شناسه نگه می‌دارند. این تغییر هنگام پیاده‌سازی برای کوچک ماندن انتقال اضافه شد.
+6. `helpers.insert_booking` حذف می‌شود، و تست‌هایی که آن را صدا می‌زنند به `factory.booking` منتقل می‌شوند. `helpers.register`، `create_listing` و `reserve` می‌مانند، چون رفتار API را می‌آزمایند، نه ساخت داده را.

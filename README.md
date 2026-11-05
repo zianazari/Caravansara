@@ -4,7 +4,7 @@
 
 <p align="center">
   <a href="https://github.com/zianazari/Caravansara/actions/workflows/ci.yml"><img src="https://github.com/zianazari/Caravansara/actions/workflows/ci.yml/badge.svg" alt="CI"></a>
-  <img src="https://img.shields.io/badge/tests-161%20%C2%B7%2098.3%25%20coverage-b5651d" alt="161 tests, 98.3% coverage">
+  <img src="https://img.shields.io/badge/tests-202%20%C2%B7%2098.0%25%20coverage-b5651d" alt="202 tests, 98.0% coverage">
   <img src="https://img.shields.io/badge/e2e-48%20Playwright%20API%20tests-2EAD33" alt="48 Playwright API tests">
 </p>
 
@@ -161,12 +161,15 @@ Needs Docker.
 
 ```bash
 docker compose up --build                               # db, MinIO, migrations, API, worker
-docker compose run --rm migrate caravansara seed-demo   # optional: 200 real listings in 4 cities
+docker compose run --rm migrate caravansara seed-demo   # optional, empty database only: 790 listings in 9 cities, with photos
+docker compose run --rm migrate caravansara seed-bulk   # optional: 100,000 listings in their own database, for measuring
 ```
 
 Open **http://localhost:8000/docs**, log in with `POST /auth/login` as `guest@example.com` / `caravansara-demo`, press **Authorize**, paste the `access_token`, and every endpoint is ready to try.
 
-The demo data comes from [Inside Airbnb](https://insideairbnb.com/) (CC BY 4.0): real titles, prices, amenities and review text from Amsterdam, Lisbon, Copenhagen and Stockholm; people, addresses and bookings are synthetic. See [`db/demo/README.md`](db/demo/README.md).
+The demo data comes from [Inside Airbnb](https://insideairbnb.com/) (CC BY 4.0): real titles, prices, amenities and review text from Amsterdam, Lisbon, Copenhagen, Stockholm, London and New York City, plus 40 hand-written Persian listings in Tehran, Isfahan and Shiraz priced in rials. People, addresses, bookings and photos are synthetic. It also holds seven edge cases, such as a hold that expires four minutes after loading and a 365-night stay, each listed with its id. See [`db/demo/README.md`](db/demo/README.md).
+
+The bulk data (`seed-bulk`) is for measuring: about 3 million bookings and 1.2 million reviews drawn from the real distributions of six cities, loaded in about 3.5 minutes into `caravansara_bulk`, so your development data stays untouched. See [`db/bulk/README.md`](db/bulk/README.md).
 
 ## Monitoring
 
@@ -201,7 +204,7 @@ Two layers, because each one catches what the other can't:
 | --- | --- | --- |
 | **Runs against** | PostgreSQL + PostGIS and MinIO that testcontainers starts for each run | The real `docker compose` stack, from outside, over HTTP |
 | **Proves** | Every rule in each module, exact race moments, DST, migrations, the API contract | The built image, real settings and wiring: all 30 endpoints, photo upload to MinIO, the whole host and guest story |
-| **Size** | 161 tests, 98.3% coverage | 48 tests, a few seconds |
+| **Size** | 202 tests, 98.0% coverage | 48 tests, a few seconds |
 
 The Playwright tests use its `request` fixture, so they need no browser yet; browser tests for the UI will join the same project. Some highlights:
 
@@ -280,10 +283,10 @@ The plan, in order. Each step builds on the one before it; details are in [`docs
 
 | # | Work | What it brings | Why at this point |
 | --- | --- | --- | --- |
-| 1 | **First feature with Spec Kit** | Step 2 run end to end with GitHub Spec Kit, from spec to merge | Spec Kit and the constitution are set up; the method has to prove itself once |
-| 2 | **More test and mock data** | More cities and listings, edge cases, Persian text, and a generator for millions of rows | The index review and the edge-case tests need it |
-| 3 | **Index review** | Each index chosen with `EXPLAIN ANALYZE` on large data and real query statistics | Without real data and queries, picking indexes is guesswork |
-| 4 | **Redis caching** | Faster hot reads such as search, never for booking or availability | A slow query should be fixed with an index first, not hidden behind a cache |
-| 5 | **Web front-end** | Next.js, TypeScript, shadcn/ui and Tailwind; Persian right-to-left with the Vazirmatn font, and English | It builds on the stable API contract in `backend/openapi.json` |
-| 6 | **Playwright browser tests** | Guest and host journeys, a double booking from two browsers, right-to-left and mobile checks | They need the front-end |
+| 1 | **Spec Kit review** | Lessons from the first Spec Kit feature (test and mock data) written into the constitution | Small, and best done while the experience is fresh; every later step uses the improved method |
+| 2 | **Wider price columns for rials** | Prices up to `NUMERIC(14,2)`, with a clear 422 above the limit | A real bug: a multi-night stay at real Tehran prices overflows `NUMERIC(10,2)` and returns a 500; it must be fixed before the Persian front-end |
+| 3 | **Index review** | Each index chosen with `EXPLAIN ANALYZE` on the bulk data and real query statistics | The bulk data it needed is ready now |
+| 4 | **Web front-end** | Next.js, TypeScript, shadcn/ui and Tailwind; Persian right-to-left with the Vazirmatn font, and English | The biggest step toward a usable product, on a correct and fast API |
+| 5 | **Playwright browser tests** | Guest and host journeys, a double booking from two browsers, right-to-left and mobile checks | Written with the front-end, so each page is tested when it is built |
+| 6 | **Redis caching** | Faster hot reads such as search, never for booking or availability | Only if monitoring shows a slow query that indexes did not fix |
 | 7 | **Microservices** | Splitting out a service, starting with `search` | Only if the monitoring numbers show a real need, since it is the most expensive step |
