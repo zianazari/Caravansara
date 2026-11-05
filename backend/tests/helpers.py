@@ -92,28 +92,3 @@ async def sql(engine: AsyncEngine, statement: str, **params: Any) -> Any:
     async with engine.begin() as conn:
         result = await conn.execute(text(statement), params)
         return result.all() if result.returns_rows else []
-
-
-async def insert_booking(
-    engine: AsyncEngine,
-    listing_id: int,
-    guest_id: int,
-    check_in: date,
-    check_out: date,
-    status: str = "completed",
-) -> int:
-    """Insert a booking directly, e.g. a past stay the API would refuse to create."""
-    rows = await sql(
-        engine,
-        """INSERT INTO bookings (listing_id, guest_id, check_in, check_out, adults, nightly_price,
-                                 cleaning_fee, total_price, currency, status, idempotency_key)
-           VALUES (:l, :g, :ci, :co, 1, 100, 0, 100, 'EUR', CAST(:s AS booking_status), :k)
-           RETURNING id""",
-        l=listing_id,
-        g=guest_id,
-        ci=check_in,
-        co=check_out,
-        s=status,
-        k=uuid.uuid4(),
-    )
-    return int(rows[0][0])

@@ -25,7 +25,8 @@ from caravansara.core.telemetry import tracer_provider
 from caravansara.core.timeutil import utcnow
 from caravansara.jobs.runner import run_measured
 from caravansara.main import create_app
-from tests.helpers import PASSWORD, create_listing, insert_booking, register, reserve, sql
+from tests.factories import Factory
+from tests.helpers import PASSWORD, create_listing, register, reserve
 
 
 def sample(name: str, **labels: str) -> float:
@@ -182,7 +183,7 @@ def test_configure_logging_routes_everything_through_one_handler() -> None:
 # ---- business metrics -------------------------------------------------------------------
 
 
-async def test_booking_events_and_conflicts_are_counted(client: AsyncClient, db: AsyncEngine) -> None:
+async def test_booking_events_and_conflicts_are_counted(client: AsyncClient, db: AsyncEngine, factory: Factory) -> None:
     host = await register(client, "host")
     guest = await register(client, "guest")
     other = await register(client, "other")
@@ -196,7 +197,7 @@ async def test_booking_events_and_conflicts_are_counted(client: AsyncClient, db:
     assert (await client.post(f"/bookings/{paid['id']}/cancel", headers=guest.auth)).status_code == 200
 
     late = (await reserve(client, guest, listing["id"], 20, 22)).json()
-    await sql(db, "UPDATE bookings SET hold_expires_at = now() - interval '1 minute' WHERE id = :id", id=late["id"])
+    await factory.expire_hold(late["id"])
     assert (await client.post(f"/bookings/{late['id']}/pay", headers=guest.auth)).status_code == 409
 
     assert booking_event("created") == before["created"] + 2
@@ -206,7 +207,9 @@ async def test_booking_events_and_conflicts_are_counted(client: AsyncClient, db:
     assert sample("caravansara_booking_conflicts_total") == conflicts + 1
 
 
-async def test_rate_limit_and_reviews_are_counted(client: AsyncClient, db: AsyncEngine, prepared: Settings) -> None:
+async def test_rate_limit_and_reviews_are_counted(
+    client: AsyncClient, db: AsyncEngine, prepared: Settings, factory: Factory
+) -> None:
     user = await register(client, "limited")
     limited = sample("caravansara_rate_limited_total", action="login")
     for _ in range(prepared.login_max_failures):
@@ -219,7 +222,15 @@ async def test_rate_limit_and_reviews_are_counted(client: AsyncClient, db: Async
     guest = await register(client, "guest")
     listing = await create_listing(client, host)
     today = utcnow().date()
-    stay = await insert_booking(db, listing["id"], guest.id, today - timedelta(days=4), today - timedelta(days=1))
+    stay = (
+        await factory.booking(
+            listing=listing["id"],
+            guest=guest.id,
+            check_in=today - timedelta(days=4),
+            check_out=today - timedelta(days=1),
+            status="completed",
+        )
+    ).id
     reviews = sample("caravansara_reviews_total")
     r = await client.post(f"/bookings/{stay}/review", json={"rating": 5, "comment": "Great"}, headers=guest.auth)
     assert r.status_code == 201
@@ -230,14 +241,14 @@ async def test_rate_limit_and_reviews_are_counted(client: AsyncClient, db: Async
 
 
 async def test_a_worker_run_is_measured_and_traced(
-    app: Any, client: AsyncClient, db: AsyncEngine, spans: tuple[TracerProvider, InMemorySpanExporter]
+    app: Any, client: AsyncClient, db: AsyncEngine, spans: tuple[TracerProvider, InMemorySpanExporter], factory: Factory
 ) -> None:
     provider, exporter = spans
     host = await register(client, "host")
     guest = await register(client, "guest")
     listing = await create_listing(client, host)
     hold = (await reserve(client, guest, listing["id"])).json()
-    await sql(db, "UPDATE bookings SET hold_expires_at = now() - interval '1 minute' WHERE id = :id", id=hold["id"])
+    await factory.expire_hold(hold["id"])
     ok, expired = sample("caravansara_worker_runs_total", result="ok"), booking_event("expired")
 
     result = await run_measured(app.state.sessionmaker, provider.get_tracer("worker"))

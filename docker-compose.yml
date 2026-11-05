@@ -2,7 +2,9 @@
 # API + Swagger: http://localhost:8000/docs   MinIO console: http://localhost:9001
 # With monitoring (Grafana http://localhost:3000, Prometheus http://localhost:9090):
 #   docker compose --profile observability up --build
-# Demo data (optional, empty database only): docker compose run --rm migrate caravansara seed-demo
+# Demo data with photos (optional, empty database only): docker compose run --rm migrate caravansara seed-demo
+#   (photos again after a storage error: ... caravansara seed-demo --photos-only)
+# Bulk data for measuring, in its own database caravansara_bulk: docker compose run --rm migrate caravansara seed-bulk
 x-app: &app
   build:
     context: .

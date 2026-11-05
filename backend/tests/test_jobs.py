@@ -12,16 +12,17 @@ from sqlalchemy.ext.asyncio import AsyncEngine
 from caravansara.bookings import repository as bookings_repo
 from caravansara.core.config import Settings
 from caravansara.jobs.runner import run_forever, run_once
-from tests.helpers import create_listing, insert_booking, register, reserve, sql
+from tests.factories import Factory
+from tests.helpers import create_listing, register, reserve, sql
 
 
-async def test_expires_only_overdue_holds(client: AsyncClient, app: Any, db: AsyncEngine) -> None:
+async def test_expires_only_overdue_holds(client: AsyncClient, app: Any, db: AsyncEngine, factory: Factory) -> None:
     host = await register(client, "host")
     guest = await register(client, "guest")
     listing = await create_listing(client, host)
     overdue = (await reserve(client, guest, listing["id"], 10, 12)).json()
     fresh = (await reserve(client, guest, listing["id"], 20, 22)).json()
-    await sql(db, "UPDATE bookings SET hold_expires_at = now() - interval '1 minute' WHERE id = :id", id=overdue["id"])
+    await factory.expire_hold(overdue["id"])
 
     result = await run_once(app.state.sessionmaker)
     assert result.expired == 1
@@ -29,18 +30,42 @@ async def test_expires_only_overdue_holds(client: AsyncClient, app: Any, db: Asy
     assert rows == {overdue["id"]: "expired", fresh["id"]: "pending"}
 
 
-async def test_completes_after_check_out_time_in_city_time(client: AsyncClient, app: Any, db: AsyncEngine) -> None:
+async def test_completes_after_check_out_time_in_city_time(
+    client: AsyncClient, app: Any, db: AsyncEngine, factory: Factory
+) -> None:
     host = await register(client, "host")
     guest = await register(client, "guest")
     listing = await create_listing(client, host)  # Amsterdam, check-out 11:00
     local_now = datetime.now(UTC).astimezone(ZoneInfo("Europe/Amsterdam"))
     today = local_now.date()
-    finished = await insert_booking(
-        db, listing["id"], guest.id, today - timedelta(days=5), today - timedelta(days=1), "confirmed"
-    )
-    ongoing = await insert_booking(db, listing["id"], guest.id, today, today + timedelta(days=2), "confirmed")
+    finished = (
+        await factory.booking(
+            listing=listing["id"],
+            guest=guest.id,
+            check_in=today - timedelta(days=5),
+            check_out=today - timedelta(days=1),
+            status="confirmed",
+        )
+    ).id
+    ongoing = (
+        await factory.booking(
+            listing=listing["id"],
+            guest=guest.id,
+            check_in=today,
+            check_out=today + timedelta(days=2),
+            status="confirmed",
+        )
+    ).id
     # Leaving today: completed only if 11:00 local has passed.
-    leaving = await insert_booking(db, listing["id"], guest.id, today - timedelta(days=1), today, "confirmed")
+    leaving = (
+        await factory.booking(
+            listing=listing["id"],
+            guest=guest.id,
+            check_in=today - timedelta(days=1),
+            check_out=today,
+            status="confirmed",
+        )
+    ).id
 
     result = await run_once(app.state.sessionmaker)
     rows = dict(await sql(db, "SELECT id, status::text FROM bookings"))
@@ -50,24 +75,32 @@ async def test_completes_after_check_out_time_in_city_time(client: AsyncClient, 
     assert result.completed == (2 if local_now.hour >= 11 else 1)
 
 
-async def test_two_workers_at_once_are_safe(client: AsyncClient, app: Any, db: AsyncEngine) -> None:
+async def test_two_workers_at_once_are_safe(client: AsyncClient, app: Any, db: AsyncEngine, factory: Factory) -> None:
     host = await register(client, "host")
     guest = await register(client, "guest")
     listing = await create_listing(client, host)
     for i in range(5):
         start = date(2020, 1, 1) + timedelta(days=3 * i)
-        await insert_booking(db, listing["id"], guest.id, start, start + timedelta(days=2), "confirmed")
+        await factory.booking(
+            listing=listing["id"],
+            guest=guest.id,
+            check_in=start,
+            check_out=start + timedelta(days=2),
+            status="confirmed",
+        )
     a, b = await asyncio.gather(run_once(app.state.sessionmaker), run_once(app.state.sessionmaker))
     assert a.completed + b.completed == 5
     assert (await sql(db, "SELECT count(*) FROM bookings WHERE status = 'completed'"))[0][0] == 5
 
 
-async def test_worker_loop_runs_and_stops(prepared: Settings, client: AsyncClient, db: AsyncEngine) -> None:
+async def test_worker_loop_runs_and_stops(
+    prepared: Settings, client: AsyncClient, db: AsyncEngine, factory: Factory
+) -> None:
     host = await register(client, "host")
     guest = await register(client, "guest")
     listing = await create_listing(client, host)
     booking = (await reserve(client, guest, listing["id"])).json()
-    await sql(db, "UPDATE bookings SET hold_expires_at = now() - interval '1 minute' WHERE id = :id", id=booking["id"])
+    await factory.expire_hold(booking["id"])
 
     stop = asyncio.Event()
     task = asyncio.create_task(run_forever(prepared.model_copy(update={"worker_interval_seconds": 1}), stop))
@@ -103,12 +136,20 @@ async def test_worker_survives_a_failed_run(prepared: Settings) -> None:
     ],
 )
 async def test_completion_on_daylight_saving_days(
-    client: AsyncClient, app: Any, db: AsyncEngine, check_out: date, deadline_utc: datetime
+    client: AsyncClient, app: Any, db: AsyncEngine, check_out: date, deadline_utc: datetime, factory: Factory
 ) -> None:
     host = await register(client, "host")
     guest = await register(client, "guest")
     listing = await create_listing(client, host)  # Amsterdam, check-out 11:00
-    booking = await insert_booking(db, listing["id"], guest.id, check_out - timedelta(days=2), check_out, "confirmed")
+    booking = (
+        await factory.booking(
+            listing=listing["id"],
+            guest=guest.id,
+            check_in=check_out - timedelta(days=2),
+            check_out=check_out,
+            status="confirmed",
+        )
+    ).id
 
     async with app.state.sessionmaker() as session:
         assert await bookings_repo.complete_finished_stays(session, deadline_utc - timedelta(minutes=1)) == 0

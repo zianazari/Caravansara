@@ -1,7 +1,9 @@
 """Pure logic: state machine, pricing, date and capacity rules, pin fuzzing, time zones, tokens."""
 
+import json
 from datetime import UTC, date, datetime, timedelta
 from decimal import Decimal
+from pathlib import Path
 
 import jwt
 import pytest
@@ -158,3 +160,23 @@ class TestSecurity:
     def test_refresh_hash_is_stable_sha256(self) -> None:
         assert hash_refresh_token("abc") == hash_refresh_token("abc")
         assert len(hash_refresh_token("abc")) == 64
+
+
+def _jpeg_size(data: bytes) -> tuple[int, int]:
+    """Width and height from a JPEG's SOF0/SOF2 marker, without an image library."""
+    i = 2
+    while i < len(data):
+        marker, length = data[i + 1], int.from_bytes(data[i + 2 : i + 4], "big")
+        if marker in (0xC0, 0xC2):
+            height, width = int.from_bytes(data[i + 5 : i + 7], "big"), int.from_bytes(data[i + 7 : i + 9], "big")
+            return width, height
+        i += 2 + length
+    raise ValueError("no SOF marker")
+
+
+def test_photo_manifest_matches_jpeg_headers() -> None:
+    folder = Path(__file__).resolve().parents[2] / "db" / "demo" / "photos"
+    manifest = json.loads((folder / "manifest.json").read_text(encoding="utf-8"))
+    assert len(manifest) == 8
+    for entry in manifest.values():
+        assert _jpeg_size((folder / entry["file"]).read_bytes()) == (entry["width"], entry["height"])

@@ -1,0 +1,50 @@
+{
+  "balcony": {
+    "file": "balcony.jpg",
+    "height": 1200,
+    "room_tag": "Balcony",
+    "width": 900
+  },
+  "bathroom": {
+    "file": "bathroom.jpg",
+    "height": 1200,
+    "room_tag": "Bathroom",
+    "width": 800
+  },
+  "bedroom": {
+    "file": "bedroom.jpg",
+    "height": 800,
+    "room_tag": "Bedroom",
+    "width": 1200
+  },
+  "dining-area": {
+    "file": "dining-area.jpg",
+    "height": 800,
+    "room_tag": "Dining area",
+    "width": 1200
+  },
+  "exterior": {
+    "file": "exterior.jpg",
+    "height": 900,
+    "room_tag": "Exterior",
+    "width": 1600
+  },
+  "kitchen": {
+    "file": "kitchen.jpg",
+    "height": 800,
+    "room_tag": "Kitchen",
+    "width": 1200
+  },
+  "living-room": {
+    "file": "living-room.jpg",
+    "height": 800,
+    "room_tag": "Living room",
+    "width": 1200
+  },
+  "workspace": {
+    "file": "workspace.jpg",
+    "height": 900,
+    "room_tag": "Workspace",
+    "width": 1200
+  }
+}

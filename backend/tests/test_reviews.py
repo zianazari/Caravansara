@@ -7,18 +7,27 @@ from httpx import AsyncClient
 from sqlalchemy.ext.asyncio import AsyncEngine
 
 from caravansara.core.timeutil import today_in
-from tests.helpers import User, create_listing, insert_booking, register, reserve
+from tests.factories import Factory
+from tests.helpers import User, create_listing, register, reserve
 
 REVIEW = {"rating": 4, "cleanliness_rating": 5, "comment": "Great stay."}
 
 
 @pytest.fixture
-async def stay(client: AsyncClient, db: AsyncEngine) -> tuple[User, User, int, int]:
+async def stay(client: AsyncClient, db: AsyncEngine, factory: Factory) -> tuple[User, User, int, int]:
     host = await register(client, "host")
     guest = await register(client, "guest")
     listing = await create_listing(client, host)
     today = date.today()
-    booking = await insert_booking(db, listing["id"], guest.id, today - timedelta(days=4), today - timedelta(days=2))
+    booking = (
+        await factory.booking(
+            listing=listing["id"],
+            guest=guest.id,
+            check_in=today - timedelta(days=4),
+            check_out=today - timedelta(days=2),
+            status="completed",
+        )
+    ).id
     return host, guest, int(listing["id"]), booking
 
 
@@ -53,14 +62,32 @@ async def test_a_pending_stay_cannot_be_reviewed(client: AsyncClient, stay: tupl
     assert r.json()["error"]["code"] == "invalid_booking_state"
 
 
-async def test_review_window(client: AsyncClient, db: AsyncEngine, stay: tuple[User, User, int, int]) -> None:
+async def test_review_window(
+    client: AsyncClient, db: AsyncEngine, stay: tuple[User, User, int, int], factory: Factory
+) -> None:
     _, guest, lid, _ = stay
     today = date.today()
-    old = await insert_booking(db, lid, guest.id, today - timedelta(days=20), today - timedelta(days=16))
+    old = (
+        await factory.booking(
+            listing=lid,
+            guest=guest.id,
+            check_in=today - timedelta(days=20),
+            check_out=today - timedelta(days=16),
+            status="completed",
+        )
+    ).id
     r = await client.post(f"/bookings/{old}/review", json=REVIEW, headers=guest.auth)
     assert r.status_code == 403
     assert r.json()["error"]["code"] == "review_window_closed"
-    edge = await insert_booking(db, lid, guest.id, today - timedelta(days=15), today - timedelta(days=13))
+    edge = (
+        await factory.booking(
+            listing=lid,
+            guest=guest.id,
+            check_in=today - timedelta(days=15),
+            check_out=today - timedelta(days=13),
+            status="completed",
+        )
+    ).id
     assert (await client.post(f"/bookings/{edge}/review", json=REVIEW, headers=guest.auth)).status_code == 201
 
 
@@ -73,12 +100,28 @@ async def test_review_validation_and_unknowns(client: AsyncClient, stay: tuple[U
 
 
 async def test_review_window_is_14_days_in_city_time(
-    client: AsyncClient, db: AsyncEngine, stay: tuple[User, User, int, int]
+    client: AsyncClient, db: AsyncEngine, stay: tuple[User, User, int, int], factory: Factory
 ) -> None:
     _, guest, lid, _ = stay
     today = today_in("Europe/Amsterdam")  # the listing's city decides "today"
-    last_day = await insert_booking(db, lid, guest.id, today - timedelta(days=15), today - timedelta(days=14))
-    too_late = await insert_booking(db, lid, guest.id, today - timedelta(days=17), today - timedelta(days=15))
+    last_day = (
+        await factory.booking(
+            listing=lid,
+            guest=guest.id,
+            check_in=today - timedelta(days=15),
+            check_out=today - timedelta(days=14),
+            status="completed",
+        )
+    ).id
+    too_late = (
+        await factory.booking(
+            listing=lid,
+            guest=guest.id,
+            check_in=today - timedelta(days=17),
+            check_out=today - timedelta(days=15),
+            status="completed",
+        )
+    ).id
     assert (await client.post(f"/bookings/{last_day}/review", json=REVIEW, headers=guest.auth)).status_code == 201
     late = await client.post(f"/bookings/{too_late}/review", json=REVIEW, headers=guest.auth)
     assert late.status_code == 403

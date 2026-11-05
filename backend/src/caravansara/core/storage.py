@@ -66,6 +66,12 @@ class Storage:
 
         return await asyncio.to_thread(_head)
 
+    async def put_bytes(self, key: str, data: bytes, content_type: str) -> None:
+        """Store a small object from the server (demo photos); browsers upload through presigned POST."""
+        await asyncio.to_thread(
+            self._client.put_object, Bucket=self.bucket, Key=key, Body=data, ContentType=content_type
+        )
+
     async def delete(self, key: str) -> None:
         await asyncio.to_thread(self._client.delete_object, Bucket=self.bucket, Key=key)
 

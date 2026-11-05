@@ -10,7 +10,8 @@ from sqlalchemy.exc import DBAPIError, IntegrityError
 from sqlalchemy.ext.asyncio import AsyncEngine
 
 from caravansara.core.db import sqlstate
-from tests.helpers import create_listing, insert_booking, register, sql
+from tests.factories import Factory
+from tests.helpers import create_listing, register, sql
 
 D = date(2030, 5, 1)
 
@@ -23,25 +24,61 @@ async def setup(client: AsyncClient, db: AsyncEngine) -> tuple[int, int]:
     return listing["id"], guest.id
 
 
-async def test_overlapping_active_bookings_are_refused(db: AsyncEngine, setup: tuple[int, int]) -> None:
+async def test_overlapping_active_bookings_are_refused(
+    db: AsyncEngine, setup: tuple[int, int], factory: Factory
+) -> None:
     listing_id, guest_id = setup
-    await insert_booking(db, listing_id, guest_id, date(2030, 5, 1), date(2030, 5, 5), "confirmed")
+    await factory.booking(
+        listing=listing_id,
+        guest=guest_id,
+        check_in=date(2030, 5, 1),
+        check_out=date(2030, 5, 5),
+        status="confirmed",
+    )
     with pytest.raises(IntegrityError) as err:
-        await insert_booking(db, listing_id, guest_id, date(2030, 5, 4), date(2030, 5, 6), "pending")
+        await factory.booking(
+            listing=listing_id,
+            guest=guest_id,
+            check_in=date(2030, 5, 4),
+            check_out=date(2030, 5, 6),
+            status="pending",
+        )
     assert sqlstate(err.value) == "23P01"
 
 
-async def test_same_day_turnover_is_allowed(db: AsyncEngine, setup: tuple[int, int]) -> None:
+async def test_same_day_turnover_is_allowed(db: AsyncEngine, setup: tuple[int, int], factory: Factory) -> None:
     listing_id, guest_id = setup
-    await insert_booking(db, listing_id, guest_id, date(2030, 5, 1), date(2030, 5, 5), "confirmed")
-    await insert_booking(db, listing_id, guest_id, date(2030, 5, 5), date(2030, 5, 7), "confirmed")
+    await factory.booking(
+        listing=listing_id,
+        guest=guest_id,
+        check_in=date(2030, 5, 1),
+        check_out=date(2030, 5, 5),
+        status="confirmed",
+    )
+    await factory.booking(
+        listing=listing_id,
+        guest=guest_id,
+        check_in=date(2030, 5, 5),
+        check_out=date(2030, 5, 7),
+        status="confirmed",
+    )
 
 
 @pytest.mark.parametrize("freed_by", ["cancelled", "expired"])
-async def test_cancelled_and_expired_free_the_dates(db: AsyncEngine, setup: tuple[int, int], freed_by: str) -> None:
+async def test_cancelled_and_expired_free_the_dates(
+    db: AsyncEngine, setup: tuple[int, int], freed_by: str, factory: Factory
+) -> None:
     listing_id, guest_id = setup
-    await insert_booking(db, listing_id, guest_id, date(2030, 5, 1), date(2030, 5, 5), freed_by)
-    await insert_booking(db, listing_id, guest_id, date(2030, 5, 1), date(2030, 5, 5), "confirmed")
+    await factory.booking(
+        listing=listing_id, guest=guest_id, check_in=date(2030, 5, 1), check_out=date(2030, 5, 5), status=freed_by
+    )
+    await factory.booking(
+        listing=listing_id,
+        guest=guest_id,
+        check_in=date(2030, 5, 1),
+        check_out=date(2030, 5, 5),
+        status="confirmed",
+    )
 
 
 async def test_idempotency_key_is_unique(db: AsyncEngine, setup: tuple[int, int]) -> None:
@@ -59,25 +96,43 @@ async def test_idempotency_key_is_unique(db: AsyncEngine, setup: tuple[int, int]
 REVIEW = "INSERT INTO reviews (booking_id, listing_id, guest_id, rating, comment) VALUES (:b, :l, :g, :r, 'ok')"
 
 
-async def test_review_needs_a_completed_booking(db: AsyncEngine, setup: tuple[int, int]) -> None:
+async def test_review_needs_a_completed_booking(db: AsyncEngine, setup: tuple[int, int], factory: Factory) -> None:
     listing_id, guest_id = setup
-    booking = await insert_booking(db, listing_id, guest_id, D, date(2030, 5, 3), "confirmed")
+    booking = (
+        await factory.booking(
+            listing=listing_id, guest=guest_id, check_in=D, check_out=date(2030, 5, 3), status="confirmed"
+        )
+    ).id
     with pytest.raises(DBAPIError, match="not completed"):
         await sql(db, REVIEW, b=booking, l=listing_id, g=guest_id, r=5)
 
 
-async def test_review_must_match_its_booking(client: AsyncClient, db: AsyncEngine, setup: tuple[int, int]) -> None:
+async def test_review_must_match_its_booking(
+    client: AsyncClient, db: AsyncEngine, setup: tuple[int, int], factory: Factory
+) -> None:
     listing_id, guest_id = setup
     other = await register(client, "other")
-    booking = await insert_booking(db, listing_id, guest_id, D, date(2030, 5, 3))
+    booking = (
+        await factory.booking(
+            listing=listing_id, guest=guest_id, check_in=D, check_out=date(2030, 5, 3), status="completed"
+        )
+    ).id
     with pytest.raises(IntegrityError):
         await sql(db, REVIEW, b=booking, l=listing_id, g=other.id, r=5)
 
 
-async def test_rating_cache_follows_reviews(db: AsyncEngine, setup: tuple[int, int]) -> None:
+async def test_rating_cache_follows_reviews(db: AsyncEngine, setup: tuple[int, int], factory: Factory) -> None:
     listing_id, guest_id = setup
     for i, rating in enumerate((5, 4)):
-        booking = await insert_booking(db, listing_id, guest_id, date(2030, 6, 1 + 2 * i), date(2030, 6, 2 + 2 * i))
+        booking = (
+            await factory.booking(
+                listing=listing_id,
+                guest=guest_id,
+                check_in=date(2030, 6, 1 + 2 * i),
+                check_out=date(2030, 6, 2 + 2 * i),
+                status="completed",
+            )
+        ).id
         await sql(db, REVIEW, b=booking, l=listing_id, g=guest_id, r=rating)
     rows = await sql(db, "SELECT avg_rating, review_count FROM listings WHERE id = :id", id=listing_id)
     assert (float(rows[0][0]), rows[0][1]) == (4.5, 2)

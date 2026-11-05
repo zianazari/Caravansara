@@ -8,7 +8,7 @@ from caravansara.main import create_app
 
 async def test_countries(client: AsyncClient) -> None:
     r = await client.get("/countries")
-    assert [c["code"] for c in r.json()] == ["DK", "NL", "PT", "SE"]
+    assert [c["code"] for c in r.json()] == ["DK", "IR", "NL", "PT", "SE", "GB", "US"]  # by name
 
 
 async def test_city_autocomplete(client: AsyncClient) -> None:

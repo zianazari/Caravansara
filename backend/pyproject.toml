@@ -58,6 +58,7 @@ ignore = ["S101", "N818", "RUF001", "RUF002", "RUF003"]
 [tool.ruff.lint.per-file-ignores]
 "tests/**" = ["S105", "S106", "S311"]
 "migrations/**" = ["E501"]
+"src/caravansara/devdata/**" = ["S311"]  # seeded RNG for reproducible test data, not for secrets
 "src/caravansara/core/config.py" = ["S105"]  # development defaults, overridden by env vars
 "src/caravansara/identity/schemas.py" = ["S105"]  # token_type = "bearer" is not a secret
 
@@ -99,7 +100,7 @@ root_package = "caravansara"
 name = "core does not depend on feature modules"
 type = "forbidden"
 source_modules = ["caravansara.core"]
-forbidden_modules = ["caravansara.identity", "caravansara.catalog", "caravansara.listings", "caravansara.bookings", "caravansara.reviews", "caravansara.search", "caravansara.jobs"]
+forbidden_modules = ["caravansara.identity", "caravansara.catalog", "caravansara.listings", "caravansara.bookings", "caravansara.reviews", "caravansara.search", "caravansara.jobs", "caravansara.devdata"]
 
 [[tool.importlinter.contracts]]
 name = "identity uses other modules only through their service"
@@ -149,3 +150,16 @@ type = "forbidden"
 allow_indirect_imports = true
 source_modules = ["caravansara.jobs"]
 forbidden_modules = ["caravansara.identity.models", "caravansara.identity.repository", "caravansara.identity.router", "caravansara.catalog.models", "caravansara.catalog.repository", "caravansara.catalog.router", "caravansara.listings.models", "caravansara.listings.repository", "caravansara.listings.router", "caravansara.bookings.models", "caravansara.bookings.repository", "caravansara.bookings.router", "caravansara.reviews.models", "caravansara.reviews.repository", "caravansara.reviews.router", "caravansara.search.models", "caravansara.search.repository", "caravansara.search.router"]
+
+# Development data tools fill tables directly (like seed_demo.sql), so they stay outside the app.
+[[tool.importlinter.contracts]]
+name = "devdata uses only core"
+type = "forbidden"
+source_modules = ["caravansara.devdata"]
+forbidden_modules = ["caravansara.identity", "caravansara.catalog", "caravansara.listings", "caravansara.bookings", "caravansara.reviews", "caravansara.search", "caravansara.jobs"]
+
+[[tool.importlinter.contracts]]
+name = "feature modules do not use devdata"
+type = "forbidden"
+source_modules = ["caravansara.identity", "caravansara.catalog", "caravansara.listings", "caravansara.bookings", "caravansara.reviews", "caravansara.search", "caravansara.jobs"]
+forbidden_modules = ["caravansara.devdata"]

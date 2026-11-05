@@ -1,9 +1,11 @@
 -- Amenity catalog modelled on Airbnb's categories (representative items, extend freely).
+-- Safe to run again: ON CONFLICT DO NOTHING adds only missing rows and never changes existing ones.
 INSERT INTO amenity_categories (name, sort_order) VALUES
  ('Bathroom', 1), ('Bedroom and laundry', 2), ('Entertainment', 3), ('Family', 4),
  ('Heating and cooling', 5), ('Home safety', 6), ('Internet and office', 7),
  ('Kitchen and dining', 8), ('Location features', 9), ('Outdoor', 10),
- ('Parking and facilities', 11), ('Services', 12);
+ ('Parking and facilities', 11), ('Services', 12)
+ON CONFLICT (name) DO NOTHING;
 
 INSERT INTO amenities (category_id, name, icon)
 SELECT c.id, a.name, a.icon
@@ -41,4 +43,5 @@ FROM (VALUES
  ('Services',                'Self check-in',       'key')
  -- "Pets allowed" is not an amenity: it lives in listings.pets_allowed / max_pets
 ) AS a(category, name, icon)
-JOIN amenity_categories c ON c.name = a.category;
+JOIN amenity_categories c ON c.name = a.category
+ON CONFLICT (name) DO NOTHING;
