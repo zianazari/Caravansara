@@ -1,6 +1,6 @@
 <svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" viewBox="0 0 1200 440" width="1200" height="440" role="img" aria-labelledby="t d">
   <title id="t">Caravansara</title>
-  <desc id="d">A lit caravansara courtyard at dusk seen through a pointed arch, with the project name: a place reservation backend.</desc>
+  <desc id="d">A lit caravansara courtyard at dusk seen through a pointed arch, with the project name: a place reservation platform.</desc>
   <style>
     text { font-family: -apple-system, "Segoe UI", Helvetica, Arial, sans-serif; }
     .photo { transform-origin: 905px 260px; animation: drift 22s ease-in-out infinite alternate; }
@@ -50,15 +50,14 @@
     <path d="M650,440 V214 C650,128 790,62 905,22 C1020,62 1160,128 1160,214 V440 Z" fill="none" stroke="#f3c98b" stroke-width="3"/>
     <path d="M636,440 V210 C636,118 782,48 905,6 C1028,48 1174,118 1174,210 V440" fill="none" stroke="#f3c98b" stroke-opacity=".35" stroke-width="1.5"/>
     <g transform="translate(56 0)">
-      <text class="rise r1" x="0" y="150" font-size="16" letter-spacing="5" fill="#f3c98b" font-weight="600">PLACE RESERVATION BACKEND</text>
+      <text class="rise r1" x="0" y="150" font-size="16" letter-spacing="5" fill="#f3c98b" font-weight="600">PLACE RESERVATION PLATFORM</text>
       <text class="rise r2" x="-3" y="226" font-size="72" font-weight="800" fill="#fff8ec">Caravansara</text>
       <text class="rise r3" x="0" y="276" font-size="22" fill="#f6e7cf">Search, hold, pay, stay, review.</text>
-      <text class="rise r3" x="0" y="306" font-size="22" fill="#f6e7cf">Never two guests on the same night.</text>
       <g class="rise r4" font-size="14" font-weight="600" fill="#2a1708">
-        <rect x="0" y="342" width="84" height="28" rx="14" fill="#f3c98b"/><text x="42" y="361" text-anchor="middle">FastAPI</text>
-        <rect x="94" y="342" width="160" height="28" rx="14" fill="#f3c98b"/><text x="174" y="361" text-anchor="middle">PostgreSQL + PostGIS</text>
-        <rect x="264" y="342" width="70" height="28" rx="14" fill="#f3c98b"/><text x="299" y="361" text-anchor="middle">MinIO</text>
-        <rect x="344" y="342" width="118" height="28" rx="14" fill="#f3c98b"/><text x="403" y="361" text-anchor="middle">Swagger /docs</text>
+        <rect x="0" y="312" width="84" height="28" rx="14" fill="#f3c98b"/><text x="42" y="331" text-anchor="middle">FastAPI</text>
+        <rect x="94" y="312" width="160" height="28" rx="14" fill="#f3c98b"/><text x="174" y="331" text-anchor="middle">PostgreSQL + PostGIS</text>
+        <rect x="264" y="312" width="70" height="28" rx="14" fill="#f3c98b"/><text x="299" y="331" text-anchor="middle">MinIO</text>
+        <rect x="344" y="312" width="118" height="28" rx="14" fill="#f3c98b"/><text x="403" y="331" text-anchor="middle">Swagger /docs</text>
       </g>
     </g>
   </g>
