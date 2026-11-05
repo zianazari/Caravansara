@@ -27,6 +27,10 @@ Rationale: any number of API copies and workers run at once; only the database s
   import-linter enforces this in CI, and a new module MUST get its own contract.
 - Splitting out a service, or adding infrastructure (Redis, a queue), MUST be justified with
   numbers from monitoring, recorded in the plan.
+- A tooling package (development or measurement tools, such as `caravansara.devdata`) is not
+  a feature module and needs no `router`, `service`, `repository`, `models` or `schemas`. It
+  MUST have an import-linter contract that lets it import only `core` and forbids every
+  feature module and `core` from importing it, and it MUST refuse to run in production.
 
 Rationale: a booking and its rules stay in one transaction, and deployment stays simple until
 measurements prove otherwise.
@@ -46,6 +50,10 @@ a test, not a user.
 ### IV. Tested Against Real Infrastructure
 
 - Every business rule and every acceptance criterion MUST have an automated test.
+- A success criterion that is a wall-clock time on given hardware (for example, a load
+  finishing within N minutes) may be measured by hand, following the feature's `quickstart.md`,
+  with the result recorded in `docs/backend-design.md`. Every other part of that criterion
+  (counts, ratios, outcomes) still MUST have an automated test.
 - Backend tests run against real PostgreSQL + PostGIS and MinIO (testcontainers); database rules
   are never mocked. Code that only the loser of a race runs MUST have a test that builds that
   exact race.
@@ -138,4 +146,4 @@ Rationale: every component adds setup, monitoring and tests; it must pay for its
   against it before implementation.
 - Day-to-day guidance for agents lives in `CONTEXT.md`.
 
-**Version**: 1.0.0 | **Ratified**: 2026-11-05 | **Last Amended**: 2026-11-05
+**Version**: 1.1.0 | **Ratified**: 2026-11-05 | **Last Amended**: 2026-11-05

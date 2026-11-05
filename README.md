@@ -283,7 +283,7 @@ The plan, in order. Each step builds on the one before it; details are in [`docs
 
 | # | Work | What it brings | Why at this point |
 | --- | --- | --- | --- |
-| 1 | **Spec Kit review** | Lessons from the first Spec Kit feature (test and mock data) written into the constitution | Small, and best done while the experience is fresh; every later step uses the improved method |
+| 1 | **Spec Kit review (rest)** | Decide the deferred workflow proposals and the git extension; the necessary fixes are in constitution v1.1.0 | Small, and every later feature uses the method |
 | 2 | **Wider price columns for rials** | Prices up to `NUMERIC(14,2)`, with a clear 422 above the limit | A real bug: a multi-night stay at real Tehran prices overflows `NUMERIC(10,2)` and returns a 500; it must be fixed before the Persian front-end |
 | 3 | **Index review** | Each index chosen with `EXPLAIN ANALYZE` on the bulk data and real query statistics | The bulk data it needed is ready now |
 | 4 | **Web front-end** | Next.js, TypeScript, shadcn/ui and Tailwind; Persian right-to-left with the Vazirmatn font, and English | The biggest step toward a usable product, on a correct and fast API |
