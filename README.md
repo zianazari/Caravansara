@@ -235,4 +235,4 @@ Tests run against real PostgreSQL + PostGIS and MinIO in containers, because the
 
 ## What's next
 
-More and bulkier test data, monitoring (logs, metrics, traces with Prometheus and Grafana), an index review on real load, a web UI with right-to-left Persian, browser tests with Playwright, and splitting out services only if the numbers ask for it. The plan and its order are in [`docs/future-work.md`](docs/future-work.md).
+Spec-driven development (SDD) for the rest of the work, more and bulkier test data, monitoring (logs, metrics, traces with Prometheus and Grafana), an index review on real load, Redis caching for hot reads once the numbers show where it helps, a web UI with right-to-left Persian, browser tests with Playwright, and splitting out services only if the numbers ask for it. The plan and its order are in [`docs/future-work.md`](docs/future-work.md).
