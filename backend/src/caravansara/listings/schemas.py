@@ -7,7 +7,11 @@ from pydantic import BaseModel, ConfigDict, Field, model_validator
 from caravansara.catalog.schemas import AmenityCategoryOut, CityOut
 from caravansara.listings.models import PropertyType
 
-Money = Annotated[Decimal, Field(max_digits=10, decimal_places=2)]
+# Nightly price and cleaning fee, in every currency (specs/002-rial-price-columns, owner's choice
+# on 2026-11-05): ten times today's top Tehran price, so rial inflation has room. With 365 nights
+# the largest booking total still fits the NUMERIC(14,2) columns.
+MAX_PRICE = Decimal("1000000000.00")
+Money = Annotated[Decimal, Field(max_digits=12, decimal_places=2, le=MAX_PRICE)]
 Currency = Annotated[str, Field(pattern=r"^[A-Z]{3}$", description="ISO 4217 code, e.g. EUR.")]
 
 

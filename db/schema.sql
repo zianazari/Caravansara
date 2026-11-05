@@ -98,9 +98,9 @@ CREATE TABLE listings (
     beds             SMALLINT      NOT NULL DEFAULT 1 CHECK (beds      >= 0),
     bathrooms        NUMERIC(3,1)  NOT NULL DEFAULT 1 CHECK (bathrooms >= 0),
 
-    -- price + times
-    price_per_night  NUMERIC(10,2) NOT NULL CHECK (price_per_night > 0),
-    cleaning_fee     NUMERIC(10,2) NOT NULL DEFAULT 0 CHECK (cleaning_fee >= 0),
+    -- price + times. 14,2: rials; largest total = 1e9 x 365 + 1e9 (specs/002-rial-price-columns)
+    price_per_night  NUMERIC(14,2) NOT NULL CHECK (price_per_night > 0),
+    cleaning_fee     NUMERIC(14,2) NOT NULL DEFAULT 0 CHECK (cleaning_fee >= 0),
     currency         CHAR(3)       NOT NULL DEFAULT 'EUR',
     check_in_time    TIME          NOT NULL DEFAULT '15:00',
     check_out_time   TIME          NOT NULL DEFAULT '11:00',
@@ -171,10 +171,10 @@ CREATE TABLE bookings (
     infants          SMALLINT       NOT NULL DEFAULT 0 CHECK (infants  >= 0),
     pets             SMALLINT       NOT NULL DEFAULT 0 CHECK (pets     >= 0),
 
-    -- price snapshot at booking time (listing price may change later)
-    nightly_price    NUMERIC(10,2)  NOT NULL,
-    cleaning_fee     NUMERIC(10,2)  NOT NULL DEFAULT 0,
-    total_price      NUMERIC(10,2)  NOT NULL,
+    -- price snapshot at booking time (listing price may change later). 14,2 as in listings
+    nightly_price    NUMERIC(14,2)  NOT NULL,
+    cleaning_fee     NUMERIC(14,2)  NOT NULL DEFAULT 0,
+    total_price      NUMERIC(14,2)  NOT NULL,
     currency         CHAR(3)        NOT NULL,
 
     status           booking_status NOT NULL DEFAULT 'pending',

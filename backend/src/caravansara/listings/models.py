@@ -50,8 +50,8 @@ class Listing(Base):
     bedrooms: Mapped[int] = mapped_column(SmallInteger)
     beds: Mapped[int] = mapped_column(SmallInteger)
     bathrooms: Mapped[Decimal] = mapped_column(Numeric(3, 1))
-    price_per_night: Mapped[Decimal] = mapped_column(Numeric(10, 2))
-    cleaning_fee: Mapped[Decimal] = mapped_column(Numeric(10, 2))
+    price_per_night: Mapped[Decimal] = mapped_column(Numeric(14, 2))
+    cleaning_fee: Mapped[Decimal] = mapped_column(Numeric(14, 2))
     currency: Mapped[str] = mapped_column(CHAR(3))
     check_in_time: Mapped[time]
     check_out_time: Mapped[time]

@@ -1,8 +1,13 @@
 """Migrations go down and up cleanly, on a database of their own."""
 
 import asyncio
+from collections.abc import AsyncIterator
+from datetime import date
+from decimal import Decimal
+from uuid import uuid4
 
 import asyncpg
+import pytest
 from alembic import command
 from alembic.config import Config
 
@@ -49,3 +54,135 @@ async def test_downgrade_and_upgrade_again(prepared: Settings) -> None:
         conn = await asyncpg.connect(admin)
         await conn.execute("DROP DATABASE IF EXISTS migration_check WITH (FORCE)")
         await conn.close()
+
+
+# specs/002-rial-price-columns: the five money columns and their width after 0002.
+PRICE_COLUMNS = (
+    ("listings", "price_per_night"),
+    ("listings", "cleaning_fee"),
+    ("bookings", "nightly_price"),
+    ("bookings", "cleaning_fee"),
+    ("bookings", "total_price"),
+)
+WIDTH = (
+    "SELECT table_name, column_name, numeric_precision, numeric_scale FROM information_schema.columns "
+    "WHERE table_schema = 'public' AND (table_name, column_name) IN "
+    "(('listings', 'price_per_night'), ('listings', 'cleaning_fee'), "
+    "('bookings', 'nightly_price'), ('bookings', 'cleaning_fee'), ('bookings', 'total_price'))"
+)
+# A minimal catalog, user, listing and booking: the scratch database has no seed data.
+ROWS = (
+    "INSERT INTO countries (code, name) VALUES ('IR', 'Iran')",
+    "INSERT INTO cities (country_id, name, timezone) SELECT id, 'Tehran', 'Asia/Tehran' FROM countries",
+    "INSERT INTO users (email, password_hash, full_name) VALUES ('host@example.com', 'x', 'Host')",
+    """INSERT INTO listings (host_id, title, property_type, city_id, address, latitude, longitude,
+                             public_location, max_guests, price_per_night, cleaning_fee, currency)
+       SELECT u.id, 'Old flat', 'entire_place', c.id, 'Street 1', 35.7, 51.4,
+              ST_SetSRID(ST_MakePoint(51.4, 35.7), 4326)::geography, 2, 99999999.99, 12.34, 'IRR'
+       FROM users u, cities c""",
+)
+BOOKING = """INSERT INTO bookings (listing_id, guest_id, check_in, check_out, adults, nightly_price, cleaning_fee,
+                                  total_price, currency, status, idempotency_key)
+             SELECT l.id, l.host_id, $1::date, $2::date, 1, $3, $4, $5, 'IRR', 'confirmed', $6 FROM listings l"""
+AMOUNTS = (
+    "SELECT l.price_per_night, l.cleaning_fee, b.nightly_price, b.cleaning_fee, b.total_price "
+    "FROM bookings b JOIN listings l ON l.id = b.listing_id ORDER BY b.id"
+)
+
+
+class Scratch:
+    """A database of its own, moved between Alembic revisions by the test."""
+
+    def __init__(self, url: str) -> None:
+        self.url = url
+        self.plain = url.replace("postgresql+asyncpg://", "postgresql://", 1)
+
+    def _config(self) -> Config:
+        config = Config(str(ALEMBIC_INI))
+        config.attributes["database_url"] = self.url
+        return config
+
+    async def upgrade(self, revision: str) -> None:
+        await asyncio.to_thread(command.upgrade, self._config(), revision)
+
+    async def downgrade(self, revision: str) -> None:
+        await asyncio.to_thread(command.downgrade, self._config(), revision)
+
+    async def fetch(self, query: str, *args: object) -> list[asyncpg.Record]:
+        c = await asyncpg.connect(self.plain)
+        try:
+            rows: list[asyncpg.Record] = await c.fetch(query, *args)
+            return rows
+        finally:
+            await c.close()
+
+    async def execute(self, *queries: str) -> None:
+        c = await asyncpg.connect(self.plain)
+        try:
+            for q in queries:
+                await c.execute(q)
+        finally:
+            await c.close()
+
+    async def add_booking(self, total: Decimal) -> None:
+        c = await asyncpg.connect(self.plain)
+        try:
+            await c.execute(
+                BOOKING, date(2026, 1, 1), date(2026, 1, 3), Decimal("99999999.99"), Decimal("12.34"), total, uuid4()
+            )
+        finally:
+            await c.close()
+
+    async def widths(self) -> set[tuple[str, str, int, int]]:
+        return {(r[0], r[1], r[2], r[3]) for r in await self.fetch(WIDTH)}
+
+
+@pytest.fixture
+async def scratch(prepared: Settings) -> AsyncIterator[Scratch]:
+    admin = prepared.database_url.replace("postgresql+asyncpg://", "postgresql://", 1)
+    conn = await asyncpg.connect(admin)
+    await conn.execute("DROP DATABASE IF EXISTS price_migration_check")
+    await conn.execute("CREATE DATABASE price_migration_check")
+    await conn.close()
+    try:
+        yield Scratch(prepared.database_url.rsplit("/", 1)[0] + "/price_migration_check")
+    finally:
+        conn = await asyncpg.connect(admin)
+        await conn.execute("DROP DATABASE IF EXISTS price_migration_check WITH (FORCE)")
+        await conn.close()
+
+
+def _all(precision: int) -> set[tuple[str, str, int, int]]:
+    return {(t, c, precision, 2) for t, c in PRICE_COLUMNS}
+
+
+async def test_0002_widens_price_columns_and_keeps_values(scratch: Scratch) -> None:
+    await scratch.upgrade("0001")
+    await scratch.execute(*ROWS)
+    await scratch.add_booking(Decimal("99999999.99"))
+    assert await scratch.widths() == _all(10)
+    before = [tuple(r) for r in await scratch.fetch(AMOUNTS)]
+
+    await scratch.upgrade("head")
+    assert await scratch.widths() == _all(14)
+    assert [tuple(r) for r in await scratch.fetch(AMOUNTS)] == before
+
+    await scratch.downgrade("0001")  # every amount fits the old width
+    assert await scratch.widths() == _all(10)
+    assert [tuple(r) for r in await scratch.fetch(AMOUNTS)] == before
+
+
+async def test_downgrade_stops_when_an_amount_no_longer_fits(scratch: Scratch) -> None:
+    await scratch.upgrade("head")
+    await scratch.execute(*ROWS)
+    await scratch.add_booking(Decimal("36505000000.00"))
+    before = [tuple(r) for r in await scratch.fetch(AMOUNTS)]
+
+    # PostgreSQL 22003; Alembic passes the driver's error on unchanged.
+    with pytest.raises(Exception, match="numeric field overflow"):
+        await scratch.downgrade("0001")
+
+    # Nothing changed: same width, same revision, same amounts.
+    assert await scratch.widths() == _all(14)
+    assert [r[0] for r in await scratch.fetch("SELECT version_num FROM alembic_version")] == ["0002"]
+    assert [tuple(r) for r in await scratch.fetch(AMOUNTS)] == before

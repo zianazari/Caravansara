@@ -21,6 +21,7 @@ from caravansara.core.security import (
 )
 from caravansara.core.timeutil import today_in
 from caravansara.listings import geo
+from caravansara.listings.schemas import MAX_PRICE
 
 SETTINGS = Settings(jwt_secret="unit-secret-unit-secret-unit-secret-xx")
 
@@ -49,6 +50,21 @@ class TestStateMachine:
 
 def test_total_price_is_nights_times_price_plus_cleaning() -> None:
     assert rules.total_price(date(2027, 1, 1), date(2027, 1, 4), Decimal("99.99"), Decimal("20")) == Decimal("319.97")
+
+
+class TestStoredTotal:
+    """specs/002-rial-price-columns: a total must fit NUMERIC(14,2), or the API answers 422, not 500."""
+
+    def test_largest_allowed_total_fits(self) -> None:
+        total = rules.total_price(date(2027, 1, 1), date(2028, 1, 1), MAX_PRICE, MAX_PRICE)  # 365 nights
+        assert total == Decimal("366000000000.00")
+        rules.check_total(total)
+        rules.check_total(Decimal("999999999999.99"))
+
+    def test_over_the_column_is_refused(self) -> None:
+        with pytest.raises(AppError) as err:
+            rules.check_total(Decimal("1000000000000.00"))
+        assert (err.value.status_code, err.value.code) == (422, "amount_too_large")
 
 
 class TestDates:

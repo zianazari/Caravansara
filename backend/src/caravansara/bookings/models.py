@@ -30,9 +30,9 @@ class Booking(Base):
     children: Mapped[int] = mapped_column(SmallInteger)
     infants: Mapped[int] = mapped_column(SmallInteger)
     pets: Mapped[int] = mapped_column(SmallInteger)
-    nightly_price: Mapped[Decimal] = mapped_column(Numeric(10, 2))
-    cleaning_fee: Mapped[Decimal] = mapped_column(Numeric(10, 2))
-    total_price: Mapped[Decimal] = mapped_column(Numeric(10, 2))
+    nightly_price: Mapped[Decimal] = mapped_column(Numeric(14, 2))
+    cleaning_fee: Mapped[Decimal] = mapped_column(Numeric(14, 2))
+    total_price: Mapped[Decimal] = mapped_column(Numeric(14, 2))
     currency: Mapped[str] = mapped_column(CHAR(3))
     status: Mapped[BookingStatus] = mapped_column(
         Enum(BookingStatus, name="booking_status", create_type=False, values_callable=lambda e: [m.value for m in e])

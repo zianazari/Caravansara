@@ -3193,6 +3193,7 @@
             "anyOf": [
               {
                 "type": "number",
+                "maximum": 1000000000.0,
                 "exclusiveMinimum": 0.0
               },
               {
@@ -3205,6 +3206,7 @@
             "anyOf": [
               {
                 "type": "number",
+                "maximum": 1000000000.0,
                 "minimum": 0.0
               },
               {
@@ -3712,6 +3714,7 @@
             "anyOf": [
               {
                 "type": "number",
+                "maximum": 1000000000.0,
                 "exclusiveMinimum": 0.0
               },
               {
@@ -3727,6 +3730,7 @@
             "anyOf": [
               {
                 "type": "number",
+                "maximum": 1000000000.0,
                 "minimum": 0.0
               },
               {

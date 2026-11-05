@@ -89,6 +89,9 @@ async def create_booking(
         max_days_ahead=settings.max_days_ahead,
     )
 
+    total = rules.total_price(data.check_in, data.check_out, info.price_per_night, info.cleaning_fee)
+    rules.check_total(total)
+
     now = utcnow()
     # Same transaction: an overdue hold must not block these dates until the worker runs.
     await repo.expire_listing_holds(session, info.id, now)
@@ -103,7 +106,7 @@ async def create_booking(
         pets=data.pets,
         nightly_price=info.price_per_night,
         cleaning_fee=info.cleaning_fee,
-        total_price=rules.total_price(data.check_in, data.check_out, info.price_per_night, info.cleaning_fee),
+        total_price=total,
         currency=info.currency,
         status=S.pending,
         hold_expires_at=now + timedelta(minutes=settings.hold_minutes),
