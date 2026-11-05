@@ -33,12 +33,14 @@ CACHE = ROOT / ".cache" / "insideairbnb"
 OUT_SQL = ROOT / "db" / "seed_demo.sql"
 OUT_PHOTOS = ROOT / "db" / "demo" / "photo_sources.csv"
 
-# Pinned Inside Airbnb snapshots: (city, country code, country path)
+# Pinned Inside Airbnb snapshots: (city, country code, snapshot path, currency)
 CITIES = [
     ("Amsterdam",  "NL", "the-netherlands/north-holland/amsterdam/2026-09-16", "EUR"),
     ("Lisbon",     "PT", "portugal/lisbon/lisbon/2026-09-19",                  "EUR"),
     ("Copenhagen", "DK", "denmark/hovedstaden/copenhagen/2026-09-25",          "DKK"),
     ("Stockholm",  "SE", "sweden/stockholms-län/stockholm/2026-09-25",         "SEK"),
+    ("London",     "GB", "united-kingdom/england/london/2026-09-17",           "GBP"),
+    ("New York City", "US", "united-states/ny/new-york-city/2026-09-14",       "USD"),
 ]
 BASE_URL = "https://data.insideairbnb.com"
 
@@ -181,11 +183,16 @@ def read_csv(path):
         yield from csv.DictReader(f)
 
 
+def cache_file(city, kind):
+    """Cache file for a city: 'New York City' -> new-york-city_listings.csv.gz."""
+    return CACHE / f"{city.lower().replace(' ', '-')}_{kind}.csv.gz"
+
+
 def download():
     CACHE.mkdir(parents=True, exist_ok=True)
     for city, _, path, _ in CITIES:
         for kind in ("listings", "reviews"):
-            dest = CACHE / f"{city.lower()}_{kind}.csv.gz"
+            dest = cache_file(city, kind)
             if dest.exists():
                 continue
             url = f"{BASE_URL}/{urllib.parse.quote(path)}/data/{kind}.csv.gz"
@@ -220,7 +227,7 @@ def build(seed):
     picked = []         # (listing_id, x, currency, price, cleaning)
 
     for city, _, _, currency in CITIES:
-        rows = [x for x in read_csv(CACHE / f"{city.lower()}_listings.csv.gz")
+        rows = [x for x in read_csv(cache_file(city, "listings"))
                 if x["price"] and x["review_scores_rating"] and int(x["number_of_reviews"] or 0) >= 10
                 and x["room_type"] in ROOM_TYPES and x["accommodates"] and x["picture_url"]
                 and x["name"].strip()]
@@ -265,7 +272,7 @@ def build(seed):
     by_airbnb_id = {p[1]["id"]: p for p in picked}
     wanted = {}
     for city, _, _, _ in CITIES:
-        for r in read_csv(CACHE / f"{city.lower()}_reviews.csv.gz"):
+        for r in read_csv(cache_file(city, "reviews")):
             if r["listing_id"] in by_airbnb_id and is_english(r["comments"]):
                 wanted.setdefault(r["listing_id"], []).append(r)
 
