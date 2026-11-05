@@ -250,6 +250,8 @@ backend/     FastAPI app, Alembic migrations, tests  → backend/README.md
 e2e/         Playwright API tests against the running stack (48 tests)  → e2e/README.md
 postman/     Postman collection of all endpoints, with saved ids and tokens
 observability/  Alloy, Loki, Tempo, Prometheus (alerts + rule tests), Grafana dashboard  → observability/README.md
+.specify/    GitHub Spec Kit: constitution, templates, scripts (commands in .claude/skills/)
+specs/       one folder per feature: spec.md, plan.md, tasks.md
 db/          schema, search query, seeds, ERD, demo-data builder
 docs/        backend design (fa), database overview, ERD demo deck, future work
              README graphics: docs/images/readme (diagram sources in diagrams/*.mmd, rebuilt by build_diagrams.py)
@@ -258,13 +260,27 @@ docs/        backend design (fa), database overview, ERD demo deck, future work
 
 Tests run against real PostgreSQL + PostGIS and MinIO in containers, because the most important rules live in the database and can't be mocked. Details in [`backend/README.md`](backend/README.md) and [Tests](#tests).
 
+## How we work
+
+Every feature goes through [GitHub Spec Kit](https://github.com/github/spec-kit), so decisions are written and reviewed before code:
+
+| Step | Command | Output |
+| --- | --- | --- |
+| Principles (once) | `/speckit-constitution` | [`.specify/memory/constitution.md`](.specify/memory/constitution.md) |
+| What and why, with Given/When/Then acceptance criteria | `/speckit-specify`, `/speckit-clarify` | `specs/NNN-name/spec.md` |
+| Technical plan, checked against the principles | `/speckit-plan` | `plan.md` |
+| Ordered task list, then a consistency check | `/speckit-tasks`, `/speckit-analyze` | `tasks.md` |
+| Code and tests, until the code matches the docs | `/speckit-implement`, `/speckit-converge` | code, tests |
+
+The constitution comes from decisions already in this repo: the database guards the critical rules, module borders are enforced, the API contract comes first, tests run on real infrastructure, privacy by default, everything observable, and nothing added before the numbers ask for it.
+
 ## What's next
 
 The plan, in order. Each step builds on the one before it; details are in [`docs/future-work.md`](docs/future-work.md).
 
 | # | Work | What it brings | Why at this point |
 | --- | --- | --- | --- |
-| 1 | **Spec-driven development** | Every task starts from a spec with acceptance criteria, a plan and a task list | It is how all the later work gets done |
+| 1 | **First feature with Spec Kit** | Step 2 run end to end with GitHub Spec Kit, from spec to merge | Spec Kit and the constitution are set up; the method has to prove itself once |
 | 2 | **More test and mock data** | More cities and listings, edge cases, Persian text, and a generator for millions of rows | The index review and the edge-case tests need it |
 | 3 | **Index review** | Each index chosen with `EXPLAIN ANALYZE` on large data and real query statistics | Without real data and queries, picking indexes is guesswork |
 | 4 | **Redis caching** | Faster hot reads such as search, never for booking or availability | A slow query should be fixed with an index first, not hidden behind a cache |

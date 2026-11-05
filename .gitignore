@@ -16,3 +16,6 @@ htmlcov/
 
 # Playwright output when run from the repo root
 test-results/
+
+# Claude Code: personal settings stay local; .claude/skills (Spec Kit commands) is shared
+.claude/settings.local.json

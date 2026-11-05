@@ -73,7 +73,8 @@ Amenity seed: 12 categories, 31 amenities. Search uses AND logic for amenity fil
 - `CONTEXT.md`: this file
 - `docs/backend-design.md`: **source of truth** for the backend requirements and design (decided 2026-11-01); diagrams in `docs/images/`
 - `docs/backend-design.pdf`: PDF export of that file; regenerate after changes
-- `docs/future-work.md`: planned work: spec-driven development (SDD) as the way to do the rest, more test and mock data, then database index review, Redis caching, the front-end (`frontend/`: Next.js App Router, TypeScript, shadcn/ui, Tailwind, Vitest on Vite; Persian RTL with Vazirmatn as default, English as second language), Playwright browser tests, microservices. It lists only unstarted work; finished work goes into the design docs
+- `.specify/` (templates, scripts, `memory/constitution.md`) and `.claude/skills/speckit-*`: GitHub Spec Kit; `specs/NNN-name/` holds each feature's spec, plan and tasks; `.github/pull_request_template.md` has the checklist
+- `docs/future-work.md`: planned work: the first full feature with Spec Kit, more test and mock data, then database index review, Redis caching, the front-end (`frontend/`: Next.js App Router, TypeScript, shadcn/ui, Tailwind, Vitest on Vite; Persian RTL with Vazirmatn as default, English as second language), Playwright browser tests, microservices. It lists only unstarted work; finished work goes into the design docs
 - `backend/`: FastAPI app, Alembic migrations, tests; how to run in `backend/README.md`. Swagger UI at `/docs` (a requirement); the API contract is `backend/openapi.json`, checked by a test, rewritten with `caravansara export-openapi`
 - `e2e/`: Playwright API tests (48) against the running `docker compose` stack; `e2e/compose.e2e.yml` raises the per-IP register/login limits; test users are `e2e.*@caravansara.example.com`, password `E2e-Pass-2026!`, and are never deleted
 - `postman/`: Postman collection of all endpoints (import into Postman or the VS Code extension) and `sample-photo.jpg` for the upload request
@@ -90,10 +91,12 @@ Amenity seed: 12 categories, 31 amenities. Search uses AND logic for amenity fil
 ## Status and next step
 
 - Done: database design, backend design, demo data, backend v1 (all 8 steps of `docs/backend-design.md`; 124 tests, 97.8% coverage) and the backend test gaps (recorded in the test strategy of `docs/backend-design.md`; now 142 tests, 98.3% coverage) and monitoring (logs, metrics, traces, dashboard and alerts; `observability/README.md`; 161 tests, 98.3% coverage).
-- Next: section 1 of `docs/future-work.md` (set up SDD), then section 2 (more test and mock data). Finished work is recorded in `docs/backend-design.md` (test strategy, implementation steps), not in future work.
+- Spec Kit is set up and the constitution written (2026-11-05).
+- Next: section 1 of `docs/future-work.md`: run section 2 (more test and mock data) as the first full Spec Kit feature, starting with `/speckit-specify`. Finished work is recorded in `docs/backend-design.md` (test strategy, implementation steps), not in future work.
 
 ## Working conventions
 
+- **Spec Kit for every feature (decided 2026-11-05):** `/speckit-specify` → `/speckit-clarify` (if open questions) → `/speckit-plan` → `/speckit-tasks` → `/speckit-analyze` → `/speckit-implement` → `/speckit-converge`, on a feature branch, with `specs/NNN-name/` in the same PR. Principles: `.specify/memory/constitution.md` (v1.0.0). Spec Kit v1.2.3 (pinned two weeks behind latest; upgrade with `specify integration upgrade claude`). Skip only for changes that alter no behaviour. Specs, plans and tasks are written in Persian (plain Markdown); template headings and ids (`FR-001`, `T001`), code, paths and API names stay English; the constitution is English.
 - Save every project file into `/Users/zia/Caravansara` on Zia's Mac (DB design, backend docs and code all live there).
 - Test SQL on a real PostgreSQL before saving; re-render Mermaid and re-parse DBML after schema changes.
 - Keep `schema.sql`, `schema.dbml`, `erd.mmd`/`erd.png`, `db/README.md` and the docs in sync.
