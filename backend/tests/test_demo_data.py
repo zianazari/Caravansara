@@ -255,9 +255,25 @@ async def test_persian_text_variety(demo: cli.DemoResult, db: AsyncEngine) -> No
     assert any("‌" in t for t in texts)  # zero-width non-joiner, as in می‌شود
 
 
-async def test_rial_totals_fit_price_columns(demo: cli.DemoResult, db: AsyncEngine) -> None:
-    ((top,),) = await sql(db, "SELECT max(total_price) FROM bookings WHERE currency = 'IRR'")
-    assert top < 99_999_999.99
+async def test_rial_prices_are_market_prices(demo: cli.DemoResult, db: AsyncEngine) -> None:
+    """specs/002-rial-price-columns US3: real Iranian prices, now that the columns hold them."""
+    rows = await sql(
+        db,
+        "SELECT property_type::text, min(price_per_night), max(price_per_night) FROM listings "
+        "WHERE currency = 'IRR' GROUP BY 1",
+    )
+    ranges = {kind: (low, high) for kind, low, high in rows}
+    assert ranges["entire_place"][0] >= 10_000_000
+    assert ranges["entire_place"][1] == 100_000_000
+    for room in ("private_room", "shared_room"):
+        assert ranges[room][0] >= 2_500_000
+        assert ranges[room][1] <= 10_000_000
+
+    ((top_total, longest),) = await sql(
+        db, "SELECT max(total_price), max(check_out - check_in) FROM bookings WHERE currency = 'IRR'"
+    )
+    assert 99_999_999.99 < top_total <= 999_999_999_999.99  # over the old column, inside the new one
+    assert longest > 4
 
 
 # ---------- US2-2: last, because it changes a demo hold ----------------------

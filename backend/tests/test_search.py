@@ -171,3 +171,30 @@ async def test_an_overdue_hold_does_not_hide_a_listing(
     assert titles(await client.get("/search/listings", params=params)) == ["Near"]  # before the worker runs
     filters = await client.get("/search/filters", params=params)
     assert filters.json()["total"] == 1
+
+
+async def test_search_total_matches_booking_total_for_long_rial_stay(client: AsyncClient) -> None:
+    """specs/002-rial-price-columns FR-009: one rule, one precision, for search and booking."""
+    host = await register(client, "host")
+    tehran = await city_id(client, "Tehran")
+    await create_listing(
+        client,
+        host,
+        title="Tehran flat",
+        city=tehran,
+        latitude=35.72,
+        longitude=51.39,
+        price_per_night="100000000.00",
+        cleaning_fee="5000000.00",
+        currency="IRR",
+    )
+    stay = {"check_in": days(10), "check_out": days(375)}  # 365 nights
+    found = await client.get("/search/listings", params={"city_id": tehran, **stay})
+    assert titles(found) == ["Tehran flat"]
+    item = found.json()["items"][0]
+    assert item["total_price"] == "36505000000.00"
+
+    guest = await register(client, "guest")
+    booked = await reserve(client, guest, item["id"], 10, 375)
+    assert booked.status_code == 201, booked.text
+    assert booked.json()["total_price"] == item["total_price"]

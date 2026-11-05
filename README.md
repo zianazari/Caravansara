@@ -4,7 +4,7 @@
 
 <p align="center">
   <a href="https://github.com/zianazari/Caravansara/actions/workflows/ci.yml"><img src="https://github.com/zianazari/Caravansara/actions/workflows/ci.yml/badge.svg" alt="CI"></a>
-  <img src="https://img.shields.io/badge/tests-202%20%C2%B7%2098.0%25%20coverage-b5651d" alt="202 tests, 98.0% coverage">
+  <img src="https://img.shields.io/badge/tests-216%20%C2%B7%2098.0%25%20coverage-b5651d" alt="216 tests, 98.0% coverage">
   <img src="https://img.shields.io/badge/e2e-48%20Playwright%20API%20tests-2EAD33" alt="48 Playwright API tests">
 </p>
 
@@ -204,7 +204,7 @@ Two layers, because each one catches what the other can't:
 | --- | --- | --- |
 | **Runs against** | PostgreSQL + PostGIS and MinIO that testcontainers starts for each run | The real `docker compose` stack, from outside, over HTTP |
 | **Proves** | Every rule in each module, exact race moments, DST, migrations, the API contract | The built image, real settings and wiring: all 30 endpoints, photo upload to MinIO, the whole host and guest story |
-| **Size** | 202 tests, 98.0% coverage | 48 tests, a few seconds |
+| **Size** | 216 tests, 98.0% coverage | 48 tests, a few seconds |
 
 The Playwright tests use its `request` fixture, so they need no browser yet; browser tests for the UI will join the same project. Some highlights:
 
@@ -284,9 +284,8 @@ The plan, in order. Each step builds on the one before it; details are in [`docs
 | # | Work | What it brings | Why at this point |
 | --- | --- | --- | --- |
 | 1 | **Spec Kit review (rest)** | Decide the deferred workflow proposals and the git extension; the necessary fixes are in constitution v1.1.0 | Small, and every later feature uses the method |
-| 2 | **Wider price columns for rials** | Prices up to `NUMERIC(14,2)`, with a clear 422 above the limit | A real bug: a multi-night stay at real Tehran prices overflows `NUMERIC(10,2)` and returns a 500; it must be fixed before the Persian front-end |
-| 3 | **Index review** | Each index chosen with `EXPLAIN ANALYZE` on the bulk data and real query statistics | The bulk data it needed is ready now |
-| 4 | **Web front-end** | Next.js, TypeScript, shadcn/ui and Tailwind; Persian right-to-left with the Vazirmatn font, and English | The biggest step toward a usable product, on a correct and fast API |
-| 5 | **Playwright browser tests** | Guest and host journeys, a double booking from two browsers, right-to-left and mobile checks | Written with the front-end, so each page is tested when it is built |
-| 6 | **Redis caching** | Faster hot reads such as search, never for booking or availability | Only if monitoring shows a slow query that indexes did not fix |
-| 7 | **Microservices** | Splitting out a service, starting with `search` | Only if the monitoring numbers show a real need, since it is the most expensive step |
+| 2 | **Index review** | Each index chosen with `EXPLAIN ANALYZE` on the bulk data and real query statistics | The bulk data it needed is ready now |
+| 3 | **Web front-end** | Next.js, TypeScript, shadcn/ui and Tailwind; Persian right-to-left with the Vazirmatn font, and English | The biggest step toward a usable product, on a correct and fast API |
+| 4 | **Playwright browser tests** | Guest and host journeys, a double booking from two browsers, right-to-left and mobile checks | Written with the front-end, so each page is tested when it is built |
+| 5 | **Redis caching** | Faster hot reads such as search, never for booking or availability | Only if monitoring shows a slow query that indexes did not fix |
+| 6 | **Microservices** | Splitting out a service, starting with `search` | Only if the monitoring numbers show a real need, since it is the most expensive step |

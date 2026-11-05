@@ -31,6 +31,18 @@ def total_price(check_in: date, check_out: date, nightly: Decimal, cleaning_fee:
     return (nightly * nights(check_in, check_out) + cleaning_fee).quantize(Decimal("0.01"))
 
 
+# The widest amount the NUMERIC(14,2) price columns hold (specs/002-rial-price-columns). The
+# listing price limit and max_nights = 365 keep every total far below it; this only matters if
+# max_nights is raised to 999 or more.
+MAX_STORED_AMOUNT = Decimal("999999999999.99")
+
+
+def check_total(total: Decimal) -> None:
+    """Refuse a total the database could not store: a clear 422 instead of a 500."""
+    if total > MAX_STORED_AMOUNT:
+        raise Unprocessable("amount_too_large", "The total for this stay is too large to store.")
+
+
 def check_dates(check_in: date, check_out: date, today: date, *, max_nights: int, max_days_ahead: int) -> None:
     """``today`` is the date in the listing's city."""
     if check_out <= check_in:

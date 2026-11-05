@@ -5,11 +5,13 @@ from datetime import date, timedelta
 from typing import Any
 
 import pytest
-from httpx import AsyncClient
+from httpx import ASGITransport, AsyncClient
 from sqlalchemy.ext.asyncio import AsyncEngine
 
+from caravansara.core.config import Settings
+from caravansara.main import create_app
 from tests.factories import Factory
-from tests.helpers import User, create_listing, days, register, reserve
+from tests.helpers import User, city_id, create_listing, days, register, reserve, sql
 
 
 @pytest.fixture
@@ -223,3 +225,56 @@ async def test_deactivating_a_listing_keeps_its_bookings(
     assert (await reserve(client, guest, lid, 30, 32)).status_code == 404  # but no new bookings
     cancel = await client.post(f"/bookings/{booking['id']}/cancel", headers=host.auth)
     assert cancel.json()["status"] == "cancelled"
+
+
+# specs/002-rial-price-columns: real Tehran prices, which overflowed NUMERIC(10,2) before migration 0002.
+RIAL = {"price_per_night": "100000000.00", "cleaning_fee": "5000000.00", "currency": "IRR"}
+
+
+async def test_rial_stay_of_365_nights(client: AsyncClient) -> None:
+    host = await register(client, "host")
+    guest = await register(client, "guest")
+    listing = await create_listing(client, host, city=await city_id(client, "Tehran"), **RIAL)
+    lid = int(listing["id"])
+
+    r = await reserve(client, guest, lid, 10, 375)
+    assert r.status_code == 201, r.text
+    amounts = ("nightly_price", "cleaning_fee", "total_price")
+    expected = ("100000000.00", "5000000.00", "36505000000.00")  # 365 x 100,000,000 + 5,000,000
+    b = r.json()
+    assert (b["nights"], *(b[k] for k in amounts)) == (365, *expected)
+
+    assert (await client.post(f"/bookings/{b['id']}/pay", headers=guest.auth)).status_code == 200
+    read = (await client.get(f"/bookings/{b['id']}", headers=guest.auth)).json()
+    assert tuple(read[k] for k in amounts) == expected
+    trips = (await client.get("/me/bookings", headers=guest.auth)).json()["items"]
+    of_listing = (await client.get(f"/listings/{lid}/bookings", headers=host.auth)).json()["items"]
+    assert [t["total_price"] for t in trips] == [t["total_price"] for t in of_listing] == ["36505000000.00"]
+
+
+TOP = {"price_per_night": "1000000000.00", "cleaning_fee": "1000000000.00", "currency": "IRR"}
+
+
+async def test_max_price_with_longest_stay(client: AsyncClient) -> None:
+    host = await register(client, "host")
+    guest = await register(client, "guest")
+    listing = await create_listing(client, host, **TOP)
+    r = await reserve(client, guest, int(listing["id"]), 10, 375)  # 365 nights, the default limit
+    assert r.status_code == 201, r.text
+    assert r.json()["total_price"] == "366000000000.00"
+
+
+async def test_total_over_storage_is_422_not_500(prepared: Settings, engine: AsyncEngine) -> None:
+    """If max_nights is ever raised far enough, a total can outgrow NUMERIC(14,2): refuse it clearly."""
+    app = create_app(prepared.model_copy(update={"max_nights": 1000}))
+    async with (
+        app.router.lifespan_context(app),
+        AsyncClient(transport=ASGITransport(app=app), base_url="http://test/api/v1") as client,
+    ):
+        host = await register(client, "host")
+        guest = await register(client, "guest")
+        listing = await create_listing(client, host, **TOP)
+        r = await reserve(client, guest, int(listing["id"]), 10, 1009)  # 999 x 1e9 + 1e9 = 1e12
+        assert r.status_code == 422, r.text
+        assert r.json()["error"]["code"] == "amount_too_large"
+    assert await sql(engine, "SELECT count(*) FROM bookings") == [(0,)]

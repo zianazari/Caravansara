@@ -34,19 +34,19 @@ New York is the only city behind UTC, and Tehran is UTC+3:30. Together they catc
 | Pets allowed (from the "Pets allowed" amenity) | Bookings: dates, guests, party size |
 | Review date and text (English only, up to 15 latest per listing) | Photos: drawn images, one per room type |
 
-The Persian listings in Iran are written for this project in `fa_listings.json`: titles, descriptions, neighbourhoods and reviews. Inside Airbnb has no Persian text, and the right-to-left UI needs real Persian. Their texts mix Persian with digits and Latin words, use the zero-width non-joiner, and include one description over 1,000 characters and reviews under 20 characters. Prices are in rials (IRR), between 2,500,000 and 20,000,000 a night.
+The Persian listings in Iran are written for this project in `fa_listings.json`: titles, descriptions, neighbourhoods and reviews. Inside Airbnb has no Persian text, and the right-to-left UI needs real Persian. Their texts mix Persian with digits and Latin words, use the zero-width non-joiner, and include one description over 1,000 characters and reviews under 20 characters. Prices are in rials (IRR), at today's market level: whole places 18 to 100 million a night (Tehran from 22.5 million), rooms 5 to 10 million. They follow Jabama's Tehran listings on 2026-11-05 (one toman is ten rials).
 
 **Privacy.** Real host and reviewer names are dropped. A host's name in a review or description is replaced by the fake host's first name. A review that still names a real host or reviewer is skipped. The build stops before writing the file if any real name is left in a review. The real names are not in the repo, so CI cannot check them; this build step does instead.
 
-**Rial limit.** The price columns are `NUMERIC(10,2)`, at most 99,999,999.99. A multi-night stay at real Tehran prices does not fit, so the demo keeps rial prices low and Persian stays at most 4 nights; the build stops if a total would overflow. Widening the columns is planned in [`docs/future-work.md`](../../docs/future-work.md).
+**Rial amounts.** The price columns are `NUMERIC(14,2)` (migration `0002`, [specs/002-rial-price-columns](../../specs/002-rial-price-columns/)), and the API accepts at most 1,000,000,000 a night. Persian stays are 1–14 nights like the rest of the demo, so the largest rial total (1,407,500,000) is far above the old limit of 99,999,999.99. The build stops if a price or a total would not fit.
 
 ## Contents
 
 - 790 listings: 561 entire places, 218 private rooms, 11 shared rooms
 - 2,043 users: 759 hosts, the guests, and the two demo accounts
-- 10,742 bookings: 9,525 completed (one behind each review, plus a few edge cases), 1,044 confirmed, 171 cancelled, 1 pending and 1 expired
+- 10,748 bookings: 9,525 completed (one behind each review, plus a few edge cases), 1,050 confirmed, 171 cancelled, 1 pending and 1 expired
 - 9,523 reviews; the trigger fills `avg_rating` and `review_count` (city averages 4.40–4.73)
-- 4,548 photos, 3–8 per listing
+- 4,549 photos, 3–8 per listing
 
 Upcoming bookings are relative to the day you load the file, in the listing city's time zone (`(now() AT TIME ZONE 'Europe/Amsterdam')::date + 20`), so they stay in the future. Past bookings behind reviews use fixed dates.
 

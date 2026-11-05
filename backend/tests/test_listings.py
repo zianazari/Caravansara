@@ -3,12 +3,13 @@
 from typing import Any
 
 import httpx
+import pytest
 from httpx import AsyncClient
 from sqlalchemy.ext.asyncio import AsyncEngine
 
 from caravansara.core.config import Settings
 from caravansara.listings.geo import haversine_m
-from tests.helpers import AMSTERDAM, amenity_ids, city_id, create_listing, listing_body, register
+from tests.helpers import AMSTERDAM, amenity_ids, city_id, create_listing, listing_body, register, sql
 
 
 async def test_create_and_view(client: AsyncClient) -> None:
@@ -220,3 +221,39 @@ async def _post_file(signed: dict[str, Any], content: bytes, content_type: str) 
     fields = dict(signed["fields"]) | {"Content-Type": content_type}
     async with httpx.AsyncClient() as storage:
         return await storage.post(signed["url"], data=fields, files={"file": ("f", content, content_type)})
+
+
+# specs/002-rial-price-columns: one limit of 1,000,000,000.00 for every currency.
+@pytest.mark.parametrize(
+    ("field", "value"),
+    [
+        ("price_per_night", "1000000000.01"),  # over the limit
+        ("cleaning_fee", "1000000000.01"),
+        ("price_per_night", "100.001"),  # more than two decimals
+        ("price_per_night", "0"),  # must be positive
+        ("cleaning_fee", "-1"),  # zero or more
+    ],
+)
+async def test_price_rules_on_create_and_edit(client: AsyncClient, engine: AsyncEngine, field: str, value: str) -> None:
+    host = await register(client, "host")
+    body = listing_body(await city_id(client), **{field: value})
+    refused = await client.post("/listings", json=body, headers=host.auth)
+    assert refused.status_code == 422, refused.text
+    error = refused.json()["error"]
+    assert error["code"] == "validation_error"
+    assert [d["loc"] for d in error["details"]] == [["body", field]]
+    assert await sql(engine, "SELECT count(*) FROM listings") == [(0,)]
+
+    listing = await create_listing(client, host)
+    path = f"/listings/{listing['id']}"
+    edit = await client.patch(path, json={field: value}, headers=host.auth)
+    assert edit.status_code == 422, edit.text
+    assert edit.json()["error"]["code"] == "validation_error"
+    assert (await client.get(path)).json()[field] == listing[field]  # the old price stays
+
+
+async def test_the_price_limit_itself_is_allowed(client: AsyncClient) -> None:
+    host = await register(client, "host")
+    top = {"price_per_night": "1000000000.00", "cleaning_fee": "1000000000.00", "currency": "IRR"}
+    listing = await create_listing(client, host, **top)
+    assert (listing["price_per_night"], listing["cleaning_fee"]) == ("1000000000.00", "1000000000.00")
