@@ -8,7 +8,7 @@ from sqlalchemy.ext.asyncio import AsyncEngine
 
 from caravansara import cli
 from caravansara.core.config import Settings
-from tests.helpers import sql
+from tests.helpers import create_listing, register, sql
 
 
 @pytest.fixture
@@ -17,9 +17,33 @@ def use_test_settings(prepared: Settings, monkeypatch: pytest.MonkeyPatch) -> Se
     return prepared
 
 
-async def test_seed_skips_an_existing_catalog(use_test_settings: Settings, capsys: pytest.CaptureFixture[str]) -> None:
+async def test_seed_adds_only_missing_rows(
+    use_test_settings: Settings, db: AsyncEngine, capsys: pytest.CaptureFixture[str]
+) -> None:
     await asyncio.to_thread(cli.main, ["seed"])
-    assert "already present" in capsys.readouterr().out
+    assert "catalog up to date: nothing new" in capsys.readouterr().out
+
+    before = dict(await sql(db, "SELECT name, id FROM cities WHERE name <> 'London'"))
+    await sql(db, "DELETE FROM cities WHERE name = 'London'")
+    await asyncio.to_thread(cli.main, ["seed"])
+    assert "0 new countries, 1 new cities, 0 new amenities" in capsys.readouterr().out
+
+    after = dict(await sql(db, "SELECT name, id FROM cities"))
+    assert len(after) == 9
+    assert {name: after[name] for name in before} == before  # existing rows keep their ids
+
+
+async def test_seed_keeps_existing_data(
+    use_test_settings: Settings, client: AsyncClient, db: AsyncEngine, capsys: pytest.CaptureFixture[str]
+) -> None:
+    host = await register(client, "host")
+    listing = await create_listing(client, host)
+    await asyncio.to_thread(cli.main, ["seed"])
+    assert "nothing new" in capsys.readouterr().out
+    rows = await sql(
+        db, "SELECT (SELECT count(*) FROM users), (SELECT count(*) FROM listings WHERE id = :id)", id=listing["id"]
+    )
+    assert tuple(rows[0]) == (1, 1)
 
 
 async def test_migrate_is_idempotent_and_storage_init(

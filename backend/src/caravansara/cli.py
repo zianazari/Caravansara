@@ -1,11 +1,14 @@
 """Command line: ``caravansara <command>``.
 
-migrate, seed, seed-demo, init-storage, worker, run-jobs, serve and export-openapi.
+migrate, seed, seed-demo, seed-bulk, init-storage, worker, run-jobs, serve and export-openapi.
 """
 
 import argparse
 import asyncio
 import json
+import sys
+from dataclasses import dataclass
+from datetime import UTC, date, datetime
 from pathlib import Path
 
 import asyncpg
@@ -33,40 +36,66 @@ def migrate(settings: Settings, revision: str = "head") -> None:
     command.upgrade(config, revision)
 
 
-async def _run_sql_files(
-    settings: Settings, files: list[Path], *, skip_if: str | None = None, wrap: bool = True
-) -> bool:
-    """Run SQL scripts, in one transaction when ``wrap``. Returns False when ``skip_if`` finds rows."""
+async def _run_sql_file(settings: Settings, path: Path) -> None:
+    """Run one SQL script as-is (it brings its own BEGIN/COMMIT)."""
+    script = path.read_text(encoding="utf-8")  # noqa: ASYNC240 (small local file, read once)
     conn = await asyncpg.connect(_dsn(settings))
     try:
-        if skip_if and await conn.fetchval(skip_if):
-            return False
-        # No parameters, so asyncpg uses the simple protocol and runs each whole script.
-        if wrap:
-            async with conn.transaction():
-                for path in files:
-                    await conn.execute(path.read_text(encoding="utf-8"))
-        else:
-            for path in files:
-                await conn.execute(path.read_text(encoding="utf-8"))
-        return True
+        # No parameters, so asyncpg uses the simple protocol and runs the whole script.
+        await conn.execute(script)
     finally:
         await conn.close()
 
 
-async def seed_catalog(settings: Settings) -> bool:
-    """Countries, cities and amenities. Skipped when the catalog already has rows."""
-    return await _run_sql_files(
-        settings,
-        [settings.seed_dir / name for name in CATALOG_SEEDS],
-        skip_if="SELECT EXISTS (SELECT 1 FROM amenities) OR EXISTS (SELECT 1 FROM countries)",
+@dataclass(frozen=True)
+class CatalogResult:
+    """New rows added by one ``seed`` run; ``was_empty`` when the catalog had no rows before."""
+
+    countries: int
+    cities: int
+    amenities: int
+    was_empty: bool
+
+    def __bool__(self) -> bool:
+        return self.was_empty
+
+    def summary(self) -> str:
+        counts = f"{self.countries} new countries, {self.cities} new cities, {self.amenities} new amenities"
+        if self.was_empty:
+            return f"catalog loaded: {self.countries} countries, {self.cities} cities, {self.amenities} amenities"
+        if not (self.countries or self.cities or self.amenities):
+            return "catalog up to date: nothing new"
+        return f"catalog up to date: {counts}"
+
+
+_CATALOG_COUNTS = (
+    "SELECT (SELECT count(*) FROM countries), (SELECT count(*) FROM cities), (SELECT count(*) FROM amenities)"
+)
+
+
+async def seed_catalog(settings: Settings) -> CatalogResult:
+    """Countries, cities and amenities. Adds only missing rows, so it is safe on a database with data."""
+    conn = await asyncpg.connect(_dsn(settings))
+    try:
+        before = await conn.fetchrow(_CATALOG_COUNTS)
+        async with conn.transaction():
+            for name in CATALOG_SEEDS:
+                await conn.execute((settings.seed_dir / name).read_text(encoding="utf-8"))
+        after = await conn.fetchrow(_CATALOG_COUNTS)
+    finally:
+        await conn.close()
+    return CatalogResult(
+        countries=after[0] - before[0],
+        cities=after[1] - before[1],
+        amenities=after[2] - before[2],
+        was_empty=before[0] == 0 and before[2] == 0,
     )
 
 
 async def seed_demo(settings: Settings) -> None:
     """Demo users, listings, bookings and reviews. Needs the catalog and empty users/listings."""
     # The file has its own BEGIN/COMMIT and refuses to run on a non-empty database.
-    await _run_sql_files(settings, [settings.seed_dir / DEMO_SEED], wrap=False)
+    await _run_sql_file(settings, settings.seed_dir / DEMO_SEED)
 
 
 def openapi_document() -> str:
@@ -76,11 +105,18 @@ def openapi_document() -> str:
     return json.dumps(create_app(Settings()).openapi(), indent=2, ensure_ascii=False) + "\n"
 
 
-def main(argv: list[str] | None = None) -> None:
+def _at_least_100(text: str) -> int:
+    value = int(text)
+    if value < 100:
+        raise argparse.ArgumentTypeError("must be at least 100")
+    return value
+
+
+def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(prog="caravansara")
     sub = parser.add_subparsers(dest="command", required=True)
     sub.add_parser("migrate", help="apply database migrations (alembic upgrade head)")
-    sub.add_parser("seed", help="load countries, cities and amenities (skipped if present)")
+    sub.add_parser("seed", help="load countries, cities and amenities (adds only missing rows)")
     sub.add_parser("seed-demo", help="load demo data built from Inside Airbnb (empty database only)")
     storage = sub.add_parser("init-storage", help="create the photo bucket if missing")
     storage.add_argument("--public-read", action="store_true", help="let browsers read photos (development)")
@@ -92,7 +128,45 @@ def main(argv: list[str] | None = None) -> None:
     serve.add_argument("--reload", action="store_true")
     export = sub.add_parser("export-openapi", help="write the API contract (openapi.json) after an intended API change")
     export.add_argument("--output", type=Path, default=OPENAPI_FILE)
-    args = parser.parse_args(argv)
+    bulk = sub.add_parser("seed-bulk", help="generate and load bulk data into its own database (development only)")
+    bulk.add_argument("--listings", type=_at_least_100, default=100_000, help="number of listings (default 100000)")
+    bulk.add_argument("--seed", type=int, default=42)
+    bulk.add_argument("--today", type=date.fromisoformat, default=None, help="reference date (default: today, UTC)")
+    bulk.add_argument("--database", default="caravansara_bulk", help="target database on the same server")
+    bulk.add_argument("--replace", action="store_true", help="drop and rebuild the target (*_bulk only)")
+    return parser
+
+
+def _seed_bulk(settings: Settings, args: argparse.Namespace) -> None:
+    from caravansara.devdata.load import BulkRefused, seed_bulk
+    from caravansara.devdata.profiles import ProfileError
+
+    async def prepare(target: Settings) -> None:
+        await asyncio.to_thread(migrate, target)  # Alembic runs its own event loop
+        configure_logging(settings.log_level, settings.log_format)  # alembic.ini lowered the root logger to WARN
+        await seed_catalog(target)
+
+    try:
+        result = asyncio.run(
+            seed_bulk(
+                settings,
+                profiles_path=settings.seed_dir / "bulk" / "city_profiles.json",
+                prepare=prepare,
+                listings=args.listings,
+                seed=args.seed,
+                today=args.today or datetime.now(UTC).date(),
+                database=args.database,
+                replace=args.replace,
+            )
+        )
+    except (BulkRefused, ProfileError) as refused:
+        print(refused, file=sys.stderr)
+        raise SystemExit(1) from None
+    print(result.summary())
+
+
+def main(argv: list[str] | None = None) -> None:
+    args = build_parser().parse_args(argv)
 
     settings = get_settings()
     configure_logging(settings.log_level, settings.log_format)
@@ -100,8 +174,7 @@ def main(argv: list[str] | None = None) -> None:
     if args.command == "migrate":
         migrate(settings)
     elif args.command == "seed":
-        loaded = asyncio.run(seed_catalog(settings))
-        print("catalog loaded" if loaded else "catalog already present, skipped")
+        print(asyncio.run(seed_catalog(settings)).summary())
     elif args.command == "seed-demo":
         asyncio.run(seed_demo(settings))
         print("demo data loaded")
@@ -130,6 +203,8 @@ def main(argv: list[str] | None = None) -> None:
             print(f"expired {result.expired} holds, completed {result.completed} stays")
 
         asyncio.run(_once())
+    elif args.command == "seed-bulk":
+        _seed_bulk(settings, args)
     elif args.command == "export-openapi":
         args.output.write_text(openapi_document(), encoding="utf-8")
         print(f"wrote {args.output}")
