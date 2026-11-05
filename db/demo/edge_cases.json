@@ -1,0 +1,51 @@
+{
+  "expired_hold": {
+    "booking_ids": [
+      10608
+    ],
+    "city": "Amsterdam",
+    "listing_id": 8
+  },
+  "hold_about_to_expire": {
+    "booking_ids": [
+      10607
+    ],
+    "city": "Amsterdam",
+    "listing_id": 7
+  },
+  "inactive_listing": {
+    "booking_ids": [
+      10613,
+      10614
+    ],
+    "city": "London",
+    "listing_id": 501
+  },
+  "last_bookable_day": {
+    "booking_ids": [
+      10610
+    ],
+    "city": "Stockholm",
+    "listing_id": 376
+  },
+  "listing_without_reviews": {
+    "booking_ids": [],
+    "city": "New York City",
+    "listing_id": 626
+  },
+  "same_day_turnover": {
+    "booking_ids": [
+      10611,
+      10612
+    ],
+    "city": "Copenhagen",
+    "listing_id": 251
+  },
+  "year_long_stay": {
+    "booking_ids": [
+      10609
+    ],
+    "city": "Lisbon",
+    "listing_id": 126
+  }
+}

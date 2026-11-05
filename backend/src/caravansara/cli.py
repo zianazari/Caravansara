@@ -92,10 +92,50 @@ async def seed_catalog(settings: Settings) -> CatalogResult:
     )
 
 
-async def seed_demo(settings: Settings) -> None:
-    """Demo users, listings, bookings and reviews. Needs the catalog and empty users/listings."""
-    # The file has its own BEGIN/COMMIT and refuses to run on a non-empty database.
-    await _run_sql_file(settings, settings.seed_dir / DEMO_SEED)
+@dataclass(frozen=True)
+class DemoResult:
+    listings: int = 0
+    reviews: int = 0
+    photos: int = 0
+    photo_error: str | None = None
+
+    def summary(self) -> str:
+        loaded = f"demo data loaded: {self.listings} listings, {self.reviews} reviews"
+        if self.photo_error:
+            return f"{loaded}; photos not uploaded: {self.photo_error}; run: caravansara seed-demo --photos-only"
+        return f"{loaded}; {self.photos} photos uploaded"
+
+
+async def seed_demo(settings: Settings, *, photos: bool = True, photos_only: bool = False) -> DemoResult:
+    """Demo data, then its photos. Needs the catalog and empty users/listings.
+
+    A storage failure does not undo the data: the listings still show, and
+    ``seed-demo --photos-only`` uploads the photos later.
+    """
+    from caravansara.devdata.photos import upload_demo_photos
+
+    if not photos_only:
+        # The file has its own BEGIN/COMMIT and refuses to run on a non-empty database.
+        await _run_sql_file(settings, settings.seed_dir / DEMO_SEED)
+    conn = await asyncpg.connect(_dsn(settings))
+    try:
+        listings = await conn.fetchval("SELECT count(*) FROM listings")
+        reviews = await conn.fetchval("SELECT count(*) FROM reviews")
+        keys = [
+            r[0]
+            for r in await conn.fetch(
+                "SELECT storage_key FROM listing_photos WHERE storage_key LIKE 'demo/%' ORDER BY id"
+            )
+        ]
+    finally:
+        await conn.close()
+    if not photos:
+        return DemoResult(listings, reviews)
+    try:
+        uploaded = await upload_demo_photos(settings, keys)
+    except Exception as exc:  # any storage or network error leaves the data in place
+        return DemoResult(listings, reviews, photo_error=f"{type(exc).__name__}: {exc}")
+    return DemoResult(listings, reviews, uploaded)
 
 
 def openapi_document() -> str:
@@ -117,7 +157,10 @@ def build_parser() -> argparse.ArgumentParser:
     sub = parser.add_subparsers(dest="command", required=True)
     sub.add_parser("migrate", help="apply database migrations (alembic upgrade head)")
     sub.add_parser("seed", help="load countries, cities and amenities (adds only missing rows)")
-    sub.add_parser("seed-demo", help="load demo data built from Inside Airbnb (empty database only)")
+    demo = sub.add_parser("seed-demo", help="load demo data and its photos (empty database only)")
+    only = demo.add_mutually_exclusive_group()
+    only.add_argument("--skip-photos", action="store_true", help="load the data only")
+    only.add_argument("--photos-only", action="store_true", help="upload the photos of already loaded demo data")
     storage = sub.add_parser("init-storage", help="create the photo bucket if missing")
     storage.add_argument("--public-read", action="store_true", help="let browsers read photos (development)")
     sub.add_parser("worker", help="run the booking jobs every minute")
@@ -176,8 +219,8 @@ def main(argv: list[str] | None = None) -> None:
     elif args.command == "seed":
         print(asyncio.run(seed_catalog(settings)).summary())
     elif args.command == "seed-demo":
-        asyncio.run(seed_demo(settings))
-        print("demo data loaded")
+        result = asyncio.run(seed_demo(settings, photos=not args.skip_photos, photos_only=args.photos_only))
+        print(result.summary())
     elif args.command == "init-storage":
         from caravansara.core.storage import Storage
 

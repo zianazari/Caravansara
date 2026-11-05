@@ -1,21 +1,26 @@
 # Demo data
 
-`db/seed_demo.sql` is mock data built from real Airbnb listings, so search, the map, prices, amenities and reviews look real in development, demos and tests.
+`db/seed_demo.sql` is demo data for development, demos and manual testing. Search, the map, prices, amenities, photos and reviews look real, and every edge case of the booking rules is there once, with its id.
+
+It is generated: do not edit it by hand. Bulk data for measuring performance is separate, see [`../bulk/README.md`](../bulk/README.md).
 
 ## Source and license
 
-[Inside Airbnb](https://insideairbnb.com/get-the-data/) publishes snapshots of public Airbnb listings under **CC BY 4.0**. Any public use must credit Inside Airbnb.
+[Inside Airbnb](https://insideairbnb.com/get-the-data/) publishes snapshots of public Airbnb listings under **CC BY 4.0**. Any public use must credit Inside Airbnb. We use it instead of scraping airbnb.com, because Airbnb's terms forbid scraping and its site blocks bots.
 
-We use Inside Airbnb instead of scraping airbnb.com because Airbnb's terms forbid scraping and its site blocks bots.
+| City | Country | Currency | Time zone | Source | Listings |
+| --- | --- | --- | --- | --- | --- |
+| Amsterdam | NL | EUR | Europe/Amsterdam | Inside Airbnb, 2026-09-16 | 125 |
+| Lisbon | PT | EUR | Europe/Lisbon | Inside Airbnb, 2026-09-19 | 125 |
+| Copenhagen | DK | DKK | Europe/Copenhagen | Inside Airbnb, 2026-09-25 | 125 |
+| Stockholm | SE | SEK | Europe/Stockholm | Inside Airbnb, 2026-09-25 | 125 |
+| London | GB | GBP | Europe/London | Inside Airbnb, 2026-09-17 | 125 |
+| New York City | US | USD | America/New_York | Inside Airbnb, 2026-09-14 | 125 |
+| Tehran | IR | IRR | Asia/Tehran | hand-written (`fa_listings.json`) | 16 |
+| Isfahan | IR | IRR | Asia/Tehran | hand-written | 11 |
+| Shiraz | IR | IRR | Asia/Tehran | hand-written | 13 |
 
-| City | Country | Currency | Snapshot |
-| --- | --- | --- | --- |
-| Amsterdam | NL | EUR | 2026-09-16 |
-| Lisbon | PT | EUR | 2026-09-19 |
-| Copenhagen | DK | DKK | 2026-09-25 |
-| Stockholm | SE | SEK | 2026-09-25 |
-
-Inside Airbnb has no Helsinki data, so the demo uses these four cities.
+New York is the only city behind UTC, and Tehran is UTC+3:30. Together they catch mistakes with "today in the listing's city".
 
 ## What is real and what is synthetic
 
@@ -27,21 +32,23 @@ Inside Airbnb has no Helsinki data, so the demo uses these four cities.
 | Nightly price in local currency | Cleaning fee (0, or 10–35 % of the nightly price) |
 | Amenities, mapped to our 31-item catalog | Each review's stars, sampled around the listing's real averages |
 | Pets allowed (from the "Pets allowed" amenity) | Bookings: dates, guests, party size |
-| Review date and text (English only, up to 8 latest per listing) | |
+| Review date and text (English only, up to 15 latest per listing) | Photos: drawn images, one per room type |
 
-Privacy: real host and reviewer names are dropped. If a review names the host, the generator swaps in the fake host's first name.
+The Persian listings in Iran are written for this project in `fa_listings.json`: titles, descriptions, neighbourhoods and reviews. Inside Airbnb has no Persian text, and the right-to-left UI needs real Persian. Their texts mix Persian with digits and Latin words, use the zero-width non-joiner, and include one description over 1,000 characters and reviews under 20 characters. Prices are in rials (IRR), between 2,500,000 and 20,000,000 a night.
+
+**Privacy.** Real host and reviewer names are dropped. A host's name in a review or description is replaced by the fake host's first name. A review that still names a real host or reviewer is skipped. The build stops before writing the file if any real name is left in a review. The real names are not in the repo, so CI cannot check them; this build step does instead.
+
+**Rial limit.** The price columns are `NUMERIC(10,2)`, at most 99,999,999.99. A multi-night stay at real Tehran prices does not fit, so the demo keeps rial prices low and Persian stays at most 4 nights; the build stops if a total would overflow. Widening the columns is planned in [`docs/future-work.md`](../../docs/future-work.md).
 
 ## Contents
 
-- 200 listings (50 per city): 161 entire places, 39 private rooms
-- 598 users: 196 hosts, 400 guests, and the two demo accounts
-- 1,793 bookings:
-  - 1,492 completed, one behind each review
-  - 261 confirmed and 40 cancelled upcoming stays
-- 1,491 reviews; the trigger fills `avg_rating` and `review_count` (city averages are 4.66–4.76)
-- One cover photo per listing
+- 790 listings: 561 entire places, 218 private rooms, 11 shared rooms
+- 2,043 users: 759 hosts, the guests, and the two demo accounts
+- 10,742 bookings: 9,525 completed (one behind each review, plus a few edge cases), 1,044 confirmed, 171 cancelled, 1 pending and 1 expired
+- 9,523 reviews; the trigger fills `avg_rating` and `review_count` (city averages 4.40–4.73)
+- 4,548 photos, 3–8 per listing
 
-Upcoming bookings use `CURRENT_DATE + n`, so they stay in the future whenever you load the file. Past bookings use fixed dates.
+Upcoming bookings are relative to the day you load the file, in the listing city's time zone (`(now() AT TIME ZONE 'Europe/Amsterdam')::date + 20`), so they stay in the future. Past bookings behind reviews use fixed dates.
 
 ## Demo accounts
 
@@ -50,34 +57,70 @@ Every account's password is `caravansara-demo`. The hash is argon2id.
 | Email | Role |
 | --- | --- |
 | `host@example.com` | Sara Lindqvist, host of listings 1–3 (Amsterdam) |
-| `guest@example.com` | Omar Haddad: a finished stay (ended 3 days before load, can still be reviewed) and 2 upcoming stays |
+| `guest@example.com` | Omar Haddad: a finished stay (ended 3 days before load, can still be reviewed), 2 upcoming stays, a hold that expires 4 minutes after loading, and an expired hold |
 
-## Load
+Any other host can log in too: find their email with `SELECT email FROM users u JOIN listings l ON l.host_id = u.id WHERE l.id = …`.
 
-The file needs an empty database. It aborts if `users` or `listings` already has rows, because it inserts explicit ids.
+## Edge cases
 
-```bash
-psql -d caravansara -f db/schema.sql -f db/seed_amenities.sql -f db/seed_locations.sql
-psql -d caravansara -f db/seed_demo.sql
-```
+Each rule from the design document has one known record. The ids below are written by `build_demo_seed.py` (also in `edge_cases.json`); do not edit the table by hand.
 
-Tested on `postgis/postgis:16-3.4`: everything loads, and `search_query.sql` returns results.
+<!-- edge-cases:start -->
+| Case | What | Listing | Bookings | Where to see it |
+| --- | --- | --- | --- | --- |
+| `hold_about_to_expire` | Pending hold of the demo guest, 4 minutes left at load time | 7 (Amsterdam) | 10607 | `GET /me/bookings` as `guest@example.com` |
+| `expired_hold` | Expired hold of the demo guest | 8 (Amsterdam) | 10608 | `GET /me/bookings` as `guest@example.com` |
+| `year_long_stay` | Confirmed stay of exactly 365 nights | 126 (Lisbon) | 10609 | `GET /listings/{id}/bookings` as its host |
+| `last_bookable_day` | Check-in on the last bookable day (city today + 365) | 376 (Stockholm) | 10610 | `GET /listings/{id}/bookings` as its host |
+| `same_day_turnover` | Two confirmed stays: one checks out the day the next checks in | 251 (Copenhagen) | 10611, 10612 | `GET /listings/{id}/bookings` as its host |
+| `inactive_listing` | Inactive listing with a finished and an upcoming booking | 501 (London) | 10613, 10614 | missing from `GET /search/listings`, shown in the host's `GET /me/listings` |
+| `listing_without_reviews` | Active listing with no reviews (`review_count = 0`) | 626 (New York City) | – | `GET /listings/{id}` and its `/reviews` |
+<!-- edge-cases:end -->
+
+The hold expires 4 minutes after loading, and the worker then marks it `expired` within a minute, so its dates become free in search.
 
 ## Photos
 
-Each listing gets a `listing_photos` row with key `demo/listings/<id>/cover.jpg`. The image files are not in git: they are hosts' photos, and Inside Airbnb gives only the cover URL.
+`photos/` holds 8 synthetic JPEGs, one per room tag (Living room, Bedroom, Kitchen, Bathroom, Exterior, Dining area, Workspace, Balcony), with sizes in `photos/manifest.json`. Some are portrait, some wide, to test the gallery layout.
 
-`photo_sources.csv` maps each key to its source URL. The planned demo-data command can download from those URLs into MinIO for local use.
+Each listing gets 3–8 photos with key `demo/listings/<id>/<order>-<slug>.jpg`:
 
-`width` and `height` are a 1200×800 placeholder (3:2, which is typical for Airbnb). The command should set the real size when it uploads each image.
+- The cover (`sort_order` 0) is the Living room, or the Bedroom for a private or shared room.
+- Then come the bedrooms (up to 3), the kitchen and the bathroom.
+- The extras follow the amenities: Workspace only with "Dedicated workspace", Balcony only with "Balcony".
+
+`seed-demo` uploads the matching file under every key (about 10 s). It retries each upload up to 3 times, because MinIO now and then drops a parallel upload. If storage is down, the data still loads; run `seed-demo --photos-only` later.
+
+We draw the images instead of downloading the hosts' photos, because those photos belong to the hosts, and Inside Airbnb gives only the cover URL.
+
+## Load
+
+The data needs an empty database: it stops if `users` or `listings` already has rows, because it inserts explicit ids.
+
+```bash
+docker compose run --rm migrate caravansara seed-demo                # data and photos
+docker compose run --rm migrate caravansara seed-demo --skip-photos  # data only
+docker compose run --rm migrate caravansara seed-demo --photos-only  # photos again, after a storage error
+```
+
+To keep your development database, load the demo into a second one:
+
+```bash
+docker compose exec db psql -U caravansara -c "CREATE DATABASE caravansara_demo"
+docker compose run --rm -e CARAVANSARA_DATABASE_URL=postgresql+asyncpg://caravansara:caravansara@db:5432/caravansara_demo \
+  migrate sh -c "caravansara migrate && caravansara seed && caravansara seed-demo"
+```
+
+Measured on 2026-11-05: 10 loads in a row into a fresh database, each 9–10 s, including migrations and the catalog, with no error.
 
 ## Rebuild
 
-Needs only the Python 3.9+ standard library. With the same input and the same `--seed`, the output is byte-identical.
+With the same input and the same `--seed`, every output is byte-identical.
 
 ```bash
-python3 db/demo/build_demo_seed.py --download   # once: ~450 MB into .cache/insideairbnb/ (git-ignored)
-python3 db/demo/build_demo_seed.py              # writes db/seed_demo.sql and db/demo/photo_sources.csv
+python3 db/demo/build_demo_seed.py --download                          # once: about 900 MB into .cache/insideairbnb/ (git-ignored)
+uv run --no-project --with pillow python db/demo/build_demo_photos.py  # only when room tags or sizes change
+python3 db/demo/build_demo_seed.py                                     # writes seed_demo.sql, edge_cases.json and the table above
 ```
 
-To change the cities, snapshots or counts, edit `CITIES`, `LISTINGS_PER_CITY` or `REVIEWS_PER_LISTING` at the top of the script. Do not edit `seed_demo.sql` by hand.
+`build_demo_seed.py` needs only the Python 3.9+ standard library. To change the cities, snapshots or counts, edit `CITIES`, `LISTINGS_PER_CITY` or `REVIEWS_PER_LISTING` at the top of the script; for the Persian listings, edit `fa_listings.json`.

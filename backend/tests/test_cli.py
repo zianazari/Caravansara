@@ -57,13 +57,13 @@ async def test_migrate_is_idempotent_and_storage_init(
 async def test_demo_data_loads_and_logs_in(
     use_test_settings: Settings, client: AsyncClient, db: AsyncEngine, capsys: pytest.CaptureFixture[str]
 ) -> None:
-    await asyncio.to_thread(cli.main, ["seed-demo"])
+    await asyncio.to_thread(cli.main, ["seed-demo", "--skip-photos"])
     counts = (
         await sql(
             db, "SELECT (SELECT count(*) FROM users), (SELECT count(*) FROM listings), (SELECT count(*) FROM reviews)"
         )
     )[0]
-    assert tuple(counts) == (598, 200, 1491)
+    assert tuple(counts) == (2043, 790, 9523)
 
     login = await client.post("/auth/login", json={"email": "guest@example.com", "password": "caravansara-demo"})
     assert login.status_code == 200
@@ -75,7 +75,7 @@ async def test_demo_data_loads_and_logs_in(
         "/auth/register", json={"email": "new@example.com", "password": "long-enough", "full_name": "N"}
     )
     assert r.status_code == 201
-    assert r.json()["user"]["id"] == 599
+    assert r.json()["user"]["id"] == 2044
 
     await asyncio.to_thread(cli.main, ["run-jobs"])
     assert "expired" in capsys.readouterr().out
