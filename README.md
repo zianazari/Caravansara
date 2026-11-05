@@ -260,4 +260,14 @@ Tests run against real PostgreSQL + PostGIS and MinIO in containers, because the
 
 ## What's next
 
-Spec-driven development (SDD) for the rest of the work, more and bulkier test data, an index review on real load (with the numbers from monitoring), Redis caching for hot reads once the numbers show where it helps, a web UI with right-to-left Persian, browser tests with Playwright, and splitting out services only if the numbers ask for it. The plan and its order are in [`docs/future-work.md`](docs/future-work.md).
+The plan, in order. Each step builds on the one before it; details are in [`docs/future-work.md`](docs/future-work.md).
+
+| # | Work | What it brings | Why at this point |
+| --- | --- | --- | --- |
+| 1 | **Spec-driven development** | Every task starts from a spec with acceptance criteria, a plan and a task list | It is how all the later work gets done |
+| 2 | **More test and mock data** | More cities and listings, edge cases, Persian text, and a generator for millions of rows | The index review and the edge-case tests need it |
+| 3 | **Index review** | Each index chosen with `EXPLAIN ANALYZE` on large data and real query statistics | Without real data and queries, picking indexes is guesswork |
+| 4 | **Redis caching** | Faster hot reads such as search, never for booking or availability | A slow query should be fixed with an index first, not hidden behind a cache |
+| 5 | **Web front-end** | Next.js, TypeScript, shadcn/ui and Tailwind; Persian right-to-left with the Vazirmatn font, and English | It builds on the stable API contract in `backend/openapi.json` |
+| 6 | **Playwright browser tests** | Guest and host journeys, a double booking from two browsers, right-to-left and mobile checks | They need the front-end |
+| 7 | **Microservices** | Splitting out a service, starting with `search` | Only if the monitoring numbers show a real need, since it is the most expensive step |
