@@ -18,6 +18,7 @@ from caravansara.bookings.schemas import BookingAddress, BookingCreate, BookingL
 from caravansara.core.config import Settings
 from caravansara.core.db import constraint_name, sqlstate
 from caravansara.core.errors import Conflict, Forbidden, NotFound, Unprocessable
+from caravansara.core.metrics import BOOKING_CONFLICTS, BOOKING_EVENTS
 from caravansara.core.storage import Storage
 from caravansara.core.timeutil import today_in, utcnow
 from caravansara.listings import service as listings
@@ -115,6 +116,7 @@ async def create_booking(
         await session.rollback()
         code = sqlstate(exc)
         if code == EXCLUSION_VIOLATION:
+            BOOKING_CONFLICTS.inc()
             raise Conflict("dates_unavailable", "These dates were just booked.") from exc
         if code == UNIQUE_VIOLATION and constraint_name(exc) in (None, "bookings_idempotency_key_key"):
             # The same key raced us; the winner's row is now visible.
@@ -122,6 +124,7 @@ async def create_booking(
             if winner is not None:
                 return _replay(winner, user_id, data), False
         raise
+    BOOKING_EVENTS.labels("created").inc()
     return booking, True
 
 
@@ -143,12 +146,14 @@ async def pay(session: AsyncSession, booking_id: int, user_id: int) -> tuple[Boo
     now = utcnow()
     if await repo.confirm_if_payable(session, booking.id, user_id, now):
         await session.commit()
+        BOOKING_EVENTS.labels("confirmed").inc()
         await session.refresh(booking)
         return booking, info
 
     await session.refresh(booking)
     if booking.status == S.pending:  # the hold ran out but the worker hasn't run yet
-        await repo.set_status_if(session, booking.id, {S.pending}, S.expired)
+        if await repo.set_status_if(session, booking.id, {S.pending}, S.expired):
+            BOOKING_EVENTS.labels("expired").inc()
         await session.commit()
         raise Conflict("hold_expired", "The hold expired before payment. Book again.")
     if booking.status == S.expired:
@@ -167,6 +172,7 @@ async def cancel(session: AsyncSession, booking_id: int, user_id: int) -> tuple[
         await session.rollback()
         raise Conflict("invalid_booking_state", "The booking changed meanwhile. Reload it.")
     await session.commit()
+    BOOKING_EVENTS.labels("cancelled").inc()
     await session.refresh(booking)
     return booking, info
 
@@ -282,10 +288,12 @@ async def get_booking_info(session: AsyncSession, booking_id: int) -> BookingInf
 async def expire_overdue_holds(session: AsyncSession) -> int:
     count = await repo.expire_overdue_holds(session, utcnow())
     await session.commit()
+    BOOKING_EVENTS.labels("expired").inc(count)
     return count
 
 
 async def complete_finished_stays(session: AsyncSession) -> int:
     count = await repo.complete_finished_stays(session, utcnow())
     await session.commit()
+    BOOKING_EVENTS.labels("completed").inc(count)
     return count

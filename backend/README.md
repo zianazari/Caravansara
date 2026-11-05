@@ -15,6 +15,8 @@ docker compose run --rm migrate caravansara seed-demo  # optional demo data (emp
 | http://localhost:8000/redoc | ReDoc |
 | http://localhost:8000/api/v1/openapi.json | OpenAPI schema |
 | http://localhost:9001 | MinIO console (`caravansara` / `caravansara-secret`) |
+| http://localhost:8000/metrics | Prometheus metrics of the API (the worker serves its own on port 9100) |
+| http://localhost:3000 | Grafana (`admin` / `caravansara`), with `--profile observability` |
 
 Demo accounts after `seed-demo`: `guest@example.com` and `host@example.com`, password `caravansara-demo`.
 
@@ -44,6 +46,17 @@ Settings come from `CARAVANSARA_*` environment variables; see `src/caravansara/c
 | `caravansara init-storage [--public-read]` | create the photo bucket |
 | `caravansara worker` / `run-jobs` | expire holds and complete stays, in a loop / once |
 | `caravansara export-openapi` | rewrite `openapi.json` after an intended API change |
+
+### Monitoring
+
+| What | Where in the code | Notes |
+| --- | --- | --- |
+| JSON logs, one line per request | `core/logs.py`, `core/observability.py` | Each line has `request_id`, `trace_id`, route, status and duration. Emails, tokens and secret fields are masked. `CARAVANSARA_LOG_FORMAT=text` for a terminal |
+| `X-Request-ID` | `core/observability.py` | Returned on every response; a safe incoming id (from a proxy) is kept |
+| Metrics | `core/metrics.py` | Requests, errors and duration per route template; booking events, double bookings stopped (`23P01`), rate limits, reviews; worker runs and last success |
+| Traces | `core/telemetry.py` | OpenTelemetry for FastAPI, SQLAlchemy and S3, sent over OTLP/HTTP when `CARAVANSARA_OTEL_ENDPOINT` is set |
+
+The collector, dashboards and alerts live in [`observability/`](../observability/README.md).
 
 ### API contract
 

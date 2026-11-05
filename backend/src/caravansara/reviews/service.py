@@ -8,6 +8,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from caravansara.bookings import service as bookings
 from caravansara.core.config import Settings
 from caravansara.core.errors import Conflict, Forbidden, NotFound
+from caravansara.core.metrics import REVIEWS
 from caravansara.core.timeutil import today_in
 from caravansara.identity import service as identity
 from caravansara.identity.service import PublicUser
@@ -57,6 +58,7 @@ async def create_review(
     except IntegrityError as exc:  # a second review raced us
         await session.rollback()
         raise Conflict("already_reviewed", "This stay already has a review.") from exc
+    REVIEWS.inc()
     return _out(review, await identity.get_public_user(session, user_id))
 
 

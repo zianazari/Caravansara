@@ -6,12 +6,12 @@ migrate, seed, seed-demo, init-storage, worker, run-jobs, serve and export-opena
 import argparse
 import asyncio
 import json
-import logging
 from pathlib import Path
 
 import asyncpg
 
 from caravansara.core.config import Settings, get_settings
+from caravansara.core.logs import configure_logging
 
 CATALOG_SEEDS = ("seed_amenities.sql", "seed_locations.sql")
 DEMO_SEED = "seed_demo.sql"
@@ -94,8 +94,8 @@ def main(argv: list[str] | None = None) -> None:
     export.add_argument("--output", type=Path, default=OPENAPI_FILE)
     args = parser.parse_args(argv)
 
-    logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(name)s: %(message)s")
     settings = get_settings()
+    configure_logging(settings.log_level, settings.log_format)
 
     if args.command == "migrate":
         migrate(settings)
@@ -111,9 +111,14 @@ def main(argv: list[str] | None = None) -> None:
         asyncio.run(Storage(settings).ensure_bucket(public_read=args.public_read))
         print(f"bucket {settings.s3_bucket} ready")
     elif args.command == "worker":
+        from prometheus_client import start_http_server
+
+        from caravansara.core.telemetry import tracer_provider
         from caravansara.jobs.runner import run_forever
 
-        asyncio.run(run_forever(settings))
+        if settings.worker_metrics_port:
+            start_http_server(settings.worker_metrics_port)
+        asyncio.run(run_forever(settings, provider=tracer_provider(settings, "caravansara-worker")))
     elif args.command == "run-jobs":
         from caravansara.core.db import create_engine, create_sessionmaker
         from caravansara.jobs.runner import run_once
@@ -131,7 +136,15 @@ def main(argv: list[str] | None = None) -> None:
     elif args.command == "serve":
         import uvicorn
 
-        uvicorn.run("caravansara.main:create_app", factory=True, host=args.host, port=args.port, reload=args.reload)
+        uvicorn.run(
+            "caravansara.main:create_app",
+            factory=True,
+            host=args.host,
+            port=args.port,
+            reload=args.reload,
+            log_config=None,  # keep configure_logging's JSON handler
+            access_log=False,  # the request middleware logs each request once
+        )
 
 
 if __name__ == "__main__":
