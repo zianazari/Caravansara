@@ -8,6 +8,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from caravansara.core.config import Settings
 from caravansara.core.errors import AppError, Conflict, NotFound, Unauthorized
+from caravansara.core.metrics import RATE_LIMITED
 from caravansara.core.security import (
     create_access_token,
     hash_password,
@@ -22,7 +23,8 @@ from caravansara.identity.schemas import ProfileUpdate, TokensOut
 
 
 class TooManyAttempts(AppError):
-    def __init__(self) -> None:
+    def __init__(self, action: str) -> None:
+        RATE_LIMITED.labels(action).inc()
         super().__init__(429, "too_many_attempts", "Too many attempts. Try again later.")
 
 
@@ -48,7 +50,7 @@ async def register(
 ) -> tuple[User, TokensOut]:
     since = repo.window_start(utcnow(), settings.register_window_minutes)
     if await repo.count_attempts(session, "register", ip, since) >= settings.register_max_per_ip:
-        raise TooManyAttempts()
+        raise TooManyAttempts("register")
 
     attempt = await repo.record_attempt(session, "register", ip, succeeded=False)
     await session.commit()  # the attempt counts even if registration fails below
@@ -75,7 +77,7 @@ async def login(session: AsyncSession, settings: Settings, *, email: str, passwo
     failures = await repo.count_attempts(session, "login", email_key, since, failed_only=True)
     per_ip = await repo.count_attempts(session, "login", ip, since)
     if failures >= settings.login_max_failures or per_ip >= settings.login_max_per_ip:
-        raise TooManyAttempts()
+        raise TooManyAttempts("login")
 
     user = await repo.get_user_by_email(session, email)
     ok = verify_password(user.password_hash if user else None, password)

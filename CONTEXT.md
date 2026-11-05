@@ -73,10 +73,11 @@ Amenity seed: 12 categories, 31 amenities. Search uses AND logic for amenity fil
 - `CONTEXT.md`: this file
 - `docs/backend-design.md`: **source of truth** for the backend requirements and design (decided 2026-11-01); diagrams in `docs/images/`
 - `docs/backend-design.pdf`: PDF export of that file; regenerate after changes
-- `docs/future-work.md`: planned work: spec-driven development (SDD) as the way to do the rest, more test and mock data, monitoring (logs, metrics, traces; Prometheus, Grafana), then database index review, Redis caching, UI, Playwright tests, microservices. It lists only unstarted work; finished work goes into the design docs
+- `docs/future-work.md`: planned work: spec-driven development (SDD) as the way to do the rest, more test and mock data, then database index review, Redis caching, UI, Playwright tests, microservices. It lists only unstarted work; finished work goes into the design docs
 - `backend/`: FastAPI app, Alembic migrations, tests; how to run in `backend/README.md`. Swagger UI at `/docs` (a requirement); the API contract is `backend/openapi.json`, checked by a test, rewritten with `caravansara export-openapi`
 - `e2e/`: Playwright API tests (48) against the running `docker compose` stack; `e2e/compose.e2e.yml` raises the per-IP register/login limits; test users are `e2e.*@caravansara.example.com`, password `E2e-Pass-2026!`, and are never deleted
 - `postman/`: Postman collection of all endpoints (import into Postman or the VS Code extension) and `sample-photo.jpg` for the upload request
+- `observability/`: monitoring as a compose profile (`docker compose --profile observability up`): Alloy collects logs and traces, Loki, Tempo, Prometheus with `alerts.yml` and rule tests, Grafana with the provisioned Caravansara dashboard (http://localhost:3000, `admin` / `caravansara`)
 - `docker-compose.yml`: db, MinIO (`bitnamilegacy/minio:2025.4.22`, since MinIO stopped publishing images), migrate, API, worker
 - `.github/workflows/ci.yml`: ruff, mypy, import-linter, tests (coverage ≥ 90%), Docker build
 
@@ -88,7 +89,7 @@ Amenity seed: 12 categories, 31 amenities. Search uses AND logic for amenity fil
 
 ## Status and next step
 
-- Done: database design, backend design, demo data, backend v1 (all 8 steps of `docs/backend-design.md`; 124 tests, 97.8% coverage) and the backend test gaps (recorded in the test strategy of `docs/backend-design.md`; now 142 tests, 98.3% coverage).
+- Done: database design, backend design, demo data, backend v1 (all 8 steps of `docs/backend-design.md`; 124 tests, 97.8% coverage) and the backend test gaps (recorded in the test strategy of `docs/backend-design.md`; now 142 tests, 98.3% coverage) and monitoring (logs, metrics, traces, dashboard and alerts; `observability/README.md`; 161 tests, 98.3% coverage).
 - Next: section 1 of `docs/future-work.md` (set up SDD), then section 2 (more test and mock data). Finished work is recorded in `docs/backend-design.md` (test strategy, implementation steps), not in future work.
 
 ## Working conventions

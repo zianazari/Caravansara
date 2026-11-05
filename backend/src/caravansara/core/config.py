@@ -2,6 +2,7 @@
 
 from functools import lru_cache
 from pathlib import Path
+from typing import Literal
 
 from pydantic import Field
 from pydantic_settings import BaseSettings, SettingsConfigDict
@@ -54,6 +55,14 @@ class Settings(BaseSettings):
 
     # Worker
     worker_interval_seconds: int = 60
+
+    # Observability
+    log_level: str = "INFO"
+    log_format: Literal["json", "text"] = "json"  # json for Loki; text is easier to read in a terminal
+    metrics_enabled: bool = True  # GET /metrics for Prometheus; keep it off the public internet
+    otel_endpoint: str | None = None  # OTLP/HTTP collector, e.g. http://alloy:4318; None turns tracing off
+    otel_sample_ratio: float = Field(default=1.0, ge=0, le=1)
+    worker_metrics_port: int = 9100  # the worker has no HTTP API, so it serves /metrics on its own port
 
     # Seeds
     seed_dir: Path = _REPO_ROOT / "db"

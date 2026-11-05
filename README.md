@@ -4,7 +4,7 @@
 
 <p align="center">
   <a href="https://github.com/zianazari/Caravansara/actions/workflows/ci.yml"><img src="https://github.com/zianazari/Caravansara/actions/workflows/ci.yml/badge.svg" alt="CI"></a>
-  <img src="https://img.shields.io/badge/tests-142%20%C2%B7%2098.3%25%20coverage-b5651d" alt="142 tests, 98.3% coverage">
+  <img src="https://img.shields.io/badge/tests-161%20%C2%B7%2098.3%25%20coverage-b5651d" alt="161 tests, 98.3% coverage">
   <img src="https://img.shields.io/badge/e2e-48%20Playwright%20API%20tests-2EAD33" alt="48 Playwright API tests">
 </p>
 
@@ -15,7 +15,7 @@ This repository holds the **backend and the database design**. There is no front
 ## Technology
 
 <p align="left">
-  <img src="https://skillicons.dev/icons?i=python,fastapi,postgres,docker,githubactions&theme=dark" alt="Python, FastAPI, PostgreSQL, Docker and GitHub Actions" />
+  <img src="https://skillicons.dev/icons?i=python,fastapi,postgres,docker,githubactions,prometheus,grafana&theme=dark" alt="Python, FastAPI, PostgreSQL, Docker, GitHub Actions, Prometheus and Grafana" />
   <img src="https://cdn.jsdelivr.net/gh/devicons/devicon@v2.16.0/icons/playwright/playwright-original.svg" alt="Playwright" height="48" />
   <img src="https://img.shields.io/badge/PostGIS-336791?style=for-the-badge" alt="PostGIS" />
   <img src="https://img.shields.io/badge/SQLAlchemy-D71F00?style=for-the-badge&logo=sqlalchemy&logoColor=white" alt="SQLAlchemy" />
@@ -27,6 +27,8 @@ This repository holds the **backend and the database design**. There is no front
   <img src="https://img.shields.io/badge/uv-DE5FE9?style=for-the-badge&logo=uv&logoColor=white" alt="uv" />
   <img src="https://img.shields.io/badge/Ruff-D7FF64?style=for-the-badge&logo=ruff&logoColor=black" alt="Ruff" />
   <img src="https://img.shields.io/badge/mypy-2A6DB2?style=for-the-badge" alt="mypy" />
+  <img src="https://img.shields.io/badge/OpenTelemetry-000000?style=for-the-badge&logo=opentelemetry&logoColor=white" alt="OpenTelemetry" />
+  <img src="https://img.shields.io/badge/Loki%20%C2%B7%20Tempo%20%C2%B7%20Alloy-F46800?style=for-the-badge&logo=grafana&logoColor=white" alt="Grafana Loki, Tempo and Alloy" />
 </p>
 
 | Layer | Tools |
@@ -36,6 +38,7 @@ This repository holds the **backend and the database design**. There is no front
 | Security | argon2 password hashing, JWT access tokens with rotating refresh tokens |
 | Files | S3 API with presigned uploads; MinIO in development and tests |
 | Quality | pytest with testcontainers, Playwright API tests, Ruff, mypy (strict), import-linter |
+| Monitoring | Prometheus with alert rules, Grafana, Loki for logs, Tempo for traces, OpenTelemetry, Grafana Alloy as the collector |
 | Delivery | uv, Docker and Docker Compose, GitHub Actions |
 
 ## What it does
@@ -70,6 +73,7 @@ Caravansara is a **modular monolith**: one FastAPI codebase and one PostgreSQL d
 | **Worker** (`caravansara worker`) | Every minute: expire unpaid holds, complete finished stays | Scheduled jobs would run once per API copy if they lived in the API |
 | **PostgreSQL 16 + PostGIS** | The single source of truth; enforces the critical rules | The only place every API copy shares, so the only safe place for race-proof rules |
 | **MinIO / S3** | Photo files | Browsers upload directly with presigned URLs, so large files don't load the API |
+| **Monitoring** (optional profile) | Alloy, Loki, Tempo, Prometheus, Grafana | Watches all of the above; off by default so daily development stays light |
 
 ### Modules
 
@@ -164,6 +168,26 @@ Open **http://localhost:8000/docs**, log in with `POST /auth/login` as `guest@ex
 
 The demo data comes from [Inside Airbnb](https://insideairbnb.com/) (CC BY 4.0): real titles, prices, amenities and review text from Amsterdam, Lisbon, Copenhagen and Stockholm; people, addresses and bookings are synthetic. See [`db/demo/README.md`](db/demo/README.md).
 
+## Monitoring
+
+<p align="center">
+  <img src="docs/images/readme/grafana-dashboard.jpg" alt="The Caravansara dashboard in Grafana: request rate, errors and p95 per route, booking events, double bookings stopped, worker health" width="100%">
+</p>
+
+```bash
+docker compose --profile observability up -d --build   # Grafana http://localhost:3000 (admin / caravansara)
+```
+
+Each kind of data answers a different question, so all three are collected and connected:
+
+| | Answers | How |
+| --- | --- | --- |
+| 📈 **Metrics** | How many, how fast, how often it fails | `/metrics` on the API and the worker, per route *template* (`/listings/{listing_id}`), so the number of series stays fixed. Business events too: holds, payments, expiries, **double bookings stopped** by the database, rate limits, reviews |
+| 📜 **Logs** | What exactly happened | One JSON line per request with `request_id`, `trace_id`, route, status and time. Emails, tokens and secret fields are masked before they are written |
+| 🧵 **Traces** | Where the time went | OpenTelemetry spans for the request, every SQL statement and every S3 call. A log line opens its trace, and a span opens its logs |
+
+Seven alert rules watch what users would feel first: the API or the **worker** gone (unpaid holds would stay locked, with no error in the API), the worker failing, 5xx above 5%, slow search, and the database down or out of connections. The rules have their own unit tests, and a pytest check fails if the dashboard or an alert uses a metric the code doesn't export. Details in [`observability/README.md`](observability/README.md).
+
 ## Tests
 
 <p align="left">
@@ -177,7 +201,7 @@ Two layers, because each one catches what the other can't:
 | --- | --- | --- |
 | **Runs against** | PostgreSQL + PostGIS and MinIO that testcontainers starts for each run | The real `docker compose` stack, from outside, over HTTP |
 | **Proves** | Every rule in each module, exact race moments, DST, migrations, the API contract | The built image, real settings and wiring: all 30 endpoints, photo upload to MinIO, the whole host and guest story |
-| **Size** | 142 tests, 98.3% coverage | 48 tests, a few seconds |
+| **Size** | 161 tests, 98.3% coverage | 48 tests, a few seconds |
 
 The Playwright tests use its `request` fixture, so they need no browser yet; browser tests for the UI will join the same project. Some highlights:
 
@@ -225,14 +249,15 @@ The same description is committed as [`backend/openapi.json`](backend/openapi.js
 backend/     FastAPI app, Alembic migrations, tests  → backend/README.md
 e2e/         Playwright API tests against the running stack (48 tests)  → e2e/README.md
 postman/     Postman collection of all endpoints, with saved ids and tokens
+observability/  Alloy, Loki, Tempo, Prometheus (alerts + rule tests), Grafana dashboard  → observability/README.md
 db/          schema, search query, seeds, ERD, demo-data builder
 docs/        backend design (fa), database overview, ERD demo deck, future work
              README graphics: docs/images/readme (diagram sources in diagrams/*.mmd, rebuilt by build_diagrams.py)
-.github/     CI: ruff, mypy --strict, import-linter, tests, Docker build
+.github/     CI: ruff, mypy --strict, import-linter, tests, Docker build, monitoring config
 ```
 
 Tests run against real PostgreSQL + PostGIS and MinIO in containers, because the most important rules live in the database and can't be mocked. Details in [`backend/README.md`](backend/README.md) and [Tests](#tests).
 
 ## What's next
 
-Spec-driven development (SDD) for the rest of the work, more and bulkier test data, monitoring (logs, metrics, traces with Prometheus and Grafana), an index review on real load, Redis caching for hot reads once the numbers show where it helps, a web UI with right-to-left Persian, browser tests with Playwright, and splitting out services only if the numbers ask for it. The plan and its order are in [`docs/future-work.md`](docs/future-work.md).
+Spec-driven development (SDD) for the rest of the work, more and bulkier test data, an index review on real load (with the numbers from monitoring), Redis caching for hot reads once the numbers show where it helps, a web UI with right-to-left Persian, browser tests with Playwright, and splitting out services only if the numbers ask for it. The plan and its order are in [`docs/future-work.md`](docs/future-work.md).
