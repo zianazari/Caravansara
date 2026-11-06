@@ -66,16 +66,24 @@ Rationale: the most important rules live in the database, so only real infrastru
 
 ### V. Privacy and Security by Default
 
-- A listing's exact address and point MUST be shown only to its host and to guests with a paid
-  booking; search and maps use the fuzzed `public_location` pin (100 to 500 m away).
+- A listing's exact address and point MUST be shown only to its host, to guests with a paid
+  booking, and to the system admin while reviewing that listing; search and maps use the
+  fuzzed `public_location` pin (100 to 500 m away). Every time the admin sees an exact address
+  MUST be recorded: which admin, which listing, when.
 - Secrets come from `CARAVANSARA_*` environment variables and MUST NOT be committed.
 - Logs MUST NOT contain passwords, tokens, email addresses or exact addresses; the log
   formatter masks them as a safety net, not as permission.
 - Passwords use argon2; access tokens are short-lived JWTs; refresh tokens rotate, and a reused
   refresh token revokes every session of that user. Login and registration are rate limited.
-- Internal endpoints (`/metrics`) and admin tools MUST NOT be exposed to the public internet.
+- Internal endpoints (`/metrics`) MUST NOT be exposed to the public internet.
+- Admin tools MAY be reachable from the internet only on their own subdomain, with no link from
+  the public site. Every admin action MUST require an admin account, and an admin account MUST
+  be created only by a command run on the server, never through a public endpoint. The unlinked
+  address reduces exposure; it is not the protection.
 
 Rationale: guests and hosts trust the platform with where they live and when they are away.
+The admin checks that a listing is real before guests see it, which needs the exact address;
+recording each view keeps that access accountable.
 
 ### VI. Observable by Design
 
@@ -158,4 +166,4 @@ Rationale: every component adds setup, monitoring and tests; it must pay for its
   against it before implementation.
 - Day-to-day guidance for agents lives in `CONTEXT.md`.
 
-**Version**: 1.2.0 | **Ratified**: 2026-11-05 | **Last Amended**: 2026-11-06
+**Version**: 1.3.0 | **Ratified**: 2026-11-05 | **Last Amended**: 2026-11-06
