@@ -5,6 +5,7 @@
 # Demo data with photos (optional, empty database only): docker compose run --rm migrate caravansara seed-demo
 #   (photos again after a storage error: ... caravansara seed-demo --photos-only)
 # Bulk data for measuring, in its own database caravansara_bulk: docker compose run --rm migrate caravansara seed-bulk
+#   then: docker compose run --rm migrate caravansara measure-queries   (db/bulk/queries, specs/003-index-review)
 x-app: &app
   build:
     context: .
@@ -29,6 +30,12 @@ x-app: &app
 services:
   db:
     image: postgis/postgis:16-3.4
+    # pg_stat_statements keeps per-query statistics for the Grafana "costly queries" panel
+    # (specs/003-index-review); it must be preloaded, so changing this needs a restart of db.
+    command: ["postgres", "-c", "shared_preload_libraries=pg_stat_statements"]
+    # Docker gives /dev/shm 64 MB; parallel VACUUM of the bulk bookings failed with "could not resize
+    # shared memory segment ... No space left on device", and big parallel hash joins use it too.
+    shm_size: 256mb
     environment:
       POSTGRES_USER: caravansara
       POSTGRES_PASSWORD: caravansara
@@ -133,6 +140,7 @@ services:
   postgres-exporter:
     image: quay.io/prometheuscommunity/postgres-exporter:v0.17.1
     profiles: [observability]
+    command: ["--collector.stat_statements"]  # off by default; reads pg_stat_statements
     environment:
       DATA_SOURCE_NAME: postgresql://caravansara:caravansara@db:5432/caravansara?sslmode=disable
     depends_on:

@@ -1,0 +1,1 @@
+UPDATE bookings SET status=:status::booking_status, hold_expires_at=:hold::TIMESTAMP WITH TIME ZONE WHERE bookings.listing_id = :listing_id::BIGINT AND bookings.status = :pending::booking_status AND bookings.hold_expires_at <= :now::TIMESTAMP WITH TIME ZONE
