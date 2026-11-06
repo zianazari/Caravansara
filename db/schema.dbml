@@ -198,6 +198,9 @@ Table bookings [headercolor: #D9822B] {
     guest_id
     (id, listing_id, guest_id) [unique]
     hold_expires_at [note: "partial: WHERE status = 'pending' (worker)"]
+    (listing_id, check_in, id) [note: "bookings of a listing, in page order"]
+    stay [type: gist, note: "partial: WHERE status IN (pending, confirmed, completed); search with dates"]
+    check_out [note: "partial: WHERE status = 'confirmed' (worker: complete stays)"]
   }
 
   Note: '''

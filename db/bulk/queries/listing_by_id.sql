@@ -1,0 +1,3 @@
+SELECT listings.id, listings.host_id, listings.title, listings.description, listings.property_type, listings.city_id, listings.neighborhood, listings.address, listings.latitude, listings.longitude, ST_AsBinary(listings.public_location) AS public_location, listings.max_guests, listings.pets_allowed, listings.max_pets, listings.bedrooms, listings.beds, listings.bathrooms, listings.price_per_night, listings.cleaning_fee, listings.currency, listings.check_in_time, listings.check_out_time, listings.avg_rating, listings.review_count, listings.is_active, listings.created_at
+FROM listings
+WHERE listings.id = :id::BIGINT

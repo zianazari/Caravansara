@@ -1,6 +1,6 @@
 """Command line: ``caravansara <command>``.
 
-migrate, seed, seed-demo, seed-bulk, init-storage, worker, run-jobs, serve and export-openapi.
+migrate, seed, seed-demo, seed-bulk, measure-queries, init-storage, worker, run-jobs, serve and export-openapi.
 """
 
 import argparse
@@ -177,7 +177,40 @@ def build_parser() -> argparse.ArgumentParser:
     bulk.add_argument("--today", type=date.fromisoformat, default=None, help="reference date (default: today, UTC)")
     bulk.add_argument("--database", default="caravansara_bulk", help="target database on the same server")
     bulk.add_argument("--replace", action="store_true", help="drop and rebuild the target (*_bulk only)")
+    m = sub.add_parser("measure-queries", help="measure the important queries on the bulk data (development only)")
+    m.add_argument("--database", default="caravansara_bulk", help="target database on the same server")
+    m.add_argument("--catalog", type=Path, default=None, help="query catalog directory (default: db/bulk/queries)")
+    m.add_argument("--runs", type=int, default=5, help="measured runs after one warm-up (default 5)")
+    m.add_argument("--only", nargs="+", default=None, metavar="NAME", help="measure only these queries")
+    m.add_argument("--out", type=Path, default=None, help="also write the results as JSON")
     return parser
+
+
+def _measure_queries(settings: Settings, args: argparse.Namespace) -> None:
+    from caravansara.devdata.measure import MeasureRefused, measure
+
+    try:
+        report = asyncio.run(
+            measure(
+                settings,
+                database=args.database,
+                catalog_dir=args.catalog or settings.seed_dir / "bulk" / "queries",
+                runs=args.runs,
+                only=args.only,
+            )
+        )
+    except MeasureRefused as refused:
+        print(refused, file=sys.stderr)
+        raise SystemExit(1) from None
+    print(report.markdown())
+    if args.out:
+        args.out.write_text(report.to_json(), encoding="utf-8")
+        print(f"wrote {args.out}")
+    if report.failed:
+        for r in report.results:
+            if r.error is not None:
+                print(f"{r.name}: {r.error}", file=sys.stderr)
+        raise SystemExit(1)
 
 
 def _seed_bulk(settings: Settings, args: argparse.Namespace) -> None:
@@ -248,6 +281,8 @@ def main(argv: list[str] | None = None) -> None:
         asyncio.run(_once())
     elif args.command == "seed-bulk":
         _seed_bulk(settings, args)
+    elif args.command == "measure-queries":
+        _measure_queries(settings, args)
     elif args.command == "export-openapi":
         args.output.write_text(openapi_document(), encoding="utf-8")
         print(f"wrote {args.output}")

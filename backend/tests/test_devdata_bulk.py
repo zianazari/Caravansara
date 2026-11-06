@@ -208,6 +208,11 @@ async def test_seed_bulk_loads_and_keeps_rules(bulk_settings: Settings, capsys: 
         " OR avg_rating IS DISTINCT FROM (SELECT round(avg(rating), 2) FROM reviews r WHERE r.listing_id = l.id)",
     )
     assert wrong[0] == 0
+    # The rating trigger rewrote each listing once per review; the load compacts the table afterwards.
+    ((pages, rows),) = await _fetch(
+        bulk_settings, BULK_DB, "SELECT pg_relation_size('listings') / 8192, (SELECT count(*) FROM listings)"
+    )
+    assert rows / pages >= 10, (rows, pages)  # about 25 listings fit a page; bloated, about 2 did
 
     # The app works on the bulk database: search, then a new guest books and pays.
     app = create_app(bulk_settings.model_copy(update={"database_url": _url(bulk_settings, BULK_DB)}))

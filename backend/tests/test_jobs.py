@@ -1,7 +1,7 @@
 """Worker jobs: expire overdue holds, complete stays at check-out time in the city."""
 
 import asyncio
-from datetime import UTC, date, datetime, timedelta
+from datetime import UTC, date, datetime, time, timedelta
 from typing import Any
 from zoneinfo import ZoneInfo
 
@@ -156,3 +156,43 @@ async def test_completion_on_daylight_saving_days(
         assert await bookings_repo.complete_finished_stays(session, deadline_utc) == 1
         await session.commit()
     assert (await sql(db, "SELECT status::text FROM bookings WHERE id = :id", id=booking))[0][0] == "completed"
+
+
+@pytest.mark.parametrize(
+    ("timezone", "check_out_time", "deadline_utc"),
+    [
+        # UTC+14, check-out at midnight: the earliest a day can end anywhere, so the 14-hour bound is tight
+        ("Pacific/Kiritimati", time(0, 0), datetime(2030, 6, 9, 10, 0, tzinfo=UTC)),
+        ("Pacific/Kiritimati", time(11, 0), datetime(2030, 6, 9, 21, 0, tzinfo=UTC)),
+        ("Pacific/Pago_Pago", time(11, 0), datetime(2030, 6, 10, 22, 0, tzinfo=UTC)),  # UTC-11
+    ],
+)
+async def test_completion_bound_misses_no_stay_in_the_farthest_time_zones(
+    client: AsyncClient, app: Any, db: AsyncEngine, factory: Factory, timezone: str, check_out_time: time,
+    deadline_utc: datetime,
+) -> None:  # fmt: skip
+    """The job only looks at check-outs up to 14 hours ahead of UTC (specs/003-index-review research R5)."""
+    country = (await sql(db, "SELECT country_id FROM cities ORDER BY id LIMIT 1"))[0][0]
+    rows = await sql(
+        db, "INSERT INTO cities (country_id, name, timezone) VALUES (:c, :n, :tz) RETURNING id",
+        c=country, n=f"Test {timezone}", tz=timezone,
+    )  # fmt: skip
+    city = rows[0][0]
+    listing = await factory.listing()
+    await sql(
+        db,
+        "UPDATE listings SET city_id = :city, check_out_time = :t WHERE id = :id",
+        city=city, t=check_out_time, id=listing["id"],
+    )  # fmt: skip
+    booking = await factory.booking(listing=listing, check_in=date(2030, 6, 7), check_out=date(2030, 6, 10))
+    try:
+        async with app.state.sessionmaker() as session:
+            assert await bookings_repo.complete_finished_stays(session, deadline_utc - timedelta(minutes=1)) == 0
+            assert await bookings_repo.complete_finished_stays(session, deadline_utc) == 1
+            await session.commit()
+        status = await sql(db, "SELECT status::text FROM bookings WHERE id = :id", id=booking.id)
+        assert status[0][0] == "completed"
+    finally:  # cities are catalog data the per-test cleanup keeps
+        await sql(db, "DELETE FROM bookings WHERE listing_id = :id", id=listing["id"])
+        await sql(db, "DELETE FROM listings WHERE id = :id", id=listing["id"])
+        await sql(db, "DELETE FROM cities WHERE id = :id", id=city)

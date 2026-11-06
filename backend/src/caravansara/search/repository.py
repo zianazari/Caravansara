@@ -29,6 +29,23 @@ class Criteria:
         return self.lat is not None
 
 
+# Bookings that block the requested dates. An unpaid hold past its deadline no longer blocks, even
+# before the worker runs.
+_BLOCKING = """b.status IN ('pending', 'confirmed', 'completed')
+                   AND  (b.status <> 'pending' OR b.hold_expires_at > now())
+                   AND  b.stay && daterange(CAST(:check_in AS date), CAST(:check_out AS date), '[)')"""
+
+# Up to this many nights a radius search tests the listings against one hashed list of the blocking
+# bookings instead of looking them up per listing (specs/003-index-review, measurements.md). The
+# planner guesses a radius holds a handful of listings (London 5 km: 10 guessed, 16,155 real), so it
+# looks the bookings up once per listing: 325 ms for three nights. The hashed list takes 52 ms, but it
+# grows with the window, and past a week it loses on small areas (1 km, 14 nights: 16 ms per listing,
+# 64 ms hashed). NOT IN, not a join: the planner hashes it by the list's own size, while any join
+# would trust the bad guess (a join to a CTE ran 1 s). listing_id is NOT NULL, so NOT IN means
+# NOT EXISTS. A city search needs neither: its estimate is right.
+_HASHED_MAX_NIGHTS = 7
+
+
 def _where(c: Criteria, *, with_amenities: bool) -> tuple[list[str], dict[str, Any]]:
     clauses = ["l.is_active", "l.max_guests >= :guests"]
     params: dict[str, Any] = {"guests": c.guests}
@@ -42,15 +59,10 @@ def _where(c: Criteria, *, with_amenities: bool) -> tuple[list[str], dict[str, A
         clauses.append("l.pets_allowed AND l.max_pets >= :pets")
         params["pets"] = c.pets
     if c.check_in and c.check_out:
-        clauses.append(
-            """NOT EXISTS (
-                 SELECT 1 FROM bookings b
-                 WHERE  b.listing_id = l.id
-                   AND  b.status IN ('pending', 'confirmed', 'completed')
-                   -- an unpaid hold past its deadline no longer blocks, even before the worker runs
-                   AND  (b.status <> 'pending' OR b.hold_expires_at > now())
-                   AND  b.stay && daterange(CAST(:check_in AS date), CAST(:check_out AS date), '[)'))"""
-        )
+        if c.radial and (c.check_out - c.check_in).days <= _HASHED_MAX_NIGHTS:
+            clauses.append(f"l.id NOT IN (SELECT b.listing_id FROM bookings b WHERE {_BLOCKING})")  # noqa: S608
+        else:
+            clauses.append(f"NOT EXISTS (SELECT 1 FROM bookings b WHERE b.listing_id = l.id AND {_BLOCKING})")  # noqa: S608
         params |= {"check_in": c.check_in, "check_out": c.check_out}
     if with_amenities and c.amenity_ids:
         # AND logic: the listing must have every requested amenity.
@@ -77,12 +89,28 @@ async def search(
     clauses, params = _where(c, with_amenities=True)
     source = _center(c, params)
     nights = "(CAST(:check_out AS date) - CAST(:check_in AS date))" if c.check_in else "NULL"
-    order = (
-        "ST_Distance(l.public_location, p.center), l.id"
-        if sort == "distance"
-        else "l.avg_rating DESC NULLS LAST, l.review_count DESC, l.id"
-    )
+    distance = "ST_Distance(l.public_location, p.center)" if sort == "distance" else "NULL::float8"
+
+    def order(alias: str) -> str:
+        if sort == "distance":
+            return f"{alias}.distance_m, {alias}.id"
+        return f"{alias}.avg_rating DESC NULLS LAST, {alias}.review_count DESC, {alias}.id"
+
+    # Two steps on purpose (specs/003-index-review, measurements.md): "matching" holds every match but
+    # only what counting and sorting need, so the planner sees it must read them all and picks a hash
+    # anti-join against the bookings for the dates. With LIMIT on the outer query it guessed a few rows
+    # would do and probed the bookings once per listing (London with dates: 919 ms, now 67 ms). The
+    # card columns (pin, cover photo, ...) are then built for the one page only.
+    matching = f"""matching AS MATERIALIZED (
+            SELECT l.id, l.avg_rating, l.review_count, {distance} AS distance_m
+            FROM   {source}
+            JOIN   listings l ON true
+            WHERE  {" AND ".join(clauses)}
+        )"""  # noqa: S608
+    page = f"page AS (SELECT m.* FROM matching m ORDER BY {order('m')} LIMIT :limit OFFSET :offset)"  # noqa: S608
     sql = f"""
+        WITH {matching},
+        {page}
         SELECT l.id, l.title, l.property_type::text AS property_type,
                c.name AS city, co.code AS country_code,
                ST_Y(l.public_location::geometry) AS pin_lat,
@@ -93,14 +121,13 @@ async def search(
                {nights} * l.price_per_night + l.cleaning_fee AS total_price,
                (SELECT ph.storage_key FROM listing_photos ph
                 WHERE ph.listing_id = l.id ORDER BY ph.sort_order LIMIT 1) AS cover_key,
-               count(*) OVER () AS total
-        FROM   {source}
-        JOIN   listings  l  ON true
+               (SELECT count(*) FROM matching) AS total
+        FROM   page pg
+        JOIN   {source} ON true
+        JOIN   listings  l  ON l.id = pg.id
         JOIN   cities    c  ON c.id = l.city_id
         JOIN   countries co ON co.id = c.country_id
-        WHERE  {" AND ".join(clauses)}
-        ORDER  BY {order}
-        LIMIT  :limit OFFSET :offset
+        ORDER  BY {order("pg")}
     """  # noqa: S608 (fixed fragments; values are bind parameters)
     params |= {"limit": limit, "offset": offset}
     rows = [dict(r) for r in (await session.execute(text(sql), params)).mappings()]
@@ -115,20 +142,29 @@ async def _count(session: AsyncSession, c: Criteria) -> int:
     return int((await session.execute(text(sql), params)).scalar_one())
 
 
+_COUNTS = """counts AS (
+            SELECT la.amenity_id, count(*) AS listings
+            FROM   matching m
+            JOIN   listing_amenities la ON la.listing_id = m.id
+            GROUP  BY la.amenity_id
+        )"""
+
+
 async def amenity_counts(session: AsyncSession, c: Criteria) -> tuple[int, list[dict[str, Any]]]:
     """Counts for the filter panel, e.g. "Wifi (120)", over listings matching everything but amenities."""
     clauses, params = _where(c, with_amenities=False)
     source = _center(c, params)
     where = " AND ".join(clauses)
+    # Count per amenity id first, then name the ~30 groups: joining names to every (listing, amenity)
+    # row first made a big city cost a third more (specs/003-index-review, measurements.md).
     counts_sql = f"""
-        WITH matching AS (SELECT l.id FROM {source} JOIN listings l ON true WHERE {where})
-        SELECT a.id, a.name, ac.name AS category, count(*) AS listings
-        FROM   matching m
-        JOIN   listing_amenities la ON la.listing_id = m.id
-        JOIN   amenities a ON a.id = la.amenity_id
+        WITH matching AS (SELECT l.id FROM {source} JOIN listings l ON true WHERE {where}),
+        {_COUNTS}
+        SELECT a.id, a.name, ac.name AS category, n.listings
+        FROM   counts n
+        JOIN   amenities a ON a.id = n.amenity_id
         JOIN   amenity_categories ac ON ac.id = a.category_id
-        GROUP  BY a.id, a.name, ac.name, ac.sort_order
-        ORDER  BY listings DESC, a.name
+        ORDER  BY n.listings DESC, a.name
     """  # noqa: S608
     total_sql = f"SELECT count(*) FROM {source} JOIN listings l ON true WHERE {where}"  # noqa: S608
     total = int((await session.execute(text(total_sql), params)).scalar_one())

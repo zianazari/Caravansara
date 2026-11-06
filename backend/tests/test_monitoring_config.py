@@ -15,6 +15,8 @@ OBSERVABILITY = Path(__file__).resolve().parents[2] / "observability"
 DASHBOARDS = sorted((OBSERVABILITY / "grafana" / "dashboards").glob("*.json"))
 ALERTS = OBSERVABILITY / "prometheus" / "alerts.yml"
 DATASOURCES = OBSERVABILITY / "grafana" / "provisioning" / "datasources" / "datasources.yml"
+# Names the postgres-exporter really serves, copied from its /metrics (specs/003-index-review, T012).
+EXPORTER_METRICS = OBSERVABILITY / "postgres-exporter" / "metrics.txt"
 _SUFFIXES = re.compile(r"_(total|bucket|count|sum|created)$")
 
 
@@ -54,3 +56,15 @@ def test_dashboard_panels_point_at_provisioned_datasources() -> None:
             if panel["type"] != "row":
                 assert panel["datasource"]["uid"] in provisioned, panel["title"]
                 assert expressions(panel), panel["title"]
+
+
+def test_query_panel_uses_only_metrics_the_exporter_serves() -> None:
+    served = {
+        line.strip() for line in EXPORTER_METRICS.read_text(encoding="utf-8").splitlines()
+        if line.strip() and not line.startswith("#")
+    }  # fmt: skip
+    for path in DASHBOARDS:
+        names = re.findall(r"\bpg_stat_statements_[a-z_]+", path.read_text(encoding="utf-8"))
+        used = {_SUFFIXES.sub("", n) for n in names}
+        assert used, f"{path.name} has no query panel (FR-003)"
+        assert used <= {_SUFFIXES.sub("", n) for n in served}, f"{path.name}: {sorted(used - served)}"

@@ -165,6 +165,10 @@ async def seed_bulk(
                 await conn.execute(
                     f"SELECT setval(pg_get_serial_sequence('{table}', 'id'), (SELECT max(id) FROM {table}))"  # noqa: S608
                 )
+        # Each review's trigger rewrote its listing, all in one transaction: 1.16 million dead rows made
+        # listings 386 MB for 30 MB of data, and every scan of it 12 times slower than in real use,
+        # where reviews arrive one by one and vacuum keeps up (specs/003-index-review measurements.md).
+        await conn.execute("VACUUM (FULL) listings")
         await conn.execute("ANALYZE")
     finally:
         await conn.close()

@@ -152,7 +152,9 @@ CREATE TABLE listing_amenities (
     amenity_id  SMALLINT NOT NULL REFERENCES amenities(id),
     PRIMARY KEY (listing_id, amenity_id)
 );
-CREATE INDEX listing_amenities_amenity_idx ON listing_amenities (amenity_id);  -- "has Wifi" filter
+-- Search never reads it (specs/003-index-review); it stays for the foreign key: deleting an amenity
+-- checks its listings in 4 ms with it, 120 ms (a full scan) without.
+CREATE INDEX listing_amenities_amenity_idx ON listing_amenities (amenity_id);
 
 -- ---------- Bookings (no double booking) -----------------------------
 CREATE TABLE bookings (
@@ -195,6 +197,14 @@ CREATE TABLE bookings (
 CREATE INDEX bookings_guest_idx ON bookings (guest_id);
 -- the worker expires overdue holds every minute without scanning all bookings
 CREATE INDEX bookings_pending_hold_idx ON bookings (hold_expires_at) WHERE status = 'pending';
+-- Measured on 100,000 listings and 3 million bookings (specs/003-index-review/measurements.md):
+-- a host's "bookings of my listing", in page order (was a full scan)
+CREATE INDEX bookings_listing_check_in_idx ON bookings (listing_id, check_in, id);
+-- search with dates: every booking that blocks the dates, at once (no_double_booking needs a listing)
+CREATE INDEX bookings_active_stay_idx ON bookings USING gist (stay)
+    WHERE status IN ('pending', 'confirmed', 'completed');
+-- the worker completes finished stays every minute: check_out is bounded by now + 14 hours
+CREATE INDEX bookings_confirmed_check_out_idx ON bookings (check_out) WHERE status = 'confirmed';
 
 -- ---------- Reviews (rank + comment) ---------------------------------
 -- One review per booking, written by that booking's guest about that booking's listing.

@@ -1706,6 +1706,116 @@
       }
     },
     {
+      "type": "table",
+      "title": "Costly queries (pg_stat_statements)",
+      "id": 34,
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "description": "The 10 queries with the most total time in the selected range. Find a query's text with: SELECT query FROM pg_stat_statements WHERE queryid = <queryid>; (the exporter sends only the id). Measured before/after numbers for each index are in docs/backend-design.md.",
+      "gridPos": {
+        "h": 9,
+        "w": 24,
+        "x": 0,
+        "y": 59
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "expr": "topk(10, increase(pg_stat_statements_seconds_total{datname=\"caravansara\"}[$__range]))",
+          "instant": true,
+          "format": "table"
+        },
+        {
+          "refId": "B",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "expr": "increase(pg_stat_statements_calls_total{datname=\"caravansara\"}[$__range]) and on(queryid) topk(10, increase(pg_stat_statements_seconds_total{datname=\"caravansara\"}[$__range]))",
+          "instant": true,
+          "format": "table"
+        },
+        {
+          "refId": "C",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "expr": "1000 * increase(pg_stat_statements_seconds_total{datname=\"caravansara\"}[$__range]) / increase(pg_stat_statements_calls_total{datname=\"caravansara\"}[$__range]) and on(queryid) topk(10, increase(pg_stat_statements_seconds_total{datname=\"caravansara\"}[$__range]))",
+          "instant": true,
+          "format": "table"
+        }
+      ],
+      "transformations": [
+        {
+          "id": "joinByField",
+          "options": {
+            "byField": "queryid",
+            "mode": "inner"
+          }
+        },
+        {
+          "id": "organize",
+          "options": {
+            "excludeByName": {
+              "Time": true,
+              "Time 1": true,
+              "Time 2": true,
+              "Time 3": true,
+              "__name__": true,
+              "datname": true,
+              "datname 1": true,
+              "datname 2": true,
+              "datname 3": true,
+              "user": true,
+              "user 1": true,
+              "user 2": true,
+              "user 3": true,
+              "instance": true,
+              "instance 1": true,
+              "instance 2": true,
+              "instance 3": true,
+              "job": true,
+              "job 1": true,
+              "job 2": true,
+              "job 3": true
+            },
+            "renameByName": {
+              "Value #A": "Total time (s)",
+              "Value #B": "Calls",
+              "Value #C": "Mean (ms)"
+            }
+          }
+        },
+        {
+          "id": "sortBy",
+          "options": {
+            "sort": [
+              {
+                "field": "Total time (s)",
+                "desc": true
+              }
+            ]
+          }
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "decimals": 1
+        },
+        "overrides": []
+      },
+      "options": {
+        "showHeader": true
+      }
+    },
+    {
       "type": "row",
       "title": "Logs",
       "id": 32,
@@ -1714,7 +1824,7 @@
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 59
+        "y": 68
       },
       "panels": []
     },
@@ -1731,7 +1841,7 @@
         "h": 10,
         "w": 24,
         "x": 0,
-        "y": 60
+        "y": 69
       },
       "targets": [
         {

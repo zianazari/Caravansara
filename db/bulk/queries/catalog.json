@@ -1,0 +1,652 @@
+{
+  "_about": "Important queries of the API and the worker, measured by `caravansara measure-queries` (specs/003-index-review). SQL copied from what the app sends; a parameter value starting with @ is a column of params.sql.",
+  "queries": [
+    {
+      "name": "search_city_london",
+      "source": "caravansara.search.repository:search",
+      "endpoint": "GET /search/listings",
+      "kind": "read",
+      "params": {
+        "guests": 1,
+        "city_id": "@london_id",
+        "limit": 20,
+        "offset": 0
+      },
+      "target_ms": 50
+    },
+    {
+      "name": "search_city_london_dates",
+      "source": "caravansara.search.repository:search",
+      "endpoint": "GET /search/listings",
+      "kind": "read",
+      "params": {
+        "guests": 1,
+        "city_id": "@london_id",
+        "check_in": "@check_in",
+        "check_out": "@check_out",
+        "limit": 20,
+        "offset": 0
+      },
+      "target_ms": 50
+    },
+    {
+      "name": "search_city_london_dates_page_21",
+      "source": "caravansara.search.repository:search",
+      "endpoint": "GET /search/listings",
+      "kind": "read",
+      "params": {
+        "guests": 1,
+        "city_id": "@london_id",
+        "check_in": "@check_in",
+        "check_out": "@check_out",
+        "limit": 20,
+        "offset": 400
+      },
+      "target_ms": 50
+    },
+    {
+      "name": "search_city_stockholm_dates",
+      "source": "caravansara.search.repository:search",
+      "endpoint": "GET /search/listings",
+      "kind": "read",
+      "params": {
+        "guests": 1,
+        "city_id": "@stockholm_id",
+        "check_in": "@check_in",
+        "check_out": "@check_out",
+        "limit": 20,
+        "offset": 0
+      },
+      "target_ms": 50
+    },
+    {
+      "name": "search_radius_1km_london",
+      "source": "caravansara.search.repository:search",
+      "endpoint": "GET /search/listings",
+      "kind": "read",
+      "params": {
+        "guests": 1,
+        "radius_m": 1000,
+        "lat": "@london_lat",
+        "lng": "@london_lng",
+        "limit": 20,
+        "offset": 0
+      },
+      "target_ms": 50
+    },
+    {
+      "name": "search_radius_1km_london_dates",
+      "source": "caravansara.search.repository:search",
+      "endpoint": "GET /search/listings",
+      "kind": "read",
+      "params": {
+        "guests": 1,
+        "radius_m": 1000,
+        "check_in": "@check_in",
+        "check_out": "@check_out",
+        "lat": "@london_lat",
+        "lng": "@london_lng",
+        "limit": 20,
+        "offset": 0
+      },
+      "target_ms": 50
+    },
+    {
+      "name": "search_radius_5km_london",
+      "source": "caravansara.search.repository:search",
+      "endpoint": "GET /search/listings",
+      "kind": "read",
+      "params": {
+        "guests": 1,
+        "radius_m": 5000,
+        "lat": "@london_lat",
+        "lng": "@london_lng",
+        "limit": 20,
+        "offset": 0
+      },
+      "target_ms": 50
+    },
+    {
+      "name": "search_radius_5km_london_dates",
+      "source": "caravansara.search.repository:search",
+      "endpoint": "GET /search/listings",
+      "kind": "read",
+      "params": {
+        "guests": 1,
+        "radius_m": 5000,
+        "check_in": "@check_in",
+        "check_out": "@check_out",
+        "lat": "@london_lat",
+        "lng": "@london_lng",
+        "limit": 20,
+        "offset": 0
+      },
+      "target_ms": 50
+    },
+    {
+      "name": "search_radius_20km_london",
+      "source": "caravansara.search.repository:search",
+      "endpoint": "GET /search/listings",
+      "kind": "read",
+      "params": {
+        "guests": 1,
+        "radius_m": 20000,
+        "lat": "@london_lat",
+        "lng": "@london_lng",
+        "limit": 20,
+        "offset": 0
+      },
+      "target_ms": 50
+    },
+    {
+      "name": "search_radius_20km_london_dates",
+      "source": "caravansara.search.repository:search",
+      "endpoint": "GET /search/listings",
+      "kind": "read",
+      "params": {
+        "guests": 1,
+        "radius_m": 20000,
+        "check_in": "@check_in",
+        "check_out": "@check_out",
+        "lat": "@london_lat",
+        "lng": "@london_lng",
+        "limit": 20,
+        "offset": 0
+      },
+      "target_ms": 50
+    },
+    {
+      "name": "search_radius_5km_london_dates_by_distance",
+      "source": "caravansara.search.repository:search",
+      "endpoint": "GET /search/listings?sort=distance",
+      "kind": "read",
+      "params": {
+        "guests": 1,
+        "radius_m": 5000,
+        "check_in": "@check_in",
+        "check_out": "@check_out",
+        "lat": "@london_lat",
+        "lng": "@london_lng",
+        "limit": 20,
+        "offset": 0
+      },
+      "target_ms": 50
+    },
+    {
+      "name": "search_radius_5km_london_dates_pets_amenities",
+      "source": "caravansara.search.repository:search",
+      "endpoint": "GET /search/listings",
+      "kind": "read",
+      "params": {
+        "guests": 2,
+        "radius_m": 5000,
+        "pets": 1,
+        "check_in": "@check_in",
+        "check_out": "@check_out",
+        "amenity_ids": [
+          1,
+          2
+        ],
+        "amenity_count": 2,
+        "lat": "@london_lat",
+        "lng": "@london_lng",
+        "limit": 20,
+        "offset": 0
+      },
+      "target_ms": 50
+    },
+    {
+      "name": "search_radius_5km_stockholm_dates",
+      "source": "caravansara.search.repository:search",
+      "endpoint": "GET /search/listings",
+      "kind": "read",
+      "params": {
+        "guests": 1,
+        "radius_m": 5000,
+        "check_in": "@check_in",
+        "check_out": "@check_out",
+        "lat": "@stockholm_lat",
+        "lng": "@stockholm_lng",
+        "limit": 20,
+        "offset": 0
+      },
+      "target_ms": 50
+    },
+    {
+      "name": "search_radius_1km_london_14_nights",
+      "source": "caravansara.search.repository:search",
+      "endpoint": "GET /search/listings",
+      "kind": "read",
+      "params": {
+        "guests": 1,
+        "radius_m": 1000,
+        "check_in": "@check_in",
+        "check_out": "@check_out_two_weeks",
+        "lat": "@london_lat",
+        "lng": "@london_lng",
+        "limit": 20,
+        "offset": 0
+      },
+      "target_ms": 50
+    },
+    {
+      "name": "search_radius_5km_london_14_nights",
+      "source": "caravansara.search.repository:search",
+      "endpoint": "GET /search/listings",
+      "kind": "read",
+      "params": {
+        "guests": 1,
+        "radius_m": 5000,
+        "check_in": "@check_in",
+        "check_out": "@check_out_two_weeks",
+        "lat": "@london_lat",
+        "lng": "@london_lng",
+        "limit": 20,
+        "offset": 0
+      },
+      "target_ms": 50
+    },
+    {
+      "name": "search_count_london_dates",
+      "source": "caravansara.search.repository:_count",
+      "endpoint": "GET /search/listings (empty page)",
+      "kind": "read",
+      "params": {
+        "guests": 1,
+        "city_id": "@london_id",
+        "check_in": "@check_in",
+        "check_out": "@check_out"
+      },
+      "target_ms": 50,
+      "note": "same SQL as the filter-panel total when no amenity is chosen"
+    },
+    {
+      "name": "filters_total_london_dates",
+      "source": "caravansara.search.repository:amenity_counts",
+      "endpoint": "GET /search/filters",
+      "kind": "read",
+      "params": {
+        "guests": 1,
+        "city_id": "@london_id",
+        "check_in": "@check_in",
+        "check_out": "@check_out"
+      },
+      "target_ms": 50
+    },
+    {
+      "name": "filters_amenities_london_dates",
+      "source": "caravansara.search.repository:amenity_counts",
+      "endpoint": "GET /search/filters",
+      "kind": "read",
+      "params": {
+        "guests": 1,
+        "city_id": "@london_id",
+        "check_in": "@check_in",
+        "check_out": "@check_out"
+      },
+      "target_ms": 50
+    },
+    {
+      "name": "filters_amenities_radius_5km_london_dates",
+      "source": "caravansara.search.repository:amenity_counts",
+      "endpoint": "GET /search/filters",
+      "kind": "read",
+      "params": {
+        "guests": 1,
+        "radius_m": 5000,
+        "check_in": "@check_in",
+        "check_out": "@check_out",
+        "lat": "@london_lat",
+        "lng": "@london_lng"
+      },
+      "target_ms": 50
+    },
+    {
+      "name": "listing_by_id",
+      "source": "caravansara.listings.repository:get_listing",
+      "endpoint": "GET /listings/{id}",
+      "kind": "read",
+      "params": {
+        "id": "@reviewed_listing"
+      },
+      "target_ms": 50
+    },
+    {
+      "name": "listing_photos",
+      "source": "caravansara.listings.repository:photos",
+      "endpoint": "GET /listings/{id}",
+      "kind": "read",
+      "params": {
+        "listing_id": "@reviewed_listing"
+      },
+      "target_ms": 50
+    },
+    {
+      "name": "listing_amenity_ids",
+      "source": "caravansara.listings.repository:amenity_ids",
+      "endpoint": "GET /listings/{id}",
+      "kind": "read",
+      "params": {
+        "listing_id": "@reviewed_listing"
+      },
+      "target_ms": 50
+    },
+    {
+      "name": "listing_pins",
+      "source": "caravansara.listings.repository:pins",
+      "endpoint": "GET /me/bookings",
+      "kind": "read",
+      "params": {
+        "ids": "@busy_guest_listing"
+      },
+      "target_ms": 50
+    },
+    {
+      "name": "cover_keys",
+      "source": "caravansara.listings.repository:cover_keys",
+      "endpoint": "GET /me/bookings",
+      "kind": "read",
+      "params": {
+        "ids": "@busy_guest_listing"
+      },
+      "target_ms": 50
+    },
+    {
+      "name": "host_listings_count",
+      "source": "caravansara.listings.repository:host_listings",
+      "endpoint": "GET /me/listings",
+      "kind": "read",
+      "params": {
+        "host_id": "@big_host"
+      },
+      "target_ms": 50
+    },
+    {
+      "name": "host_listings_page",
+      "source": "caravansara.listings.repository:host_listings",
+      "endpoint": "GET /me/listings",
+      "kind": "read",
+      "params": {
+        "host_id": "@big_host",
+        "limit": 20,
+        "offset": 0
+      },
+      "target_ms": 50
+    },
+    {
+      "name": "reviews_count",
+      "source": "caravansara.reviews.repository:listing_reviews",
+      "endpoint": "GET /listings/{id}/reviews",
+      "kind": "read",
+      "params": {
+        "listing_id": "@reviewed_listing"
+      },
+      "target_ms": 50
+    },
+    {
+      "name": "reviews_page_1",
+      "source": "caravansara.reviews.repository:listing_reviews",
+      "endpoint": "GET /listings/{id}/reviews",
+      "kind": "read",
+      "params": {
+        "listing_id": "@reviewed_listing",
+        "limit": 20,
+        "offset": 0
+      },
+      "target_ms": 50
+    },
+    {
+      "name": "reviews_page_4",
+      "source": "caravansara.reviews.repository:listing_reviews",
+      "endpoint": "GET /listings/{id}/reviews",
+      "kind": "read",
+      "params": {
+        "listing_id": "@reviewed_listing",
+        "limit": 20,
+        "offset": 60
+      },
+      "target_ms": 50
+    },
+    {
+      "name": "review_authors",
+      "source": "caravansara.identity.repository:get_users",
+      "endpoint": "GET /listings/{id}/reviews",
+      "kind": "read",
+      "params": {
+        "id1": "@busy_guest",
+        "id2": "@busy_guest",
+        "id3": "@busy_guest",
+        "id4": "@busy_guest",
+        "id5": "@busy_guest",
+        "id6": "@busy_guest",
+        "id7": "@busy_guest",
+        "id8": "@busy_guest",
+        "id9": "@busy_guest",
+        "id10": "@busy_guest",
+        "id11": "@busy_guest",
+        "id12": "@busy_guest",
+        "id13": "@busy_guest",
+        "id14": "@busy_guest",
+        "id15": "@busy_guest",
+        "id16": "@busy_guest",
+        "id17": "@busy_guest",
+        "id18": "@busy_guest",
+        "id19": "@busy_guest",
+        "id20": "@busy_guest"
+      },
+      "target_ms": 50,
+      "note": "20 ids, as one page of reviews sends; the same id 20 times is enough for the plan"
+    },
+    {
+      "name": "guest_bookings_count",
+      "source": "caravansara.bookings.repository:guest_bookings",
+      "endpoint": "GET /me/bookings",
+      "kind": "read",
+      "params": {
+        "guest_id": "@busy_guest"
+      },
+      "target_ms": 50
+    },
+    {
+      "name": "guest_bookings_page",
+      "source": "caravansara.bookings.repository:guest_bookings",
+      "endpoint": "GET /me/bookings",
+      "kind": "read",
+      "params": {
+        "guest_id": "@busy_guest",
+        "limit": 20,
+        "offset": 0
+      },
+      "target_ms": 50
+    },
+    {
+      "name": "guest_bookings_completed_page",
+      "source": "caravansara.bookings.repository:guest_bookings",
+      "endpoint": "GET /me/bookings?status=completed",
+      "kind": "read",
+      "params": {
+        "guest_id": "@busy_guest",
+        "status": "completed",
+        "limit": 20,
+        "offset": 0
+      },
+      "target_ms": 50
+    },
+    {
+      "name": "listing_bookings_count",
+      "source": "caravansara.bookings.repository:listing_bookings",
+      "endpoint": "GET /listings/{id}/bookings",
+      "kind": "read",
+      "params": {
+        "listing_id": "@busy_listing"
+      },
+      "target_ms": 50
+    },
+    {
+      "name": "listing_bookings_page",
+      "source": "caravansara.bookings.repository:listing_bookings",
+      "endpoint": "GET /listings/{id}/bookings",
+      "kind": "read",
+      "params": {
+        "listing_id": "@busy_listing",
+        "limit": 20,
+        "offset": 0
+      },
+      "target_ms": 50
+    },
+    {
+      "name": "booking_by_idempotency_key",
+      "source": "caravansara.bookings.repository:by_idempotency_key",
+      "endpoint": "POST /bookings",
+      "kind": "read",
+      "params": {
+        "key": "@any_idempotency_key"
+      },
+      "target_ms": 50
+    },
+    {
+      "name": "expire_listing_holds",
+      "source": "caravansara.bookings.repository:expire_listing_holds",
+      "endpoint": "POST /bookings",
+      "kind": "write",
+      "params": {
+        "status": "expired",
+        "hold": null,
+        "listing_id": "@busy_listing",
+        "pending": "pending",
+        "now": "@now"
+      },
+      "target_ms": 50
+    },
+    {
+      "name": "user_by_email",
+      "source": "caravansara.identity.repository:get_user_by_email",
+      "endpoint": "POST /auth/login",
+      "kind": "read",
+      "params": {
+        "email": "@busy_guest_email"
+      },
+      "target_ms": 50
+    },
+    {
+      "name": "login_attempts",
+      "source": "caravansara.identity.repository:count_attempts",
+      "endpoint": "POST /auth/login",
+      "kind": "read",
+      "params": {
+        "action": "login",
+        "identifier": "@busy_guest_email",
+        "since": "@hour_ago"
+      },
+      "target_ms": 50
+    },
+    {
+      "name": "job_expire_overdue_holds",
+      "source": "caravansara.bookings.repository:expire_overdue_holds",
+      "endpoint": "worker: expire holds",
+      "kind": "write",
+      "params": {
+        "now": "@now"
+      },
+      "target_ms": 50,
+      "note": "from the code (the worker and many-row writes were not in the captured traffic)"
+    },
+    {
+      "name": "job_complete_finished_stays",
+      "source": "caravansara.bookings.repository:complete_finished_stays",
+      "endpoint": "worker: complete stays",
+      "kind": "write",
+      "params": {
+        "now": "@now"
+      },
+      "target_ms": 50,
+      "note": "from the code (the worker and many-row writes were not in the captured traffic)"
+    },
+    {
+      "name": "write_1000_bookings",
+      "source": "caravansara.bookings.service:create_booking",
+      "endpoint": "POST /bookings x 1000",
+      "kind": "write",
+      "params": {
+        "guest_id": "@busy_guest",
+        "check_in": "@check_in"
+      },
+      "target_ms": 300,
+      "note": "from the code (the worker and many-row writes were not in the captured traffic)"
+    }
+  ],
+  "excluded": [
+    {
+      "source": "caravansara.bookings.repository:get",
+      "reason": "one booking by primary key (bookings_pkey)"
+    },
+    {
+      "source": "caravansara.bookings.repository:confirm_if_payable",
+      "reason": "one booking by primary key, conditional UPDATE"
+    },
+    {
+      "source": "caravansara.bookings.repository:set_status_if",
+      "reason": "one booking by primary key, conditional UPDATE"
+    },
+    {
+      "source": "caravansara.catalog.repository:list_countries",
+      "reason": "7 rows"
+    },
+    {
+      "source": "caravansara.catalog.repository:search_cities",
+      "reason": "9 rows; prefix ILIKE took 2.7 ms on the bulk data (research R8)"
+    },
+    {
+      "source": "caravansara.catalog.repository:get_city",
+      "reason": "9 rows, by primary key"
+    },
+    {
+      "source": "caravansara.catalog.repository:list_amenities",
+      "reason": "31 rows"
+    },
+    {
+      "source": "caravansara.catalog.repository:existing_amenity_ids",
+      "reason": "31 rows"
+    },
+    {
+      "source": "caravansara.identity.repository:get_user",
+      "reason": "one user by primary key"
+    },
+    {
+      "source": "caravansara.identity.repository:add_refresh_token",
+      "reason": "one-row INSERT"
+    },
+    {
+      "source": "caravansara.identity.repository:get_refresh_token_for_update",
+      "reason": "one token by its unique hash"
+    },
+    {
+      "source": "caravansara.identity.repository:revoke_all_tokens",
+      "reason": "one user's tokens, by refresh_tokens_user_idx"
+    },
+    {
+      "source": "caravansara.identity.repository:record_attempt",
+      "reason": "one-row INSERT"
+    },
+    {
+      "source": "caravansara.listings.repository:get_photo",
+      "reason": "one photo by primary key"
+    },
+    {
+      "source": "caravansara.listings.repository:next_sort_order",
+      "reason": "photos of one listing (at most a few), by listing_photos_order_key"
+    },
+    {
+      "source": "caravansara.listings.repository:photo_key_exists",
+      "reason": "one photo by its unique storage key"
+    },
+    {
+      "source": "caravansara.listings.repository:set_amenities",
+      "reason": "amenities of one listing, by listing_amenities_pkey"
+    },
+    {
+      "source": "caravansara.reviews.repository:exists_for_booking",
+      "reason": "one review by its unique booking_id"
+    }
+  ]
+}

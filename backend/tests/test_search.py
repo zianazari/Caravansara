@@ -198,3 +198,25 @@ async def test_search_total_matches_booking_total_for_long_rial_stay(client: Asy
     booked = await reserve(client, guest, item["id"], 10, 375)
     assert booked.status_code == 201, booked.text
     assert booked.json()["total_price"] == item["total_price"]
+
+
+@pytest.mark.parametrize("nights", [1, 15])  # radius: bookings collected once (<= 7 nights), or checked per listing
+async def test_each_booking_status_blocks_the_same_on_every_search_path(
+    client: AsyncClient, factory: Factory, nights: int
+) -> None:
+    host = await factory.user("host")
+    made = {name: await factory.listing(host, title=name) for name in
+            ("free", "pending", "overdue hold", "confirmed", "completed", "cancelled", "expired")}  # fmt: skip
+    for name, listing in made.items():
+        if name == "free":
+            continue
+        booking = await factory.booking(status=name.replace("overdue hold", "pending"), listing=listing)  # days 10-13
+        if name == "overdue hold":
+            await factory.expire_hold(booking.id, timedelta(seconds=1))
+    dates = {"check_in": days(11), "check_out": days(11 + nights)}
+    for area in ({**CENTER, "radius_km": 3}, {"city_id": await city_id(client)}):
+        found = await client.get("/search/listings", params={**area, **dates})
+        assert sorted(titles(found)) == ["cancelled", "expired", "free", "overdue hold"], area
+        assert found.json()["total"] == 4
+        filters = await client.get("/search/filters", params={**area, **dates})
+        assert filters.json()["total"] == 4
