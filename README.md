@@ -283,9 +283,8 @@ The plan, in order. Each step builds on the one before it; details are in [`docs
 
 | # | Work | What it brings | Why at this point |
 | --- | --- | --- | --- |
-| 1 | **Spec Kit review (rest)** | Decide the deferred workflow proposals and the git extension; the necessary fixes are in constitution v1.1.0 | Small, and every later feature uses the method |
-| 2 | **Index review** | Each index chosen with `EXPLAIN ANALYZE` on the bulk data and real query statistics | The bulk data it needed is ready now |
-| 3 | **Web front-end** | Next.js, TypeScript, shadcn/ui and Tailwind; Persian right-to-left with the Vazirmatn font, and English | The biggest step toward a usable product, on a correct and fast API |
-| 4 | **Playwright browser tests** | Guest and host journeys, a double booking from two browsers, right-to-left and mobile checks | Written with the front-end, so each page is tested when it is built |
-| 5 | **Redis caching** | Faster hot reads such as search, never for booking or availability | Only if monitoring shows a slow query that indexes did not fix |
-| 6 | **Microservices** | Splitting out a service, starting with `search` | Only if the monitoring numbers show a real need, since it is the most expensive step |
+| 1 | **Index review** | Each index chosen with `EXPLAIN ANALYZE` on the bulk data and real query statistics | The bulk data it needed is ready now |
+| 2 | **Web front-end** | Next.js, TypeScript, shadcn/ui and Tailwind; Persian right-to-left with the Vazirmatn font, and English | The biggest step toward a usable product, on a correct and fast API |
+| 3 | **Playwright browser tests** | Guest and host journeys, a double booking from two browsers, right-to-left and mobile checks | Written with the front-end, so each page is tested when it is built |
+| 4 | **Redis caching** | Faster hot reads such as search, never for booking or availability | Only if monitoring shows a slow query that indexes did not fix |
+| 5 | **Microservices** | Splitting out a service, starting with `search` | Only if the monitoring numbers show a real need, since it is the most expensive step |
