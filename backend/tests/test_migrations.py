@@ -186,3 +186,51 @@ async def test_downgrade_stops_when_an_amount_no_longer_fits(scratch: Scratch) -
     assert await scratch.widths() == _all(14)
     assert [r[0] for r in await scratch.fetch("SELECT version_num FROM alembic_version")] == ["0002"]
     assert [tuple(r) for r in await scratch.fetch(AMOUNTS)] == before
+
+
+async def test_0003_adds_pg_stat_statements_and_downgrade_keeps_the_data(scratch: Scratch) -> None:
+    """specs/003-index-review: the extension the Grafana query panel reads (FR-003)."""
+    await scratch.upgrade("head")
+    extensions = "SELECT extname FROM pg_extension WHERE extname = 'pg_stat_statements'"
+    assert [r[0] for r in await scratch.fetch(extensions)] == ["pg_stat_statements"]
+    await scratch.execute(*ROWS)
+    before = [tuple(r) for r in await scratch.fetch("SELECT id, price_per_night FROM listings")]
+
+    await scratch.downgrade("0002")
+    assert [r[0] for r in await scratch.fetch("SELECT version_num FROM alembic_version")] == ["0002"]
+    assert [tuple(r) for r in await scratch.fetch("SELECT id, price_per_night FROM listings")] == before
+    # On purpose the extension stays: dropping it would only lose the statistics (0003's docstring).
+    assert [r[0] for r in await scratch.fetch(extensions)] == ["pg_stat_statements"]
+
+
+INDEXES = "SELECT indexname, indexdef FROM pg_indexes WHERE tablename = 'bookings' ORDER BY indexname"
+
+
+@pytest.mark.parametrize(
+    ("revision", "previous", "added"),
+    [
+        ("0004", "0003", {"bookings_listing_check_in_idx", "bookings_active_stay_idx"}),  # US2
+        ("0005", "0004", {"bookings_confirmed_check_out_idx"}),  # US3
+    ],
+)
+async def test_index_migrations_add_valid_indexes_and_downgrade_removes_only_those(
+    scratch: Scratch, revision: str, previous: str, added: set[str]
+) -> None:
+    """specs/003-index-review: indexes only; no row or other index changes either way."""
+    await scratch.upgrade(previous)
+    await scratch.execute(*ROWS)
+    await scratch.add_booking(Decimal("200000024.32"))
+    before_indexes = {r[0]: r[1] for r in await scratch.fetch(INDEXES)}
+    before_rows = [tuple(r) for r in await scratch.fetch(AMOUNTS)]
+
+    await scratch.upgrade(revision)
+    after = {r[0]: r[1] for r in await scratch.fetch(INDEXES)}
+    assert set(after) - set(before_indexes) == added
+    assert {k: v for k, v in after.items() if k not in added} == before_indexes
+    invalid = "SELECT indexrelid::regclass::text FROM pg_index WHERE NOT indisvalid"
+    assert await scratch.fetch(invalid) == []  # CONCURRENTLY finished every build
+    assert [tuple(r) for r in await scratch.fetch(AMOUNTS)] == before_rows
+
+    await scratch.downgrade(previous)
+    assert {r[0]: r[1] for r in await scratch.fetch(INDEXES)} == before_indexes
+    assert [tuple(r) for r in await scratch.fetch(AMOUNTS)] == before_rows
