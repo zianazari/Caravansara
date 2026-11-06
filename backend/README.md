@@ -46,6 +46,8 @@ Settings come from `CARAVANSARA_*` environment variables; see `src/caravansara/c
 | `caravansara init-storage [--public-read]` | create the photo bucket |
 | `caravansara worker` / `run-jobs` | expire holds and complete stays, in a loop / once |
 | `caravansara export-openapi` | rewrite `openapi.json` after an intended API change |
+| `caravansara seed-bulk` | 100,000 listings in their own database `caravansara_bulk`, for measuring (`db/bulk/README.md`) |
+| `caravansara measure-queries [--only NAME ...] [--runs N] [--out FILE]` | median plan time of every query in `db/bulk/queries/` on the bulk data; development only, changes nothing |
 
 ### Monitoring
 
@@ -85,7 +87,8 @@ src/caravansara/
   reviews/    reviews and the rating cache
   search/     city or radial search and filter counts
   jobs/       the worker loop
-migrations/   Alembic; 0001 is db/schema.sql, 0002 widens the price columns for rials
+migrations/   Alembic; 0001 is db/schema.sql, 0002 widens the price columns for rials, 0003 adds pg_stat_statements,
+              0004 and 0005 add the measured indexes (CONCURRENTLY; specs/003-index-review)
 tests/
 ```
 

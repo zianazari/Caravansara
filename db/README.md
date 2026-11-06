@@ -30,6 +30,20 @@ backend exists, Alembic migrations are, and these files follow them).
 | Partial index on `bookings.hold_expires_at` `WHERE status = 'pending'` | The worker expires overdue holds without scanning all bookings |
 | `listings.public_location geography(Point, 4326)` + GiST index | Radial search with PostGIS; real `latitude`/`longitude` stay private |
 
+## Changes on 2026-11-06 (index review, [specs/003-index-review](../specs/003-index-review/measurements.md))
+
+Measured on 100,000 listings and 3 million bookings; medians in ms, before → after.
+
+| Change | Why |
+| --- | --- |
+| `bookings (listing_id, check_in, id)` | A host's "bookings of my listing" read all 3 million bookings: 125 → 0.06 (count), 119 → 0.03 (page) |
+| GiST on `bookings.stay` `WHERE status IN ('pending', 'confirmed', 'completed')` | Search with dates finds the blocking bookings at once instead of per listing. With the search SQL rewrite (backend `search/repository.py`) |
+| `bookings (check_out) WHERE status = 'confirmed'` | The worker's "complete finished stays", every minute: 779 → 40 in steady state (with the 14-hour bound on check_out) |
+| `pg_stat_statements` extension | Query statistics for the Grafana "Costly queries" panel |
+| `listing_amenities_amenity_idx` kept, though search never uses it | The foreign key: deleting an amenity takes 4 ms with it, 120 ms without |
+
+Tried and not adopted, with the numbers in `measurements.md`: a covering index on `listings` (never chosen), SP-GiST instead of GiST on `public_location` (slower at every radius), extended statistics on `bookings (status, check_out)` (fixed the estimate, not the plan).
+
 ## Rules the database enforces (all tested on PostgreSQL 16 + PostGIS 3.4)
 
 | Rule | How |

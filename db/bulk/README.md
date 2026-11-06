@@ -25,6 +25,15 @@ To point the app at the bulk data, change one setting:
 CARAVANSARA_DATABASE_URL=postgresql+asyncpg://caravansara:caravansara@db:5432/caravansara_bulk
 ```
 
+## Measure
+
+```bash
+docker compose run --rm migrate caravansara measure-queries                 # every query in db/bulk/queries/
+docker compose run --rm migrate caravansara measure-queries --only search_city_london_dates --runs 9 --out after.json
+```
+
+`db/bulk/queries/` holds the important queries the app sends: `catalog.json` (name, code source, endpoint, parameters, target), one `<name>.sql` each, and `params.sql`, which picks representative values from the data (the busiest listing, the London centre, ...). Each query gets 1 warm-up run and the median of 5 `EXPLAIN (ANALYZE, BUFFERS)` runs, each in its own connection and in a transaction that is rolled back, so nothing changes. A test keeps the catalog equal to the code. Results of the index review: [specs/003-index-review/measurements.md](../../specs/003-index-review/measurements.md).
+
 ## Safety locks
 
 The command refuses, and changes nothing, when:

@@ -4,7 +4,7 @@
 
 <p align="center">
   <a href="https://github.com/zianazari/Caravansara/actions/workflows/ci.yml"><img src="https://github.com/zianazari/Caravansara/actions/workflows/ci.yml/badge.svg" alt="CI"></a>
-  <img src="https://img.shields.io/badge/tests-216%20%C2%B7%2098.0%25%20coverage-b5651d" alt="216 tests, 98.0% coverage">
+  <img src="https://img.shields.io/badge/tests-241%20%C2%B7%2097.3%25%20coverage-b5651d" alt="241 tests, 97.3% coverage">
   <img src="https://img.shields.io/badge/e2e-48%20Playwright%20API%20tests-2EAD33" alt="48 Playwright API tests">
 </p>
 
@@ -169,7 +169,7 @@ Open **http://localhost:8000/docs**, log in with `POST /auth/login` as `guest@ex
 
 The demo data comes from [Inside Airbnb](https://insideairbnb.com/) (CC BY 4.0): real titles, prices, amenities and review text from Amsterdam, Lisbon, Copenhagen, Stockholm, London and New York City, plus 40 hand-written Persian listings in Tehran, Isfahan and Shiraz priced in rials. People, addresses, bookings and photos are synthetic. It also holds seven edge cases, such as a hold that expires four minutes after loading and a 365-night stay, each listed with its id. See [`db/demo/README.md`](db/demo/README.md).
 
-The bulk data (`seed-bulk`) is for measuring: about 3 million bookings and 1.2 million reviews drawn from the real distributions of six cities, loaded in about 3.5 minutes into `caravansara_bulk`, so your development data stays untouched. See [`db/bulk/README.md`](db/bulk/README.md).
+The bulk data (`seed-bulk`) is for measuring: about 3 million bookings and 1.2 million reviews drawn from the real distributions of six cities, loaded in about 3.5 minutes into `caravansara_bulk`, so your development data stays untouched. `caravansara measure-queries` times the app's important queries on it; the index review that used it took London search with dates from 913 to 65 ms. See [`db/bulk/README.md`](db/bulk/README.md) and [`specs/003-index-review/measurements.md`](specs/003-index-review/measurements.md).
 
 ## Monitoring
 
@@ -204,7 +204,7 @@ Two layers, because each one catches what the other can't:
 | --- | --- | --- |
 | **Runs against** | PostgreSQL + PostGIS and MinIO that testcontainers starts for each run | The real `docker compose` stack, from outside, over HTTP |
 | **Proves** | Every rule in each module, exact race moments, DST, migrations, the API contract | The built image, real settings and wiring: all 30 endpoints, photo upload to MinIO, the whole host and guest story |
-| **Size** | 216 tests, 98.0% coverage | 48 tests, a few seconds |
+| **Size** | 241 tests, 97.3% coverage | 48 tests, a few seconds |
 
 The Playwright tests use its `request` fixture, so they need no browser yet; browser tests for the UI will join the same project. Some highlights:
 
@@ -283,8 +283,7 @@ The plan, in order. Each step builds on the one before it; details are in [`docs
 
 | # | Work | What it brings | Why at this point |
 | --- | --- | --- | --- |
-| 1 | **Index review** | Each index chosen with `EXPLAIN ANALYZE` on the bulk data and real query statistics | The bulk data it needed is ready now |
-| 2 | **Web front-end** | Next.js, TypeScript, shadcn/ui and Tailwind; Persian right-to-left with the Vazirmatn font, and English | The biggest step toward a usable product, on a correct and fast API |
-| 3 | **Playwright browser tests** | Guest and host journeys, a double booking from two browsers, right-to-left and mobile checks | Written with the front-end, so each page is tested when it is built |
-| 4 | **Redis caching** | Faster hot reads such as search, never for booking or availability | Only if monitoring shows a slow query that indexes did not fix |
-| 5 | **Microservices** | Splitting out a service, starting with `search` | Only if the monitoring numbers show a real need, since it is the most expensive step |
+| 1 | **Web front-end** | Next.js, TypeScript, shadcn/ui and Tailwind; Persian right-to-left with the Vazirmatn font, and English | The biggest step toward a usable product, on a correct and fast API |
+| 2 | **Playwright browser tests** | Guest and host journeys, a double booking from two browsers, right-to-left and mobile checks | Written with the front-end, so each page is tested when it is built |
+| 3 | **Redis caching** | Faster hot reads such as the search filter panel, never for booking or availability | Only for what the index review could not fix: the filter panel's amenity counts (183–233 ms on the bulk data) |
+| 4 | **Microservices** | Splitting out a service, starting with `search` | Only if the monitoring numbers show a real need, since it is the most expensive step |
