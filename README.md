@@ -283,7 +283,9 @@ The plan, in order. Each step builds on the one before it; details are in [`docs
 
 | # | Work | What it brings | Why at this point |
 | --- | --- | --- | --- |
-| 1 | **Web front-end** | Next.js, TypeScript, shadcn/ui and Tailwind; Persian right-to-left with the Vazirmatn font, and English | The biggest step toward a usable product, on a correct and fast API |
-| 2 | **Playwright browser tests** | Guest and host journeys, a double booking from two browsers, right-to-left and mobile checks | Written with the front-end, so each page is tested when it is built |
-| 3 | **Redis caching** | Faster hot reads such as the search filter panel, never for booking or availability | Only for what the index review could not fix: the filter panel's amenity counts (183–233 ms on the bulk data) |
-| 4 | **Microservices** | Splitting out a service, starting with `search` | Only if the monitoring numbers show a real need, since it is the most expensive step |
+| 1 | **Listing approval** | A new listing goes public only after a system admin approves it; hosts see it as pending review | It changes the API (listing status, an admin role), so it comes before the front-end builds the host pages |
+| 2 | **Web front-end** | Next.js, TypeScript, shadcn/ui and Tailwind; Persian right-to-left with the Vazirmatn font, and English | The biggest step toward a usable product, on a correct and fast API |
+| 3 | **Playwright browser tests** | Guest and host journeys, a double booking from two browsers, right-to-left and mobile checks | Written with the front-end, so each page is tested when it is built |
+| 4 | **Email** | Hosts hear by email when a listing is approved or rejected | Until then hosts see the review status on their own listings page |
+| 5 | **Redis caching** | Faster hot reads such as the search filter panel, never for booking or availability | Only for what the index review could not fix: the filter panel's amenity counts (183–233 ms on the bulk data) |
+| 6 | **Microservices** | Splitting out a service, starting with `search` | Only if the monitoring numbers show a real need, since it is the most expensive step |
