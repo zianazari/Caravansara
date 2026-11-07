@@ -12,9 +12,10 @@ from decimal import Decimal
 from typing import Any
 
 from httpx import AsyncClient
-from sqlalchemy.ext.asyncio import AsyncEngine
+from sqlalchemy.ext.asyncio import AsyncEngine, AsyncSession
 
-from tests.helpers import User, create_listing, register, sql
+from caravansara.identity import service as identity
+from tests.helpers import PASSWORD, User, create_listing, register, sql
 
 STATUSES = ("pending", "confirmed", "cancelled", "expired", "completed")
 
@@ -49,7 +50,17 @@ class Factory:
         return await register(self.client, name)
 
     async def listing(self, host: User | None = None, **overrides: Any) -> dict[str, Any]:
+        """Approved by default: most tests need a public listing (tests/helpers.py, create_listing)."""
         return await create_listing(self.client, host or await self.user("host"), **overrides)
+
+    async def admin(self, name: str = "admin") -> User:
+        """An admin made the only way there is, the create-admin service, then logged in."""
+        email = f"{name}-{uuid.uuid4().hex[:8]}@example.com"
+        async with AsyncSession(self.engine, expire_on_commit=False) as session:
+            admin_id = await identity.create_admin(session, email=email, password=PASSWORD, full_name=name.title())
+        r = await self.client.post("/admin/auth/login", json={"email": email, "password": PASSWORD})
+        assert r.status_code == 200, r.text
+        return User(admin_id, email, r.json()["access_token"], "")
 
     async def booking(
         self,

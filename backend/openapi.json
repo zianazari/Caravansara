@@ -948,7 +948,7 @@
           "Listings"
         ],
         "summary": "Create a listing",
-        "description": "The caller becomes its host. The public map pin is the real point moved 100–500 m.",
+        "description": "The caller becomes its host. The public map pin is the real point moved 100–500 m. A new listing waits for an admin's review (`review.status = pending`) and is not public until approved.",
         "operationId": "create_listing_api_v1_listings_post",
         "requestBody": {
           "content": {
@@ -1005,7 +1005,7 @@
           "Listings"
         ],
         "summary": "My listings",
-        "description": "Active and inactive.",
+        "description": "Active and inactive, each with its review state and, when rejected, the admin's reason.",
         "operationId": "my_listings_api_v1_me_listings_get",
         "security": [
           {
@@ -1081,7 +1081,7 @@
           "Listings"
         ],
         "summary": "Listing details",
-        "description": "Public. An inactive listing is visible only to its host. `private_location` is only for the host.",
+        "description": "Public when the listing is active and approved. Otherwise only its host and a guest with a booking there see it; everyone else gets 404. `private_location` and `review` are only for the host.",
         "operationId": "get_listing_api_v1_listings__listing_id__get",
         "security": [
           {
@@ -1147,7 +1147,7 @@
           "Listings"
         ],
         "summary": "Edit or deactivate a listing",
-        "description": "Listings are never deleted: `is_active: false` hides them and keeps their bookings.",
+        "description": "Listings are never deleted: `is_active: false` hides them and keeps their bookings. Changing what guests read (title, description, type, city, neighbourhood, address, location) sends an approved listing back to review; price, capacity, times, pets and `is_active` do not.",
         "operationId": "update_listing_api_v1_listings__listing_id__patch",
         "security": [
           {
@@ -1222,6 +1222,94 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/listings/{listing_id}/resubmit": {
+      "post": {
+        "tags": [
+          "Listings"
+        ],
+        "summary": "Send a rejected listing again",
+        "description": "After fixing what the admin's reason asked for. The listing waits for review again, at the end of the queue, and the old reason is cleared. Only for a `rejected` listing.",
+        "operationId": "resubmit_listing_api_v1_listings__listing_id__resubmit_post",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "listing_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Listing Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ListingOut"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, invalid or expired access token",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Not allowed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict with the current state",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
                 }
               }
             }
@@ -2424,8 +2512,13 @@
           "Reviews"
         ],
         "summary": "Reviews of a listing",
-        "description": "Newest first.",
+        "description": "Newest first. Whoever can open the listing can read its reviews: everyone for a public listing; for one that is not public, only its host and a guest with a booking there.",
         "operationId": "listing_reviews_api_v1_listings__listing_id__reviews_get",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
         "parameters": [
           {
             "name": "listing_id",
@@ -2475,6 +2568,16 @@
               }
             }
           },
+          "401": {
+            "description": "Missing, invalid or expired access token",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
           "404": {
             "description": "Not found",
             "content": {
@@ -2491,6 +2594,388 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/admin/auth/login": {
+      "post": {
+        "tags": [
+          "Admin"
+        ],
+        "summary": "Admin log in",
+        "description": "Admin accounts are made only with `caravansara create-admin` on the server. The token lasts 15 minutes and has no refresh token. Member accounts cannot log in here, and an admin token works on no member endpoint.",
+        "operationId": "admin_login_api_v1_admin_auth_login_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AdminLoginIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AdminTokenOut"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, invalid or expired access token",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Invalid input or a broken business rule",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too many attempts",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/admin/listings/pending": {
+      "get": {
+        "tags": [
+          "Admin"
+        ],
+        "summary": "Review queue",
+        "description": "Listings waiting for review, oldest first. Each has the `review_version` to decide on.",
+        "operationId": "review_queue_api_v1_admin_listings_pending_get",
+        "security": [
+          {
+            "AdminBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 100,
+              "minimum": 1,
+              "description": "Items per page.",
+              "default": 20,
+              "title": "Limit"
+            },
+            "description": "Items per page."
+          },
+          {
+            "name": "offset",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 0,
+              "description": "Items to skip.",
+              "default": 0,
+              "title": "Offset"
+            },
+            "description": "Items to skip."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AdminQueuePage"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, invalid or expired access token",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/admin/listings/{listing_id}": {
+      "get": {
+        "tags": [
+          "Admin"
+        ],
+        "summary": "Listing for review",
+        "description": "Any listing in any state, with its exact address. Every call is recorded: which admin, which listing, when.",
+        "operationId": "review_detail_api_v1_admin_listings__listing_id__get",
+        "security": [
+          {
+            "AdminBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "listing_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Listing Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AdminListingOut"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, invalid or expired access token",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/admin/listings/{listing_id}/approve": {
+      "post": {
+        "tags": [
+          "Admin"
+        ],
+        "summary": "Approve a listing",
+        "description": "Makes a pending listing public (if the host keeps it active). `409 listing_not_pending`: it is no longer pending, e.g. another admin decided first. `409 listing_changed`: the host edited it after you opened it; open it again.",
+        "operationId": "approve_api_v1_admin_listings__listing_id__approve_post",
+        "security": [
+          {
+            "AdminBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "listing_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Listing Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DecisionIn"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AdminListingOut"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, invalid or expired access token",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict with the current state",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Invalid input or a broken business rule",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/admin/listings/{listing_id}/reject": {
+      "post": {
+        "tags": [
+          "Admin"
+        ],
+        "summary": "Reject a listing",
+        "description": "Keeps it hidden and shows the host your reason, 1 to 1000 characters. The same 409s as approve.",
+        "operationId": "reject_api_v1_admin_listings__listing_id__reject_post",
+        "security": [
+          {
+            "AdminBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "listing_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Listing Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RejectIn"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AdminListingOut"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, invalid or expired access token",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict with the current state",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Invalid input or a broken business rule",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
                 }
               }
             }
@@ -2522,6 +3007,301 @@
   },
   "components": {
     "schemas": {
+      "AdminListingOut": {
+        "properties": {
+          "id": {
+            "type": "integer",
+            "title": "Id"
+          },
+          "title": {
+            "type": "string",
+            "title": "Title"
+          },
+          "description": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Description"
+          },
+          "property_type": {
+            "$ref": "#/components/schemas/PropertyType"
+          },
+          "city": {
+            "$ref": "#/components/schemas/CityOut"
+          },
+          "neighborhood": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Neighborhood"
+          },
+          "pin": {
+            "$ref": "#/components/schemas/Pin"
+          },
+          "max_guests": {
+            "type": "integer",
+            "title": "Max Guests"
+          },
+          "pets_allowed": {
+            "type": "boolean",
+            "title": "Pets Allowed"
+          },
+          "max_pets": {
+            "type": "integer",
+            "title": "Max Pets"
+          },
+          "bedrooms": {
+            "type": "integer",
+            "title": "Bedrooms"
+          },
+          "beds": {
+            "type": "integer",
+            "title": "Beds"
+          },
+          "bathrooms": {
+            "type": "string",
+            "title": "Bathrooms"
+          },
+          "price_per_night": {
+            "type": "string",
+            "title": "Price Per Night"
+          },
+          "cleaning_fee": {
+            "type": "string",
+            "title": "Cleaning Fee"
+          },
+          "currency": {
+            "type": "string",
+            "title": "Currency"
+          },
+          "check_in_time": {
+            "type": "string",
+            "format": "time",
+            "title": "Check In Time"
+          },
+          "check_out_time": {
+            "type": "string",
+            "format": "time",
+            "title": "Check Out Time"
+          },
+          "avg_rating": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Avg Rating"
+          },
+          "review_count": {
+            "type": "integer",
+            "title": "Review Count"
+          },
+          "is_active": {
+            "type": "boolean",
+            "title": "Is Active"
+          },
+          "host": {
+            "$ref": "#/components/schemas/HostOut"
+          },
+          "photos": {
+            "items": {
+              "$ref": "#/components/schemas/PhotoOut"
+            },
+            "type": "array",
+            "title": "Photos"
+          },
+          "amenities": {
+            "items": {
+              "$ref": "#/components/schemas/AmenityCategoryOut"
+            },
+            "type": "array",
+            "title": "Amenities"
+          },
+          "private_location": {
+            "$ref": "#/components/schemas/PrivateLocation",
+            "description": "The exact address; every view is recorded."
+          },
+          "review": {
+            "$ref": "#/components/schemas/ListingReview"
+          },
+          "review_version": {
+            "type": "integer",
+            "title": "Review Version",
+            "description": "Send this back with the decision; an edit after it gets 409."
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "title",
+          "description",
+          "property_type",
+          "city",
+          "neighborhood",
+          "pin",
+          "max_guests",
+          "pets_allowed",
+          "max_pets",
+          "bedrooms",
+          "beds",
+          "bathrooms",
+          "price_per_night",
+          "cleaning_fee",
+          "currency",
+          "check_in_time",
+          "check_out_time",
+          "avg_rating",
+          "review_count",
+          "is_active",
+          "host",
+          "photos",
+          "amenities",
+          "private_location",
+          "review",
+          "review_version"
+        ],
+        "title": "AdminListingOut",
+        "description": "Everything the host sees, for a listing in any state, plus the version to decide on."
+      },
+      "AdminLoginIn": {
+        "properties": {
+          "email": {
+            "type": "string",
+            "format": "email",
+            "title": "Email"
+          },
+          "password": {
+            "type": "string",
+            "maxLength": 128,
+            "minLength": 1,
+            "title": "Password"
+          }
+        },
+        "type": "object",
+        "required": [
+          "email",
+          "password"
+        ],
+        "title": "AdminLoginIn",
+        "example": {
+          "email": "admin@example.com",
+          "password": "caravansara-demo"
+        }
+      },
+      "AdminQueueItem": {
+        "properties": {
+          "id": {
+            "type": "integer",
+            "title": "Id"
+          },
+          "title": {
+            "type": "string",
+            "title": "Title"
+          },
+          "city": {
+            "$ref": "#/components/schemas/CityOut"
+          },
+          "host": {
+            "$ref": "#/components/schemas/HostOut"
+          },
+          "submitted_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Submitted At"
+          },
+          "cover_url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Cover Url"
+          },
+          "review_version": {
+            "type": "integer",
+            "title": "Review Version",
+            "description": "Send this back with the decision."
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "title",
+          "city",
+          "host",
+          "submitted_at",
+          "cover_url",
+          "review_version"
+        ],
+        "title": "AdminQueueItem"
+      },
+      "AdminQueuePage": {
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/AdminQueueItem"
+            },
+            "type": "array",
+            "title": "Items"
+          },
+          "total": {
+            "type": "integer",
+            "title": "Total"
+          }
+        },
+        "type": "object",
+        "required": [
+          "items",
+          "total"
+        ],
+        "title": "AdminQueuePage"
+      },
+      "AdminTokenOut": {
+        "properties": {
+          "access_token": {
+            "type": "string",
+            "title": "Access Token"
+          },
+          "token_type": {
+            "type": "string",
+            "title": "Token Type",
+            "default": "bearer"
+          },
+          "expires_in": {
+            "type": "integer",
+            "title": "Expires In",
+            "description": "Admin token lifetime in seconds."
+          }
+        },
+        "type": "object",
+        "required": [
+          "access_token",
+          "expires_in"
+        ],
+        "title": "AdminTokenOut",
+        "description": "No refresh token: an admin logs in again after ``expires_in`` (specs/004 research R2).",
+        "example": {
+          "access_token": "eyJhbGciOi...",
+          "expires_in": 900,
+          "token_type": "bearer"
+        }
+      },
       "AmenitiesIn": {
         "properties": {
           "amenity_ids": {
@@ -2965,6 +3745,24 @@
           "name"
         ],
         "title": "CountryOut"
+      },
+      "DecisionIn": {
+        "properties": {
+          "review_version": {
+            "type": "integer",
+            "minimum": 0.0,
+            "title": "Review Version",
+            "description": "`review_version` from the queue or the listing details."
+          }
+        },
+        "type": "object",
+        "required": [
+          "review_version"
+        ],
+        "title": "DecisionIn",
+        "example": {
+          "review_version": 3
+        }
       },
       "ErrorBody": {
         "properties": {
@@ -3413,6 +4211,17 @@
               }
             ],
             "description": "Only for the host. Guests see the address on a confirmed booking."
+          },
+          "review": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ListingReview"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Only for the host; `null` for everyone else."
           }
         },
         "type": "object",
@@ -3466,6 +4275,52 @@
         ],
         "title": "ListingPage"
       },
+      "ListingReview": {
+        "properties": {
+          "status": {
+            "$ref": "#/components/schemas/ReviewStatus",
+            "description": "`pending` and `rejected` listings are not public."
+          },
+          "rejection_reason": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Rejection Reason",
+            "description": "The admin's reason; only while `rejected`."
+          },
+          "submitted_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Submitted At",
+            "description": "When it last entered the review queue."
+          }
+        },
+        "type": "object",
+        "required": [
+          "status",
+          "rejection_reason",
+          "submitted_at"
+        ],
+        "title": "ListingReview",
+        "description": "Where the listing is in the admin review (specs/004-listing-approval).",
+        "example": {
+          "rejection_reason": "The photos are not of this flat.",
+          "status": "rejected",
+          "submitted_at": "2026-11-07T09:30:00Z"
+        }
+      },
       "ListingSummary": {
         "properties": {
           "id": {
@@ -3516,6 +4371,16 @@
               }
             ],
             "title": "Cover Url"
+          },
+          "review": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ListingReview"
+              },
+              {
+                "type": "null"
+              }
+            ]
           }
         },
         "type": "object",
@@ -4133,6 +4998,33 @@
         ],
         "title": "RegisterOut"
       },
+      "RejectIn": {
+        "properties": {
+          "review_version": {
+            "type": "integer",
+            "minimum": 0.0,
+            "title": "Review Version",
+            "description": "`review_version` from the queue or the listing details."
+          },
+          "reason": {
+            "type": "string",
+            "maxLength": 1000,
+            "minLength": 1,
+            "title": "Reason",
+            "description": "Shown to the host as written. 1 to 1000 characters."
+          }
+        },
+        "type": "object",
+        "required": [
+          "review_version",
+          "reason"
+        ],
+        "title": "RejectIn",
+        "example": {
+          "reason": "The photos are not of this flat.",
+          "review_version": 3
+        }
+      },
       "ReviewAuthor": {
         "properties": {
           "id": {
@@ -4408,6 +5300,15 @@
           "total"
         ],
         "title": "ReviewPage"
+      },
+      "ReviewStatus": {
+        "type": "string",
+        "enum": [
+          "pending",
+          "approved",
+          "rejected"
+        ],
+        "title": "ReviewStatus"
       },
       "SearchPage": {
         "properties": {
@@ -4738,6 +5639,11 @@
         "type": "http",
         "description": "Access token from `POST /api/v1/auth/login`.",
         "scheme": "bearer"
+      },
+      "AdminBearer": {
+        "type": "http",
+        "description": "Admin token from `POST /api/v1/admin/auth/login`.",
+        "scheme": "bearer"
       }
     }
   },
@@ -4769,6 +5675,10 @@
     {
       "name": "Reviews",
       "description": "One review per completed stay, within 14 days."
+    },
+    {
+      "name": "Admin",
+      "description": "Listing review. New listings and descriptive edits wait here until an admin approves them. Admin accounts come only from `caravansara create-admin`; log in with `POST /admin/auth/login`."
     },
     {
       "name": "System",

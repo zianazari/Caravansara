@@ -1,6 +1,10 @@
-"""The worker: a separate process that runs the two booking jobs every minute.
+"""The worker: a separate process that runs the two booking jobs every minute, and reads the size of
+the listing review queue for the dashboard.
 
-Running two workers at once is safe: each job is a single conditional ``UPDATE``.
+Running two workers at once is safe: each job is a single conditional ``UPDATE``, and the queue
+numbers are only read. The queue gauges are set here and not by the API, because every API copy
+would report its own number and Prometheus would add them up; one reader a minute is enough for a
+queue that moves in hours (specs/004-listing-approval, research R10).
 """
 
 import asyncio
@@ -16,8 +20,16 @@ from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 from caravansara.bookings import service as bookings
 from caravansara.core.config import Settings
 from caravansara.core.db import create_engine, create_sessionmaker
-from caravansara.core.metrics import WORKER_DURATION, WORKER_LAST_SUCCESS, WORKER_RUNS
+from caravansara.core.metrics import (
+    LISTING_REVIEW_OLDEST_WAIT,
+    LISTING_REVIEW_QUEUE,
+    WORKER_DURATION,
+    WORKER_LAST_SUCCESS,
+    WORKER_RUNS,
+)
 from caravansara.core.telemetry import instrument_clients, shutdown
+from caravansara.core.timeutil import utcnow
+from caravansara.listings import service as listings
 
 log = logging.getLogger("caravansara.worker")
 
@@ -26,6 +38,7 @@ log = logging.getLogger("caravansara.worker")
 class JobResult:
     expired: int
     completed: int
+    review_queue: int = 0
 
 
 async def run_once(sessionmaker: async_sessionmaker[AsyncSession]) -> JobResult:
@@ -33,7 +46,11 @@ async def run_once(sessionmaker: async_sessionmaker[AsyncSession]) -> JobResult:
         expired = await bookings.expire_overdue_holds(session)
     async with sessionmaker() as session:
         completed = await bookings.complete_finished_stays(session)
-    return JobResult(expired=expired, completed=completed)
+    async with sessionmaker() as session:
+        queued, oldest = await listings.review_queue_stats(session)
+    LISTING_REVIEW_QUEUE.set(queued)
+    LISTING_REVIEW_OLDEST_WAIT.set(max(0.0, (utcnow() - oldest).total_seconds()) if oldest else 0)
+    return JobResult(expired=expired, completed=completed, review_queue=queued)
 
 
 async def run_measured(sessionmaker: async_sessionmaker[AsyncSession], tracer: trace.Tracer) -> JobResult | None:
@@ -48,7 +65,13 @@ async def run_measured(sessionmaker: async_sessionmaker[AsyncSession], tracer: t
             return None
         finally:
             WORKER_DURATION.observe(time.perf_counter() - start)
-        span.set_attributes({"caravansara.expired": result.expired, "caravansara.completed": result.completed})
+        span.set_attributes(
+            {
+                "caravansara.expired": result.expired,
+                "caravansara.completed": result.completed,
+                "caravansara.review_queue": result.review_queue,
+            }
+        )
     WORKER_RUNS.labels("ok").inc()
     WORKER_LAST_SUCCESS.set(time.time())
     if result.expired or result.completed:

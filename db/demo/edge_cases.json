@@ -33,6 +33,16 @@
     "city": "New York City",
     "listing_id": 626
   },
+  "pending_listing": {
+    "booking_ids": [],
+    "city": "Copenhagen",
+    "listing_id": 252
+  },
+  "rejected_listing": {
+    "booking_ids": [],
+    "city": "London",
+    "listing_id": 502
+  },
   "same_day_turnover": {
     "booking_ids": [
       10611,

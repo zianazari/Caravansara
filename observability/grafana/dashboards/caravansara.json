@@ -1,7 +1,7 @@
 {
   "uid": "caravansara",
   "title": "Caravansara",
-  "description": "API, bookings, worker, PostgreSQL, MinIO and logs. Provisioned from observability/grafana/dashboards.",
+  "description": "API, bookings, listing review, worker, PostgreSQL, MinIO and logs. Provisioned from observability/grafana/dashboards.",
   "tags": [
     "caravansara"
   ],
@@ -936,6 +936,209 @@
     },
     {
       "type": "row",
+      "title": "Listing review",
+      "id": 35,
+      "collapsed": false,
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 33
+      },
+      "panels": []
+    },
+    {
+      "type": "stat",
+      "title": "Waiting for review",
+      "id": 36,
+      "description": "Listings a host submitted that no admin has decided yet. Set by the worker every minute.",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "gridPos": {
+        "h": 4,
+        "w": 12,
+        "x": 0,
+        "y": 34
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "expr": "max(caravansara_listing_review_queue)",
+          "legendFormat": "",
+          "instant": true
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "orange",
+                "value": 20
+              },
+              {
+                "color": "red",
+                "value": 100
+              }
+            ]
+          },
+          "color": {
+            "mode": "thresholds"
+          },
+          "decimals": 0
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "colorMode": "value",
+        "graphMode": "none",
+        "textMode": "auto",
+        "justifyMode": "auto"
+      }
+    },
+    {
+      "type": "stat",
+      "title": "Oldest wait",
+      "id": 37,
+      "description": "How long the oldest listing in the queue has waited. 0 when the queue is empty.",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "gridPos": {
+        "h": 4,
+        "w": 12,
+        "x": 12,
+        "y": 34
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "expr": "max(caravansara_listing_review_oldest_wait_seconds)",
+          "legendFormat": "",
+          "instant": true
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "s",
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "orange",
+                "value": 86400
+              },
+              {
+                "color": "red",
+                "value": 259200
+              }
+            ]
+          },
+          "color": {
+            "mode": "thresholds"
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "colorMode": "value",
+        "graphMode": "none",
+        "textMode": "auto",
+        "justifyMode": "auto"
+      }
+    },
+    {
+      "type": "timeseries",
+      "title": "Review events per minute",
+      "id": 38,
+      "description": "Submitted (new, resubmitted or sent back by an edit), approved and rejected listings, per minute.",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 24,
+        "x": 0,
+        "y": 38
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "expr": "sum by (event) (rate(caravansara_listing_review_events_total[$__rate_interval])) * 60",
+          "legendFormat": "{{event}}",
+          "range": true,
+          "instant": false
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "custom": {
+            "lineWidth": 2,
+            "fillOpacity": 15,
+            "showPoints": "never",
+            "spanNulls": true
+          },
+          "color": {
+            "mode": "palette-classic"
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom",
+          "calcs": []
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      }
+    },
+    {
+      "type": "row",
       "title": "Worker",
       "id": 18,
       "collapsed": false,
@@ -943,7 +1146,7 @@
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 33
+        "y": 46
       },
       "panels": []
     },
@@ -960,7 +1163,7 @@
         "h": 4,
         "w": 8,
         "x": 0,
-        "y": 34
+        "y": 47
       },
       "targets": [
         {
@@ -1027,7 +1230,7 @@
         "h": 4,
         "w": 8,
         "x": 8,
-        "y": 34
+        "y": 47
       },
       "targets": [
         {
@@ -1090,7 +1293,7 @@
         "h": 4,
         "w": 8,
         "x": 16,
-        "y": 34
+        "y": 47
       },
       "targets": [
         {
@@ -1154,7 +1357,7 @@
         "h": 8,
         "w": 12,
         "x": 0,
-        "y": 38
+        "y": 51
       },
       "targets": [
         {
@@ -1209,7 +1412,7 @@
         "h": 8,
         "w": 12,
         "x": 12,
-        "y": 38
+        "y": 51
       },
       "targets": [
         {
@@ -1260,7 +1463,7 @@
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 46
+        "y": 59
       },
       "panels": []
     },
@@ -1277,7 +1480,7 @@
         "h": 4,
         "w": 4,
         "x": 0,
-        "y": 47
+        "y": 60
       },
       "targets": [
         {
@@ -1340,7 +1543,7 @@
         "h": 4,
         "w": 5,
         "x": 4,
-        "y": 47
+        "y": 60
       },
       "targets": [
         {
@@ -1408,7 +1611,7 @@
         "h": 4,
         "w": 5,
         "x": 9,
-        "y": 47
+        "y": 60
       },
       "targets": [
         {
@@ -1467,7 +1670,7 @@
         "h": 4,
         "w": 5,
         "x": 14,
-        "y": 47
+        "y": 60
       },
       "targets": [
         {
@@ -1526,7 +1729,7 @@
         "h": 4,
         "w": 5,
         "x": 19,
-        "y": 47
+        "y": 60
       },
       "targets": [
         {
@@ -1586,7 +1789,7 @@
         "h": 8,
         "w": 12,
         "x": 0,
-        "y": 51
+        "y": 64
       },
       "targets": [
         {
@@ -1641,7 +1844,7 @@
         "h": 8,
         "w": 12,
         "x": 12,
-        "y": 51
+        "y": 64
       },
       "targets": [
         {
@@ -1718,7 +1921,7 @@
         "h": 9,
         "w": 24,
         "x": 0,
-        "y": 59
+        "y": 72
       },
       "targets": [
         {
@@ -1824,7 +2027,7 @@
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 68
+        "y": 81
       },
       "panels": []
     },
@@ -1841,7 +2044,7 @@
         "h": 10,
         "w": 24,
         "x": 0,
-        "y": 69
+        "y": 82
       },
       "targets": [
         {

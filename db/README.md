@@ -1,7 +1,7 @@
 # Caravansara: ERD
 
 Decisions: **rank** = star rating · **comments** = review text only · **scope** = simple (no payments, wishlists, messages).
-Updated 2026-11-02 to match `Caravansara/docs/backend-design.md` (the backend design is the source of truth; once the
+Updated 2026-11-07 (listing review); first written 2026-11-02 to match `Caravansara/docs/backend-design.md` (the backend design is the source of truth; once the
 backend exists, Alembic migrations are, and these files follow them).
 
 ![ERD](erd.png)
@@ -10,7 +10,7 @@ backend exists, Alembic migrations are, and these files follow them).
 
 | File | What it is |
 | --- | --- |
-| `schema.sql` | PostgreSQL 16 + PostGIS schema: 12 tables, the no-double-booking constraint, review triggers |
+| `schema.sql` | PostgreSQL 16 + PostGIS schema: 14 tables, the no-double-booking constraint, review triggers, the append-only review history |
 | `seed_amenities.sql` | 12 amenity categories and 31 amenities (Wifi, Kitchen, Microwave …) |
 | `seed_locations.sql` | 7 countries and 9 cities with IANA timezones (Amsterdam, Lisbon, Copenhagen, Stockholm, London, New York City, Tehran, Isfahan, Shiraz). Adds only missing rows, so `caravansara seed` is safe on a database with data |
 | `seed_demo.sql` | Demo data from Inside Airbnb, **generated**: 200 listings, 598 users, 1,793 bookings, 1,491 reviews. See [`demo/README.md`](demo/README.md) |
@@ -44,6 +44,27 @@ Measured on 100,000 listings and 3 million bookings; medians in ms, before → a
 
 Tried and not adopted, with the numbers in `measurements.md`: a covering index on `listings` (never chosen), SP-GiST instead of GiST on `public_location` (slower at every radius), extended statistics on `bookings (status, check_out)` (fixed the estimate, not the plan).
 
+## Changes on 2026-11-07 (listing review, migration 0006, [specs/004-listing-approval](../specs/004-listing-approval/))
+
+A new listing is public only after an admin approves it. Each new column, table and rule, why it exists, and what it changes:
+
+| Change | Why | Effect |
+| --- | --- | --- |
+| `users.kind` (`member` \| `admin`) | Admins in the same table, so the unique index on `lower(email)` keeps one email to one account of either kind | Only `caravansara create-admin` writes `admin`; no API input has the field. Member login refuses admins, and an admin token works on no member endpoint, so an admin cannot list or book |
+| `users.disabled_at` | `disable-admin` must stop an admin at once, even one with a live token | Checked on every admin request; the account and its history stay |
+| `auth_attempts.action` also `admin_login` | The same rate limit as member login, counted apart | Failed member logins never lock an admin out, and the other way round |
+| `listings.review_status` (`pending` \| `approved` \| `rejected`) | Public = `is_active AND review_status = 'approved'` | Search, the listing page, its reviews and new bookings see only public listings. Existing bookings keep working |
+| Its default: `approved` while adding, then `pending` | Every listing before 0006 stays public; every new one waits, even if code forgets | Metadata only: 100,000 listings in 0.8 s, no table rewrite (same filenode) |
+| `listings.submitted_at` | The queue is oldest first; `NOT NULL` while pending (CHECK) | A resubmission or a descriptive edit of an approved listing moves it to the end |
+| `listings.rejection_reason` | The host must read why; 1–1000 characters, not blank, only while rejected (CHECK) | Cleared on resubmission |
+| `listings.review_version` | An admin's decision must apply only to the version they saw | +1 on every descriptive edit. Approve and reject are one `UPDATE … WHERE review_status = 'pending' AND review_version = :seen`: an edit after the admin opened the listing gives `409 listing_changed`, and of two admins at once exactly one wins |
+| `listings_review_queue_idx (submitted_at, id) WHERE review_status = 'pending'` | The queue page, its count and the worker's oldest wait | Small: only waiting listings |
+| `listing_review_events` (append-only, trigger) | Who submitted, approved or rejected, when, which version, and why | A record nobody can rewrite. Its foreign key also means a listing with history cannot be deleted (listings never are) |
+| `admin_address_views` | Constitution V: which admin saw which exact address, when | One row per admin details answer, in the same transaction |
+| `ANALYZE listings` at the end of 0006 | `ADD COLUMN` leaves `review_status` without statistics, and autoanalyze does not start for it | Without it the city searches with dates switched plans, 36 → 170 ms; with it the plans are the ones before ([measurements](../specs/004-listing-approval/measurements.md)) |
+
+Downgrade sets unapproved listings inactive first, so nothing unreviewed becomes public, and deletes admin accounts, which would otherwise become members who can book. No listing, booking or review is deleted.
+
 ## Rules the database enforces (all tested on PostgreSQL 16 + PostGIS 3.4)
 
 | Rule | How |
@@ -58,6 +79,9 @@ Tried and not adopted, with the numbers in `measurements.md`: a covering index o
 | Rank stays current | trigger refreshes `listings.avg_rating` and `review_count` |
 | One account per email, any letter case | unique index on `lower(email)` |
 | Every listing has a public point, every city a time zone | `NOT NULL` |
+| A listing waiting for review has a queue time; a rejection has a written reason, and only a rejection has one | `CHECK`s on `listings` (`listings_pending_submitted_check`, `listings_rejection_reason_check`) |
+| The review history is never rewritten | trigger `listing_review_events_append_only` refuses `UPDATE` and `DELETE` |
+| A new listing is never public by accident | `review_status` defaults to `pending` |
 
 Rules in the service layer (see `backend-design.md`): guest count ≤ `max_guests`, host can't book own listing,
 radius 1–100 km, review within 14 days, hold expiry and payment as conditional `UPDATE`s, booking state machine.
@@ -103,6 +127,10 @@ erDiagram
     AMENITY_CATEGORIES ||--o{ AMENITIES : "groups"
     LISTINGS ||--o{ BOOKINGS : "reserved by"
     BOOKINGS ||--o| REVIEWS : "reviewed in"
+    LISTINGS ||--o{ LISTING_REVIEW_EVENTS : "review history"
+    USERS ||--o{ LISTING_REVIEW_EVENTS : "submits or decides"
+    USERS ||--o{ ADMIN_ADDRESS_VIEWS : "admin opened"
+    LISTINGS ||--o{ ADMIN_ADDRESS_VIEWS : "address seen"
 
     USERS {
         bigint id PK
@@ -111,6 +139,8 @@ erDiagram
         text full_name
         text avatar_url
         timestamptz created_at
+        account_kind kind "member | admin (create-admin only)"
+        timestamptz disabled_at "disable-admin"
     }
     REFRESH_TOKENS {
         bigint id PK
@@ -122,7 +152,7 @@ erDiagram
     }
     AUTH_ATTEMPTS {
         bigint id PK
-        text action "login | register"
+        text action "login | register | admin_login"
         text identifier "email or IP"
         boolean succeeded
         timestamptz attempted_at
@@ -165,6 +195,25 @@ erDiagram
         int review_count
         boolean is_active
         timestamptz created_at
+        listing_review_status review_status "public = active and approved"
+        timestamptz submitted_at "queue order"
+        text rejection_reason "only while rejected"
+        int review_version "+1 on each descriptive edit"
+    }
+    LISTING_REVIEW_EVENTS {
+        bigint id PK
+        bigint listing_id FK
+        review_action action "append-only"
+        bigint actor_id FK "host or admin"
+        int review_version
+        text reason "only for rejected"
+        timestamptz created_at
+    }
+    ADMIN_ADDRESS_VIEWS {
+        bigint id PK
+        bigint admin_id FK
+        bigint listing_id FK
+        timestamptz viewed_at
     }
     LISTING_PHOTOS {
         bigint id PK

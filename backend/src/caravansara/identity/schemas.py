@@ -35,6 +35,18 @@ class TokensOut(BaseModel):
     expires_in: int = Field(description="Access token lifetime in seconds.")
 
 
+class AdminTokenOut(BaseModel):
+    """No refresh token: an admin logs in again after ``expires_in`` (specs/004 research R2)."""
+
+    access_token: str
+    token_type: str = "bearer"
+    expires_in: int = Field(description="Admin token lifetime in seconds.")
+
+    model_config = ConfigDict(
+        json_schema_extra={"example": {"access_token": "eyJhbGciOi...", "token_type": "bearer", "expires_in": 900}}
+    )
+
+
 class UserOut(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 

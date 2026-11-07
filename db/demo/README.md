@@ -43,7 +43,8 @@ The Persian listings in Iran are written for this project in `fa_listings.json`:
 ## Contents
 
 - 790 listings: 561 entire places, 218 private rooms, 11 shared rooms
-- 2,043 users: 759 hosts, the guests, and the two demo accounts
+- 2,044 users: 759 hosts, the guests, the two demo accounts and the demo admin
+- 787 public listings: all 790 are approved except the two review edge cases below, and one more is inactive
 - 10,748 bookings: 9,525 completed (one behind each review, plus a few edge cases), 1,050 confirmed, 171 cancelled, 1 pending and 1 expired
 - 9,523 reviews; the trigger fills `avg_rating` and `review_count` (city averages 4.40–4.73)
 - 4,549 photos, 3–8 per listing
@@ -58,6 +59,11 @@ Every account's password is `caravansara-demo`. The hash is argon2id.
 | --- | --- |
 | `host@example.com` | Sara Lindqvist, host of listings 1–3 (Amsterdam) |
 | `guest@example.com` | Omar Haddad: a finished stay (ended 3 days before load, can still be reviewed), 2 upcoming stays, a hold that expires 4 minutes after loading, and an expired hold |
+| `admin@example.com` | Ava Moradi, admin: log in with `POST /api/v1/admin/auth/login` (not `/auth/login`), then review `pending_listing` |
+
+**Development only.** `caravansara seed-demo` refuses to run when `CARAVANSARA_ENVIRONMENT=production` (`refused: demo data is for development only`). Every demo password is written above, and one of the accounts is an admin who can approve listings; on a real server, admins are made one by one with `caravansara create-admin` (specs/004-listing-approval, research R15).
+
+**Listing review.** A new listing waits for an admin (specs/004-listing-approval). The column default is therefore `pending`, so `seed_demo.sql` approves every listing explicitly and then makes the two review edge cases: `pending_listing` (in the queue) and `rejected_listing` (with a Persian reason the host sees in `GET /me/listings`, and a history row by the demo admin).
 
 Any other host can log in too: find their email with `SELECT email FROM users u JOIN listings l ON l.host_id = u.id WHERE l.id = …`.
 
@@ -75,6 +81,8 @@ Each rule from the design document has one known record. The ids below are writt
 | `same_day_turnover` | Two confirmed stays: one checks out the day the next checks in | 251 (Copenhagen) | 10611, 10612 | `GET /listings/{id}/bookings` as its host |
 | `inactive_listing` | Inactive listing with a finished and an upcoming booking | 501 (London) | 10613, 10614 | missing from `GET /search/listings`, shown in the host's `GET /me/listings` |
 | `listing_without_reviews` | Active listing with no reviews (`review_count = 0`) | 626 (New York City) | – | `GET /listings/{id}` and its `/reviews` |
+| `pending_listing` | Listing waiting for an admin's review, with its finished stays | 252 (Copenhagen) | – | first in `GET /admin/listings/pending`; missing from search |
+| `rejected_listing` | Listing an admin rejected, with the reason | 502 (London) | – | the host's `GET /me/listings`; missing from search |
 <!-- edge-cases:end -->
 
 The hold expires 4 minutes after loading, and the worker then marks it `expired` within a minute, so its dates become free in search.

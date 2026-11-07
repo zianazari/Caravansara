@@ -2,7 +2,7 @@ WITH matching AS MATERIALIZED (
     SELECT l.id, l.avg_rating, l.review_count, NULL::float8 AS distance_m
     FROM   (SELECT ST_MakePoint(CAST(:lng AS float8), CAST(:lat AS float8))::geography AS center) p
     JOIN   listings l ON true
-    WHERE  l.is_active AND l.max_guests >= :guests AND ST_DWithin(l.public_location, p.center, :radius_m) AND NOT EXISTS (SELECT 1 FROM bookings b WHERE b.listing_id = l.id AND b.status IN ('pending', 'confirmed', 'completed')
+    WHERE  l.is_active AND l.review_status = 'approved' AND l.max_guests >= :guests AND ST_DWithin(l.public_location, p.center, :radius_m) AND NOT EXISTS (SELECT 1 FROM bookings b WHERE b.listing_id = l.id AND b.status IN ('pending', 'confirmed', 'completed')
            AND  (b.status <> 'pending' OR b.hold_expires_at > now())
            AND  b.stay && daterange(CAST(:check_in AS date), CAST(:check_out AS date), '[)'))
 ),

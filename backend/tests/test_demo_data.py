@@ -108,6 +108,54 @@ async def test_year_long_stay_and_last_bookable_day(demo: cli.DemoResult, client
     assert any(date.fromisoformat(b["check_in"]) == limit for b in last)
 
 
+# ---------- specs/004-listing-approval: review state of the demo ------------------------
+
+
+async def test_every_demo_listing_is_approved_except_the_two_review_cases(
+    demo: cli.DemoResult, db: AsyncEngine
+) -> None:
+    """US5/AC2, FR-014."""
+    rows = await sql(db, "SELECT id, review_status::text FROM listings WHERE review_status <> 'approved' ORDER BY id")
+    expected = sorted(
+        [(EDGE["pending_listing"]["listing_id"], "pending"), (EDGE["rejected_listing"]["listing_id"], "rejected")]
+    )
+    assert [tuple(r) for r in rows] == expected
+    # SC-002: 789 public before 004 (790 listings, one inactive); the two review edge cases are new.
+    public = await sql(db, "SELECT count(*) FROM listings WHERE is_active AND review_status = 'approved'")
+    assert public[0][0] == 789 - 2
+
+
+async def test_the_rejected_demo_listing_has_its_reason_and_history(
+    demo: cli.DemoResult, client: AsyncClient, db: AsyncEngine
+) -> None:
+    rejected = EDGE["rejected_listing"]["listing_id"]
+    mine = await client.get("/me/listings", params={"limit": 100}, headers=await _host_auth(client, db, rejected))
+    review = {i["id"]: i["review"] for i in mine.json()["items"]}[rejected]
+    assert review["status"] == "rejected"
+    assert PERSIAN.search(review["rejection_reason"])
+    rows = await sql(
+        db,
+        "SELECT e.action::text, u.email FROM listing_review_events e JOIN users u ON u.id = e.actor_id "
+        "WHERE e.listing_id = :id ORDER BY e.id",
+        id=rejected,
+    )
+    assert [r[0] for r in rows] == ["submitted", "rejected"]
+    assert rows[1][1] == "admin@example.com"
+
+
+async def test_the_demo_admin_logs_in_and_sees_the_pending_listing_first(
+    demo: cli.DemoResult, client: AsyncClient, db: AsyncEngine
+) -> None:
+    kind = await sql(db, "SELECT kind::text FROM users WHERE email = 'admin@example.com'")
+    assert kind[0][0] == "admin"
+    r = await client.post("/admin/auth/login", json={"email": "admin@example.com", "password": PASSWORD})
+    assert r.status_code == 200, r.text
+    queue = await client.get("/admin/listings/pending", headers={"Authorization": f"Bearer {r.json()['access_token']}"})
+    assert [i["id"] for i in queue.json()["items"]] == [EDGE["pending_listing"]["listing_id"]]
+    member = await client.post("/auth/login", json={"email": "admin@example.com", "password": PASSWORD})
+    assert member.status_code == 401
+
+
 async def test_inactive_listing_hidden_from_search_but_visible_to_host(
     demo: cli.DemoResult, client: AsyncClient, db: AsyncEngine
 ) -> None:

@@ -28,7 +28,10 @@ photos = APIRouter(tags=["Listing photos"])
     "/listings",
     status_code=status.HTTP_201_CREATED,
     summary="Create a listing",
-    description="The caller becomes its host. The public map pin is the real point moved 100–500 m.",
+    description=(
+        "The caller becomes its host. The public map pin is the real point moved 100–500 m. A new listing "
+        "waits for an admin's review (`review.status = pending`) and is not public until approved."
+    ),
     responses=error_responses(401, 422),
 )
 async def create_listing(
@@ -37,7 +40,12 @@ async def create_listing(
     return await service.create_listing(session, storage, user_id, body)
 
 
-@router.get("/me/listings", summary="My listings", description="Active and inactive.", responses=error_responses(401))
+@router.get(
+    "/me/listings",
+    summary="My listings",
+    description="Active and inactive, each with its review state and, when rejected, the admin's reason.",
+    responses=error_responses(401),
+)
 async def my_listings(user_id: CurrentUserId, session: SessionDep, storage: StorageDep, page: PageDep) -> ListingPage:
     return await service.my_listings(session, storage, user_id, page.limit, page.offset)
 
@@ -45,7 +53,10 @@ async def my_listings(user_id: CurrentUserId, session: SessionDep, storage: Stor
 @router.get(
     "/listings/{listing_id}",
     summary="Listing details",
-    description="Public. An inactive listing is visible only to its host. `private_location` is only for the host.",
+    description=(
+        "Public when the listing is active and approved. Otherwise only its host and a guest with a "
+        "booking there see it; everyone else gets 404. `private_location` and `review` are only for the host."
+    ),
     responses=error_responses(401, 404),
 )
 async def get_listing(
@@ -57,13 +68,32 @@ async def get_listing(
 @router.patch(
     "/listings/{listing_id}",
     summary="Edit or deactivate a listing",
-    description="Listings are never deleted: `is_active: false` hides them and keeps their bookings.",
+    description=(
+        "Listings are never deleted: `is_active: false` hides them and keeps their bookings. Changing what "
+        "guests read (title, description, type, city, neighbourhood, address, location) sends an approved "
+        "listing back to review; price, capacity, times, pets and `is_active` do not."
+    ),
     responses=error_responses(401, 403, 404, 422),
 )
 async def update_listing(
     listing_id: int, body: ListingUpdate, user_id: CurrentUserId, session: SessionDep, storage: StorageDep
 ) -> ListingOut:
     return await service.update_listing(session, storage, listing_id, user_id, body)
+
+
+@router.post(
+    "/listings/{listing_id}/resubmit",
+    summary="Send a rejected listing again",
+    description=(
+        "After fixing what the admin's reason asked for. The listing waits for review again, at the end "
+        "of the queue, and the old reason is cleared. Only for a `rejected` listing."
+    ),
+    responses=error_responses(401, 403, 404, 409),
+)
+async def resubmit_listing(
+    listing_id: int, user_id: CurrentUserId, session: SessionDep, storage: StorageDep
+) -> ListingOut:
+    return await service.resubmit_listing(session, storage, listing_id, user_id)
 
 
 @router.put(

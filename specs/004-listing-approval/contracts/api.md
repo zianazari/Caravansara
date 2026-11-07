@@ -43,6 +43,9 @@
 
 همه زیر `/api/v1/admin`. وقتی `CARAVANSARA_ADMIN_HOST` پر است، برای `Host` دیگر `404 not_found` می‌دهند (R12). همه جز ورود Bearer با توکن admin می‌خواهند. بدون آن `401` می‌دهند، پیش از هر جست‌وجوی آگهی (FR-020، R13).
 
+- **در OpenAPI:** این endpointها طرح امنیتی جدای `AdminBearer` دارند، تا Swagger توکن admin را جدا از توکن عضو (`HTTPBearer`) نگه دارد. هر دو `Authorization: Bearer` هستند، و نوع توکن (`type`) تصمیم می‌گیرد.
+- **توکن admin روی مسیرهای عضو:** هر endpoint با `CurrentUserId` یا بیننده‌ی اختیاری (`GET /listings/{id}`، `GET /listings/{id}/reviews`) با توکن admin `401 invalid_token` می‌دهد، نه نمایش عمومی. admin صفحه‌ی عمومی را بدون توکن، یا جزئیات را از `GET /admin/listings/{id}` می‌بیند.
+
 ### `POST /api/v1/admin/auth/login`
 
 ```json

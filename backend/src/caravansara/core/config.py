@@ -23,6 +23,13 @@ class Settings(BaseSettings):
     jwt_algorithm: str = "HS256"
     access_token_minutes: int = 15
     refresh_token_days: int = 30
+    # Admin tokens are short and have no refresh token: a lost one is useless after 15 minutes,
+    # and every admin request also checks the account in the database (specs/004 research R2).
+    admin_token_minutes: int = 15
+    # Empty: the admin endpoints answer on any Host. Set (e.g. "admin.example.com"): they answer
+    # only on that subdomain and look absent (404) everywhere else, so a deployment can keep them
+    # off the public site (constitution 1.3.0 principle V, research R12).
+    admin_host: str = ""
 
     # Rate limit for login and registration (PostgreSQL counter, no Redis)
     login_max_failures: int = 5

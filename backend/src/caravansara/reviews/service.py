@@ -62,8 +62,12 @@ async def create_review(
     return _out(review, await identity.get_public_user(session, user_id))
 
 
-async def listing_reviews(session: AsyncSession, listing_id: int, limit: int, offset: int) -> ReviewPage:
-    await listings.get_listing_info(session, listing_id)  # 404 for an unknown listing
+async def listing_reviews(
+    session: AsyncSession, listing_id: int, viewer_id: int | None, limit: int, offset: int
+) -> ReviewPage:
+    # The reviews are part of the listing page, so they follow its rule: 404 for an unknown listing,
+    # and for one that is not public unless the viewer is its host or has a live booking (FR-019).
+    await listings.require_visible_listing(session, listing_id, viewer_id)
     reviews, total = await repo.listing_reviews(session, listing_id, limit, offset)
     authors = await identity.get_public_users(session, {r.guest_id for r in reviews})
     return ReviewPage(items=[_out(r, authors[r.guest_id]) for r in reviews], total=total)

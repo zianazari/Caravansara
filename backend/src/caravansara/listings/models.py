@@ -27,6 +27,24 @@ class PropertyType(enum.StrEnum):
     shared_room = "shared_room"
 
 
+class ReviewStatus(enum.StrEnum):
+    pending = "pending"
+    approved = "approved"
+    rejected = "rejected"
+
+
+class ReviewAction(enum.StrEnum):
+    submitted = "submitted"  # a new listing entered the queue
+    edited = "edited"  # a descriptive edit sent an approved listing back to the queue
+    resubmitted = "resubmitted"  # the host sent a rejected listing again
+    approved = "approved"
+    rejected = "rejected"
+
+
+def _enum(cls: type[enum.StrEnum], name: str) -> Enum:
+    return Enum(cls, name=name, create_type=False, values_callable=lambda e: [m.value for m in e])
+
+
 class Listing(Base):
     __tablename__ = "listings"
 
@@ -34,9 +52,7 @@ class Listing(Base):
     host_id: Mapped[int] = mapped_column(BigInteger, ForeignKey("users.id"))
     title: Mapped[str] = mapped_column(Text)
     description: Mapped[str | None] = mapped_column(Text)
-    property_type: Mapped[PropertyType] = mapped_column(
-        Enum(PropertyType, name="property_type", create_type=False, values_callable=lambda e: [m.value for m in e])
-    )
+    property_type: Mapped[PropertyType] = mapped_column(_enum(PropertyType, "property_type"))
     city_id: Mapped[int] = mapped_column(Integer, ForeignKey("cities.id"))
     neighborhood: Mapped[str | None] = mapped_column(Text)
     address: Mapped[str] = mapped_column(Text)
@@ -59,6 +75,19 @@ class Listing(Base):
     review_count: Mapped[int] = mapped_column(Integer, server_default="0")
     is_active: Mapped[bool] = mapped_column(server_default="true")
     created_at: Mapped[datetime] = mapped_column(server_default=func.now())
+    # Review by an admin (specs/004-listing-approval). Public = is_active AND approved (FR-002).
+    # The database default is pending, so a listing never skips the queue (migration 0006).
+    review_status: Mapped[ReviewStatus] = mapped_column(
+        _enum(ReviewStatus, "listing_review_status"), server_default="pending"
+    )
+    # When it entered the queue; the queue is oldest first. A new value on every new entry.
+    submitted_at: Mapped[datetime | None] = mapped_column(server_default=func.now())
+    # The last rejection reason, only while rejected; the host reads it (FR-003).
+    rejection_reason: Mapped[str | None] = mapped_column(Text)
+    # Goes up by one on every descriptive edit (FR-009), whatever the status. An admin's decision
+    # names the version they saw, and the UPDATE applies only if it is still current, so an edit
+    # made after the admin opened the listing is never approved unseen (research R6).
+    review_version: Mapped[int] = mapped_column(Integer, server_default="0")
 
 
 class ListingPhoto(Base):
@@ -79,3 +108,18 @@ class ListingAmenity(Base):
 
     listing_id: Mapped[int] = mapped_column(BigInteger, ForeignKey("listings.id", ondelete="CASCADE"), primary_key=True)
     amenity_id: Mapped[int] = mapped_column(SmallInteger, ForeignKey("amenities.id"), primary_key=True)
+
+
+class ListingReviewEvent(Base):
+    """Append-only history of submissions and decisions, with who did it (FR-015).
+    A trigger refuses UPDATE and DELETE (migration 0006)."""
+
+    __tablename__ = "listing_review_events"
+
+    id: Mapped[int] = mapped_column(BigInteger, Identity(always=True), primary_key=True)
+    listing_id: Mapped[int] = mapped_column(BigInteger, ForeignKey("listings.id"))
+    action: Mapped[ReviewAction] = mapped_column(_enum(ReviewAction, "review_action"))
+    actor_id: Mapped[int] = mapped_column(BigInteger, ForeignKey("users.id"))
+    review_version: Mapped[int] = mapped_column(Integer)
+    reason: Mapped[str | None] = mapped_column(Text)
+    created_at: Mapped[datetime] = mapped_column(server_default=func.now())

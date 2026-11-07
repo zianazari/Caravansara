@@ -69,7 +69,9 @@ async def create_booking(
         return _replay(existing, user_id, data), False
 
     info = await listings.get_listing_info(session, data.listing_id)
-    if not info.is_active:
+    # Only a public listing (active and approved) takes new bookings. Existing bookings of a listing
+    # that becomes hidden keep working: pay, cancel and the jobs do not look at this (FR-011).
+    if not info.is_public:
         raise NotFound("Listing not found.")
     if info.host_id == user_id:
         raise Forbidden("Hosts cannot book their own listing.", code="own_listing")

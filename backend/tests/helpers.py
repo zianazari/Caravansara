@@ -11,6 +11,14 @@ from sqlalchemy.ext.asyncio import AsyncEngine
 PASSWORD = "correct-horse-battery"
 AMSTERDAM = (52.3731, 4.8838)
 
+# The test database, set by the ``client`` fixture so create_listing can approve what it creates.
+_engine: AsyncEngine | None = None
+
+
+def use_engine(engine: AsyncEngine) -> None:
+    global _engine
+    _engine = engine
+
 
 class User:
     def __init__(self, user_id: int, email: str, token: str, refresh: str) -> None:
@@ -62,11 +70,24 @@ def listing_body(city: int, **overrides: Any) -> dict[str, Any]:
 
 
 async def create_listing(client: AsyncClient, host: User, **overrides: Any) -> dict[str, Any]:
+    """A new listing waits for an admin (specs/004-listing-approval). ``approved=True`` (the default)
+    approves it straight in the database, as an admin would, because the tests written before the
+    review existed search, open and book public listings, and must pass unchanged (SC-007).
+    Pass ``approved=False`` to get the listing as the host just made it."""
+    approved = bool(overrides.pop("approved", True))
     city = overrides.pop("city", None) or await city_id(client)
     r = await client.post("/listings", json=listing_body(city, **overrides), headers=host.auth)
     assert r.status_code == 201, r.text
     result: dict[str, Any] = r.json()
+    if approved:
+        assert _engine is not None, "the client fixture sets the engine"
+        await approve(_engine, int(result["id"]))
     return result
+
+
+async def approve(engine: AsyncEngine, listing_id: int) -> None:
+    """What an admin's approval leaves behind, without the admin (no history row)."""
+    await sql(engine, "UPDATE listings SET review_status = 'approved' WHERE id = :id", id=listing_id)
 
 
 def days(n: int) -> str:

@@ -8,6 +8,10 @@
 --   + cities.timezone
 --   + bookings: partial index on hold_expires_at for pending holds
 --   + listings.public_location (PostGIS geography) for radial search
+-- Updated 2026-11-07 for listing review by an admin (migration 0006, specs/004-listing-approval):
+--   + users.kind, users.disabled_at; auth_attempts allows 'admin_login'
+--   + listings.review_status, submitted_at, rejection_reason, review_version
+--   + listing_review_events, admin_address_views (two new tables)
 -- Alembic migrations in backend/migrations are the source of truth; 0001 is
 -- this file, and this file is kept in sync with later migrations.
 -- =====================================================================
@@ -18,6 +22,9 @@ CREATE EXTENSION IF NOT EXISTS postgis;      -- geography type, ST_DWithin, ST_D
 -- ---------- Enums ----------------------------------------------------
 CREATE TYPE property_type  AS ENUM ('entire_place', 'private_room', 'shared_room');
 CREATE TYPE booking_status AS ENUM ('pending', 'confirmed', 'cancelled', 'expired', 'completed');
+CREATE TYPE account_kind          AS ENUM ('member', 'admin');
+CREATE TYPE listing_review_status AS ENUM ('pending', 'approved', 'rejected');
+CREATE TYPE review_action         AS ENUM ('submitted', 'edited', 'resubmitted', 'approved', 'rejected');
 
 -- ---------- Users ----------------------------------------------------
 -- One table for guests and hosts: a host is simply a user who owns listings.
@@ -27,7 +34,13 @@ CREATE TABLE users (
     password_hash  TEXT        NOT NULL,                -- argon2
     full_name      TEXT        NOT NULL,
     avatar_url     TEXT,
-    created_at     TIMESTAMPTZ NOT NULL DEFAULT now()
+    created_at     TIMESTAMPTZ NOT NULL DEFAULT now(),
+    -- Admins live here too, so the email index below keeps one email to one account of either
+    -- kind. Only the create-admin command writes 'admin'; no API input has this field. An admin
+    -- token works on no member endpoint, so an admin cannot list or book.
+    kind           account_kind NOT NULL DEFAULT 'member',
+    -- Set by disable-admin: the admin can no longer log in or act, even with a live token.
+    disabled_at    TIMESTAMPTZ
 );
 -- 'A@x.com' and 'a@x.com' must not become two accounts
 CREATE UNIQUE INDEX users_email_lower_key ON users (lower(email));
@@ -45,9 +58,10 @@ CREATE TABLE refresh_tokens (
 CREATE INDEX refresh_tokens_user_idx ON refresh_tokens (user_id) WHERE revoked_at IS NULL;
 
 -- Rate limit for login and registration: one row per attempt, counted per time window.
+-- Admin logins count apart ('admin_login'), so neither kind of login can lock the other out.
 CREATE TABLE auth_attempts (
     id            BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
-    action        TEXT        NOT NULL CHECK (action IN ('login', 'register')),
+    action        TEXT        NOT NULL CHECK (action IN ('login', 'register', 'admin_login')),
     identifier    TEXT        NOT NULL,                 -- lower(email) or client IP
     succeeded     BOOLEAN     NOT NULL,
     attempted_at  TIMESTAMPTZ NOT NULL DEFAULT now()
@@ -112,11 +126,51 @@ CREATE TABLE listings (
     is_active        BOOLEAN       NOT NULL DEFAULT true,
     created_at       TIMESTAMPTZ   NOT NULL DEFAULT now(),
 
-    CHECK (pets_allowed OR max_pets = 0)
+    -- review by an admin. Public = is_active AND review_status = 'approved' (no stored column).
+    -- New rows are pending, so no listing skips the queue; 0006 approved every existing one.
+    review_status    listing_review_status NOT NULL DEFAULT 'pending',
+    submitted_at     TIMESTAMPTZ   DEFAULT now(),   -- entered the queue; the queue is oldest first
+    rejection_reason TEXT,                          -- the last reason, only while rejected; the host reads it
+    -- +1 on every descriptive edit (title, description, type, city, neighbourhood, address, point,
+    -- amenities, a new photo, a caption or room tag). A decision names the version the admin saw
+    -- and applies only if it is still current, so an edit made after is never approved unseen.
+    review_version   INT           NOT NULL DEFAULT 0,
+
+    CHECK (pets_allowed OR max_pets = 0),
+    CONSTRAINT listings_pending_submitted_check CHECK (review_status <> 'pending' OR submitted_at IS NOT NULL),
+    CONSTRAINT listings_rejection_reason_check
+        CHECK ((review_status = 'rejected') = (rejection_reason IS NOT NULL)
+               AND (rejection_reason IS NULL
+                    OR (char_length(rejection_reason) <= 1000 AND btrim(rejection_reason) <> '')))
 );
 CREATE INDEX listings_city_idx   ON listings (city_id) WHERE is_active;
 CREATE INDEX listings_host_idx   ON listings (host_id);
 CREATE INDEX listings_public_location_idx ON listings USING gist (public_location) WHERE is_active;   -- radial search
+-- The admin's queue, its size and its oldest wait (read by the worker for the dashboard).
+CREATE INDEX listings_review_queue_idx ON listings (submitted_at, id) WHERE review_status = 'pending';
+
+-- History of every submission and decision, with who did it (host or admin). Append-only: the
+-- trigger at the end of the file refuses UPDATE and DELETE, so the record cannot be rewritten.
+CREATE TABLE listing_review_events (
+    id             BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    listing_id     BIGINT        NOT NULL REFERENCES listings(id),
+    action         review_action NOT NULL,   -- 'edited': an edit sent an approved listing back
+    actor_id       BIGINT        NOT NULL REFERENCES users(id),
+    review_version INT           NOT NULL,   -- the version submitted or decided on
+    reason         TEXT,
+    created_at     TIMESTAMPTZ   NOT NULL DEFAULT now(),
+    CONSTRAINT listing_review_events_reason_check CHECK ((action = 'rejected') = (reason IS NOT NULL))
+);
+CREATE INDEX listing_review_events_listing_idx ON listing_review_events (listing_id, created_at);
+
+-- One row each time an admin opens a listing with its exact address, written in the same
+-- transaction as the answer (constitution V: who, which listing, when). Nothing reads it yet.
+CREATE TABLE admin_address_views (
+    id         BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    admin_id   BIGINT      NOT NULL REFERENCES users(id),
+    listing_id BIGINT      NOT NULL REFERENCES listings(id),
+    viewed_at  TIMESTAMPTZ NOT NULL DEFAULT now()
+);
 
 -- ---------- Photos ---------------------------------------------------
 CREATE TABLE listing_photos (
@@ -258,3 +312,13 @@ END $$;
 CREATE TRIGGER reviews_rating_sync
 AFTER INSERT OR UPDATE OF rating OR DELETE ON reviews
 FOR EACH ROW EXECUTE FUNCTION refresh_listing_rating();
+
+-- The review history is a record: nobody rewrites or removes it.
+CREATE FUNCTION listing_review_events_refuse_change() RETURNS trigger LANGUAGE plpgsql AS $$
+BEGIN
+    RAISE EXCEPTION 'listing_review_events is append-only';
+END $$;
+
+CREATE TRIGGER listing_review_events_append_only
+BEFORE UPDATE OR DELETE ON listing_review_events
+FOR EACH ROW EXECUTE FUNCTION listing_review_events_refuse_change();

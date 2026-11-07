@@ -18,6 +18,7 @@
 | `disabled_at` | `timestamptz NULL` | فقط `disable-admin` پرش می‌کند. admin با `disabled_at` پر نه وارد می‌شود و نه هیچ اقدام admin انجام می‌دهد (R2). |
 
 - یکتایی ایمیل همان ایندکس امروز روی `lower(email)` است و هر دو نوع حساب را می‌پوشاند (R1).
+- **`auth_attempts.action`:** CHECK آن از `('login', 'register')` به `('login', 'register', 'admin_login')` گسترش می‌یابد، تا ورود admin با همان جدول و جدا شمرده شود (R3). این را plan ندیده بود؛ اولین تست ورود admin در پیاده‌سازی آن را پیدا کرد. downgrade ردیف‌های `admin_login` را حذف و CHECK قبلی را برمی‌گرداند.
 - ورود عادی فقط `kind = 'member'` را می‌پذیرد، و ورود admin فقط `kind = 'admin' AND disabled_at IS NULL` را.
 
 ## `listings` (تغییر)
@@ -35,6 +36,8 @@
 - `listings_rejection_reason_check`: `(review_status = 'rejected') = (rejection_reason IS NOT NULL)` و `rejection_reason IS NULL OR (char_length(rejection_reason) <= 1000 AND btrim(rejection_reason) <> '')` (FR-005).
 
 **ایندکس**: `listings_review_queue_idx ON listings (submitted_at, id) WHERE review_status = 'pending'`. صف، شمارش و قدیمی‌ترین انتظار (R10) از آن می‌خوانند.
+
+**آمار**: upgrade با `ANALYZE listings` تمام می‌شود. `ADD COLUMN` برای `review_status` آماری نمی‌سازد، و بدون آن planner جستجوی شهری با تاریخ را به نقشه‌ی کندتر برد ([measurements.md](measurements.md)، «یافته: آمار ستون تازه»).
 
 **عمومی** (FR-002): `is_active AND review_status = 'approved'`. ستون ذخیره‌شده نیست (R8).
 

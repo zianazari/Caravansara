@@ -2,7 +2,7 @@ WITH matching AS MATERIALIZED (
     SELECT l.id, l.avg_rating, l.review_count, NULL::float8 AS distance_m
     FROM   (SELECT NULL::geography AS center) p
     JOIN   listings l ON true
-    WHERE  l.is_active AND l.max_guests >= :guests AND l.city_id = :city_id
+    WHERE  l.is_active AND l.review_status = 'approved' AND l.max_guests >= :guests AND l.city_id = :city_id
 ),
 page AS (SELECT m.* FROM matching m ORDER BY m.avg_rating DESC NULLS LAST, m.review_count DESC, m.id LIMIT :limit OFFSET :offset)
 SELECT l.id, l.title, l.property_type::text AS property_type,

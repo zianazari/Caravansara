@@ -36,6 +36,22 @@ RATE_LIMITED = Counter(
 )
 REVIEWS = Counter("caravansara_reviews_total", "Reviews written.")
 
+# Listing review (specs/004-listing-approval, FR-016). "submitted" counts every entry to the queue:
+# a new listing, a resubmission and a descriptive edit of an approved listing.
+LISTING_REVIEW_EVENTS_LIST = ("submitted", "approved", "rejected")
+LISTING_REVIEW_EVENTS = Counter(
+    "caravansara_listing_review_events_total",
+    "Listing review events: submitted (entered the queue), approved, rejected.",
+    ["event"],
+)
+# Only the worker sets these two, once a run (research R10). Each API copy would otherwise report
+# its own stale number, and Prometheus would add them up.
+LISTING_REVIEW_QUEUE = Gauge("caravansara_listing_review_queue", "Listings waiting for an admin's review.")
+LISTING_REVIEW_OLDEST_WAIT = Gauge(
+    "caravansara_listing_review_oldest_wait_seconds",
+    "How long the oldest listing in the review queue has waited; 0 when the queue is empty.",
+)
+
 WORKER_RUNS = Counter("caravansara_worker_runs_total", "Worker job runs by result.", ["result"])
 WORKER_LAST_SUCCESS = Gauge(
     "caravansara_worker_last_success_timestamp_seconds",
@@ -50,7 +66,9 @@ WORKER_DURATION = Histogram(
 # Series exist from the start at 0, so rate() and alerts work before the first event.
 for _event in BOOKING_EVENTS_LIST:
     BOOKING_EVENTS.labels(_event)
-for _action in ("login", "register"):
+for _event in LISTING_REVIEW_EVENTS_LIST:
+    LISTING_REVIEW_EVENTS.labels(_event)
+for _action in ("login", "register", "admin_login"):
     RATE_LIMITED.labels(_action)
 for _result in ("ok", "error"):
     WORKER_RUNS.labels(_result)

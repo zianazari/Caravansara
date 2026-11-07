@@ -1,3 +1,4 @@
+import { execFileSync } from "node:child_process";
 import { randomUUID } from "node:crypto";
 import { readFileSync } from "node:fs";
 import path from "node:path";
@@ -49,8 +50,24 @@ export async function amenityIds(request: APIRequestContext): Promise<Record<str
   return amenityCache;
 }
 
-/** A listing at a random point inside Amsterdam, so radial searches find it. */
-export async function createListing(request: APIRequestContext, host: User, extra: Record<string, unknown> = {}) {
+/**
+ * A listing at a random point inside Amsterdam, so radial searches find it.
+ * A new listing waits for an admin's review (specs/004-listing-approval), so by default the
+ * shared test admin approves it at once: the tests written before the review search and book
+ * public listings. `approved: false` returns it as the host just made it.
+ */
+export async function createListing(
+  request: APIRequestContext,
+  host: User,
+  extra: Record<string, unknown> = {},
+  { approved = true }: { approved?: boolean } = {},
+) {
+  const listing = await postListing(request, host, extra);
+  if (approved) await approve(request, listing.id);
+  return listing;
+}
+
+async function postListing(request: APIRequestContext, host: User, extra: Record<string, unknown>) {
   const res = await request.post(`${API}/listings`, {
     headers: auth(host),
     data: {
@@ -93,8 +110,18 @@ export async function reserve(
   });
 }
 
-/** Upload the sample photo through the presigned POST and register it. */
-export async function addPhoto(request: APIRequestContext, host: User, listingId: number, caption = "Living room") {
+/**
+ * Upload the sample photo through the presigned POST and register it. A new photo sends an approved
+ * listing back to review (specs/004-listing-approval, FR-009), so by default the test admin approves
+ * it again, as the tests written before the review expect a public listing.
+ */
+export async function addPhoto(
+  request: APIRequestContext,
+  host: User,
+  listingId: number,
+  caption = "Living room",
+  { approved = true }: { approved?: boolean } = {},
+) {
   const urlRes = await request.post(`${API}/listings/${listingId}/photos/upload-url`, {
     headers: auth(host),
     data: { content_type: "image/jpeg" },
@@ -113,7 +140,9 @@ export async function addPhoto(request: APIRequestContext, host: User, listingId
     data: { storage_key: upload.storage_key, width: 800, height: 394, caption, room_tag: "Living room" },
   });
   expect(res.status(), await res.text()).toBe(201);
-  return res.json();
+  const photo = await res.json();
+  if (approved) await approve(request, listingId);
+  return photo;
 }
 
 export function samplePhoto(): Buffer {
@@ -134,4 +163,46 @@ export async function sql(text: string, params: unknown[] = []) {
   } finally {
     await client.end();
   }
+}
+
+/**
+ * Admins exist only through `caravansara create-admin` on the server (FR-012), so the tests make
+ * theirs the same way, in the running API container: this also checks the command is in the image.
+ */
+export function createAdmin(name = "admin"): { email: string; password: string } {
+  const email = `e2e.${name}.${randomUUID().slice(0, 8)}@caravansara.example.com`;
+  const root = path.join(__dirname, "..", "..");
+  const out = execFileSync(
+    "docker",
+    ["compose", "exec", "-T", "-e", `CARAVANSARA_ADMIN_PASSWORD=${PASSWORD}`, "api",
+     "caravansara", "create-admin", "--email", email, "--name", `E2E ${name}`],
+    { cwd: root, encoding: "utf-8" },
+  );
+  expect(out).toMatch(/^admin created: \d+/);
+  return { email, password: PASSWORD };
+}
+
+export async function adminLogin(request: APIRequestContext, email: string, password = PASSWORD) {
+  const res = await request.post(`${API}/admin/auth/login`, { data: { email, password } });
+  expect(res.status(), await res.text()).toBe(200);
+  return { Authorization: `Bearer ${(await res.json()).access_token}` };
+}
+
+// One admin per Playwright worker; its token lasts 15 minutes, longer than a run.
+let sharedAdmin: Promise<Record<string, string>> | undefined;
+export function testAdmin(request: APIRequestContext) {
+  sharedAdmin ??= adminLogin(request, createAdmin("reviewer").email);
+  return sharedAdmin;
+}
+
+/** What an admin does in the queue: open the listing, then approve the version seen. */
+export async function approve(request: APIRequestContext, listingId: number) {
+  const headers = await testAdmin(request);
+  const detail = await request.get(`${API}/admin/listings/${listingId}`, { headers });
+  expect(detail.status(), await detail.text()).toBe(200);
+  const res = await request.post(`${API}/admin/listings/${listingId}/approve`, {
+    headers,
+    data: { review_version: (await detail.json()).review_version },
+  });
+  expect(res.status(), await res.text()).toBe(200);
 }

@@ -47,6 +47,7 @@ uv run pytest                         # همه، با پوشش ≥ 90٪
    - `POST /admin/auth/login` با `reviewer@example.com`، سپس **Authorize** با این توکن.
    - `GET /admin/listings/pending`: آگهی آخر صف است.
    - `GET /admin/listings/{id}`: `private_location` پر است.
+   - در Swagger توکن admin زیر **AdminBearer** گذاشته می‌شود، جدا از توکن عضو (**HTTPBearer**).
 
 4. **تأیید:** `POST /admin/listings/{id}/approve` با `review_version` از قدم ۳.
    - انتظار: آگهی حالا در `GET /search/listings` است و رزرو می‌شود.
@@ -105,7 +106,7 @@ CARAVANSARA_DATABASE_URL=…/caravansara_bulk uv run caravansara migrate       #
 uv run caravansara measure-queries --database caravansara_bulk --out ../specs/004-listing-approval/after.json
 ```
 
-- **کاتالوگ:** فایل‌های جستجو در `db/bulk/queries/` (`search_*`, `filters_*`) شرط `review_status` را می‌گیرند، چون رونوشت SQL واقعی‌اند (`tests/test_query_catalog.py`).
+- **کاتالوگ:** فایل‌های جستجو در `db/bulk/queries/` (`search_*`, `filters_*`) شرط `review_status` را می‌گیرند، چون رونوشت دستی SQL واقعی‌اند. `tests/test_query_catalog.py` فقط پوشش هر تابع repository و اجرا شدن هر فایل را می‌سنجد، نه برابری متن SQL با کد، پس این رونوشت باید با دست هم‌خوان بماند.
 - **قبول:** میانه‌ی هر کوئری جستجو بیش از ۱۰٪ کندتر نیست.
 - **ثبت:** نتیجه در `specs/004-listing-approval/measurements.md` و `docs/backend-design.md` نوشته می‌شود.
 

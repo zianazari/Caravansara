@@ -24,6 +24,7 @@ COLUMNS: dict[str, tuple[str, ...]] = {
         "id", "host_id", "title", "description", "property_type", "city_id", "neighborhood", "address",
         "latitude", "longitude", "public_location", "max_guests", "pets_allowed", "max_pets", "bedrooms",
         "beds", "bathrooms", "price_per_night", "cleaning_fee", "currency", "is_active", "created_at",
+        "review_status",
     ),
     "listing_photos": ("listing_id", "storage_key", "width", "height", "room_tag", "sort_order"),
     "listing_amenities": ("listing_id", "amenity_id"),
@@ -251,6 +252,9 @@ class BulkData:
             self.city_ids[city.name], None, f"{rng.randint(1, 400)} Bulk Street, {city.name}", lat, lng,
             f"SRID=4326;POINT({plng} {plat})", guests, pets, max_pets, int(bedrooms), int(beds),
             round(float(baths), 1), _money(price), _money(cleaning), city.currency, active, _ts(created),
+            # Said explicitly: the column default is 'pending' (migration 0006), and bulk data stands
+            # for listings that are already public (specs/004-listing-approval, research R5).
+            "approved",
         )  # fmt: skip
         return _Listing(lid, city, rng, row, price, cleaning, guests, pets, max_pets, amenities)
 

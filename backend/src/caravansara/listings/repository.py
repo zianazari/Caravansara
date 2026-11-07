@@ -1,9 +1,18 @@
+from datetime import datetime
+
 from geoalchemy2 import Geometry
-from sqlalchemy import cast, delete, func, select
+from sqlalchemy import cast, delete, func, select, text, update
 from sqlalchemy.dialects.postgresql import distinct_on
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from caravansara.listings.models import Listing, ListingAmenity, ListingPhoto
+from caravansara.listings.models import (
+    Listing,
+    ListingAmenity,
+    ListingPhoto,
+    ListingReviewEvent,
+    ReviewAction,
+    ReviewStatus,
+)
 
 
 async def get_listing(session: AsyncSession, listing_id: int, *, for_update: bool = False) -> Listing | None:
@@ -83,3 +92,81 @@ async def amenity_ids(session: AsyncSession, listing_id: int) -> set[int]:
 async def set_amenities(session: AsyncSession, listing_id: int, ids: set[int]) -> None:
     await session.execute(delete(ListingAmenity).where(ListingAmenity.listing_id == listing_id))
     session.add_all(ListingAmenity(listing_id=listing_id, amenity_id=i) for i in sorted(ids))
+
+
+# ---- review (specs/004-listing-approval) ----------------------------------------------
+
+# Plain SQL on bookings, not bookings.service: bookings already imports listings.service, so the
+# other way round would be an import cycle (research R8). The live-booking rule is the same one
+# search uses for blocked dates: an unpaid hold counts only until its deadline.
+_LIVE_BOOKING = text(
+    """SELECT EXISTS (SELECT 1 FROM bookings b
+                      WHERE b.listing_id = :listing_id AND b.guest_id = :guest_id
+                        AND b.status IN ('pending', 'confirmed', 'completed')
+                        AND (b.status <> 'pending' OR b.hold_expires_at > now()))"""
+)
+
+
+async def has_live_booking(session: AsyncSession, listing_id: int, guest_id: int) -> bool:
+    """FR-019: a guest with a live booking still sees a listing that is no longer public."""
+    return bool((await session.execute(_LIVE_BOOKING, {"listing_id": listing_id, "guest_id": guest_id})).scalar())
+
+
+async def add_review_event(
+    session: AsyncSession, listing_id: int, action: ReviewAction, actor_id: int, version: int, reason: str | None = None
+) -> None:
+    session.add(
+        ListingReviewEvent(
+            listing_id=listing_id, action=action, actor_id=actor_id, review_version=version, reason=reason
+        )
+    )
+
+
+async def decide(
+    session: AsyncSession, listing_id: int, version: int, status: ReviewStatus, reason: str | None
+) -> bool:
+    """Approve or reject in one conditional UPDATE: of two admins deciding at once, exactly one
+    changes the row; and a version the admin did not see is never decided (research R6)."""
+    result = await session.execute(
+        update(Listing)
+        .where(
+            Listing.id == listing_id,
+            Listing.review_status == ReviewStatus.pending,
+            Listing.review_version == version,
+        )
+        .values(review_status=status, rejection_reason=reason)
+        .returning(Listing.id)
+    )
+    return result.first() is not None
+
+
+async def resubmit(session: AsyncSession, listing_id: int, host_id: int, now: datetime) -> int | None:
+    """Back to the end of the queue; only from rejected and only by the host. Returns the version."""
+    result = await session.execute(
+        update(Listing)
+        .where(Listing.id == listing_id, Listing.host_id == host_id, Listing.review_status == ReviewStatus.rejected)
+        .values(review_status=ReviewStatus.pending, submitted_at=now, rejection_reason=None)
+        .returning(Listing.review_version)
+    )
+    row = result.first()
+    return int(row[0]) if row else None
+
+
+async def review_queue(session: AsyncSession, limit: int, offset: int) -> tuple[list[Listing], int]:
+    """Oldest first, on listings_review_queue_idx (FR-004)."""
+    pending = Listing.review_status == ReviewStatus.pending
+    total = (await session.execute(select(func.count()).select_from(Listing).where(pending))).scalar_one()
+    rows = await session.execute(
+        select(Listing).where(pending).order_by(Listing.submitted_at, Listing.id).limit(limit).offset(offset)
+    )
+    return list(rows.scalars()), int(total)
+
+
+async def review_queue_stats(session: AsyncSession) -> tuple[int, datetime | None]:
+    """Size of the queue and its oldest entry, for the worker's gauges (research R10)."""
+    row = (
+        await session.execute(
+            select(func.count(), func.min(Listing.submitted_at)).where(Listing.review_status == ReviewStatus.pending)
+        )
+    ).one()
+    return int(row[0]), row[1]
