@@ -45,11 +45,11 @@ async def test_downgrade_and_upgrade_again(prepared: Settings) -> None:
 
     try:
         await asyncio.to_thread(migrate, settings)
-        assert await table_count() == 12
+        assert await table_count() == 14  # 12 from 0001, two from 0006
         await asyncio.to_thread(downgrade)
         assert await table_count() == 0
         await asyncio.to_thread(migrate, settings)  # and back up, as on a fresh deploy
-        assert await table_count() == 12
+        assert await table_count() == 14
     finally:
         conn = await asyncpg.connect(admin)
         await conn.execute("DROP DATABASE IF EXISTS migration_check WITH (FORCE)")
@@ -234,3 +234,100 @@ async def test_index_migrations_add_valid_indexes_and_downgrade_removes_only_tho
     await scratch.downgrade(previous)
     assert {r[0]: r[1] for r in await scratch.fetch(INDEXES)} == before_indexes
     assert [tuple(r) for r in await scratch.fetch(AMOUNTS)] == before_rows
+
+
+# ---- 0006: listing review (specs/004-listing-approval) --------------------------------
+
+REVIEW = "SELECT review_status::text, submitted_at, rejection_reason, review_version FROM listings ORDER BY id"
+COUNTS = "SELECT (SELECT count(*) FROM listings), (SELECT count(*) FROM bookings), (SELECT count(*) FROM reviews)"
+SECOND_LISTING = ROWS[3].replace("'Old flat'", "'Hidden flat'")
+
+
+async def test_0006_upgrade_approves_every_existing_listing(scratch: Scratch) -> None:
+    """FR-013, US5/AC1: active and inactive listings alike stay as public as they were."""
+    await scratch.upgrade("0005")
+    await scratch.execute(*ROWS, SECOND_LISTING, "UPDATE listings SET is_active = false WHERE title = 'Hidden flat'")
+
+    await scratch.upgrade("0006")
+    assert [tuple(r) for r in await scratch.fetch(REVIEW)] == [("approved", None, None, 0)] * 2
+    # The planner knows the new column at once: without statistics the city searches change plans.
+    stats = "SELECT 1 FROM pg_stats WHERE tablename = 'listings' AND attname = 'review_status'"
+    assert len(await scratch.fetch(stats)) == 1
+    kinds = await scratch.fetch("SELECT kind::text FROM users")
+    assert [r[0] for r in kinds] == ["member"]
+
+
+async def test_0006_new_rows_get_the_new_defaults(scratch: Scratch) -> None:
+    """A listing inserted without a review state waits in the queue, even if code forgets it."""
+    await scratch.upgrade("0006")
+    await scratch.execute(*ROWS)
+    rows = await scratch.fetch(REVIEW)
+    assert rows[0][0] == "pending"
+    assert rows[0][1] is not None
+    assert rows[0][2] is None
+    assert rows[0][3] == 0
+    assert [r[0] for r in await scratch.fetch("SELECT kind::text FROM users")] == ["member"]
+
+
+@pytest.mark.parametrize(
+    "change",
+    [
+        "UPDATE listings SET submitted_at = NULL",  # pending needs a queue time
+        "UPDATE listings SET review_status = 'rejected'",  # rejected needs a reason
+        "UPDATE listings SET review_status = 'approved', rejection_reason = 'x'",  # reason only when rejected
+        "UPDATE listings SET review_status = 'rejected', rejection_reason = '   '",  # blank
+        "UPDATE listings SET review_status = 'rejected', rejection_reason = repeat('x', 1001)",  # too long
+    ],
+)
+async def test_0006_checks_refuse_impossible_review_states(scratch: Scratch, change: str) -> None:
+    await scratch.upgrade("0006")
+    await scratch.execute(*ROWS)
+    with pytest.raises(asyncpg.CheckViolationError):
+        await scratch.execute(change)
+
+
+async def test_0006_review_history_is_append_only(scratch: Scratch) -> None:
+    await scratch.upgrade("0006")
+    await scratch.execute(
+        *ROWS,
+        """INSERT INTO listing_review_events (listing_id, action, actor_id, review_version)
+           SELECT l.id, 'submitted', l.host_id, 0 FROM listings l""",
+    )
+    for change in ("UPDATE listing_review_events SET review_version = 1", "DELETE FROM listing_review_events"):
+        with pytest.raises(asyncpg.RaiseError, match="append-only"):
+            await scratch.execute(change)
+    with pytest.raises(asyncpg.CheckViolationError):  # a rejection always has its reason
+        await scratch.execute(
+            """INSERT INTO listing_review_events (listing_id, action, actor_id, review_version)
+               SELECT l.id, 'rejected', l.host_id, 0 FROM listings l"""
+        )
+
+
+async def test_0006_downgrade_hides_unapproved_listings_and_keeps_every_row(scratch: Scratch) -> None:
+    """R16: nothing unreviewed becomes public; listings, bookings and reviews all stay."""
+    await scratch.upgrade("0006")
+    await scratch.execute(*ROWS)
+    await scratch.add_booking(Decimal("200000024.32"))  # on the pending "Old flat"
+    await scratch.execute(
+        SECOND_LISTING,
+        ROWS[3].replace("'Old flat'", "'Approved flat'"),
+        "UPDATE listings SET review_status = 'rejected', rejection_reason = 'Photos are not this flat.' "
+        "WHERE title = 'Hidden flat'",
+        "UPDATE listings SET review_status = 'approved' WHERE title = 'Approved flat'",
+        "INSERT INTO users (email, password_hash, full_name, kind) VALUES ('admin@example.com', 'x', 'Admin', 'admin')",
+        "INSERT INTO auth_attempts (action, identifier, succeeded) VALUES ('admin_login', 'admin@example.com', true)",
+        """INSERT INTO listing_review_events (listing_id, action, actor_id, review_version, reason)
+           SELECT l.id, 'rejected', u.id, 0, 'Photos are not this flat.'
+           FROM listings l, users u WHERE l.title = 'Hidden flat' AND u.kind = 'admin'""",
+        """INSERT INTO admin_address_views (admin_id, listing_id)
+           SELECT u.id, l.id FROM listings l, users u WHERE l.title = 'Hidden flat' AND u.kind = 'admin'""",
+    )
+    counts = tuple((await scratch.fetch(COUNTS))[0])
+
+    await scratch.downgrade("0005")
+    active = await scratch.fetch("SELECT title, is_active FROM listings ORDER BY id")
+    assert [tuple(r) for r in active] == [("Old flat", False), ("Hidden flat", False), ("Approved flat", True)]
+    assert [r[0] for r in await scratch.fetch("SELECT email FROM users ORDER BY id")] == ["host@example.com"]
+    assert tuple((await scratch.fetch(COUNTS))[0]) == counts
+
+    await scratch.upgrade("0006")  # and back up again

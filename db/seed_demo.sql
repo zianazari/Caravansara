@@ -8,8 +8,9 @@
 --   host@example.com  (Sara Lindqvist, hosts 3 Amsterdam listings)
 --   guest@example.com (Omar Haddad: upcoming stays, a finished stay open for review,
 --                      a hold that expires 4 minutes after loading, and an expired hold)
+--   admin@example.com (Ava Moradi, admin: POST /api/v1/admin/auth/login; never loaded in production)
 -- Edge cases with their ids: db/demo/README.md (and db/demo/edge_cases.json).
--- 2043 users, 790 listings, 4549 photos, 10748 bookings, 9523 reviews.
+-- 2044 users, 790 listings, 4549 photos, 10748 bookings, 9523 reviews.
 -- =====================================================================
 BEGIN;
 
@@ -2083,6 +2084,10 @@ INSERT INTO users (id, email, password_hash, full_name, created_at) OVERRIDING S
   (2041, 'fa.host.2041@example.com', '$argon2id$v=19$m=65536,t=3,p=4$7fwaM/cgT6atxiCcygeWyA$fGFSl+AoIk1b3QdhUfZS30ldTMa9147QwAIgijXzhqA', 'بهاره نوری', '2018-08-10 00:00:00+00'),
   (2042, 'fa.host.2042@example.com', '$argon2id$v=19$m=65536,t=3,p=4$7fwaM/cgT6atxiCcygeWyA$fGFSl+AoIk1b3QdhUfZS30ldTMa9147QwAIgijXzhqA', 'داریوش تهرانی', '2021-08-29 00:00:00+00'),
   (2043, 'fa.host.2043@example.com', '$argon2id$v=19$m=65536,t=3,p=4$7fwaM/cgT6atxiCcygeWyA$fGFSl+AoIk1b3QdhUfZS30ldTMa9147QwAIgijXzhqA', 'سارا رستمی', '2017-03-21 00:00:00+00');
+
+-- the demo admin: the only account of kind 'admin' (made by create-admin outside the demo)
+INSERT INTO users (id, email, password_hash, full_name, created_at, kind) OVERRIDING SYSTEM VALUE VALUES
+  (2044, 'admin@example.com', '$argon2id$v=19$m=65536,t=3,p=4$7fwaM/cgT6atxiCcygeWyA$fGFSl+AoIk1b3QdhUfZS30ldTMa9147QwAIgijXzhqA', 'Ava Moradi', '2020-01-01 00:00:00+00', 'admin'::account_kind);
 
 -- listings: city_id is looked up by city name
 INSERT INTO listings (id, host_id, title, description, property_type, city_id, neighborhood, address,
@@ -46574,6 +46579,19 @@ My stay in Brooklyn was absolutely wonderful, thanks to Babak! From start to fin
   (10744, 789, 1963, 4, 4, 4, 4, 3, 4, 4, 'اتاق زنانه بود و احساس امنیت داشتم.', '2026-07-05 15:52:00+00'),
   (10745, 790, 1944, 4, 4, 3, 4, 3, 3, 4, 'همه‌چیز مرتب بود.', '2026-08-26 21:36:00+00'),
   (10746, 790, 1979, 5, 4, 4, 5, 5, 5, 4, 'میزبان ساعت ۱۲ شب هم جواب پیام‌مان را داد.', '2026-07-06 22:31:00+00');
+
+-- listing review (specs/004-listing-approval): the column default is 'pending', so approve
+-- every listing explicitly, then make the two review edge cases.
+UPDATE listings SET review_status = 'approved', submitted_at = NULL;
+UPDATE listings SET review_status = 'pending', submitted_at = now() - interval '2 days'
+WHERE id = 252;
+UPDATE listings SET review_status = 'rejected', submitted_at = now() - interval '3 days',
+       rejection_reason = 'عکس‌ها مال این خانه نیستند. لطفاً عکس‌های خود خانه را بگذارید.'
+WHERE id = 502;
+INSERT INTO listing_review_events (listing_id, action, actor_id, review_version, reason, created_at) VALUES
+  (252, 'submitted', 248, 0, NULL, now() - interval '2 days'),
+  (502, 'submitted', 480, 0, NULL, now() - interval '3 days'),
+  (502, 'rejected', 2044, 0, 'عکس‌ها مال این خانه نیستند. لطفاً عکس‌های خود خانه را بگذارید.', now() - interval '1 day');
 
 -- edge case: an inactive listing that still has bookings
 UPDATE listings SET is_active = false WHERE id = 501;

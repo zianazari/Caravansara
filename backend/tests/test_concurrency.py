@@ -197,3 +197,44 @@ async def _completed_stay(client: AsyncClient, factory: Factory) -> tuple[User, 
         )
     ).id
     return guest, booking
+
+
+# ---- listing review (specs/004-listing-approval) --------------------------------------
+
+
+async def test_two_admins_approving_at_once_decide_once(client: AsyncClient, db: AsyncEngine, factory: Factory) -> None:
+    """FR-006: one conditional UPDATE; the loser changes nothing and is told so."""
+    first, second = await factory.admin("first"), await factory.admin("second")
+    listing = await factory.listing(approved=False)
+    path = f"/admin/listings/{listing['id']}/approve"
+    results = await asyncio.gather(
+        *(client.post(path, json={"review_version": 0}, headers=a.auth) for a in (first, second, first, second))
+    )
+    assert sorted(r.status_code for r in results) == [200, 409, 409, 409]
+    assert {r.json()["error"]["code"] for r in results if r.status_code == 409} == {"listing_not_pending"}
+    rows = await sql(db, "SELECT action::text FROM listing_review_events WHERE listing_id = :id", id=listing["id"])
+    assert sorted(r[0] for r in rows) == ["approved", "submitted"]
+
+
+async def test_an_edit_racing_an_approval_never_publishes_an_unseen_version(
+    client: AsyncClient, db: AsyncEngine, factory: Factory
+) -> None:
+    """Edge case: whichever wins, an approved listing only ever shows the title the admin saw."""
+    admin = await factory.admin()
+    for round_ in range(5):
+        host = await factory.user("host")
+        listing = await factory.listing(host, approved=False, title="Seen")
+        lid = listing["id"]
+        version = (await client.get(f"/admin/listings/{lid}", headers=admin.auth)).json()["review_version"]
+        edit, decision = await asyncio.gather(
+            client.patch(f"/listings/{lid}", json={"title": f"Unseen {round_}"}, headers=host.auth),
+            client.post(f"/admin/listings/{lid}/approve", json={"review_version": version}, headers=admin.auth),
+        )
+        assert edit.status_code == 200, edit.text
+        status, title = (await sql(db, "SELECT review_status::text, title FROM listings WHERE id = :id", id=lid))[0]
+        if decision.status_code == 200:  # approved first; the edit then sent it back to review
+            assert status == "pending"
+        else:
+            assert decision.json()["error"]["code"] == "listing_changed"
+            assert status == "pending"
+        assert title == f"Unseen {round_}"

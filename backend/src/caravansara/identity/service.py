@@ -1,4 +1,4 @@
-"""Registration, login, token rotation and profiles. Other modules may call this file only."""
+"""Registration, login, token rotation, profiles and admin accounts. Other modules may call this file only."""
 
 from dataclasses import dataclass
 from datetime import timedelta
@@ -18,14 +18,20 @@ from caravansara.core.security import (
 )
 from caravansara.core.timeutil import utcnow
 from caravansara.identity import repository as repo
-from caravansara.identity.models import User
-from caravansara.identity.schemas import ProfileUpdate, TokensOut
+from caravansara.identity.models import AccountKind, User
+from caravansara.identity.schemas import AdminTokenOut, ProfileUpdate, TokensOut
+
+__all__ = ["AdminRefused", "PublicUser", "TooManyAttempts"]
 
 
 class TooManyAttempts(AppError):
     def __init__(self, action: str) -> None:
         RATE_LIMITED.labels(action).inc()
         super().__init__(429, "too_many_attempts", "Too many attempts. Try again later.")
+
+
+class AdminRefused(Exception):
+    """create-admin or disable-admin refused; the message is shown to the operator as is."""
 
 
 @dataclass(frozen=True)
@@ -79,7 +85,8 @@ async def login(session: AsyncSession, settings: Settings, *, email: str, passwo
     if failures >= settings.login_max_failures or per_ip >= settings.login_max_per_ip:
         raise TooManyAttempts("login")
 
-    user = await repo.get_user_by_email(session, email)
+    # Members only: an admin account gets the same answer as a wrong password (research R1).
+    user = await repo.get_user_by_email(session, email, AccountKind.member)
     ok = verify_password(user.password_hash if user else None, password)
     await repo.record_attempt(session, "login", email_key, succeeded=ok)
     await repo.record_attempt(session, "login", ip, succeeded=ok)
@@ -146,3 +153,68 @@ async def get_public_user(session: AsyncSession, user_id: int) -> PublicUser:
 async def get_public_users(session: AsyncSession, user_ids: set[int]) -> dict[int, PublicUser]:
     users = await repo.get_users(session, user_ids)
     return {uid: PublicUser(u.id, u.full_name, u.avatar_url) for uid, u in users.items()}
+
+
+# ---- admin accounts (specs/004-listing-approval) --------------------------------------
+
+
+async def admin_login(
+    session: AsyncSession, settings: Settings, *, email: str, password: str, ip: str
+) -> AdminTokenOut:
+    """Same limits as member login, counted apart (action ``admin_login``), so failed member logins
+    never lock an admin out and the other way round (research R3)."""
+    email_key = email.lower()
+    since = repo.window_start(utcnow(), settings.login_window_minutes)
+    failures = await repo.count_attempts(session, "admin_login", email_key, since, failed_only=True)
+    per_ip = await repo.count_attempts(session, "admin_login", ip, since)
+    if failures >= settings.login_max_failures or per_ip >= settings.login_max_per_ip:
+        raise TooManyAttempts("admin_login")
+
+    user = await repo.get_user_by_email(session, email, AccountKind.admin)
+    ok = verify_password(user.password_hash if user else None, password)
+    ok = ok and user is not None and user.disabled_at is None
+    await repo.record_attempt(session, "admin_login", email_key, succeeded=ok)
+    await repo.record_attempt(session, "admin_login", ip, succeeded=ok)
+    await session.commit()
+    if not ok or user is None:
+        raise Unauthorized("Email or password is wrong.", code="invalid_credentials")
+    token, expires_in = create_access_token(settings, user.id, "admin")
+    return AdminTokenOut(access_token=token, expires_in=expires_in)
+
+
+async def require_active_admin(session: AsyncSession, admin_id: int) -> None:
+    """Runs on every admin request, not only at login, so disable-admin takes effect at once,
+    even for a token that has not expired yet (research R2)."""
+    user = await repo.get_user(session, admin_id)
+    if user is None or user.kind != AccountKind.admin or user.disabled_at is not None:
+        raise Unauthorized("The access token is not valid.", code="invalid_token")
+
+
+_EMAIL_TAKEN = "an account with this email already exists; admin accounts are always new"
+
+
+async def create_admin(session: AsyncSession, *, email: str, password: str, full_name: str) -> int:
+    """Only a command on the server calls this (FR-012). An existing account is never promoted:
+    a member's password was chosen for a member account."""
+    if await repo.get_user_by_email(session, email) is not None:
+        raise AdminRefused(_EMAIL_TAKEN)
+    user = User(email=email, password_hash=hash_password(password), full_name=full_name.strip(), kind=AccountKind.admin)
+    session.add(user)
+    try:
+        await session.commit()
+    except IntegrityError as exc:  # someone registered the same email at the same moment
+        await session.rollback()
+        raise AdminRefused(_EMAIL_TAKEN) from exc
+    return user.id
+
+
+async def disable_admin(session: AsyncSession, *, email: str) -> int:
+    """The account and its history stay; it only stops working. Returns its id."""
+    user = await repo.get_user_by_email(session, email, AccountKind.admin)
+    if user is None:
+        raise AdminRefused("no admin account with this email")
+    if user.disabled_at is not None:
+        raise AdminRefused("this admin account is already disabled")
+    user.disabled_at = utcnow()
+    await session.commit()
+    return user.id

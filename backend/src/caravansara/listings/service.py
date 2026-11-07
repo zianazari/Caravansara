@@ -2,7 +2,7 @@
 
 import uuid
 from dataclasses import dataclass
-from datetime import time
+from datetime import datetime, time
 from decimal import Decimal
 
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -10,17 +10,23 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from caravansara.catalog import service as catalog
 from caravansara.catalog.schemas import AmenityCategoryOut, CityOut
 from caravansara.core.config import Settings
-from caravansara.core.errors import Forbidden, NotFound, Unprocessable
+from caravansara.core.errors import Conflict, Forbidden, NotFound, Unprocessable
+from caravansara.core.metrics import LISTING_REVIEW_EVENTS
 from caravansara.core.storage import Storage
+from caravansara.core.timeutil import utcnow
 from caravansara.identity import service as identity
 from caravansara.listings import geo
 from caravansara.listings import repository as repo
-from caravansara.listings.models import Listing, ListingPhoto, PropertyType
+from caravansara.listings.models import Listing, ListingPhoto, PropertyType, ReviewAction, ReviewStatus
 from caravansara.listings.schemas import (
+    AdminListingOut,
+    AdminQueueItem,
+    AdminQueuePage,
     HostOut,
     ListingCreate,
     ListingOut,
     ListingPage,
+    ListingReview,
     ListingSummary,
     ListingUpdate,
     PhotoCreate,
@@ -31,7 +37,7 @@ from caravansara.listings.schemas import (
     UploadUrlOut,
 )
 
-__all__ = ["ListingInfo", "PropertyType"]
+__all__ = ["ListingInfo", "PropertyType", "ReviewStatus"]
 
 _EXTENSIONS = {"image/jpeg": "jpg", "image/png": "png", "image/webp": "webp"}
 _REQUIRED = {
@@ -49,6 +55,8 @@ class ListingInfo:
     host_id: int
     title: str
     is_active: bool
+    review_status: ReviewStatus
+    is_public: bool  # active and approved: what search shows and guests may book (FR-002)
     max_guests: int
     pets_allowed: bool
     max_pets: int
@@ -75,6 +83,25 @@ async def _get_owned(session: AsyncSession, listing_id: int, user_id: int) -> Li
     if listing.host_id != user_id:
         raise Forbidden("Only the host of this listing can do this.", code="not_listing_host")
     return listing
+
+
+def _is_public(listing: Listing) -> bool:
+    """Public means active *and* approved by an admin (FR-002). Not a stored column (research R8)."""
+    return listing.is_active and listing.review_status == ReviewStatus.approved
+
+
+async def _visible_to(session: AsyncSession, listing: Listing, viewer_id: int | None) -> bool:
+    """Who may open a listing's page: everyone if it is public, else its host, and a guest with a
+    live booking, who must still find the place they paid for (FR-002, FR-019)."""
+    if _is_public(listing) or (viewer_id is not None and viewer_id == listing.host_id):
+        return True
+    return viewer_id is not None and await repo.has_live_booking(session, listing.id, viewer_id)
+
+
+def _review_out(listing: Listing) -> ListingReview:
+    return ListingReview(
+        status=listing.review_status, rejection_reason=listing.rejection_reason, submitted_at=listing.submitted_at
+    )
 
 
 def _photo_out(storage: Storage, photo: ListingPhoto) -> PhotoOut:
@@ -137,6 +164,7 @@ async def _detail(session: AsyncSession, storage: Storage, listing: Listing, vie
             if is_host
             else None
         ),
+        review=_review_out(listing) if is_host else None,
     )
 
 
@@ -144,6 +172,42 @@ def _set_location(listing: Listing, lat: float, lng: float) -> None:
     listing.latitude = Decimal(f"{lat:.6f}")
     listing.longitude = Decimal(f"{lng:.6f}")
     listing.public_location = geo.point_wkt(*geo.fuzz(lat, lng))
+
+
+# What a guest reads to decide where to stay. Changing any of it sends an approved listing back to
+# review; the rest (price, capacity, times, pets, is_active) does not. The owner's list
+# (specs/004-listing-approval FR-009, FR-010); amenities and photos are checked where they change.
+_DESCRIPTIVE = {"title", "description", "property_type", "city_id", "neighborhood", "address", "latitude", "longitude"}
+
+
+def _same(key: str, old: object, new: object) -> bool:
+    if key in ("latitude", "longitude") and old is not None and new is not None:
+        return f"{float(old):.6f}" == f"{float(new):.6f}"  # type: ignore[arg-type]  # stored with 6 decimals (R7)
+    return old == new
+
+
+def _descriptive_changed(listing: Listing, changes: dict[str, object]) -> bool:
+    """Only a real change counts: sending the same title again keeps the listing approved (US3/AC5)."""
+    return any(not _same(k, getattr(listing, k), v) for k, v in changes.items() if k in _DESCRIPTIVE)
+
+
+async def _after_descriptive_edit(session: AsyncSession, listing: Listing, user_id: int) -> bool:
+    """Every descriptive edit is a new version, whatever the status, so an admin who opened the old
+    one cannot approve it (R6). An approved listing goes back to the end of the queue (FR-009); a
+    pending one keeps its place, and a rejected one waits for the host's resubmission.
+    Runs under the row lock of _get_owned. Returns whether a ``submitted`` event must be counted."""
+    listing.review_version += 1
+    if listing.review_status != ReviewStatus.approved:
+        return False
+    listing.review_status = ReviewStatus.pending
+    listing.submitted_at = utcnow()
+    await repo.add_review_event(session, listing.id, ReviewAction.edited, user_id, listing.review_version)
+    return True
+
+
+def _count_submitted(back_in_queue: bool) -> None:
+    if back_in_queue:
+        LISTING_REVIEW_EVENTS.labels("submitted").inc()
 
 
 # ---- listings -------------------------------------------------------------------------
@@ -154,18 +218,21 @@ async def create_listing(session: AsyncSession, storage: Storage, host_id: int, 
     amenity_ids = set(data.amenity_ids)
     await catalog.require_amenities(session, amenity_ids)
     fields = data.model_dump(exclude={"amenity_ids", "latitude", "longitude"})
+    # review_status and submitted_at come from the database defaults: pending, now (FR-001).
     listing = Listing(host_id=host_id, **fields)
     _set_location(listing, data.latitude, data.longitude)
     session.add(listing)
     await session.flush()
     await repo.set_amenities(session, listing.id, amenity_ids)
+    await repo.add_review_event(session, listing.id, ReviewAction.submitted, host_id, 0)
     await session.commit()
+    LISTING_REVIEW_EVENTS.labels("submitted").inc()
     return await _detail(session, storage, listing, host_id)
 
 
 async def get_listing(session: AsyncSession, storage: Storage, listing_id: int, viewer_id: int | None) -> ListingOut:
     listing = await _get(session, listing_id)
-    if not listing.is_active and listing.host_id != viewer_id:
+    if not await _visible_to(session, listing, viewer_id):
         raise NotFound("Listing not found.")
     return await _detail(session, storage, listing, viewer_id)
 
@@ -180,6 +247,7 @@ async def update_listing(
         raise Unprocessable("validation_error", "These fields cannot be null.", details={"fields": nulls})
     if "city_id" in changes:
         await catalog.require_city(session, changes["city_id"])
+    descriptive = _descriptive_changed(listing, changes)
     lat, lng = changes.pop("latitude", None), changes.pop("longitude", None)
     for key, value in changes.items():
         setattr(listing, key, value)
@@ -187,7 +255,9 @@ async def update_listing(
         raise Unprocessable("validation_error", "max_pets must be 0 when pets are not allowed.")
     if lat is not None and lng is not None:
         _set_location(listing, lat, lng)  # a new real point gets a new public pin
+    back = descriptive and await _after_descriptive_edit(session, listing, user_id)
     await session.commit()
+    _count_submitted(back)
     return await _detail(session, storage, listing, user_id)
 
 
@@ -197,8 +267,12 @@ async def set_amenities(
     listing = await _get_owned(session, listing_id, user_id)
     wanted = set(ids)
     await catalog.require_amenities(session, wanted)
-    await repo.set_amenities(session, listing.id, wanted)
+    back = False
+    if wanted != await repo.amenity_ids(session, listing.id):  # the same set is no change (US3/AC5)
+        await repo.set_amenities(session, listing.id, wanted)
+        back = await _after_descriptive_edit(session, listing, user_id)
     await session.commit()
+    _count_submitted(back)
     return await _detail(session, storage, listing, user_id)
 
 
@@ -220,9 +294,26 @@ async def my_listings(session: AsyncSession, storage: Storage, host_id: int, lim
                 review_count=listing.review_count,
                 is_active=listing.is_active,
                 cover_url=storage.public_url(cover) if cover else None,
+                review=_review_out(listing),
             )
         )
     return ListingPage(items=items, total=total)
+
+
+async def resubmit_listing(session: AsyncSession, storage: Storage, listing_id: int, user_id: int) -> ListingOut:
+    """A rejected listing goes back to the end of the queue, with the reason cleared (FR-008)."""
+    version = await repo.resubmit(session, listing_id, user_id, utcnow())
+    if version is None:
+        listing = await _get(session, listing_id)  # 404 for an unknown listing
+        if listing.host_id != user_id:
+            raise Forbidden("Only the host of this listing can do this.", code="not_listing_host")
+        raise Conflict("listing_not_rejected", "Only a rejected listing can be sent again.")
+    await repo.add_review_event(session, listing_id, ReviewAction.resubmitted, user_id, version)
+    await session.commit()
+    LISTING_REVIEW_EVENTS.labels("submitted").inc()
+    listing = await _get(session, listing_id)
+    await session.refresh(listing)
+    return await _detail(session, storage, listing, user_id)
 
 
 # ---- photos ---------------------------------------------------------------------------
@@ -246,7 +337,7 @@ async def photo_upload_url(
 async def add_photo(
     session: AsyncSession, storage: Storage, listing_id: int, user_id: int, data: PhotoCreate
 ) -> PhotoOut:
-    await _get_owned(session, listing_id, user_id)  # the row lock serialises sort_order
+    listing = await _get_owned(session, listing_id, user_id)  # the row lock serialises sort_order
     if not data.storage_key.startswith(f"listings/{listing_id}/"):
         raise Unprocessable("invalid_storage_key", "This key does not belong to this listing.")
     if await repo.photo_key_exists(session, data.storage_key):
@@ -263,24 +354,30 @@ async def add_photo(
         sort_order=await repo.next_sort_order(session, listing_id),
     )
     session.add(photo)
+    back = await _after_descriptive_edit(session, listing, user_id)  # a new photo is new content (FR-009)
     await session.commit()
+    _count_submitted(back)
     return _photo_out(storage, photo)
 
 
 async def update_photo(
     session: AsyncSession, storage: Storage, listing_id: int, photo_id: int, user_id: int, data: PhotoUpdate
 ) -> PhotoOut:
-    await _get_owned(session, listing_id, user_id)
+    listing = await _get_owned(session, listing_id, user_id)
     photo = await repo.get_photo(session, listing_id, photo_id)
     if photo is None:
         raise NotFound("Photo not found.")
-    for key, value in data.model_dump(exclude_unset=True).items():
+    changes = {k: v for k, v in data.model_dump(exclude_unset=True).items() if getattr(photo, k) != v}
+    for key, value in changes.items():
         setattr(photo, key, value)
+    back = bool(changes) and await _after_descriptive_edit(session, listing, user_id)  # caption, room tag
     await session.commit()
+    _count_submitted(back)
     return _photo_out(storage, photo)
 
 
 async def delete_photo(session: AsyncSession, storage: Storage, listing_id: int, photo_id: int, user_id: int) -> None:
+    # Removing a photo or reordering them shows nothing new, so neither needs a review (FR-010).
     await _get_owned(session, listing_id, user_id)
     photo = await repo.get_photo(session, listing_id, photo_id)
     if photo is None:
@@ -318,6 +415,8 @@ async def get_listing_info(session: AsyncSession, listing_id: int) -> ListingInf
         host_id=listing.host_id,
         title=listing.title,
         is_active=listing.is_active,
+        review_status=listing.review_status,
+        is_public=_is_public(listing),
         max_guests=listing.max_guests,
         pets_allowed=listing.pets_allowed,
         max_pets=listing.max_pets,
@@ -333,6 +432,13 @@ async def get_listing_info(session: AsyncSession, listing_id: int) -> ListingInf
     )
 
 
+async def require_visible_listing(session: AsyncSession, listing_id: int, viewer_id: int | None) -> None:
+    """For other modules showing a listing's content (its reviews): the same rule as its page."""
+    listing = await _get(session, listing_id)
+    if not await _visible_to(session, listing, viewer_id):
+        raise NotFound("Listing not found.")
+
+
 async def cover_urls(session: AsyncSession, storage: Storage, listing_ids: list[int]) -> dict[int, str]:
     return {lid: storage.public_url(key) for lid, key in (await repo.cover_keys(session, listing_ids)).items()}
 
@@ -341,3 +447,82 @@ async def require_host(session: AsyncSession, listing_id: int, user_id: int) -> 
     listing = await _get(session, listing_id)
     if listing.host_id != user_id:
         raise Forbidden("Only the host of this listing can do this.", code="not_listing_host")
+
+
+# ---- admin review (specs/004-listing-approval); called by the moderation module ----------
+
+
+async def review_queue(session: AsyncSession, storage: Storage, limit: int, offset: int) -> AdminQueuePage:
+    listings, total = await repo.review_queue(session, limit, offset)
+    covers = await repo.cover_keys(session, [listing.id for listing in listings])
+    hosts = await identity.get_public_users(session, {listing.host_id for listing in listings})
+    items = []
+    for listing in listings:
+        host = hosts[listing.host_id]
+        cover = covers.get(listing.id)
+        items.append(
+            AdminQueueItem(
+                id=listing.id,
+                title=listing.title,
+                city=await catalog.require_city(session, listing.city_id),
+                host=HostOut(id=host.id, full_name=host.full_name, avatar_url=host.avatar_url),
+                submitted_at=listing.submitted_at or listing.created_at,
+                cover_url=storage.public_url(cover) if cover else None,
+                review_version=listing.review_version,
+            )
+        )
+    return AdminQueuePage(items=items, total=total)
+
+
+async def _admin_detail(session: AsyncSession, storage: Storage, listing: Listing) -> AdminListingOut:
+    """What the host sees (exact address, review state), plus the version to decide on."""
+    out = await _detail(session, storage, listing, listing.host_id)
+    return AdminListingOut.model_validate(out.model_dump() | {"review_version": listing.review_version})
+
+
+async def review_detail(session: AsyncSession, storage: Storage, listing_id: int) -> AdminListingOut:
+    """The caller records the address view in the same transaction (moderation.service.detail)."""
+    return await _admin_detail(session, storage, await _get(session, listing_id))
+
+
+async def _decide(
+    session: AsyncSession,
+    storage: Storage,
+    listing_id: int,
+    admin_id: int,
+    version: int,
+    status: ReviewStatus,
+    reason: str | None,
+) -> AdminListingOut:
+    """One conditional UPDATE, not read-then-write: of two admins deciding at once exactly one wins,
+    and a decision on a version the admin did not see (the host edited since) changes nothing (R6)."""
+    if not await repo.decide(session, listing_id, version, status, reason):
+        current = (await _get(session, listing_id)).review_status  # 404 for an unknown listing
+        await session.rollback()
+        if current != ReviewStatus.pending:
+            raise Conflict("listing_not_pending", "This listing is no longer waiting for review.")
+        raise Conflict("listing_changed", "The host changed this listing after you opened it. Open it again.")
+    action = ReviewAction.approved if status == ReviewStatus.approved else ReviewAction.rejected
+    await repo.add_review_event(session, listing_id, action, admin_id, version, reason)
+    await session.commit()
+    LISTING_REVIEW_EVENTS.labels(action.value).inc()
+    listing = await _get(session, listing_id)
+    await session.refresh(listing)
+    return await _admin_detail(session, storage, listing)
+
+
+async def approve(
+    session: AsyncSession, storage: Storage, listing_id: int, admin_id: int, version: int
+) -> AdminListingOut:
+    return await _decide(session, storage, listing_id, admin_id, version, ReviewStatus.approved, None)
+
+
+async def reject(
+    session: AsyncSession, storage: Storage, listing_id: int, admin_id: int, version: int, reason: str
+) -> AdminListingOut:
+    return await _decide(session, storage, listing_id, admin_id, version, ReviewStatus.rejected, reason)
+
+
+async def review_queue_stats(session: AsyncSession) -> tuple[int, datetime | None]:
+    """Queue size and oldest entry, for the worker's gauges (research R10)."""
+    return await repo.review_queue_stats(session)

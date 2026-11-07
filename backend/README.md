@@ -18,7 +18,7 @@ docker compose run --rm migrate caravansara seed-demo  # optional demo data (emp
 | http://localhost:8000/metrics | Prometheus metrics of the API (the worker serves its own on port 9100) |
 | http://localhost:3000 | Grafana (`admin` / `caravansara`), with `--profile observability` |
 
-Demo accounts after `seed-demo`: `guest@example.com` and `host@example.com`, password `caravansara-demo`.
+Demo accounts after `seed-demo`: `guest@example.com` and `host@example.com`, password `caravansara-demo`, and the demo admin `admin@example.com` (same password), who logs in with `POST /api/v1/admin/auth/login`.
 
 Compose starts PostgreSQL 16 with PostGIS, MinIO, a one-off `migrate` job (migrations, catalog seed, bucket), the API and the worker.
 
@@ -42,9 +42,11 @@ Settings come from `CARAVANSARA_*` environment variables; see `src/caravansara/c
 | --- | --- |
 | `caravansara migrate` | `alembic upgrade head` |
 | `caravansara seed` | countries, cities and amenities; skipped if present |
-| `caravansara seed-demo` | demo data from `db/seed_demo.sql` |
+| `caravansara seed-demo` | demo data from `db/seed_demo.sql`; refused when `CARAVANSARA_ENVIRONMENT=production` (its passwords are public) |
 | `caravansara init-storage [--public-read]` | create the photo bucket |
-| `caravansara worker` / `run-jobs` | expire holds and complete stays, in a loop / once |
+| `caravansara worker` / `run-jobs` | expire holds, complete stays and report the listing review queue, in a loop / once |
+| `caravansara create-admin --email E --name N` | the only way to make an admin account; password from `CARAVANSARA_ADMIN_PASSWORD` or asked twice, never an argument. Refuses any email that already has an account |
+| `caravansara disable-admin --email E` | stop an admin at once (the next request fails); the account and its decisions stay |
 | `caravansara export-openapi` | rewrite `openapi.json` after an intended API change |
 | `caravansara seed-bulk` | 100,000 listings in their own database `caravansara_bulk`, for measuring (`db/bulk/README.md`) |
 | `caravansara measure-queries [--only NAME ...] [--runs N] [--out FILE]` | median plan time of every query in `db/bulk/queries/` on the bulk data; development only, changes nothing |

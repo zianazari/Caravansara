@@ -3,7 +3,7 @@ from fastapi import APIRouter, status
 from caravansara.core.db import SessionDep
 from caravansara.core.errors import error_responses
 from caravansara.core.pagination import PageDep
-from caravansara.core.security import CurrentUserId, SettingsDep
+from caravansara.core.security import CurrentUserId, OptionalUserId, SettingsDep
 from caravansara.reviews import service
 from caravansara.reviews.schemas import ReviewCreate, ReviewOut, ReviewPage
 
@@ -29,8 +29,11 @@ async def create_review(
 @router.get(
     "/listings/{listing_id}/reviews",
     summary="Reviews of a listing",
-    description="Newest first.",
-    responses=error_responses(404),
+    description=(
+        "Newest first. Whoever can open the listing can read its reviews: everyone for a public listing; "
+        "for one that is not public, only its host and a guest with a booking there."
+    ),
+    responses=error_responses(401, 404),
 )
-async def listing_reviews(listing_id: int, session: SessionDep, page: PageDep) -> ReviewPage:
-    return await service.listing_reviews(session, listing_id, page.limit, page.offset)
+async def listing_reviews(listing_id: int, viewer_id: OptionalUserId, session: SessionDep, page: PageDep) -> ReviewPage:
+    return await service.listing_reviews(session, listing_id, viewer_id, page.limit, page.offset)

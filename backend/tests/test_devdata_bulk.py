@@ -208,6 +208,17 @@ async def test_seed_bulk_loads_and_keeps_rules(bulk_settings: Settings, capsys: 
         " OR avg_rating IS DISTINCT FROM (SELECT round(avg(rating), 2) FROM reviews r WHERE r.listing_id = l.id)",
     )
     assert wrong[0] == 0
+    # specs/004-listing-approval: bulk listings are already public, so every one is approved and the
+    # public count is the active count (SC-002).
+    ((unapproved, public, active),) = await _fetch(
+        bulk_settings,
+        BULK_DB,
+        "SELECT count(*) FILTER (WHERE review_status <> 'approved'),"
+        " count(*) FILTER (WHERE is_active AND review_status = 'approved'), count(*) FILTER (WHERE is_active)"
+        " FROM listings",
+    )
+    assert unapproved == 0
+    assert public == active
     # The rating trigger rewrote each listing once per review; the load compacts the table afterwards.
     ((pages, rows),) = await _fetch(
         bulk_settings, BULK_DB, "SELECT pg_relation_size('listings') / 8192, (SELECT count(*) FROM listings)"

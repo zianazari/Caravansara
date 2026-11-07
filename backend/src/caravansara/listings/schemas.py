@@ -1,11 +1,11 @@
-from datetime import time
+from datetime import datetime, time
 from decimal import Decimal
 from typing import Annotated, Literal, Self
 
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
 from caravansara.catalog.schemas import AmenityCategoryOut, CityOut
-from caravansara.listings.models import PropertyType
+from caravansara.listings.models import PropertyType, ReviewStatus
 
 # Nightly price and cleaning fee, in every currency (specs/002-rial-price-columns, owner's choice
 # on 2026-11-05): ten times today's top Tehran price, so rial inflation has room. With 365 nights
@@ -139,6 +139,24 @@ class PhotoOut(BaseModel):
     sort_order: int = Field(description="0 is the cover photo.")
 
 
+class ListingReview(BaseModel):
+    """Where the listing is in the admin review (specs/004-listing-approval)."""
+
+    status: ReviewStatus = Field(description="`pending` and `rejected` listings are not public.")
+    rejection_reason: str | None = Field(description="The admin's reason; only while `rejected`.")
+    submitted_at: datetime | None = Field(description="When it last entered the review queue.")
+
+    model_config = ConfigDict(
+        json_schema_extra={
+            "example": {
+                "status": "rejected",
+                "rejection_reason": "The photos are not of this flat.",
+                "submitted_at": "2026-11-07T09:30:00Z",
+            }
+        }
+    )
+
+
 class ListingOut(BaseModel):
     id: int
     title: str
@@ -167,6 +185,7 @@ class ListingOut(BaseModel):
     private_location: PrivateLocation | None = Field(
         description="Only for the host. Guests see the address on a confirmed booking."
     )
+    review: ListingReview | None = Field(default=None, description="Only for the host; `null` for everyone else.")
 
 
 class ListingSummary(BaseModel):
@@ -179,6 +198,7 @@ class ListingSummary(BaseModel):
     review_count: int
     is_active: bool
     cover_url: str | None
+    review: ListingReview | None = None
 
 
 class ListingPage(BaseModel):
@@ -215,3 +235,29 @@ class PhotoUpdate(BaseModel):
 
 class PhotoOrderIn(BaseModel):
     photo_ids: list[int] = Field(min_length=1, description="Every photo of the listing, cover first.")
+
+
+# ---- admin review (specs/004-listing-approval) ----------------------------------------
+
+
+class AdminQueueItem(BaseModel):
+    id: int
+    title: str
+    city: CityOut
+    host: HostOut
+    submitted_at: datetime
+    cover_url: str | None
+    review_version: int = Field(description="Send this back with the decision.")
+
+
+class AdminQueuePage(BaseModel):
+    items: list[AdminQueueItem]
+    total: int
+
+
+class AdminListingOut(ListingOut):
+    """Everything the host sees, for a listing in any state, plus the version to decide on."""
+
+    private_location: PrivateLocation = Field(description="The exact address; every view is recorded.")
+    review: ListingReview
+    review_version: int = Field(description="Send this back with the decision; an edit after it gets 409.")

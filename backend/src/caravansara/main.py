@@ -23,6 +23,7 @@ from caravansara.core.telemetry import instrument_clients, shutdown, tracer_prov
 from caravansara.identity.router import router as identity_router
 from caravansara.listings.router import photos as photos_router
 from caravansara.listings.router import router as listings_router
+from caravansara.moderation.router import router as moderation_router
 from caravansara.reviews.router import router as reviews_router
 from caravansara.search.router import router as search_router
 
@@ -50,6 +51,13 @@ TAGS = [
     {"name": "Listing photos", "description": "Direct uploads to storage with presigned URLs."},
     {"name": "Bookings", "description": "15-minute hold, simulated payment, trips and cancellation."},
     {"name": "Reviews", "description": "One review per completed stay, within 14 days."},
+    {
+        "name": "Admin",
+        "description": (
+            "Listing review. New listings and descriptive edits wait here until an admin approves them. "
+            "Admin accounts come only from `caravansara create-admin`; log in with `POST /admin/auth/login`."
+        ),
+    },
     {"name": "System", "description": "Health checks."},
 ]
 
@@ -109,6 +117,7 @@ def create_app(settings: Settings | None = None, span_exporter: SpanExporter | N
         photos_router,
         bookings_router,
         reviews_router,
+        moderation_router,
     ):
         api.include_router(router)
     app.include_router(api)

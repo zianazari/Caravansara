@@ -7,6 +7,7 @@ from zoneinfo import ZoneInfo
 
 import pytest
 from httpx import AsyncClient
+from prometheus_client import REGISTRY
 from sqlalchemy.ext.asyncio import AsyncEngine
 
 from caravansara.bookings import repository as bookings_repo
@@ -193,6 +194,25 @@ async def test_completion_bound_misses_no_stay_in_the_farthest_time_zones(
         status = await sql(db, "SELECT status::text FROM bookings WHERE id = :id", id=booking.id)
         assert status[0][0] == "completed"
     finally:  # cities are catalog data the per-test cleanup keeps
-        await sql(db, "DELETE FROM bookings WHERE listing_id = :id", id=listing["id"])
-        await sql(db, "DELETE FROM listings WHERE id = :id", id=listing["id"])
+        # TRUNCATE, not DELETE: a listing's review history is append-only (specs/004-listing-approval).
+        await sql(db, "TRUNCATE listings CASCADE")
         await sql(db, "DELETE FROM cities WHERE id = :id", id=city)
+
+
+async def test_the_worker_reports_the_review_queue(app: Any, db: AsyncEngine, factory: Factory) -> None:
+    """FR-016, research R10: the two queue gauges come from the worker run."""
+    result = await run_once(app.state.sessionmaker)
+    assert result.review_queue == 0
+    assert REGISTRY.get_sample_value("caravansara_listing_review_queue") == 0
+    assert REGISTRY.get_sample_value("caravansara_listing_review_oldest_wait_seconds") == 0
+
+    host = await factory.user("host")
+    old = await factory.listing(host, approved=False)
+    await factory.listing(host, approved=False)
+    await factory.listing(host)  # approved: not waiting
+    await sql(db, "UPDATE listings SET submitted_at = now() - interval '2 hours' WHERE id = :id", id=old["id"])
+    result = await run_once(app.state.sessionmaker)
+    assert result.review_queue == 2
+    assert REGISTRY.get_sample_value("caravansara_listing_review_queue") == 2
+    wait = REGISTRY.get_sample_value("caravansara_listing_review_oldest_wait_seconds") or 0
+    assert 7200 <= wait < 7300

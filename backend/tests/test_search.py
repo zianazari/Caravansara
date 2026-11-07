@@ -155,7 +155,8 @@ async def test_radial_search_across_the_180_meridian(client: AsyncClient, db: As
         assert titles(r) == ["Dateline"]
         assert r.json()["items"][0]["distance_km"] < 2
     finally:
-        await sql(db, "DELETE FROM listings WHERE city_id IN (SELECT id FROM cities WHERE name = 'Taveuni')")
+        # TRUNCATE, not DELETE: a listing's review history is append-only (specs/004-listing-approval).
+        await sql(db, "TRUNCATE listings CASCADE")
         await sql(db, "DELETE FROM cities WHERE name = 'Taveuni'")
         await sql(db, "DELETE FROM countries WHERE code = 'FJ'")
 
@@ -220,3 +221,30 @@ async def test_each_booking_status_blocks_the_same_on_every_search_path(
         assert found.json()["total"] == 4
         filters = await client.get("/search/filters", params={**area, **dates})
         assert filters.json()["total"] == 4
+
+
+# ---- listing review (specs/004-listing-approval) --------------------------------------
+
+
+@pytest.mark.parametrize("review", ["pending", "rejected"])
+async def test_a_listing_that_is_not_approved_is_never_found(
+    client: AsyncClient, db: AsyncEngine, listings: dict[str, Any], review: str
+) -> None:
+    """SC-001 for search: city, radius with short and long stays (both _HASHED_MAX_NIGHTS paths), counts."""
+    reason = "'Photos are not this flat.'" if review == "rejected" else "NULL"
+    await sql(
+        db,
+        f"UPDATE listings SET review_status = '{review}', rejection_reason = {reason} WHERE id = :id",  # noqa: S608
+        id=listings["near"]["id"],
+    )
+    city = {"city_id": await city_id(client)}
+    radius = {**CENTER, "radius_km": 20}
+    for params in (
+        city,
+        city | {"check_in": days(10), "check_out": days(13)},
+        radius,
+        radius | {"check_in": days(10), "check_out": days(13)},  # hashed blocking list
+        radius | {"check_in": days(10), "check_out": days(24)},  # per-listing lookup
+    ):
+        assert "Near" not in titles(await client.get("/search/listings", params=params)), params
+        assert (await client.get("/search/filters", params=params)).json()["total"] == 1, params

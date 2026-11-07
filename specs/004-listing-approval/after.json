@@ -1,0 +1,1325 @@
+{
+  "database": "caravansara_bulk",
+  "revision": "0006",
+  "measured_at": "2026-11-07T20:33:13+00:00",
+  "results": [
+    {
+      "name": "search_city_london",
+      "median_ms": 21.991,
+      "runs_ms": [
+        22.734,
+        22.142,
+        21.991,
+        21.977,
+        21.928
+      ],
+      "shared_hit": 2073,
+      "shared_read": 0,
+      "access": [
+        "Nested Loop",
+        "Bitmap Heap Scan",
+        "Bitmap Index Scan",
+        "Aggregate",
+        "CTE Scan",
+        "Limit",
+        "Sort",
+        "Index Scan",
+        "Memoize",
+        "Materialize",
+        "Seq Scan"
+      ],
+      "indexes": [
+        "listings_city_idx",
+        "listings_pkey",
+        "cities_pkey",
+        "listing_photos_order_key"
+      ],
+      "target_ms": 50.0,
+      "meets_target": true,
+      "jit": false,
+      "error": null
+    },
+    {
+      "name": "search_city_london_dates",
+      "median_ms": 33.411,
+      "runs_ms": [
+        35.48,
+        33.411,
+        33.033,
+        33.578,
+        32.957
+      ],
+      "shared_hit": 9159,
+      "shared_read": 0,
+      "access": [
+        "Nested Loop",
+        "Hash Join",
+        "Bitmap Heap Scan",
+        "Bitmap Index Scan",
+        "Hash",
+        "Aggregate",
+        "CTE Scan",
+        "Limit",
+        "Sort",
+        "Index Scan",
+        "Memoize",
+        "Materialize",
+        "Seq Scan"
+      ],
+      "indexes": [
+        "bookings_active_stay_idx",
+        "listings_city_idx",
+        "listings_pkey",
+        "cities_pkey",
+        "listing_photos_order_key"
+      ],
+      "target_ms": 50.0,
+      "meets_target": true,
+      "jit": false,
+      "error": null
+    },
+    {
+      "name": "search_city_london_dates_page_21",
+      "median_ms": 34.608,
+      "runs_ms": [
+        37.042,
+        34.608,
+        33.614,
+        34.047,
+        35.886
+      ],
+      "shared_hit": 9159,
+      "shared_read": 0,
+      "access": [
+        "Nested Loop",
+        "Hash Join",
+        "Bitmap Heap Scan",
+        "Bitmap Index Scan",
+        "Hash",
+        "Aggregate",
+        "CTE Scan",
+        "Limit",
+        "Sort",
+        "Index Scan",
+        "Memoize",
+        "Materialize",
+        "Seq Scan"
+      ],
+      "indexes": [
+        "bookings_active_stay_idx",
+        "listings_city_idx",
+        "listings_pkey",
+        "cities_pkey",
+        "listing_photos_order_key"
+      ],
+      "target_ms": 50.0,
+      "meets_target": true,
+      "jit": false,
+      "error": null
+    },
+    {
+      "name": "search_city_stockholm_dates",
+      "median_ms": 30.345,
+      "runs_ms": [
+        32.539,
+        29.825,
+        31.967,
+        30.345,
+        29.169
+      ],
+      "shared_hit": 10487,
+      "shared_read": 0,
+      "access": [
+        "Nested Loop",
+        "Gather",
+        "Bitmap Heap Scan",
+        "Bitmap Index Scan",
+        "Index Scan",
+        "Aggregate",
+        "CTE Scan",
+        "Limit",
+        "Sort",
+        "Memoize",
+        "Materialize",
+        "Seq Scan"
+      ],
+      "indexes": [
+        "listings_city_idx",
+        "no_double_booking",
+        "listings_pkey",
+        "cities_pkey",
+        "listing_photos_order_key"
+      ],
+      "target_ms": 50.0,
+      "meets_target": true,
+      "jit": false,
+      "error": null
+    },
+    {
+      "name": "search_radius_1km_london",
+      "median_ms": 1.758,
+      "runs_ms": [
+        1.827,
+        1.677,
+        2.033,
+        1.758,
+        1.608
+      ],
+      "shared_hit": 1470,
+      "shared_read": 0,
+      "access": [
+        "Nested Loop",
+        "Index Scan",
+        "Aggregate",
+        "CTE Scan",
+        "Limit",
+        "Sort",
+        "Materialize",
+        "Seq Scan"
+      ],
+      "indexes": [
+        "listings_public_location_idx",
+        "listings_pkey",
+        "listing_photos_order_key"
+      ],
+      "target_ms": 50.0,
+      "meets_target": true,
+      "jit": false,
+      "error": null
+    },
+    {
+      "name": "search_radius_1km_london_dates",
+      "median_ms": 6.643,
+      "runs_ms": [
+        7.821,
+        6.646,
+        6.643,
+        6.529,
+        6.415
+      ],
+      "shared_hit": 8259,
+      "shared_read": 0,
+      "access": [
+        "Nested Loop",
+        "Bitmap Heap Scan",
+        "Bitmap Index Scan",
+        "Aggregate",
+        "CTE Scan",
+        "Limit",
+        "Sort",
+        "Index Scan",
+        "Materialize",
+        "Seq Scan"
+      ],
+      "indexes": [
+        "listings_public_location_idx",
+        "bookings_active_stay_idx",
+        "listings_pkey",
+        "cities_pkey",
+        "listing_photos_order_key"
+      ],
+      "target_ms": 50.0,
+      "meets_target": true,
+      "jit": false,
+      "error": null
+    },
+    {
+      "name": "search_radius_5km_london",
+      "median_ms": 20.468,
+      "runs_ms": [
+        20.866,
+        20.468,
+        20.014,
+        19.945,
+        24.683
+      ],
+      "shared_hit": 2336,
+      "shared_read": 0,
+      "access": [
+        "Nested Loop",
+        "Bitmap Heap Scan",
+        "Bitmap Index Scan",
+        "Aggregate",
+        "CTE Scan",
+        "Limit",
+        "Sort",
+        "Index Scan",
+        "Materialize",
+        "Seq Scan"
+      ],
+      "indexes": [
+        "listings_public_location_idx",
+        "listings_pkey",
+        "listing_photos_order_key"
+      ],
+      "target_ms": 50.0,
+      "meets_target": true,
+      "jit": false,
+      "error": null
+    },
+    {
+      "name": "search_radius_5km_london_dates",
+      "median_ms": 25.17,
+      "runs_ms": [
+        26.32,
+        25.16,
+        25.215,
+        25.17,
+        25.008
+      ],
+      "shared_hit": 9461,
+      "shared_read": 0,
+      "access": [
+        "Nested Loop",
+        "Bitmap Heap Scan",
+        "Bitmap Index Scan",
+        "Aggregate",
+        "CTE Scan",
+        "Limit",
+        "Sort",
+        "Index Scan",
+        "Materialize",
+        "Seq Scan"
+      ],
+      "indexes": [
+        "listings_public_location_idx",
+        "bookings_active_stay_idx",
+        "listings_pkey",
+        "cities_pkey",
+        "listing_photos_order_key"
+      ],
+      "target_ms": 50.0,
+      "meets_target": true,
+      "jit": false,
+      "error": null
+    },
+    {
+      "name": "search_radius_20km_london",
+      "median_ms": 83.208,
+      "runs_ms": [
+        83.631,
+        83.208,
+        82.541,
+        82.851,
+        87.314
+      ],
+      "shared_hit": 3218,
+      "shared_read": 0,
+      "access": [
+        "Nested Loop",
+        "Gather",
+        "Bitmap Heap Scan",
+        "Bitmap Index Scan",
+        "Aggregate",
+        "CTE Scan",
+        "Limit",
+        "Sort",
+        "Index Scan",
+        "Materialize",
+        "Seq Scan"
+      ],
+      "indexes": [
+        "listings_public_location_idx",
+        "listings_pkey",
+        "listing_photos_order_key"
+      ],
+      "target_ms": 50.0,
+      "meets_target": false,
+      "jit": false,
+      "error": null
+    },
+    {
+      "name": "search_radius_20km_london_dates",
+      "median_ms": 100.476,
+      "runs_ms": [
+        97.347,
+        97.553,
+        107.145,
+        100.476,
+        105.093
+      ],
+      "shared_hit": 24543,
+      "shared_read": 0,
+      "access": [
+        "Nested Loop",
+        "Gather",
+        "Bitmap Heap Scan",
+        "Bitmap Index Scan",
+        "Aggregate",
+        "CTE Scan",
+        "Limit",
+        "Sort",
+        "Index Scan",
+        "Materialize",
+        "Seq Scan"
+      ],
+      "indexes": [
+        "listings_public_location_idx",
+        "bookings_active_stay_idx",
+        "listings_pkey",
+        "cities_pkey",
+        "listing_photos_order_key"
+      ],
+      "target_ms": 50.0,
+      "meets_target": false,
+      "jit": false,
+      "error": null
+    },
+    {
+      "name": "search_radius_5km_london_dates_by_distance",
+      "median_ms": 39.322,
+      "runs_ms": [
+        40.111,
+        39.322,
+        39.049,
+        40.023,
+        39.125
+      ],
+      "shared_hit": 9461,
+      "shared_read": 0,
+      "access": [
+        "Nested Loop",
+        "Bitmap Heap Scan",
+        "Bitmap Index Scan",
+        "Aggregate",
+        "CTE Scan",
+        "Limit",
+        "Sort",
+        "Index Scan",
+        "Materialize",
+        "Seq Scan"
+      ],
+      "indexes": [
+        "listings_public_location_idx",
+        "bookings_active_stay_idx",
+        "listings_pkey",
+        "cities_pkey",
+        "listing_photos_order_key"
+      ],
+      "target_ms": 50.0,
+      "meets_target": true,
+      "jit": false,
+      "error": null
+    },
+    {
+      "name": "search_radius_5km_london_dates_pets_amenities",
+      "median_ms": 16.544,
+      "runs_ms": [
+        20.155,
+        16.506,
+        16.345,
+        16.544,
+        16.977
+      ],
+      "shared_hit": 18019,
+      "shared_read": 0,
+      "access": [
+        "Nested Loop",
+        "Bitmap Heap Scan",
+        "Bitmap Index Scan",
+        "Aggregate",
+        "Index Only Scan",
+        "CTE Scan",
+        "Limit",
+        "Sort",
+        "Index Scan",
+        "Seq Scan"
+      ],
+      "indexes": [
+        "listings_public_location_idx",
+        "bookings_active_stay_idx",
+        "listing_amenities_pkey",
+        "listings_pkey",
+        "cities_pkey",
+        "listing_photos_order_key"
+      ],
+      "target_ms": 50.0,
+      "meets_target": true,
+      "jit": false,
+      "error": null
+    },
+    {
+      "name": "search_radius_5km_stockholm_dates",
+      "median_ms": 6.604,
+      "runs_ms": [
+        7.957,
+        6.718,
+        6.604,
+        6.455,
+        6.512
+      ],
+      "shared_hit": 7387,
+      "shared_read": 0,
+      "access": [
+        "Nested Loop",
+        "Bitmap Heap Scan",
+        "Bitmap Index Scan",
+        "Aggregate",
+        "CTE Scan",
+        "Limit",
+        "Sort",
+        "Index Scan",
+        "Materialize",
+        "Seq Scan"
+      ],
+      "indexes": [
+        "listings_public_location_idx",
+        "bookings_active_stay_idx",
+        "listings_pkey",
+        "cities_pkey",
+        "listing_photos_order_key"
+      ],
+      "target_ms": 50.0,
+      "meets_target": true,
+      "jit": false,
+      "error": null
+    },
+    {
+      "name": "search_radius_1km_london_14_nights",
+      "median_ms": 10.055,
+      "runs_ms": [
+        10.144,
+        9.537,
+        9.631,
+        10.055,
+        10.49
+      ],
+      "shared_hit": 5222,
+      "shared_read": 0,
+      "access": [
+        "Nested Loop",
+        "Index Scan",
+        "Aggregate",
+        "CTE Scan",
+        "Limit",
+        "Sort",
+        "Materialize",
+        "Seq Scan"
+      ],
+      "indexes": [
+        "listings_public_location_idx",
+        "no_double_booking",
+        "listings_pkey",
+        "cities_pkey",
+        "listing_photos_order_key"
+      ],
+      "target_ms": 50.0,
+      "meets_target": true,
+      "jit": false,
+      "error": null
+    },
+    {
+      "name": "search_radius_5km_london_14_nights",
+      "median_ms": 146.644,
+      "runs_ms": [
+        160.13,
+        144.611,
+        146.644,
+        149.109,
+        143.478
+      ],
+      "shared_hit": 73643,
+      "shared_read": 0,
+      "access": [
+        "Nested Loop",
+        "Bitmap Heap Scan",
+        "Bitmap Index Scan",
+        "Index Scan",
+        "Aggregate",
+        "CTE Scan",
+        "Limit",
+        "Sort",
+        "Materialize",
+        "Seq Scan"
+      ],
+      "indexes": [
+        "listings_public_location_idx",
+        "no_double_booking",
+        "listings_pkey",
+        "cities_pkey",
+        "listing_photos_order_key"
+      ],
+      "target_ms": 50.0,
+      "meets_target": false,
+      "jit": false,
+      "error": null
+    },
+    {
+      "name": "search_count_london_dates",
+      "median_ms": 19.192,
+      "runs_ms": [
+        29.987,
+        23.279,
+        19.015,
+        18.938,
+        19.192
+      ],
+      "shared_hit": 9016,
+      "shared_read": 0,
+      "access": [
+        "Aggregate",
+        "Hash Join",
+        "Bitmap Heap Scan",
+        "Bitmap Index Scan",
+        "Hash"
+      ],
+      "indexes": [
+        "bookings_active_stay_idx",
+        "listings_city_idx"
+      ],
+      "target_ms": 50.0,
+      "meets_target": true,
+      "jit": false,
+      "error": null
+    },
+    {
+      "name": "filters_total_london_dates",
+      "median_ms": 19.446,
+      "runs_ms": [
+        20.212,
+        19.871,
+        19.446,
+        19.377,
+        18.891
+      ],
+      "shared_hit": 9016,
+      "shared_read": 0,
+      "access": [
+        "Aggregate",
+        "Hash Join",
+        "Bitmap Heap Scan",
+        "Bitmap Index Scan",
+        "Hash"
+      ],
+      "indexes": [
+        "bookings_active_stay_idx",
+        "listings_city_idx"
+      ],
+      "target_ms": 50.0,
+      "meets_target": true,
+      "jit": false,
+      "error": null
+    },
+    {
+      "name": "filters_amenities_london_dates",
+      "median_ms": 124.754,
+      "runs_ms": [
+        127.014,
+        123.442,
+        124.294,
+        124.754,
+        126.915
+      ],
+      "shared_hit": 11484,
+      "shared_read": 7552,
+      "access": [
+        "Sort",
+        "Hash Join",
+        "Aggregate",
+        "Gather Merge",
+        "Seq Scan",
+        "Hash",
+        "Bitmap Heap Scan",
+        "Bitmap Index Scan"
+      ],
+      "indexes": [
+        "bookings_active_stay_idx"
+      ],
+      "target_ms": 50.0,
+      "meets_target": false,
+      "jit": false,
+      "error": null
+    },
+    {
+      "name": "filters_amenities_radius_5km_london_dates",
+      "median_ms": 95.745,
+      "runs_ms": [
+        93.454,
+        97.214,
+        94.561,
+        97.19,
+        95.745
+      ],
+      "shared_hit": 54463,
+      "shared_read": 0,
+      "access": [
+        "Sort",
+        "Hash Join",
+        "Seq Scan",
+        "Hash",
+        "Subquery Scan",
+        "Aggregate",
+        "Nested Loop",
+        "Bitmap Heap Scan",
+        "Bitmap Index Scan",
+        "Index Only Scan"
+      ],
+      "indexes": [
+        "listings_public_location_idx",
+        "bookings_active_stay_idx",
+        "listing_amenities_pkey"
+      ],
+      "target_ms": 50.0,
+      "meets_target": false,
+      "jit": false,
+      "error": null
+    },
+    {
+      "name": "listing_by_id",
+      "median_ms": 0.009,
+      "runs_ms": [
+        0.036,
+        0.013,
+        0.009,
+        0.007,
+        0.006
+      ],
+      "shared_hit": 3,
+      "shared_read": 0,
+      "access": [
+        "Index Scan"
+      ],
+      "indexes": [
+        "listings_pkey"
+      ],
+      "target_ms": 50.0,
+      "meets_target": true,
+      "jit": false,
+      "error": null
+    },
+    {
+      "name": "listing_photos",
+      "median_ms": 0.008,
+      "runs_ms": [
+        0.011,
+        0.006,
+        0.008,
+        0.01,
+        0.005
+      ],
+      "shared_hit": 4,
+      "shared_read": 0,
+      "access": [
+        "Index Scan"
+      ],
+      "indexes": [
+        "listing_photos_order_key"
+      ],
+      "target_ms": 50.0,
+      "meets_target": true,
+      "jit": false,
+      "error": null
+    },
+    {
+      "name": "listing_amenity_ids",
+      "median_ms": 0.007,
+      "runs_ms": [
+        0.014,
+        0.007,
+        0.01,
+        0.007,
+        0.007
+      ],
+      "shared_hit": 4,
+      "shared_read": 0,
+      "access": [
+        "Index Only Scan"
+      ],
+      "indexes": [
+        "listing_amenities_pkey"
+      ],
+      "target_ms": 50.0,
+      "meets_target": true,
+      "jit": false,
+      "error": null
+    },
+    {
+      "name": "listing_pins",
+      "median_ms": 0.007,
+      "runs_ms": [
+        0.012,
+        0.007,
+        0.01,
+        0.006,
+        0.007
+      ],
+      "shared_hit": 3,
+      "shared_read": 0,
+      "access": [
+        "Index Scan"
+      ],
+      "indexes": [
+        "listings_pkey"
+      ],
+      "target_ms": 50.0,
+      "meets_target": true,
+      "jit": false,
+      "error": null
+    },
+    {
+      "name": "cover_keys",
+      "median_ms": 0.016,
+      "runs_ms": [
+        0.031,
+        0.023,
+        0.016,
+        0.016,
+        0.013
+      ],
+      "shared_hit": 4,
+      "shared_read": 0,
+      "access": [
+        "Result",
+        "Limit",
+        "Index Scan"
+      ],
+      "indexes": [
+        "listing_photos_order_key"
+      ],
+      "target_ms": 50.0,
+      "meets_target": true,
+      "jit": false,
+      "error": null
+    },
+    {
+      "name": "host_listings_count",
+      "median_ms": 0.168,
+      "runs_ms": [
+        0.187,
+        0.164,
+        0.17,
+        0.165,
+        0.168
+      ],
+      "shared_hit": 393,
+      "shared_read": 0,
+      "access": [
+        "Aggregate",
+        "Bitmap Heap Scan",
+        "Bitmap Index Scan"
+      ],
+      "indexes": [
+        "listings_host_idx"
+      ],
+      "target_ms": 50.0,
+      "meets_target": true,
+      "jit": false,
+      "error": null
+    },
+    {
+      "name": "host_listings_page",
+      "median_ms": 0.533,
+      "runs_ms": [
+        0.612,
+        0.566,
+        0.512,
+        0.533,
+        0.522
+      ],
+      "shared_hit": 2759,
+      "shared_read": 0,
+      "access": [
+        "Limit",
+        "Index Scan"
+      ],
+      "indexes": [
+        "listings_pkey"
+      ],
+      "target_ms": 50.0,
+      "meets_target": true,
+      "jit": false,
+      "error": null
+    },
+    {
+      "name": "listing_live_booking",
+      "median_ms": 0.03,
+      "runs_ms": [
+        0.037,
+        0.026,
+        0.023,
+        0.03,
+        0.038
+      ],
+      "shared_hit": 49,
+      "shared_read": 0,
+      "access": [
+        "Result",
+        "Bitmap Heap Scan",
+        "BitmapAnd",
+        "Bitmap Index Scan"
+      ],
+      "indexes": [
+        "bookings_guest_idx",
+        "bookings_listing_check_in_idx"
+      ],
+      "target_ms": 50.0,
+      "meets_target": true,
+      "jit": false,
+      "error": null
+    },
+    {
+      "name": "review_queue_page",
+      "median_ms": 0.01,
+      "runs_ms": [
+        0.028,
+        0.011,
+        0.007,
+        0.01,
+        0.007
+      ],
+      "shared_hit": 1,
+      "shared_read": 0,
+      "access": [
+        "Limit",
+        "Index Scan"
+      ],
+      "indexes": [
+        "listings_review_queue_idx"
+      ],
+      "target_ms": 50.0,
+      "meets_target": true,
+      "jit": false,
+      "error": null
+    },
+    {
+      "name": "review_queue_count",
+      "median_ms": 0.006,
+      "runs_ms": [
+        0.012,
+        0.006,
+        0.009,
+        0.005,
+        0.006
+      ],
+      "shared_hit": 1,
+      "shared_read": 0,
+      "access": [
+        "Aggregate",
+        "Index Only Scan"
+      ],
+      "indexes": [
+        "listings_review_queue_idx"
+      ],
+      "target_ms": 50.0,
+      "meets_target": true,
+      "jit": false,
+      "error": null
+    },
+    {
+      "name": "review_queue_stats",
+      "median_ms": 0.006,
+      "runs_ms": [
+        0.01,
+        0.006,
+        0.005,
+        0.01,
+        0.006
+      ],
+      "shared_hit": 1,
+      "shared_read": 0,
+      "access": [
+        "Aggregate",
+        "Index Only Scan"
+      ],
+      "indexes": [
+        "listings_review_queue_idx"
+      ],
+      "target_ms": 50.0,
+      "meets_target": true,
+      "jit": false,
+      "error": null
+    },
+    {
+      "name": "reviews_count",
+      "median_ms": 0.022,
+      "runs_ms": [
+        0.028,
+        0.022,
+        0.023,
+        0.017,
+        0.021
+      ],
+      "shared_hit": 4,
+      "shared_read": 0,
+      "access": [
+        "Aggregate",
+        "Index Only Scan"
+      ],
+      "indexes": [
+        "reviews_listing_idx"
+      ],
+      "target_ms": 50.0,
+      "meets_target": true,
+      "jit": false,
+      "error": null
+    },
+    {
+      "name": "reviews_page_1",
+      "median_ms": 0.031,
+      "runs_ms": [
+        0.031,
+        0.025,
+        0.027,
+        0.037,
+        0.036
+      ],
+      "shared_hit": 4,
+      "shared_read": 0,
+      "access": [
+        "Limit",
+        "Incremental Sort",
+        "Index Scan"
+      ],
+      "indexes": [
+        "reviews_listing_idx"
+      ],
+      "target_ms": 50.0,
+      "meets_target": true,
+      "jit": false,
+      "error": null
+    },
+    {
+      "name": "reviews_page_4",
+      "median_ms": 0.041,
+      "runs_ms": [
+        0.048,
+        0.041,
+        0.041,
+        0.026,
+        0.031
+      ],
+      "shared_hit": 5,
+      "shared_read": 0,
+      "access": [
+        "Limit",
+        "Incremental Sort",
+        "Index Scan"
+      ],
+      "indexes": [
+        "reviews_listing_idx"
+      ],
+      "target_ms": 50.0,
+      "meets_target": true,
+      "jit": false,
+      "error": null
+    },
+    {
+      "name": "review_authors",
+      "median_ms": 0.01,
+      "runs_ms": [
+        0.013,
+        0.01,
+        0.01,
+        0.008,
+        0.011
+      ],
+      "shared_hit": 4,
+      "shared_read": 0,
+      "access": [
+        "Index Scan"
+      ],
+      "indexes": [
+        "users_pkey"
+      ],
+      "target_ms": 50.0,
+      "meets_target": true,
+      "jit": false,
+      "error": null
+    },
+    {
+      "name": "guest_bookings_count",
+      "median_ms": 0.028,
+      "runs_ms": [
+        0.053,
+        0.031,
+        0.028,
+        0.027,
+        0.028
+      ],
+      "shared_hit": 54,
+      "shared_read": 0,
+      "access": [
+        "Aggregate",
+        "Index Only Scan"
+      ],
+      "indexes": [
+        "bookings_guest_idx"
+      ],
+      "target_ms": 50.0,
+      "meets_target": true,
+      "jit": false,
+      "error": null
+    },
+    {
+      "name": "guest_bookings_page",
+      "median_ms": 0.041,
+      "runs_ms": [
+        0.06,
+        0.041,
+        0.048,
+        0.039,
+        0.04
+      ],
+      "shared_hit": 77,
+      "shared_read": 0,
+      "access": [
+        "Limit",
+        "Sort",
+        "Index Scan"
+      ],
+      "indexes": [
+        "bookings_guest_idx"
+      ],
+      "target_ms": 50.0,
+      "meets_target": true,
+      "jit": false,
+      "error": null
+    },
+    {
+      "name": "guest_bookings_completed_page",
+      "median_ms": 0.192,
+      "runs_ms": [
+        0.925,
+        0.289,
+        0.187,
+        0.146,
+        0.192
+      ],
+      "shared_hit": 77,
+      "shared_read": 0,
+      "access": [
+        "Limit",
+        "Sort",
+        "Index Scan"
+      ],
+      "indexes": [
+        "bookings_guest_idx"
+      ],
+      "target_ms": 50.0,
+      "meets_target": true,
+      "jit": false,
+      "error": null
+    },
+    {
+      "name": "listing_bookings_count",
+      "median_ms": 0.031,
+      "runs_ms": [
+        0.036,
+        0.028,
+        0.033,
+        0.031,
+        0.026
+      ],
+      "shared_hit": 6,
+      "shared_read": 0,
+      "access": [
+        "Aggregate",
+        "Index Only Scan"
+      ],
+      "indexes": [
+        "bookings_listing_check_in_idx"
+      ],
+      "target_ms": 50.0,
+      "meets_target": true,
+      "jit": false,
+      "error": null
+    },
+    {
+      "name": "listing_bookings_page",
+      "median_ms": 0.024,
+      "runs_ms": [
+        0.04,
+        0.025,
+        0.024,
+        0.018,
+        0.019
+      ],
+      "shared_hit": 5,
+      "shared_read": 0,
+      "access": [
+        "Limit",
+        "Index Scan"
+      ],
+      "indexes": [
+        "bookings_listing_check_in_idx"
+      ],
+      "target_ms": 50.0,
+      "meets_target": true,
+      "jit": false,
+      "error": null
+    },
+    {
+      "name": "booking_by_idempotency_key",
+      "median_ms": 0.011,
+      "runs_ms": [
+        0.026,
+        0.011,
+        0.009,
+        0.011,
+        0.007
+      ],
+      "shared_hit": 4,
+      "shared_read": 0,
+      "access": [
+        "Index Scan"
+      ],
+      "indexes": [
+        "bookings_idempotency_key_key"
+      ],
+      "target_ms": 50.0,
+      "meets_target": true,
+      "jit": false,
+      "error": null
+    },
+    {
+      "name": "expire_listing_holds",
+      "median_ms": 0.057,
+      "runs_ms": [
+        0.072,
+        0.057,
+        0.048,
+        0.058,
+        0.036
+      ],
+      "shared_hit": 5,
+      "shared_read": 0,
+      "access": [
+        "ModifyTable",
+        "Bitmap Heap Scan",
+        "BitmapAnd",
+        "Bitmap Index Scan"
+      ],
+      "indexes": [
+        "bookings_pending_hold_idx",
+        "bookings_listing_check_in_idx"
+      ],
+      "target_ms": 50.0,
+      "meets_target": true,
+      "jit": false,
+      "error": null
+    },
+    {
+      "name": "user_by_email",
+      "median_ms": 0.014,
+      "runs_ms": [
+        0.017,
+        0.01,
+        0.009,
+        0.014,
+        0.021
+      ],
+      "shared_hit": 4,
+      "shared_read": 0,
+      "access": [
+        "Index Scan"
+      ],
+      "indexes": [
+        "users_email_lower_key"
+      ],
+      "target_ms": 50.0,
+      "meets_target": true,
+      "jit": false,
+      "error": null
+    },
+    {
+      "name": "login_attempts",
+      "median_ms": 0.011,
+      "runs_ms": [
+        0.019,
+        0.009,
+        0.014,
+        0.011,
+        0.007
+      ],
+      "shared_hit": 1,
+      "shared_read": 0,
+      "access": [
+        "Aggregate",
+        "Seq Scan"
+      ],
+      "indexes": [],
+      "target_ms": 50.0,
+      "meets_target": true,
+      "jit": false,
+      "error": null
+    },
+    {
+      "name": "job_expire_overdue_holds",
+      "median_ms": 14.288,
+      "runs_ms": [
+        55.375,
+        17.737,
+        7.54,
+        14.288,
+        9.203
+      ],
+      "shared_hit": 13469,
+      "shared_read": 52,
+      "access": [
+        "ModifyTable",
+        "Index Scan"
+      ],
+      "indexes": [
+        "bookings_pending_hold_idx"
+      ],
+      "target_ms": 50.0,
+      "meets_target": true,
+      "jit": false,
+      "error": null
+    },
+    {
+      "name": "job_complete_finished_stays",
+      "median_ms": 403.7,
+      "runs_ms": [
+        502.445,
+        403.7,
+        393.313,
+        419.048,
+        390.393
+      ],
+      "shared_hit": 221445,
+      "shared_read": 49265,
+      "access": [
+        "ModifyTable",
+        "Hash Join",
+        "Bitmap Heap Scan",
+        "Bitmap Index Scan",
+        "Hash",
+        "Seq Scan"
+      ],
+      "indexes": [
+        "bookings_confirmed_check_out_idx"
+      ],
+      "target_ms": 50.0,
+      "meets_target": false,
+      "jit": false,
+      "error": null
+    },
+    {
+      "name": "write_1000_bookings",
+      "median_ms": 54.595,
+      "runs_ms": [
+        55.735,
+        58.555,
+        54.595,
+        54.408,
+        53.237
+      ],
+      "shared_hit": 28628,
+      "shared_read": 740,
+      "access": [
+        "ModifyTable",
+        "Subquery Scan",
+        "Limit",
+        "Index Scan"
+      ],
+      "indexes": [
+        "listings_pkey"
+      ],
+      "target_ms": 300.0,
+      "meets_target": true,
+      "jit": false,
+      "error": null
+    }
+  ]
+}

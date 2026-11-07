@@ -10,6 +10,10 @@ erDiagram
     AMENITY_CATEGORIES ||--o{ AMENITIES : "groups"
     LISTINGS ||--o{ BOOKINGS : "reserved by"
     BOOKINGS ||--o| REVIEWS : "reviewed in"
+    LISTINGS ||--o{ LISTING_REVIEW_EVENTS : "review history"
+    USERS ||--o{ LISTING_REVIEW_EVENTS : "submits or decides"
+    USERS ||--o{ ADMIN_ADDRESS_VIEWS : "admin opened"
+    LISTINGS ||--o{ ADMIN_ADDRESS_VIEWS : "address seen"
 
     USERS {
         bigint id PK
@@ -18,6 +22,8 @@ erDiagram
         text full_name
         text avatar_url
         timestamptz created_at
+        account_kind kind "member | admin (create-admin only)"
+        timestamptz disabled_at "disable-admin"
     }
     REFRESH_TOKENS {
         bigint id PK
@@ -29,7 +35,7 @@ erDiagram
     }
     AUTH_ATTEMPTS {
         bigint id PK
-        text action "login | register"
+        text action "login | register | admin_login"
         text identifier "email or IP"
         boolean succeeded
         timestamptz attempted_at
@@ -72,6 +78,25 @@ erDiagram
         int review_count
         boolean is_active
         timestamptz created_at
+        listing_review_status review_status "public = active and approved"
+        timestamptz submitted_at "queue order"
+        text rejection_reason "only while rejected"
+        int review_version "+1 on each descriptive edit"
+    }
+    LISTING_REVIEW_EVENTS {
+        bigint id PK
+        bigint listing_id FK
+        review_action action "append-only"
+        bigint actor_id FK "host or admin"
+        int review_version
+        text reason "only for rejected"
+        timestamptz created_at
+    }
+    ADMIN_ADDRESS_VIEWS {
+        bigint id PK
+        bigint admin_id FK
+        bigint listing_id FK
+        timestamptz viewed_at
     }
     LISTING_PHOTOS {
         bigint id PK

@@ -374,6 +374,45 @@
       "target_ms": 50
     },
     {
+      "name": "listing_live_booking",
+      "source": "caravansara.listings.repository:has_live_booking",
+      "endpoint": "GET /listings/{id}",
+      "kind": "read",
+      "params": {
+        "listing_id": "@busy_guest_listing",
+        "guest_id": "@busy_guest"
+      },
+      "target_ms": 50,
+      "note": "only for a listing that is not public (specs/004-listing-approval, FR-019)"
+    },
+    {
+      "name": "review_queue_page",
+      "source": "caravansara.listings.repository:review_queue",
+      "endpoint": "GET /admin/listings/pending",
+      "kind": "read",
+      "params": {
+        "limit": 20,
+        "offset": 0
+      },
+      "target_ms": 50
+    },
+    {
+      "name": "review_queue_count",
+      "source": "caravansara.listings.repository:review_queue",
+      "endpoint": "GET /admin/listings/pending",
+      "kind": "read",
+      "params": {},
+      "target_ms": 50
+    },
+    {
+      "name": "review_queue_stats",
+      "source": "caravansara.listings.repository:review_queue_stats",
+      "endpoint": "worker, every minute",
+      "kind": "read",
+      "params": {},
+      "target_ms": 50
+    },
+    {
       "name": "reviews_count",
       "source": "caravansara.reviews.repository:listing_reviews",
       "endpoint": "GET /listings/{id}/reviews",
@@ -647,6 +686,22 @@
     {
       "source": "caravansara.reviews.repository:exists_for_booking",
       "reason": "one review by its unique booking_id"
+    },
+    {
+      "source": "caravansara.listings.repository:add_review_event",
+      "reason": "one INSERT into listing_review_events"
+    },
+    {
+      "source": "caravansara.listings.repository:decide",
+      "reason": "one listing by primary key, conditional UPDATE"
+    },
+    {
+      "source": "caravansara.listings.repository:resubmit",
+      "reason": "one listing by primary key, conditional UPDATE"
+    },
+    {
+      "source": "caravansara.moderation.repository:record_address_view",
+      "reason": "one INSERT into admin_address_views"
     }
   ]
 }

@@ -22,13 +22,17 @@ from caravansara.core.config import Settings
 from caravansara.core.storage import Storage
 from caravansara.main import create_app
 from tests.factories import Factory
+from tests.helpers import use_engine
 
 POSTGIS_IMAGE = "postgis/postgis:16-3.4"
 MINIO_IMAGE = "bitnamilegacy/minio:2025.4.22"  # MinIO no longer publishes images
 MINIO_USER = "caravansara"
 MINIO_PASSWORD = "caravansara-secret"
 
-DATA_TABLES = "reviews, bookings, listing_amenities, listing_photos, listings, auth_attempts, refresh_tokens, users"
+DATA_TABLES = (
+    "admin_address_views, listing_review_events, reviews, bookings, listing_amenities, listing_photos, listings, "
+    "auth_attempts, refresh_tokens, users"
+)
 
 
 @pytest.fixture(scope="session")
@@ -113,6 +117,7 @@ async def _clean(request: pytest.FixtureRequest) -> AsyncIterator[None]:
 
 @pytest.fixture
 async def client(app: Any, engine: AsyncEngine) -> AsyncIterator[AsyncClient]:
+    use_engine(engine)
     async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test/api/v1") as c:
         yield c
 

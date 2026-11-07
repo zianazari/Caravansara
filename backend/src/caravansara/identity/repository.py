@@ -3,16 +3,18 @@ from datetime import datetime, timedelta
 from sqlalchemy import func, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from caravansara.identity.models import AuthAttempt, RefreshToken, User
+from caravansara.identity.models import AccountKind, AuthAttempt, RefreshToken, User
 
 
 async def get_user(session: AsyncSession, user_id: int) -> User | None:
     return await session.get(User, user_id)
 
 
-async def get_user_by_email(session: AsyncSession, email: str) -> User | None:
-    result = await session.execute(select(User).where(func.lower(User.email) == email.lower()))
-    return result.scalar_one_or_none()
+async def get_user_by_email(session: AsyncSession, email: str, kind: AccountKind | None = None) -> User | None:
+    query = select(User).where(func.lower(User.email) == email.lower())
+    if kind is not None:
+        query = query.where(User.kind == kind)
+    return (await session.execute(query)).scalar_one_or_none()
 
 
 async def get_users(session: AsyncSession, user_ids: set[int]) -> dict[int, User]:

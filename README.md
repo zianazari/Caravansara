@@ -4,8 +4,8 @@
 
 <p align="center">
   <a href="https://github.com/zianazari/Caravansara/actions/workflows/ci.yml"><img src="https://github.com/zianazari/Caravansara/actions/workflows/ci.yml/badge.svg" alt="CI"></a>
-  <img src="https://img.shields.io/badge/tests-241%20%C2%B7%2097.3%25%20coverage-b5651d" alt="241 tests, 97.3% coverage">
-  <img src="https://img.shields.io/badge/e2e-48%20Playwright%20API%20tests-2EAD33" alt="48 Playwright API tests">
+  <img src="https://img.shields.io/badge/tests-342%20%C2%B7%2097.6%25%20coverage-b5651d" alt="342 tests, 97.6% coverage">
+  <img src="https://img.shields.io/badge/e2e-51%20Playwright%20API%20tests-2EAD33" alt="51 Playwright API tests">
 </p>
 
 A *caravansara* (کاروانسرا) was a roadside inn on the Silk Road: travellers arrived at dusk, took a room for the night and moved on at dawn. **Caravansara** is the same idea for today: an Airbnb-like site where guests find a place, hold it, pay and leave a review, and hosts list their homes.
@@ -48,8 +48,9 @@ This repository holds the **backend and the database design**. There is no front
 | 🧭 **Search** | By city, or by centre and radius (1–100 km) on a map. Filters for dates, adults, children, infants, pets and amenities (all must match). |
 | ⏳ **Reserve** | A 15-minute hold on the dates, then a simulated payment. Retrying with the same `Idempotency-Key` never books twice. |
 | 🛡️ **No double booking** | Two guests can never hold the same night. PostgreSQL enforces it with an `EXCLUDE` constraint, so no race in app code can break it. |
-| 📍 **Privacy** | Search and the map use a pin moved 100–500 m from the real address. The exact address appears only after payment. |
+| 📍 **Privacy** | Search and the map use a pin moved 100–500 m from the real address. The exact address appears only after payment, and to an admin reviewing the listing, each such view recorded. |
 | 🏠 **Hosts** | Create and edit listings, upload photos straight to object storage, pick amenities, see bookings. |
+| ✅ **Listing review** | A new listing goes public only after a system admin approves it; so does a listing whose description changes. A rejection carries a written reason, and the host fixes it and sends it again. Bookings of a hidden listing keep working. |
 | ⭐ **Reviews** | One per completed stay, within 14 days, never edited. The listing's rating updates itself. |
 | 🕰️ **City time** | "Today", cancellation and the end of a stay follow the listing's time zone, not the server's. |
 
@@ -80,13 +81,14 @@ Caravansara is a **modular monolith**: one FastAPI codebase and one PostgreSQL d
 | Module | Owns | Uses |
 | --- | --- | --- |
 | `core` | settings, DB sessions, error shape, JWT, storage client | nothing; the base layer |
-| `identity` | `users`, `refresh_tokens`, `auth_attempts` | `core` |
+| `identity` | `users` (members and admins), `refresh_tokens`, `auth_attempts` | `core` |
 | `catalog` | `countries`, `cities`, `amenities` (read-only) | `core` |
-| `listings` | `listings`, photos, amenities per listing, fuzzed pin | `catalog`, `identity` |
+| `listings` | `listings` with their review state, photos, amenities per listing, fuzzed pin, `listing_review_events` | `catalog`, `identity` |
 | `bookings` | `bookings`: hold, pay, cancel, worker queries | `listings` |
 | `reviews` | `reviews`, rating cache | `bookings`, `listings`, `identity` |
 | `search` | read-only search queries | `listings` (types only) |
-| `jobs` | the worker loop | `bookings` |
+| `jobs` | the worker loop, the review-queue gauges | `bookings`, `listings` |
+| `moderation` | admin endpoints for listing review, `admin_address_views` | `identity`, `listings` |
 
 Every module has the same layers:
 
@@ -112,6 +114,8 @@ models.py      tables          schemas.py  request and response shapes
 | Capacity, dates in city time, own listing, state transitions | `service` layer | Need logic and context the database doesn't have |
 | Payment vs. expiry race | Conditional `UPDATE … WHERE status = 'pending' AND hold_expires_at > now()` | Exactly one of the two wins |
 | An overdue unpaid hold doesn't block search | Search query: a `pending` hold counts only until `hold_expires_at` | A free place isn't shown as taken while the worker catches up |
+| A new listing waits for review; two admins can't both decide; an edit after the admin looked is never approved unseen | Column default `pending`; conditional `UPDATE … WHERE review_status = 'pending' AND review_version = :seen` | Code that forgets the state still can't publish; the decision race has one winner |
+| The review history is never rewritten | Trigger on `listing_review_events` | Who decided what stays on record |
 
 ### A reservation, step by step
 
@@ -162,12 +166,13 @@ Needs Docker.
 ```bash
 docker compose up --build                               # db, MinIO, migrations, API, worker
 docker compose run --rm migrate caravansara seed-demo   # optional, empty database only: 790 listings in 9 cities, with photos
+docker compose exec -e CARAVANSARA_ADMIN_PASSWORD=… api caravansara create-admin --email you@example.com --name "You"   # an admin to review listings
 docker compose run --rm migrate caravansara seed-bulk   # optional: 100,000 listings in their own database, for measuring
 ```
 
-Open **http://localhost:8000/docs**, log in with `POST /auth/login` as `guest@example.com` / `caravansara-demo`, press **Authorize**, paste the `access_token`, and every endpoint is ready to try.
+Open **http://localhost:8000/docs**, log in with `POST /auth/login` as `guest@example.com` / `caravansara-demo`, press **Authorize**, paste the `access_token`, and every endpoint is ready to try. To review listings, log in with `POST /admin/auth/login` as `admin@example.com` (demo) or the admin you created, and paste that token under **AdminBearer**. Admin accounts exist only through `caravansara create-admin`; `seed-demo` refuses to run in production, because its passwords are public.
 
-The demo data comes from [Inside Airbnb](https://insideairbnb.com/) (CC BY 4.0): real titles, prices, amenities and review text from Amsterdam, Lisbon, Copenhagen, Stockholm, London and New York City, plus 40 hand-written Persian listings in Tehran, Isfahan and Shiraz priced in rials. People, addresses, bookings and photos are synthetic. It also holds seven edge cases, such as a hold that expires four minutes after loading and a 365-night stay, each listed with its id. See [`db/demo/README.md`](db/demo/README.md).
+The demo data comes from [Inside Airbnb](https://insideairbnb.com/) (CC BY 4.0): real titles, prices, amenities and review text from Amsterdam, Lisbon, Copenhagen, Stockholm, London and New York City, plus 40 hand-written Persian listings in Tehran, Isfahan and Shiraz priced in rials. People, addresses, bookings and photos are synthetic. It also holds nine edge cases, such as a listing waiting for review, a rejected one, a hold that expires four minutes after loading and a 365-night stay, each listed with its id. See [`db/demo/README.md`](db/demo/README.md).
 
 The bulk data (`seed-bulk`) is for measuring: about 3 million bookings and 1.2 million reviews drawn from the real distributions of six cities, loaded in about 3.5 minutes into `caravansara_bulk`, so your development data stays untouched. `caravansara measure-queries` times the app's important queries on it; the index review that used it took London search with dates from 913 to 65 ms. See [`db/bulk/README.md`](db/bulk/README.md) and [`specs/003-index-review/measurements.md`](specs/003-index-review/measurements.md).
 
@@ -203,8 +208,8 @@ Two layers, because each one catches what the other can't:
 | | pytest (`backend/tests`) | Playwright (`e2e/`) |
 | --- | --- | --- |
 | **Runs against** | PostgreSQL + PostGIS and MinIO that testcontainers starts for each run | The real `docker compose` stack, from outside, over HTTP |
-| **Proves** | Every rule in each module, exact race moments, DST, migrations, the API contract | The built image, real settings and wiring: all 30 endpoints, photo upload to MinIO, the whole host and guest story |
-| **Size** | 241 tests, 97.3% coverage | 48 tests, a few seconds |
+| **Proves** | Every rule in each module, exact race moments, DST, migrations, the API contract | The built image, real settings and wiring: all 36 endpoints, photo upload to MinIO, an admin made with `create-admin` reviewing listings, the whole host and guest story |
+| **Size** | 342 tests, 97.6% coverage | 51 tests, a few seconds |
 
 The Playwright tests use its `request` fixture, so they need no browser yet; browser tests for the UI will join the same project. Some highlights:
 
@@ -237,10 +242,11 @@ All paths start with `/api/v1`. Every error has the same shape, with a stable co
 | **Auth** | `POST`<br>`POST`<br>`POST`<br>`POST`<br>`GET`<br>`PATCH` | `/auth/register`<br>`/auth/login`<br>`/auth/refresh`<br>`/auth/logout`<br>`/me`<br>`/me` | Public<br>Public<br>Refresh token<br>Refresh token<br>User<br>User |
 | **Catalog** | `GET`<br>`GET`<br>`GET` | `/countries`<br>`/cities?q=`<br>`/amenities` | Public<br>Public<br>Public |
 | **Search** | `GET`<br>`GET` | `/search/listings`<br>`/search/filters` | Public<br>Public |
-| **Listings** | `POST`<br>`GET`<br>`GET`<br>`PATCH`<br>`PUT`<br>`GET` | `/listings`<br>`/me/listings`<br>`/listings/{id}`<br>`/listings/{id}`<br>`/listings/{id}/amenities`<br>`/listings/{id}/bookings` | User<br>User<br>Public<br>Host<br>Host<br>Host |
+| **Listings** | `POST`<br>`GET`<br>`GET`<br>`PATCH`<br>`PUT`<br>`GET` | `/listings`<br>`/me/listings`<br>`/listings/{id}`<br>`/listings/{id}`<br>`/listings/{id}/amenities`<br>`/listings/{id}/bookings` | User<br>User<br>Public once approved<br>Host<br>Host<br>Host |
 | **Photos** | `POST`<br>`POST`<br>`PATCH`<br>`DELETE`<br>`PUT` | `/listings/{id}/photos/upload-url`<br>`/listings/{id}/photos`<br>`/listings/{id}/photos/{photo_id}`<br>`/listings/{id}/photos/{photo_id}`<br>`/listings/{id}/photos/order` | Host<br>Host<br>Host<br>Host<br>Host |
 | **Bookings** | `POST`<br>`GET`<br>`GET`<br>`POST`<br>`POST` | `/bookings`<br>`/me/bookings`<br>`/bookings/{id}`<br>`/bookings/{id}/pay`<br>`/bookings/{id}/cancel` | User<br>User<br>Guest or host<br>Guest<br>Guest or host |
 | **Reviews** | `POST`<br>`GET` | `/bookings/{id}/review`<br>`/listings/{id}/reviews` | Guest<br>Public |
+| **Listing review** | `POST`<br>`POST`<br>`GET`<br>`GET`<br>`POST`<br>`POST` | `/listings/{id}/resubmit`<br>`/admin/auth/login`<br>`/admin/listings/pending`<br>`/admin/listings/{id}`<br>`/admin/listings/{id}/approve`<br>`/admin/listings/{id}/reject` | Host<br>Admin account<br>Admin<br>Admin (each view recorded)<br>Admin<br>Admin |
 
 Every endpoint, with its parameters, examples and errors, is described and can be tried in Swagger UI at `/docs`.
 
@@ -250,7 +256,7 @@ The same description is committed as [`backend/openapi.json`](backend/openapi.js
 
 ```
 backend/     FastAPI app, Alembic migrations, tests  → backend/README.md
-e2e/         Playwright API tests against the running stack (48 tests)  → e2e/README.md
+e2e/         Playwright API tests against the running stack (51 tests)  → e2e/README.md
 postman/     Postman collection of all endpoints, with saved ids and tokens
 observability/  Alloy, Loki, Tempo, Prometheus (alerts + rule tests), Grafana dashboard  → observability/README.md
 .specify/    GitHub Spec Kit: constitution, templates, scripts (commands in .claude/skills/)
@@ -279,13 +285,12 @@ The constitution comes from decisions already in this repo: the database guards 
 
 ## What's next
 
-The plan, in order. Each step builds on the one before it; details are in [`docs/future-work.md`](docs/future-work.md).
+The plan, in order. Each step builds on the one before it; details are in [`docs/future-work.md`](docs/future-work.md). Listing approval by a system admin is done ([`specs/004-listing-approval/`](specs/004-listing-approval/)); its admin web panel comes with the front-end.
 
 | # | Work | What it brings | Why at this point |
 | --- | --- | --- | --- |
-| 1 | **Listing approval** | A new listing goes public only after a system admin approves it; hosts see it as pending review | It changes the API (listing status, an admin role), so it comes before the front-end builds the host pages |
-| 2 | **Web front-end** | Next.js, TypeScript, shadcn/ui and Tailwind; Persian right-to-left with the Vazirmatn font, and English | The biggest step toward a usable product, on a correct and fast API |
-| 3 | **Playwright browser tests** | Guest and host journeys, a double booking from two browsers, right-to-left and mobile checks | Written with the front-end, so each page is tested when it is built |
-| 4 | **Email** | Hosts hear by email when a listing is approved or rejected | Until then hosts see the review status on their own listings page |
-| 5 | **Redis caching** | Faster hot reads such as the search filter panel, never for booking or availability | Only for what the index review could not fix: the filter panel's amenity counts (183–233 ms on the bulk data) |
-| 6 | **Microservices** | Splitting out a service, starting with `search` | Only if the monitoring numbers show a real need, since it is the most expensive step |
+| 1 | **Web front-end** | Next.js, TypeScript, shadcn/ui and Tailwind; Persian right-to-left with the Vazirmatn font, and English | The biggest step toward a usable product, on a correct and fast API |
+| 2 | **Playwright browser tests** | Guest and host journeys, a double booking from two browsers, right-to-left and mobile checks | Written with the front-end, so each page is tested when it is built |
+| 3 | **Email** | Hosts hear by email when a listing is approved or rejected | Until then hosts see the review status on their own listings page |
+| 4 | **Redis caching** | Faster hot reads such as the search filter panel, never for booking or availability | Only for what the index review could not fix: the filter panel's amenity counts (183–233 ms on the bulk data) |
+| 5 | **Microservices** | Splitting out a service, starting with `search` | Only if the monitoring numbers show a real need, since it is the most expensive step |

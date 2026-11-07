@@ -2,6 +2,7 @@
 -- Change the values in "params"; in the app they become bind parameters.
 -- Where: send EITHER city/country OR lat + lng + radius_km (1–100 km, checked by the service).
 -- Privacy: only listings.public_location is used for filtering, distance and the pin.
+-- Public:  only active listings an admin approved (specs/004-listing-approval, FR-002).
 --          The real latitude/longitude never leave the database here.
 -- Amenities use AND logic, like Airbnb's filter chips. An empty array = no filter.
 WITH params AS (
@@ -34,7 +35,7 @@ SELECT l.id, l.title, l.property_type,
        (SELECT ph.storage_key FROM listing_photos ph
         WHERE ph.listing_id = l.id ORDER BY ph.sort_order LIMIT 1)      AS cover_key  -- app turns it into a CDN URL
 FROM   p
-JOIN   listings  l  ON l.is_active
+JOIN   listings  l  ON l.is_active AND l.review_status = 'approved'
 JOIN   cities    c  ON c.id = l.city_id
 JOIN   countries co ON co.id = c.country_id
 WHERE  -- where: city mode or radial mode
@@ -66,7 +67,7 @@ LIMIT 20 OFFSET 0;
 SELECT a.name, count(*) AS listings
 FROM   listing_amenities la
 JOIN   amenities a ON a.id = la.amenity_id
-JOIN   listings  l ON l.id = la.listing_id AND l.is_active
+JOIN   listings  l ON l.id = la.listing_id AND l.is_active AND l.review_status = 'approved'
 JOIN   cities    c ON c.id = l.city_id AND c.name = 'Helsinki'
 GROUP  BY a.name
 ORDER  BY listings DESC, a.name;

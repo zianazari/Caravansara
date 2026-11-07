@@ -2,6 +2,7 @@
 
 Every fragment below is a fixed string; user input only ever travels as bind parameters.
 Only ``public_location`` is used: filtering, distance and the pin never touch the real point.
+Only public listings are found: active and approved by an admin (specs/004-listing-approval, FR-002).
 """
 
 from dataclasses import dataclass, field
@@ -47,7 +48,9 @@ _HASHED_MAX_NIGHTS = 7
 
 
 def _where(c: Criteria, *, with_amenities: bool) -> tuple[list[str], dict[str, Any]]:
-    clauses = ["l.is_active", "l.max_guests >= :guests"]
+    # The partial indexes (WHERE is_active) still serve these queries; the review condition is one
+    # more Filter on rows they return, so the plans stay the same (specs/004 research R9).
+    clauses = ["l.is_active", "l.review_status = 'approved'", "l.max_guests >= :guests"]
     params: dict[str, Any] = {"guests": c.guests}
     if c.radial:
         clauses.append("ST_DWithin(l.public_location, p.center, :radius_m)")

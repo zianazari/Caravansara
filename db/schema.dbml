@@ -1,5 +1,5 @@
 // Caravansara (Airbnb-like place reservation site) — paste into https://dbdiagram.io
-// Mirrors db/schema.sql (updated 2026-11-02). EXCLUDE, triggers, partial/GiST indexes and
+// Mirrors db/schema.sql (updated 2026-11-07: listing review, migration 0006). EXCLUDE, triggers, partial/GiST indexes and
 // DEFERRABLE can't be drawn in DBML; they are written in the notes.
 
 Project caravansara {
@@ -19,6 +19,25 @@ Enum booking_status {
   cancelled
   expired
   completed
+}
+
+Enum account_kind {
+  member
+  admin [note: 'only the create-admin command makes one']
+}
+
+Enum listing_review_status {
+  pending
+  approved
+  rejected
+}
+
+Enum review_action {
+  submitted
+  edited [note: 'a descriptive edit sent an approved listing back to the queue']
+  resubmitted
+  approved
+  rejected
 }
 
 TableGroup people_and_places [color: #1F6FEB] {
@@ -42,6 +61,11 @@ TableGroup booking_and_reviews [color: #D9822B] {
   reviews
 }
 
+TableGroup listing_review [color: #1A7F37] {
+  listing_review_events
+  admin_address_views
+}
+
 Table users [headercolor: #1F6FEB] {
   id bigint [pk, increment]
   email text [not null]
@@ -49,12 +73,14 @@ Table users [headercolor: #1F6FEB] {
   full_name text [not null]
   avatar_url text
   created_at timestamptz [not null, default: `now()`]
+  kind account_kind [not null, default: 'member', note: 'admins share this table so one email is one account of either kind; no API input has this field']
+  disabled_at timestamptz [note: 'set by disable-admin; the admin stops working at once']
 
   indexes {
     `lower(email)` [unique, name: 'users_email_lower_key', note: 'A@x.com and a@x.com are one account']
   }
 
-  Note: 'Guests and hosts. A host is a user who owns listings.'
+  Note: 'Guests and hosts (members), and admins. A host is a member who owns listings. An admin token works on no member endpoint.'
 }
 
 Table refresh_tokens [headercolor: #1F6FEB] {
@@ -72,7 +98,7 @@ Table refresh_tokens [headercolor: #1F6FEB] {
 
 Table auth_attempts [headercolor: #1F6FEB] {
   id bigint [pk, increment]
-  action text [not null, note: 'login | register']
+  action text [not null, note: 'login | register | admin_login (admin logins count apart)']
   identifier text [not null, note: 'lower(email) or client IP']
   succeeded boolean [not null]
   attempted_at timestamptz [not null, default: `now()`]
@@ -128,11 +154,16 @@ Table listings [headercolor: #1F6FEB] {
   review_count int [not null, default: 0]
   is_active boolean [not null, default: true]
   created_at timestamptz [not null, default: `now()`]
+  review_status listing_review_status [not null, default: 'pending', note: 'public = is_active AND approved; new listings wait for an admin']
+  submitted_at timestamptz [default: `now()`, note: 'entered the review queue; required while pending']
+  rejection_reason text [note: 'only while rejected, 1-1000 characters; the host reads it']
+  review_version int [not null, default: 0, note: '+1 on every descriptive edit; a decision applies only to the version the admin saw']
 
   indexes {
     city_id
     host_id
     public_location [note: 'GiST, partial: WHERE is_active (radial search)']
+    (submitted_at, id) [name: 'listings_review_queue_idx', note: 'partial: WHERE review_status = pending (the admin queue)']
   }
 }
 
@@ -230,6 +261,31 @@ Table reviews [headercolor: #D9822B] {
   }
 
   Note: 'One review per completed booking (trigger). Composite FK ties listing and guest to the booking.'
+}
+
+Table listing_review_events [headercolor: #1A7F37] {
+  id bigint [pk, increment]
+  listing_id bigint [not null, ref: > listings.id]
+  action review_action [not null]
+  actor_id bigint [not null, ref: > users.id, note: 'the host (submitted, edited, resubmitted) or the admin (approved, rejected)']
+  review_version int [not null, note: 'the version submitted or decided on']
+  reason text [note: 'set exactly when action = rejected']
+  created_at timestamptz [not null, default: `now()`]
+
+  indexes {
+    (listing_id, created_at)
+  }
+
+  Note: 'Append-only history of the review: a trigger refuses UPDATE and DELETE.'
+}
+
+Table admin_address_views [headercolor: #1A7F37] {
+  id bigint [pk, increment]
+  admin_id bigint [not null, ref: > users.id]
+  listing_id bigint [not null, ref: > listings.id]
+  viewed_at timestamptz [not null, default: `now()`]
+
+  Note: 'One row each time an admin opens a listing with its exact address, in the same transaction (constitution V).'
 }
 
 // Composite FK: the review's listing and guest must be the booking's

@@ -8,7 +8,7 @@ from sqlalchemy.ext.asyncio import AsyncEngine
 
 from caravansara.core.timeutil import today_in
 from tests.factories import Factory
-from tests.helpers import User, create_listing, register, reserve
+from tests.helpers import User, create_listing, register, reserve, sql
 
 REVIEW = {"rating": 4, "cleanliness_rating": 5, "comment": "Great stay."}
 
@@ -126,3 +126,26 @@ async def test_review_window_is_14_days_in_city_time(
     late = await client.post(f"/bookings/{too_late}/review", json=REVIEW, headers=guest.auth)
     assert late.status_code == 403
     assert late.json()["error"]["code"] == "review_window_closed"
+
+
+# ---- listing review (specs/004-listing-approval) --------------------------------------
+
+
+@pytest.mark.parametrize("hidden_by", ["inactive", "pending"])
+async def test_reviews_of_a_hidden_listing_follow_its_page(
+    client: AsyncClient, db: AsyncEngine, factory: Factory, stay: tuple[User, User, int, int], hidden_by: str
+) -> None:
+    """Reviews are part of the listing page: who cannot open the page cannot read them (FR-002).
+    Before 004 the reviews of an inactive listing stayed public; now they follow the page."""
+    host, guest, lid, booking = stay
+    assert (await client.post(f"/bookings/{booking}/review", json=REVIEW, headers=guest.auth)).status_code == 201
+    change = "is_active = false" if hidden_by == "inactive" else "review_status = 'pending'"
+    await sql(db, f"UPDATE listings SET {change} WHERE id = :id", id=lid)  # noqa: S608
+
+    stranger = await register(client, "stranger")
+    for headers in ({}, stranger.auth):
+        assert (await client.get(f"/listings/{lid}/reviews", headers=headers)).status_code == 404
+    for viewer in (host, guest):  # the guest's completed stay is a live booking (FR-019)
+        r = await client.get(f"/listings/{lid}/reviews", headers=viewer.auth)
+        assert r.status_code == 200
+        assert r.json()["total"] == 1
