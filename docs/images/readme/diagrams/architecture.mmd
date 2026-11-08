@@ -1,5 +1,6 @@
 flowchart LR
-    client(["Client<br/>web, mobile, Swagger"])
+    client(["Browser"])
+    web["web site · Next.js<br/>pages fa/en, session cookie,<br/>forwards /api/v1"]
     browser(["Browser upload"])
 
     subgraph api["API process · FastAPI"]
@@ -16,7 +17,8 @@ flowchart LR
     db[("PostgreSQL 16 + PostGIS<br/>EXCLUDE, triggers, GiST")]
     s3[("MinIO / S3<br/>photos")]
 
-    client -- "HTTPS /api/v1" --> api
+    client -- "HTTPS" --> web
+    web -- "/api/v1 + visitor's address" --> api
     api --> db
     worker --> db
     browser -- "presigned POST" --> s3

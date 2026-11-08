@@ -1,7 +1,8 @@
 # API tests with Playwright
 
-End-to-end tests for all 36 endpoints of the Caravansara API, run with Playwright's
-`request` fixture against the real `docker compose` stack: API, worker, PostgreSQL + PostGIS and MinIO.
+End-to-end tests for all 39 endpoints of the Caravansara API and for the web site's wiring, run with
+Playwright's `request` fixture against the real `docker compose` stack: web site, API, worker,
+PostgreSQL + PostGIS and MinIO.
 
 The backend's own pytest suite tests each module against containers it starts itself.
 These tests check the system as it is deployed: the built image, the real config, the
@@ -15,25 +16,26 @@ docker compose -f docker-compose.yml -f e2e/compose.e2e.yml up -d --build
 
 cd e2e
 npm ci
-npx playwright test          # 51 tests, a few seconds
+npx playwright test          # 57 tests, a few seconds
 npx playwright show-report   # HTML report; failed tests keep a trace
 ```
 
-`API_URL` (default `http://localhost:8000`) and `DATABASE_URL` (default the compose database)
-point the tests elsewhere.
+`API_URL` (default `http://localhost:8000`), `WEB_URL` (default `http://localhost:3001`) and
+`DATABASE_URL` (default the compose database) point the tests elsewhere.
 
 ## What is covered
 
 | File | Endpoints |
 |---|---|
 | `system-catalog.spec.ts` | `/health`, Swagger and OpenAPI, countries, cities, amenities |
-| `auth.spec.ts` | register, login, refresh (rotation and reuse detection), logout, `GET/PATCH /me` |
+| `auth.spec.ts` | register, login, refresh (rotation and reuse detection), logout, `GET/PATCH /me` (an outside picture address is refused) |
 | `listings.spec.ts` | create, details, my listings, edit and deactivate, amenities, the whole photo flow (upload URL → MinIO → register, edit, reorder, delete) |
 | `search.spec.ts` | radial and city search, dates, guests, pets, amenity AND filter, paging, filter counts, invalid input |
 | `bookings.spec.ts` | reserve, idempotent replay, overlap and a 6-way race (exactly one wins), booking rules, pay, expired hold, view, my trips, cancel, host's bookings |
 | `reviews.spec.ts` | review a completed stay, rating update, one review per stay, 14-day window, listing reviews |
 | `moderation.spec.ts` | admin login, review queue, listing details for review, approve, reject with a reason, resubmit; an admin token on member endpoints and a member on admin ones |
 | `scenario.spec.ts` | the whole story: host lists, guest searches, books, pays, both see it |
+| `web.spec.ts` | the web site (specs/005-frontend-guest): `/api/v1` forwarded and nothing else, the API's `auth/*` closed through the site, the refresh token in an HttpOnly `cv_refresh` cookie, `Origin` checked, login attempts counted by the visitor's address (and a forged address on port 8000 ignored), a fresh CSP nonce per page, and a profile picture uploaded straight to MinIO |
 
 ## Test data
 

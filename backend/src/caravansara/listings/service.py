@@ -325,7 +325,7 @@ async def photo_upload_url(
     await _get_owned(session, listing_id, user_id)
     await session.rollback()  # release the row lock; nothing changes here
     key = f"listings/{listing_id}/{uuid.uuid4().hex}.{_EXTENSIONS[content_type]}"
-    signed = storage.presigned_upload(key, content_type)
+    signed = storage.presigned_upload(key, content_type, settings.max_photo_bytes)
     return UploadUrlOut(
         storage_key=key,
         url=signed["url"],

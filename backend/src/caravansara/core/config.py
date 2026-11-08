@@ -59,6 +59,9 @@ class Settings(BaseSettings):
     media_base_url: str = "http://localhost:9000/caravansara-media"
     upload_url_seconds: int = 600
     max_photo_bytes: int = 10 * 1024 * 1024
+    # Profile pictures: the limit of the upload policy and of the check in PUT /me/avatar. Owner decision,
+    # 2026-11-08 (specs/005-frontend-guest, FR-038): PNG or JPEG up to 5 MB.
+    max_avatar_bytes: int = 5 * 1024 * 1024
 
     # Worker
     worker_interval_seconds: int = 60

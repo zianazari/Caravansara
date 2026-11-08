@@ -185,10 +185,11 @@ All tested on PostgreSQL 16 with PostGIS 3.4.
 - Real payments and refunds (payment is simulated)
 - Wishlists, guest–host messages and host replies to reviews
 - Host date blocking and different prices per night
-- Changing booking dates (cancel and rebook instead), currency conversion, and an admin panel (catalogs change only through seed data)
+- Changing booking dates (cancel and rebook instead), currency conversion, and editing catalogs from a panel (catalogs change only through seed data; the admin review panel for listings is planned work)
 
 ## Files
 
 - `Caravansara/db/`: `schema.sql`, `seed_amenities.sql`, `search_query.sql`, `schema.dbml` (for dbdiagram.io), `erd.mmd` and `erd.png`, and a README
 - `Caravansara/docs/backend-design.md`: backend requirements, API and service rules (source of truth)
-- `Caravansara/docs/future-work.md`: unstarted work only: more test data, monitoring, index review, UI, Playwright tests, microservices
+- `Caravansara/docs/future-work.md`: unstarted work only: the host pages and the admin panel of the web site, Playwright browser tests, email, Redis caching, microservices
+- `Caravansara/frontend/`: the web site (guest part: search, booking, trips, reviews, profile picture), Persian right-to-left and English

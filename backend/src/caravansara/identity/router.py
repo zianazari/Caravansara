@@ -1,11 +1,14 @@
 from fastapi import APIRouter, status
 
 from caravansara.core.db import SessionDep
-from caravansara.core.deps import ClientIp
+from caravansara.core.deps import ClientIp, StorageDep
 from caravansara.core.errors import error_responses
 from caravansara.core.security import CurrentUserId, SettingsDep
 from caravansara.identity import service
 from caravansara.identity.schemas import (
+    AvatarSetIn,
+    AvatarUploadUrlIn,
+    AvatarUploadUrlOut,
     LoginIn,
     ProfileUpdate,
     RefreshIn,
@@ -71,6 +74,62 @@ async def get_me(user_id: CurrentUserId, session: SessionDep) -> UserOut:
     return UserOut.model_validate(await service.get_me(session, user_id))
 
 
-@router.patch("/me", summary="Update my profile", responses=error_responses(401, 422))
-async def update_me(body: ProfileUpdate, user_id: CurrentUserId, session: SessionDep) -> UserOut:
-    return UserOut.model_validate(await service.update_me(session, user_id, body))
+@router.patch(
+    "/me",
+    summary="Update my profile",
+    description=(
+        "Change your name, or your picture. A picture must be one you uploaded here for this account "
+        "(`POST /me/avatar/upload-url`); any other address is refused with `invalid_avatar_url`, and nothing "
+        "in the request is saved. `null` removes the picture."
+    ),
+    responses=error_responses(401, 422),
+)
+async def update_me(
+    body: ProfileUpdate, user_id: CurrentUserId, session: SessionDep, storage: StorageDep, settings: SettingsDep
+) -> UserOut:
+    return UserOut.model_validate(await service.update_me(session, storage, settings, user_id, body))
+
+
+@router.post(
+    "/me/avatar/upload-url",
+    tags=["Profile picture"],
+    summary="1. Get an upload URL for a profile picture",
+    description=(
+        "Returns a presigned POST for a PNG or JPEG of at most 5 MB. Upload the file straight to storage as "
+        "multipart/form-data with the returned `fields` and then a `file` field; storage refuses a bigger "
+        "file. Then call `PUT /me/avatar` with `storage_key`."
+    ),
+    responses=error_responses(401, 422),
+)
+async def avatar_upload_url(
+    body: AvatarUploadUrlIn, user_id: CurrentUserId, storage: StorageDep, settings: SettingsDep
+) -> AvatarUploadUrlOut:
+    return service.avatar_upload_url(storage, settings, user_id, body.content_type)
+
+
+@router.put(
+    "/me/avatar",
+    tags=["Profile picture"],
+    summary="2. Use an uploaded picture",
+    description=(
+        "Checks the uploaded file itself: it must be yours (`invalid_storage_key`), exist (`upload_missing`), "
+        "be at most 5 MB (`image_too_large`) and really be a PNG or JPEG (`invalid_image`). A refused file is "
+        "deleted. The previous picture's file is deleted after the change."
+    ),
+    responses=error_responses(401, 422),
+)
+async def set_avatar(
+    body: AvatarSetIn, user_id: CurrentUserId, session: SessionDep, storage: StorageDep, settings: SettingsDep
+) -> UserOut:
+    return UserOut.model_validate(await service.set_avatar(session, storage, settings, user_id, body.storage_key))
+
+
+@router.delete(
+    "/me/avatar",
+    tags=["Profile picture"],
+    summary="Remove my picture",
+    description="Goes back to the default avatar and deletes the file. Without a picture, nothing changes.",
+    responses=error_responses(401),
+)
+async def remove_avatar(user_id: CurrentUserId, session: SessionDep, storage: StorageDep) -> UserOut:
+    return UserOut.model_validate(await service.remove_avatar(session, storage, user_id))

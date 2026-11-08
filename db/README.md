@@ -65,6 +65,17 @@ A new listing is public only after an admin approves it. Each new column, table 
 
 Downgrade sets unapproved listings inactive first, so nothing unreviewed becomes public, and deletes admin accounts, which would otherwise become members who can book. No listing, booking or review is deleted.
 
+## Changes on 2026-11-08 (profile pictures, no migration, [specs/005-frontend-guest](../specs/005-frontend-guest/))
+
+The schema is unchanged. Only the meaning of an existing column changed, and storage has a new key prefix:
+
+| Change | Why | Effect |
+| --- | --- | --- |
+| `users.avatar_url` holds only the public address of a picture in the system's own storage, under `avatars/{user_id}/` | An address on another server would tell that server who views a user's reviews, and would bypass the size and type rules | Set by `PUT /me/avatar` after the server checks the file (PNG or JPEG, at most 5 MB, real first bytes); `PATCH /me` refuses any other address with `invalid_avatar_url`. `NULL` means the default avatar, which the site draws and does not store |
+| Storage keys `avatars/{user_id}/{uuid}.png` or `.jpg` | One prefix per user, so a key of another user is refused | The previous file is deleted after the change is committed. Files uploaded but never set stay until a lifecycle rule is added (future work) |
+
+In the data on 2026-11-08, `caravansara_demo` and `caravansara_bulk` had no `avatar_url`. The main database had 11 outside addresses, all left by the e2e tests. No migration was needed. The site shows the default avatar for any outside address.
+
 ## Rules the database enforces (all tested on PostgreSQL 16 + PostGIS 3.4)
 
 | Rule | How |
@@ -100,6 +111,8 @@ Image files live in object storage (MinIO in dev/test, S3 or R2 in production) a
 `listing_photos` stores only the `storage_key` (e.g. `listings/42/7f3a.jpg`) plus `width` and `height`. The app builds
 the URL, e.g. `https://cdn.example.com/listings/42/7f3a.jpg?w=720`, so a CDN or domain change needs no database update.
 Uploads go browser → presigned URL → storage, then the API checks the file exists and inserts the row.
+Profile pictures follow the same path under `avatars/{user_id}/`; the API checks their real size and first bytes too,
+and keeps their full public address in `users.avatar_url` (see Changes on 2026-11-08).
 
 ## Run it
 

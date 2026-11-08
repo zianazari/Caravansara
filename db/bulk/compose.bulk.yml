@@ -1,0 +1,9 @@
+# Runs the API (and so the web site) on the bulk data, caravansara_bulk, for measuring pages under load
+# (specs/005-frontend-guest, SC-003). The measurement only reads; nothing is written to the bulk data.
+#   docker compose -f docker-compose.yml -f db/bulk/compose.bulk.yml up -d --no-deps api
+# Back to the normal database:
+#   docker compose up -d --no-deps api
+services:
+  api:
+    environment:
+      CARAVANSARA_DATABASE_URL: postgresql+asyncpg://caravansara:caravansara@db:5432/caravansara_bulk
