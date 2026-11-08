@@ -370,3 +370,24 @@
   - **ارائه‌دهنده‌ی سبک برداری رایگان:** وابستگی به سرویس سوم را بیشتر می‌کند.
   - **Leaflet به‌جای MapLibre:** پشته را constitution و future-work تعیین کرده‌اند.
 
+## یافته‌های هنگام اجرا (2026-11-08)
+
+این بندها هنگام `/speckit-implement` با کد و ابزار واقعی سنجیده شدند و تصمیم‌های بالا را دقیق‌تر می‌کنند.
+
+- **R2، نسخه‌ها:** نسخه‌ها از روی تاریخ انتشار در `npm view <pkg> time` انتخاب شدند، با این قاعده که دست‌کم دو هفته از انتشارشان گذشته باشد. همه در `frontend/package.json` بدون `^` آمده‌اند.
+  - **اصلی:** Next.js 16.4.3 (2026-10-23)، React 19.3.1، next-intl 4.14.9، TypeScript 5.9.3، Vitest 5.0.5، Vite 8.3.5، Tailwind 4.3.3 و MapLibre 5.24.0.
+  - **eslint 9.39.5 و نه 10:** با eslint 10، `npm install` برای `eslint-plugin-import`، `eslint-plugin-jsx-a11y` و `eslint-plugin-react` (که `eslint-config-next` 16.4.3 می‌آورد) هشدار `ERESOLVE overriding peer dependency` داد.
+  - **`axe-core` 4.14.0 و نه `vitest-axe`:** آخرین نسخه‌ی `vitest-axe` (0.1.0) از ۲۰۲۲ است.
+  - **`create-next-app` و `shadcn` CLI به کار نرفتند:** `frontend/` با دست ساخته شد، تا هر نسخه دقیق و بررسی‌پذیر باشد. کامپوننت‌های پایه به سبک shadcn/ui، مستقیم روی `radix-ui` 1.8.1، در `src/components/ui/` نوشته شدند، چون CLI آن کد را از رجیستری اینترنتی می‌گیرد.
+- **R5، proxy با route handler و نه `rewrites`:** docs همراه Next.js 16.4.3 (`node_modules/next/dist/docs`) و خروجی build نشان دادند که rewrites در manifest هنگام build ثابت می‌شوند. پس نشانی API در image قفل می‌شد. route handler `src/app/api/v1/[...path]/route.ts` نشانی را هنگام اجرا می‌خواند، و سرآیندها را با فهرست سفید می‌فرستد.
+- **R19، نشانی ثابت سایت:** با `172.28.0.10`، `docker compose up` خطای «Address already in use» داد، چون Docker همان نشانی را پیش‌تر به container دیگری داده بود. حالا subnet یک `ip_range` (`172.28.0.0/25`) برای نشانی‌های پویا دارد، و سایت `172.28.0.250` را بیرون از آن می‌گیرد.
+- **R19، سرآیند از سوی بازدیدکننده:** در `next/dist/server/base-server.js` آمده است `req.headers['x-forwarded-for'] ??= socket.remoteAddress`. یعنی Next.js سرآیندی را که خود بازدیدکننده فرستاده نگه می‌دارد. سایت راست‌ترین نشانی را برمی‌دارد، که پشت هر reverse proxy درست است. اما بدون proxy جلوی سایت، بازدیدکننده می‌تواند نشانی دلخواه بدهد. پس شرط production این است که یک reverse proxy جلوی سایت این سرآیند را بگذارد. این در `docs/backend-design.md` ثبت می‌شود.
+  - **سنجش روی stack:** دو ورود ناموفق از راه `/session/login` با `X-Forwarded-For` برابر `198.51.100.21` و `.22` در `auth_attempts` جدا ثبت شدند. یک درخواست مستقیم به `:8000` با `X-Forwarded-For: 198.51.100.99` با نشانی اتصال خودش ثبت شد، نه با نشانی جعلی.
+- **R21، CSP:** `curl` روی `next start` نشان داد سرآیند `content-security-policy` nonce تازه دارد، و همه‌ی `<script>`های صفحه همان nonce را دارند. nonce از `proxy.ts` به render می‌رسد، چون next-intl سرآیندهای درخواست را در rewrite خودش کپی می‌کند (`next-intl/dist/esm/development/middleware/middleware.js`).
+- **R4، قفل:** کوکی میان زبانه‌ها مشترک است. پس دو تازه کردنی که قفل آن‌ها را پشت‌سرهم می‌کند خطری ندارند، چون دومی توکن چرخیده را می‌فرستد. خطر فقط دو درخواستِ هم‌زمان است. تست `session.test.ts` همین را می‌سنجد: بیشینه‌ی درخواست‌های هم‌زمان ۱ است. بازدیدکننده‌ای که وارد نشده هم پس از اولین بازسازی نشست، دیگر هیچ درخواست refresh نمی‌فرستد (`ensureToken`).
+- **پیام‌ها:** `messages/fa.json` و `en.json` از یک منبع ساخته می‌شوند: `frontend/scripts/messages_source.py`، که هر کلید را با هر دو زبان دارد. پس دو فایل هرگز کلید متفاوت ندارند.
+- **R3، `refresh` بی‌کوکی:** در بررسی Chrome واقعی (T069)، بازسازی نشست برای بازدیدکننده‌ای که وارد نشده بود `401` می‌گرفت و در کنسول هر صفحه خطا می‌نوشت. حالا بی‌کوکی `204` («نشستی نیست») برمی‌گردد، و `401` برای نشستی می‌ماند که API آن را رد کرده است.
+- **R14، عکس‌ها:** optimizer عکس Next.js داخل container نشانی عمومی storage (`localhost:9000`) را نمی‌دید و `400` می‌داد. عکس‌ها مستقیم از storage بار می‌شوند (`images.unoptimized`)، و CSP همان یک مبدأ را مجاز می‌کند. در production، CDN اندازه‌ی مناسب را می‌دهد.
+- **R17، اندازه‌گیری:** Lighthouse نصب نبود، و `npx lighthouse` کد بیرونی دانلود می‌کرد. همان سنجه‌ها با Chrome و Playwright و throttling موبایل گرفته شدند (`measurements.md`). دستور «متغیر محیطی در خط فرمان» برای بردن API به bulk کار نکرد، چون `docker-compose.yml` نشانی پایگاه داده را ثابت نوشته است. `db/bulk/compose.bulk.yml` جای آن را گرفت.
+- **داده‌ی دمو:** `caravansara_demo` در migration `0001` است (`SELECT version_num FROM alembic_version`)، و API امروز با آن خطای `column l.review_status does not exist` می‌دهد. به‌روز کردن آن به future-work رفت، چون داده‌ی دمو را تغییر می‌دهد و اجازه‌ی مالک پروژه را می‌خواهد.
+

@@ -45,6 +45,42 @@ jobs:
       - name: Build the image
         working-directory: .
         run: docker build -f backend/Dockerfile -t caravansara:ci .
+      - name: Build the web image
+        working-directory: .
+        run: docker build -f frontend/Dockerfile -t caravansara-web:ci frontend
+
+  # The web site (specs/005-frontend-guest, research R15). The client is generated from backend/openapi.json,
+  # so a contract change that breaks the site fails here, not in a browser (FR-033).
+  frontend:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    defaults:
+      run:
+        working-directory: frontend
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+      - name: Install
+        run: npm ci
+      - name: API client matches backend/openapi.json
+        run: |
+          npm run gen:api
+          git diff --exit-code src/api/schema.d.ts
+      - name: Lint
+        run: |
+          npm run lint
+          npm run format:check
+      - name: Types
+        run: npm run typecheck
+      # The 90% gate covers src/lib and src/api, where the rules are (research R16).
+      - name: Tests (coverage >= 90% for rules)
+        run: npm run test -- --coverage
+      - name: Build
+        run: npm run build
 
   # Monitoring config is code too: a broken rule or collector config would fail silently at run time.
   observability:

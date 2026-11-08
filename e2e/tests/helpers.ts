@@ -8,6 +8,8 @@ import { Client } from "pg";
 /** Every test makes its own users and listings, so tests never depend on each other. */
 
 export const API = "/api/v1";
+/** The web site (specs/005-frontend-guest), which forwards /api/v1 to the API. */
+export const WEB = process.env.WEB_URL ?? "http://localhost:3001";
 export const PASSWORD = "E2e-Pass-2026!";
 export const AMSTERDAM = { lat: 52.3731, lng: 4.8922 };
 

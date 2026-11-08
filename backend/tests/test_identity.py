@@ -103,15 +103,19 @@ async def test_logout_revokes(client: AsyncClient) -> None:
 
 
 async def test_update_profile(client: AsyncClient) -> None:
+    # A picture from another server is no longer accepted (specs/005, FR-041); test_avatar.py covers pictures.
     user = await register(client)
-    r = await client.patch(
-        "/me", json={"full_name": "  New Name ", "avatar_url": "https://img.example.com/a.png"}, headers=user.auth
-    )
+    r = await client.patch("/me", json={"full_name": "  New Name ", "avatar_url": None}, headers=user.auth)
     assert r.status_code == 200
     assert r.json()["full_name"] == "New Name"
-    assert r.json()["avatar_url"] == "https://img.example.com/a.png"
-    cleared = await client.patch("/me", json={"avatar_url": None}, headers=user.auth)
-    assert cleared.json()["avatar_url"] is None
+    assert r.json()["avatar_url"] is None
+
+
+async def test_update_profile_refuses_an_outside_picture(client: AsyncClient) -> None:
+    user = await register(client)
+    r = await client.patch("/me", json={"avatar_url": "https://img.example.com/a.png"}, headers=user.auth)
+    assert r.status_code == 422
+    assert r.json()["error"]["code"] == "invalid_avatar_url"
 
 
 async def test_me_needs_a_valid_token(client: AsyncClient, db: AsyncEngine) -> None:

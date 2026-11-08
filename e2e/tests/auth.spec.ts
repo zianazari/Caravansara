@@ -84,14 +84,18 @@ test.describe("Auth and profile", () => {
     await expectError(await request.get(`${API}/me`, { headers: { Authorization: "Bearer nope" } }), 401, "invalid_token");
   });
 
-  test("PATCH /me updates the name and avatar", async ({ request }) => {
+  test("PATCH /me updates the name and refuses an outside picture", async ({ request }) => {
     const user = await register(request, "patch");
-    const res = await request.patch(`${API}/me`, {
-      headers: auth(user),
-      data: { full_name: "Renamed Guest", avatar_url: "https://example.com/avatar.png" },
-    });
+    const res = await request.patch(`${API}/me`, { headers: auth(user), data: { full_name: "Renamed Guest" } });
     expect(res.status()).toBe(200);
-    expect(await res.json()).toMatchObject({ full_name: "Renamed Guest", avatar_url: "https://example.com/avatar.png" });
+    expect(await res.json()).toMatchObject({ full_name: "Renamed Guest", avatar_url: null });
+
+    // Only a picture uploaded here can be used (specs/005-frontend-guest, FR-041); web.spec.ts uploads one.
+    await expectError(
+      await request.patch(`${API}/me`, { headers: auth(user), data: { avatar_url: "https://example.com/avatar.png" } }),
+      422,
+      "invalid_avatar_url",
+    );
 
     await expectError(await request.patch(`${API}/me`, { headers: auth(user), data: { full_name: "" } }), 422);
     await expectError(await request.patch(`${API}/me`, { data: { full_name: "X" } }), 401);

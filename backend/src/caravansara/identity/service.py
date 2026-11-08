@@ -1,5 +1,7 @@
 """Registration, login, token rotation, profiles and admin accounts. Other modules may call this file only."""
 
+import logging
+import uuid
 from dataclasses import dataclass
 from datetime import timedelta
 
@@ -7,7 +9,7 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from caravansara.core.config import Settings
-from caravansara.core.errors import AppError, Conflict, NotFound, Unauthorized
+from caravansara.core.errors import AppError, Conflict, NotFound, Unauthorized, Unprocessable
 from caravansara.core.metrics import RATE_LIMITED
 from caravansara.core.security import (
     create_access_token,
@@ -16,12 +18,15 @@ from caravansara.core.security import (
     new_refresh_token,
     verify_password,
 )
+from caravansara.core.storage import Storage
 from caravansara.core.timeutil import utcnow
 from caravansara.identity import repository as repo
 from caravansara.identity.models import AccountKind, User
-from caravansara.identity.schemas import AdminTokenOut, ProfileUpdate, TokensOut
+from caravansara.identity.schemas import AdminTokenOut, AvatarUploadUrlOut, ProfileUpdate, TokensOut
 
 __all__ = ["AdminRefused", "PublicUser", "TooManyAttempts"]
+
+log = logging.getLogger(__name__)
 
 
 class TooManyAttempts(AppError):
@@ -132,15 +137,97 @@ async def get_me(session: AsyncSession, user_id: int) -> User:
     return user
 
 
-async def update_me(session: AsyncSession, user_id: int, changes: ProfileUpdate) -> User:
+async def update_me(
+    session: AsyncSession, storage: Storage, settings: Settings, user_id: int, changes: ProfileUpdate
+) -> User:
+    """Name and picture. A picture address goes through the same checks as PUT /me/avatar (FR-041), and all
+    checks run before anything changes, so a refused request changes nothing, the name included."""
     user = await get_me(session, user_id)
     data = changes.model_dump(exclude_unset=True)
+    new_key: str | None = None
+    if data.get("avatar_url") is not None:
+        new_key = storage.key_from_url(str(data["avatar_url"]))
+        if new_key is None or not new_key.startswith(_avatar_prefix(user_id)):
+            raise Unprocessable("invalid_avatar_url", "Only a picture uploaded here for this account can be used.")
+        await _check_avatar_file(storage, settings, new_key)
     if "full_name" in data and data["full_name"] is not None:
         user.full_name = data["full_name"].strip()
     if "avatar_url" in data:
-        user.avatar_url = str(data["avatar_url"]) if data["avatar_url"] is not None else None
+        return await _replace_avatar(session, storage, user, new_key)
     await session.commit()
     return user
+
+
+# ---- profile pictures (specs/005-frontend-guest, FR-037 to FR-041, research R20) --------------------------
+
+_AVATAR_EXTENSIONS = {"image/png": "png", "image/jpeg": "jpg"}
+_PNG = b"\x89PNG\r\n\x1a\n"
+_JPEG = b"\xff\xd8\xff"
+
+
+def _avatar_prefix(user_id: int) -> str:
+    return f"avatars/{user_id}/"
+
+
+def avatar_upload_url(storage: Storage, settings: Settings, user_id: int, content_type: str) -> AvatarUploadUrlOut:
+    """A presigned POST for a new picture. The policy pins the type and refuses more than max_avatar_bytes,
+    so storage itself never keeps a bigger file."""
+    key = f"{_avatar_prefix(user_id)}{uuid.uuid4().hex}.{_AVATAR_EXTENSIONS[content_type]}"
+    signed = storage.presigned_upload(key, content_type, settings.max_avatar_bytes)
+    return AvatarUploadUrlOut(
+        storage_key=key,
+        url=signed["url"],
+        fields={k: str(v) for k, v in signed["fields"].items()},
+        expires_in=settings.upload_url_seconds,
+    )
+
+
+async def _check_avatar_file(storage: Storage, settings: Settings, key: str) -> None:
+    """The stored file's real size and first bytes, not what the browser declared (FR-038). A refused file
+    is deleted, so nothing unchecked stays in storage."""
+    size = await storage.size(key)
+    if size is None:
+        raise Unprocessable("upload_missing", "No uploaded file was found for this key.")
+    if size > settings.max_avatar_bytes:
+        await storage.delete(key)
+        raise Unprocessable(
+            "image_too_large", "The picture is larger than allowed.", details={"max_bytes": settings.max_avatar_bytes}
+        )
+    head = await storage.read_head(key, 8)
+    if not (head.startswith(_PNG) or head.startswith(_JPEG)):
+        await storage.delete(key)
+        raise Unprocessable("invalid_image", "The file is not a PNG or JPEG picture.")
+
+
+async def _replace_avatar(session: AsyncSession, storage: Storage, user: User, new_key: str | None) -> User:
+    """Points the account at the new picture (or none) and then deletes the old file (FR-039). The old file
+    goes only after the commit: if the commit fails, the account still points at a file that exists. A failed
+    delete is only logged; the picture is already replaced."""
+    old_url = user.avatar_url
+    user.avatar_url = f"{storage.public_url(new_key)}" if new_key else None
+    await session.commit()
+    old_key = storage.key_from_url(old_url) if old_url else None
+    if old_key and old_key != new_key and old_key.startswith(_avatar_prefix(user.id)):
+        try:
+            await storage.delete(old_key)
+        except Exception:  # the new picture is saved; a leftover file is harmless
+            log.warning("avatar_delete_failed", extra={"user_id": user.id})
+    return user
+
+
+async def set_avatar(
+    session: AsyncSession, storage: Storage, settings: Settings, user_id: int, storage_key: str
+) -> User:
+    user = await get_me(session, user_id)
+    if not storage_key.startswith(_avatar_prefix(user_id)) or ".." in storage_key:
+        raise Unprocessable("invalid_storage_key", "This key does not belong to your account.")
+    await _check_avatar_file(storage, settings, storage_key)
+    return await _replace_avatar(session, storage, user, storage_key)
+
+
+async def remove_avatar(session: AsyncSession, storage: Storage, user_id: int) -> User:
+    user = await get_me(session, user_id)
+    return await _replace_avatar(session, storage, user, None)
 
 
 async def get_public_user(session: AsyncSession, user_id: int) -> PublicUser:

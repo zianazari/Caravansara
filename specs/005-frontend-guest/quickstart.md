@@ -72,12 +72,12 @@ uv run pytest tests/test_avatar.py tests/test_openapi_contract.py   # آواتا
 ۱. API را موقتاً به `caravansara_bulk` وصل کنید:
 
    ```bash
-   CARAVANSARA_DATABASE_URL=postgresql+asyncpg://caravansara:caravansara@db:5432/caravansara_bulk docker compose up -d --no-deps api
+   docker compose -f docker-compose.yml -f db/bulk/compose.bulk.yml up -d --no-deps api
    ```
 
-   Lighthouse فقط می‌خواند، پس داده‌ی bulk تغییر نمی‌کند.
+   Lighthouse فقط می‌خواند، پس داده‌ی bulk تغییر نمی‌کند. متغیر محیطی در خط فرمان کار نمی‌کند، چون `docker-compose.yml` نشانی پایگاه داده را ثابت نوشته است. پس از فایل override استفاده می‌شود.
 
-۲. Lighthouse را در حالت Mobile، با throttling پیش‌فرض، روی این سه صفحه اجرا کنید:
+۲. Lighthouse را در حالت Mobile، با throttling پیش‌فرض، روی این سه صفحه اجرا کنید. یا همان سنجه‌ها را با Chrome و Playwright بگیرید، با همان throttling؛ روشی که در `measurements.md` آمده است:
    - `/fa/search?city_id=<London>&check_in=…&check_out=…&adults=2`
    - صفحه‌ی یک آگهی
    - `/fa`

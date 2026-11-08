@@ -64,7 +64,7 @@ The collector, dashboards and alerts live in [`observability/`](../observability
 
 ### API contract
 
-[`openapi.json`](openapi.json) is the API contract, committed next to the code. The frontend builds its client from this file. `tests/test_openapi_contract.py` fails when the code and the file disagree, so no endpoint, field or error changes by accident. After an intended change, run `uv run caravansara export-openapi` and commit the new file. The contract diff then shows up in the pull request, where it can be reviewed.
+[`openapi.json`](openapi.json) is the API contract, committed next to the code. The web site (`frontend/`) builds its typed client from this file with `npm run gen:api`, and its CI job fails when the generated file and this one disagree. `tests/test_openapi_contract.py` fails when the code and the file disagree, so no endpoint, field or error changes by accident. After an intended change, run `uv run caravansara export-openapi` and commit the new file. The contract diff then shows up in the pull request, where it can be reviewed.
 
 ## Checks
 
@@ -82,7 +82,8 @@ CI (`.github/workflows/ci.yml`) runs all of them and builds the image. Coverage 
 ```
 src/caravansara/
   core/       settings, database, errors, security, storage
-  identity/   users, JWT access + rotating refresh tokens, rate limit
+  identity/   users, JWT access + rotating refresh tokens, rate limit, profile pictures (PNG or JPEG up to 5 MB,
+              checked again by size and first bytes; specs/005-frontend-guest)
   catalog/    countries, cities, amenities (read-only)
   listings/   listings, public pin, photos, amenities
   bookings/   hold, payment, cancellation, worker queries

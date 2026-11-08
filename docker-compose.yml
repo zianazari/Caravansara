@@ -1,5 +1,5 @@
 # Whole system with one command: docker compose up --build
-# API + Swagger: http://localhost:8000/docs   MinIO console: http://localhost:9001
+# Web site: http://localhost:3001 (/fa, /en)   API + Swagger: http://localhost:8000/docs   MinIO console: http://localhost:9001
 # With monitoring (Grafana http://localhost:3000, Prometheus http://localhost:9090):
 #   docker compose --profile observability up --build
 # Demo data with photos (optional, empty database only): docker compose run --rm migrate caravansara seed-demo
@@ -77,6 +77,12 @@ services:
   api:
     <<: *app
     ports: ["8000:8000"]
+    environment:
+      <<: *app-env
+      # Trust X-Forwarded-For only from the web site's fixed address, so the login and sign-up rate limits
+      # count each visitor by their own address (specs/005-frontend-guest, research R19). Anyone else, such
+      # as a direct call to port 8000, is counted by their own connection.
+      FORWARDED_ALLOW_IPS: ${CARAVANSARA_WEB_IP:-172.28.0.250}
     depends_on:
       migrate:
         condition: service_completed_successfully
@@ -97,6 +103,30 @@ services:
       interval: 10s
       timeout: 3s
       retries: 5
+
+  # The web site (specs/005-frontend-guest): Next.js on port 3001, because Grafana has 3000. The browser talks
+  # only to it; it forwards /api/v1 to the api service (research R5). Its fixed address is the one the api
+  # trusts for X-Forwarded-For (R19).
+  web:
+    build:
+      context: frontend
+      args:
+        NEXT_PUBLIC_MEDIA_BASE_URL: http://localhost:9000/caravansara-media
+        NEXT_PUBLIC_MAP_TILE_URL: https://tile.openstreetmap.org/{z}/{x}/{y}.png
+    environment:
+      API_INTERNAL_URL: http://api:8000
+    ports: ["3001:3001"]
+    networks:
+      default:
+        ipv4_address: ${CARAVANSARA_WEB_IP:-172.28.0.250}
+    depends_on:
+      api:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://localhost:3001/fa').then(r=>process.exit(r.ok?0:1),()=>process.exit(1))"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
 
   # ---- monitoring: docker compose --profile observability up ----------------------------
   # One collector (Alloy) for logs and traces, Loki for logs, Tempo for traces, Prometheus
@@ -170,3 +200,15 @@ volumes:
   tempo-data:
   prometheus-data:
   grafana-data:
+
+# A fixed subnet, so the web service can have the fixed address the api trusts (research R19). If it clashes
+# with a network on your machine or VPN, set CARAVANSARA_APP_SUBNET, CARAVANSARA_APP_IP_RANGE and CARAVANSARA_WEB_IP (inside the subnet,
+# outside the range) and run `docker compose down` (never with -v: it deletes the data) and `up` again.
+networks:
+  default:
+    ipam:
+      config:
+        - subnet: ${CARAVANSARA_APP_SUBNET:-172.28.0.0/24}
+          # Docker hands out addresses only from the lower half, so the web site's fixed address in the
+          # upper half (CARAVANSARA_WEB_IP, default .250) is never taken by another container.
+          ip_range: ${CARAVANSARA_APP_IP_RANGE:-172.28.0.0/25}
