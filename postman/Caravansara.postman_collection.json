@@ -102,6 +102,26 @@
     {
       "key": "checkOut",
       "value": ""
+    },
+    {
+      "key": "avatarKey",
+      "value": ""
+    },
+    {
+      "key": "adminEmail",
+      "value": "admin@example.com"
+    },
+    {
+      "key": "adminPassword",
+      "value": "caravansara-demo"
+    },
+    {
+      "key": "adminToken",
+      "value": ""
+    },
+    {
+      "key": "reviewVersion",
+      "value": "0"
     }
   ],
   "item": [
@@ -409,6 +429,170 @@
                 }
               }
             }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Profile picture",
+      "description": "PNG or JPEG up to 5 MB, uploaded straight to storage; without one, the site shows a default avatar (specs/005-frontend-guest).",
+      "item": [
+        {
+          "name": "1. Get an upload URL for a profile picture",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/me/avatar/upload-url",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "me",
+                "avatar",
+                "upload-url"
+              ]
+            },
+            "description": "Returns a presigned POST for a PNG or JPEG of at most 5 MB. Upload the file straight to storage as multipart/form-data with the returned `fields` and then a `file` field; storage refuses a bigger file. Then call `PUT /me/avatar` with `storage_key`.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"content_type\": \"image/jpeg\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const body = pm.response.json();",
+                  "pm.collectionVariables.set(\"avatarKey\", body.storage_key);",
+                  "pm.collectionVariables.set(\"uploadUrl\", body.url);",
+                  "pm.collectionVariables.set(\"uploadFields\", JSON.stringify(body.fields));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Upload the file to storage (presigned POST)",
+          "request": {
+            "method": "POST",
+            "auth": {
+              "type": "noauth"
+            },
+            "header": [],
+            "url": {
+              "raw": "{{uploadUrl}}",
+              "host": [
+                "{{uploadUrl}}"
+              ]
+            },
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "file",
+                  "type": "file",
+                  "src": "sample-photo.jpg"
+                }
+              ]
+            },
+            "description": "Run **1. Get an upload URL for a profile picture** first. The pre-request script adds the signed policy fields; the `file` field points to `sample-photo.jpg` (a JPEG under 5 MB) next to the collection file. Storage itself refuses a file over 5 MB. Then run **2. Use an uploaded picture**."
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const fields = JSON.parse(pm.collectionVariables.get(\"uploadFields\") || \"{}\");",
+                  "const file = pm.request.body.formdata.find(f => f.key === \"file\");",
+                  "pm.request.body.formdata.clear();",
+                  "Object.entries(fields).forEach(([key, value]) => pm.request.body.formdata.add({ key, value, type: \"text\" }));",
+                  "if (file) pm.request.body.formdata.add(file);  // the file must be the last field"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "2. Use an uploaded picture",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/me/avatar",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "me",
+                "avatar"
+              ]
+            },
+            "description": "Checks the uploaded file itself: it must be yours (`invalid_storage_key`), exist (`upload_missing`), be at most 5 MB (`image_too_large`) and really be a PNG or JPEG (`invalid_image`). A refused file is deleted. The previous picture's file is deleted after the change.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"storage_key\": \"{{avatarKey}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "Remove my picture",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/me/avatar",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "me",
+                "avatar"
+              ]
+            },
+            "description": "Goes back to the default avatar and deletes the file. Without a picture, nothing changes."
           }
         }
       ]
@@ -951,6 +1135,32 @@
                 }
               }
             }
+          }
+        },
+        {
+          "name": "Send a rejected listing again",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/listings/{{listingId}}/resubmit",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "listings",
+                "{{listingId}}",
+                "resubmit"
+              ]
+            },
+            "description": "After fixing what the admin's reason asked for. The listing waits for review again, at the end of the queue, and the old reason is cleared. Only for a `rejected` listing."
           }
         }
       ]
@@ -1594,6 +1804,260 @@
             "description": "Newest first.",
             "auth": {
               "type": "noauth"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Admin (listing review)",
+      "description": "An admin account exists only through `caravansara create-admin` on the server (or `admin@example.com` in the demo data). Admin endpoints use their own token; a member token is refused, and an admin token works on no member endpoint (specs/004-listing-approval).",
+      "item": [
+        {
+          "name": "Admin log in",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/admin/auth/login",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "admin",
+                "auth",
+                "login"
+              ]
+            },
+            "description": "Admin accounts are made only with `caravansara create-admin` on the server. The token lasts 15 minutes and has no refresh token. Member accounts cannot log in here, and an admin token works on no member endpoint.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{adminEmail}}\",\n  \"password\": \"{{adminPassword}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "auth": {
+              "type": "noauth"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (pm.response.code === 200) pm.collectionVariables.set(\"adminToken\", pm.response.json().access_token);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Review queue",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/admin/listings/pending",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "admin",
+                "listings",
+                "pending"
+              ]
+            },
+            "description": "Listings waiting for review, oldest first. Each has the `review_version` to decide on.",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{adminToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const first = pm.response.json().items[0];",
+                  "if (first) { pm.collectionVariables.set(\"listingId\", first.id); pm.collectionVariables.set(\"reviewVersion\", first.review_version); }"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Listing for review",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/admin/listings/{{listingId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "admin",
+                "listings",
+                "{{listingId}}"
+              ]
+            },
+            "description": "Any listing in any state, with its exact address. Every call is recorded: which admin, which listing, when.",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{adminToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (pm.response.code === 200) pm.collectionVariables.set(\"reviewVersion\", pm.response.json().review_version);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Approve a listing",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/admin/listings/{{listingId}}/approve",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "admin",
+                "listings",
+                "{{listingId}}",
+                "approve"
+              ]
+            },
+            "description": "Makes a pending listing public (if the host keeps it active). `409 listing_not_pending`: it is no longer pending, e.g. another admin decided first. `409 listing_changed`: the host edited it after you opened it; open it again.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"review_version\": {{reviewVersion}}\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{adminToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Reject a listing",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/admin/listings/{{listingId}}/reject",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "admin",
+                "listings",
+                "{{listingId}}",
+                "reject"
+              ]
+            },
+            "description": "Keeps it hidden and shows the host your reason, 1 to 1000 characters. The same 409s as approve.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"review_version\": {{reviewVersion}},\n  \"reason\": \"The photos do not show this place.\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{adminToken}}",
+                  "type": "string"
+                }
+              ]
             }
           }
         }

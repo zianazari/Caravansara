@@ -30,6 +30,8 @@ api, worker ──OTLP traces──▶ Alloy ──▶ Tempo
 | `prometheus/` | Prometheus | Scrapes metrics, evaluates `alerts.yml`. DNS discovery finds every copy after `--scale api=3` |
 | `grafana/` | Grafana | Datasources and the dashboard are provisioned from files, so every environment has the same ones and changes are reviewed in git |
 
+**The web site (`web`, specs/005-frontend-guest):** it has no `/metrics` and writes no logs of its own. Its stdout reaches Loki with every other container's. Every API call it makes passes through the API, so it shows up in the API's request logs, metrics and traces. The site sends the visitor's address in `X-Forwarded-For`, which the API trusts only from the site's fixed address. Browser errors and Core Web Vitals are not collected yet: that needs a new API endpoint, and it is listed in `docs/future-work.md`.
+
 Everything is open source and vendor neutral: the app speaks OpenTelemetry and the
 Prometheus format, so a different backend means changing this folder, not the code.
 

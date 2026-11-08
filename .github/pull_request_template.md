@@ -13,7 +13,8 @@
 - [ ] Every acceptance criterion (Given/When/Then) has a test
 - [ ] API changes start in `backend/openapi.json` (`caravansara export-openapi`), and error codes stay stable
 - [ ] New endpoints or events have metrics and logs; the dashboard and alerts still use only exported metrics
-- [ ] CI is green: ruff, mypy, import-linter, tests (coverage ≥ 90%), monitoring config
+- [ ] CI is green: ruff, mypy, import-linter, tests (coverage ≥ 90%), monitoring config, and for the web site: the API client in sync with `openapi.json`, ESLint, Prettier, `tsc`, Vitest (coverage ≥ 90% for `src/lib` and `src/api`), build
+- [ ] Pages: Persian and English, right-to-left and left-to-right, no horizontal scroll from 320 px, accessible (axe)
 
 ## Docs
 
