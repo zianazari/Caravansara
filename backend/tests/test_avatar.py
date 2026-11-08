@@ -30,12 +30,21 @@ async def _upload_url(client: AsyncClient, user: User, content_type: str = "imag
 
 
 async def _post_to_storage(signed: Signed, content: bytes, content_type: str = "image/png") -> httpx.Response:
-    async with httpx.AsyncClient() as storage:  # straight to MinIO, like a browser
-        return await storage.post(
-            str(signed["url"]),
-            data=signed["fields"],
-            files={"file": ("a.png", content, content_type)},
-        )
+    """Straight to MinIO, like a browser. On the GitHub runner MinIO now and then closes a fresh connection
+    before answering a small upload (httpx.ReadError; seen in two CI runs on 2026-11-08, never locally), so a
+    transport error is tried once more. Every answer storage does give is still asserted by the caller."""
+    for attempt in (1, 2):
+        try:
+            async with httpx.AsyncClient() as storage:
+                return await storage.post(
+                    str(signed["url"]),
+                    data=signed["fields"],
+                    files={"file": ("a.png", content, content_type)},
+                )
+        except httpx.TransportError:
+            if attempt == 2:
+                raise
+    raise AssertionError("unreachable")
 
 
 async def _upload(client: AsyncClient, user: User, content: bytes = PNG, content_type: str = "image/png") -> str:
