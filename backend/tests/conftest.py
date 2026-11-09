@@ -28,6 +28,7 @@ POSTGIS_IMAGE = "postgis/postgis:16-3.4"
 MINIO_IMAGE = "bitnamilegacy/minio:2025.4.22"  # MinIO no longer publishes images
 MINIO_USER = "caravansara"
 MINIO_PASSWORD = "caravansara-secret"
+_MINIO_READY_LINE = b"MinIO setup finished"  # logged by the bitnami image before its final start
 
 DATA_TABLES = (
     "admin_address_views, listing_review_events, reviews, bookings, listing_amenities, listing_photos, listings, "
@@ -52,6 +53,13 @@ def minio_url() -> Iterator[str]:
     with container:
         url = f"http://{container.get_container_host_ip()}:{container.get_exposed_port(9000)}"
         deadline = time.monotonic() + 60
+        # The image first runs MinIO in the background for its own setup, then stops it and starts it again.
+        # The health check already answers during setup, so a test could reach the setup instance and lose
+        # its connection when it stops (httpx.ReadError in CI, 2026-11-08 and 09). Wait for the final start.
+        while _MINIO_READY_LINE not in b"".join(container.get_logs()):
+            if time.monotonic() > deadline:
+                raise TimeoutError("MinIO did not finish its setup")
+            time.sleep(0.25)
         while True:
             try:
                 urllib.request.urlopen(f"{url}/minio/health/live", timeout=2)  # noqa: S310 (local container)

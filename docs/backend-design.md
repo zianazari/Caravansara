@@ -568,7 +568,7 @@ Redis وقتی ارزشمند می‌شود که rate limit سراسری با چ
 
 ## زیرساخت و تحویل
 
-کل سیستم با یک فرمان `docker compose` بالا می‌آید: API، worker، PostgreSQL 16 با PostGIS و MinIO. MinIO از سال ۲۰۲۵ دیگر تصویر Docker منتشر نمی‌کند، پس compose و تست‌ها از آخرین نسخه‌ی ثابت Bitnami (`bitnamilegacy/minio:2025.4.22`) استفاده می‌کنند. چون کد فقط با S3 API کار می‌کند، رفتن به سرور سازگار دیگری فقط تغییر تنظیمات است.
+کل سیستم با یک فرمان `docker compose` بالا می‌آید: API، worker، PostgreSQL 16 با PostGIS و MinIO. MinIO از سال ۲۰۲۵ دیگر تصویر Docker منتشر نمی‌کند، پس compose و تست‌ها از آخرین نسخه‌ی ثابت Bitnami (`bitnamilegacy/minio:2025.4.22`) استفاده می‌کنند. چون کد فقط با S3 API کار می‌کند، رفتن به سرور سازگار دیگری فقط تغییر تنظیمات است. این image هنگام بالا آمدن، MinIO را یک بار برای setup خودش در پس‌زمینه اجرا می‌کند، سپس آن را می‌بندد و دوباره بالا می‌آورد، و بررسی سلامت در همان setup هم پاسخ می‌دهد. پس fixture تست‌ها (`backend/tests/conftest.py`) پیش از شروع تست‌ها منتظر خط `MinIO setup finished` در log می‌ماند. بی آن، درخواستی که درست هنگام بسته شدن نمونه‌ی setup برسد، بی پاسخ قطع می‌شد (`httpx.ReadError` در CI، 2026-11-08 و 09).
 
 - **مخزن:** کد در `Caravansara` قرار می‌گیرد که از قبل یک مخزن git محلی است و پوشه‌ی `db/` را هم در خود دارد.
 - **CI:** GitHub Actions روی هر push و pull request، ruff، mypy، import-linter، تست‌ها، ساخت تصویر Docker و بررسی پیکربندی مانیتورینگ را اجرا می‌کند. job `frontend` برای سایت این کارها را انجام می‌دهد: همگامی `schema.d.ts` با `openapi.json`، ESLint، Prettier، `tsc`، Vitest با پوشش، و `next build`. job `image` تصویر سایت را هم می‌سازد.
