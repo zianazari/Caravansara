@@ -22,7 +22,7 @@ Demo accounts after `seed-demo`: `guest@example.com` and `host@example.com`, pas
 
 Compose starts PostgreSQL 16 with PostGIS, MinIO, a one-off `migrate` job (migrations, catalog seed, bucket), the API and the worker.
 
-MinIO stopped publishing Docker images in 2025, so compose and the tests use the last pinned Bitnami build, `bitnamilegacy/minio:2025.4.22`. The code speaks only the S3 API, so moving to S3, R2 or another S3-compatible server only changes settings.
+MinIO stopped publishing Docker images in 2025, so compose and the tests use the last pinned Bitnami build, `bitnamilegacy/minio:2025.4.22`. The code speaks only the S3 API, so moving to S3, R2 or another S3-compatible server only changes settings. The image runs MinIO once in the background for its own setup and then restarts it, and its health check already answers during setup, so the test fixture waits for the `MinIO setup finished` log line before any test runs.
 
 ## Develop
 
