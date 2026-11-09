@@ -199,7 +199,7 @@ async def _completed_stay(client: AsyncClient, factory: Factory) -> tuple[User, 
     return guest, booking
 
 
-# ---- listing review (specs/004-listing-approval) --------------------------------------
+# ---- listing review (specs/backend (004)) --------------------------------------
 
 
 async def test_two_admins_approving_at_once_decide_once(client: AsyncClient, db: AsyncEngine, factory: Factory) -> None:

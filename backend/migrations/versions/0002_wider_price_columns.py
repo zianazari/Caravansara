@@ -1,4 +1,4 @@
-"""Wider price columns for rials: NUMERIC(10,2) -> NUMERIC(14,2) (specs/002-rial-price-columns).
+"""Wider price columns for rials: NUMERIC(10,2) -> NUMERIC(14,2) (specs/backend (002)).
 
 A Tehran stay costs 10-100 million rials a night, so a multi-night total did not fit
 NUMERIC(10,2) (at most 99,999,999.99) and POST /bookings failed with 500. The input limit is

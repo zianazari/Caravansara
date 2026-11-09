@@ -22,7 +22,7 @@ class User(Base):
     avatar_url: Mapped[str | None] = mapped_column(Text)
     created_at: Mapped[datetime] = mapped_column(server_default=func.now())
     # Admins share this table so the unique index on lower(email) keeps one email to one account of
-    # either kind (specs/004 research R1). Only the create-admin command writes "admin"; no API
+    # either kind (specs/backend (004) research R1). Only the create-admin command writes "admin"; no API
     # schema has this field, so registration and profile edits cannot change it (FR-012).
     kind: Mapped[AccountKind] = mapped_column(
         Enum(AccountKind, name="account_kind", create_type=False, values_callable=lambda e: [m.value for m in e]),

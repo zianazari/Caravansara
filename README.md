@@ -177,7 +177,7 @@ Open **http://localhost:3001** for the site (Persian at `/fa`, English at `/en`)
 
 The demo data comes from [Inside Airbnb](https://insideairbnb.com/) (CC BY 4.0): real titles, prices, amenities and review text from Amsterdam, Lisbon, Copenhagen, Stockholm, London and New York City, plus 40 hand-written Persian listings in Tehran, Isfahan and Shiraz priced in rials. People, addresses, bookings and photos are synthetic. It also holds nine edge cases, such as a listing waiting for review, a rejected one, a hold that expires four minutes after loading and a 365-night stay, each listed with its id. See [`db/demo/README.md`](db/demo/README.md).
 
-The bulk data (`seed-bulk`) is for measuring: about 3 million bookings and 1.2 million reviews drawn from the real distributions of six cities, loaded in about 3.5 minutes into `caravansara_bulk`, so your development data stays untouched. `caravansara measure-queries` times the app's important queries on it; the index review that used it took London search with dates from 913 to 65 ms. See [`db/bulk/README.md`](db/bulk/README.md) and [`specs/003-index-review/measurements.md`](specs/003-index-review/measurements.md).
+The bulk data (`seed-bulk`) is for measuring: about 3 million bookings and 1.2 million reviews drawn from the real distributions of six cities, loaded in about 3.5 minutes into `caravansara_bulk`, so your development data stays untouched. `caravansara measure-queries` times the app's important queries on it; the index review that used it took London search with dates from 913 to 65 ms. See [`db/bulk/README.md`](db/bulk/README.md) and [`specs/backend/measurements.md` (003)](specs/backend/measurements.md).
 
 ## Monitoring
 
@@ -287,11 +287,13 @@ Every feature goes through [GitHub Spec Kit](https://github.com/github/spec-kit)
 | Ordered task list, then a consistency check | `/speckit-tasks`, `/speckit-analyze` | `tasks.md` |
 | Code and tests, until the code matches the docs | `/speckit-implement`, `/speckit-converge` | code, tests |
 
+The four finished backend features (001 to 004) are merged into [`specs/backend/`](specs/backend/): one file per kind (spec, plan, research, tasks …), a section per feature. Their identifiers (`FR-001`, `T001`, `R1`) count within each feature's section, so a reference reads like `specs/backend (004), research R5`. Later features keep their own `specs/NNN-name/` folder.
+
 The constitution comes from decisions already in this repo: the database guards the critical rules, module borders are enforced, the API contract comes first, tests run on real infrastructure, privacy by default, everything observable, and nothing added before the numbers ask for it.
 
 ## What's next
 
-The plan, in order. Each step builds on the one before it; details are in [`docs/future-work.md`](docs/future-work.md). Listing approval by a system admin is done ([`specs/004-listing-approval/`](specs/004-listing-approval/)); its admin web panel comes with the front-end.
+The plan, in order. Each step builds on the one before it; details are in [`docs/future-work.md`](docs/future-work.md). Listing approval by a system admin is done ([`specs/backend/` (004)](specs/backend/)); its admin web panel comes with the front-end.
 
 | # | Work | What it brings | Why at this point |
 | --- | --- | --- | --- |

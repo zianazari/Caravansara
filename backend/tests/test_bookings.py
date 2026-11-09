@@ -227,7 +227,7 @@ async def test_deactivating_a_listing_keeps_its_bookings(
     assert cancel.json()["status"] == "cancelled"
 
 
-# specs/002-rial-price-columns: real Tehran prices, which overflowed NUMERIC(10,2) before migration 0002.
+# specs/backend (002): real Tehran prices, which overflowed NUMERIC(10,2) before migration 0002.
 RIAL = {"price_per_night": "100000000.00", "cleaning_fee": "5000000.00", "currency": "IRR"}
 
 

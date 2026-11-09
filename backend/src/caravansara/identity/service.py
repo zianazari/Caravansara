@@ -242,7 +242,7 @@ async def get_public_users(session: AsyncSession, user_ids: set[int]) -> dict[in
     return {uid: PublicUser(u.id, u.full_name, u.avatar_url) for uid, u in users.items()}
 
 
-# ---- admin accounts (specs/004-listing-approval) --------------------------------------
+# ---- admin accounts (specs/backend (004)) --------------------------------------
 
 
 async def admin_login(

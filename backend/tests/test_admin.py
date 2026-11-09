@@ -1,4 +1,4 @@
-"""Admin accounts (specs/004-listing-approval, US4): made only by a command, logged in apart from
+"""Admin accounts (specs/backend (004), US4): made only by a command, logged in apart from
 members, and never able to act as a member. The queue and decisions are in test_listing_review.py."""
 
 from typing import Any

@@ -4,7 +4,7 @@ the listing review queue for the dashboard.
 Running two workers at once is safe: each job is a single conditional ``UPDATE``, and the queue
 numbers are only read. The queue gauges are set here and not by the API, because every API copy
 would report its own number and Prometheus would add them up; one reader a minute is enough for a
-queue that moves in hours (specs/004-listing-approval, research R10).
+queue that moves in hours (specs/backend (004), research R10).
 """
 
 import asyncio

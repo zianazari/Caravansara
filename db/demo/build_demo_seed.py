@@ -213,8 +213,8 @@ FA_FIRST = """آرش بهاره پرستو تینا جواد حمید داریو
 FA_LAST = """احمدی اکبری امینی بهرامی پارسا تهرانی جعفری حسینی خسروی رحیمی رستمی زمانی سلیمانی شریفی صادقی
 طاهری عزیزی فرهادی قاسمی کریمی محمدی مرادی نوری هاشمی یزدانی""".split()
 FA_GUEST_POOL = 80
-MAX_STORED_AMOUNT = 999_999_999_999.99   # NUMERIC(14,2): the widest amount a price column holds (specs/002)
-MAX_PRICE = 1_000_000_000               # the API's limit for a nightly price or cleaning fee (specs/002)
+MAX_STORED_AMOUNT = 999_999_999_999.99   # NUMERIC(14,2): the widest amount a price column holds (specs/backend (002))
+MAX_PRICE = 1_000_000_000               # the API's limit for a nightly price or cleaning fee (specs/backend (002))
 PHOTO_MANIFEST = ROOT / "db" / "demo" / "photos" / "manifest.json"
 FA_LISTINGS = ROOT / "db" / "demo" / "fa_listings.json"
 OUT_EDGE = ROOT / "db" / "demo" / "edge_cases.json"
@@ -467,7 +467,7 @@ def build(seed):
     persian = add_persian_listings(rng, add_user, fake_person, listings, photos, amen_rows, bookings,
                                    reviews, manifest)
 
-    # ---- listing review (specs/004-listing-approval): one admin and two listings an admin has not
+    # ---- listing review (specs/backend (004)): one admin and two listings an admin has not
     # approved. Picked after everything else, outside `edge`, so no random draw and no id above moves.
     # Neither is another edge case or one of the demo guest's stays.
     admin = add_user("Ava", "Moradi", "admin@example.com", dt.datetime(2020, 1, 1))
@@ -489,7 +489,7 @@ def add_persian_listings(rng, add_user, fake_person, listings, photos, amen_rows
             problems.append(f"{where}: title must be 1–100 characters")
         if len(it["description"]) > 1500:
             problems.append(f"{where}: description over 1500 characters")
-        # Market prices (specs/002 research R7, Jabama, 2026-11-05): whole places 10–100 million IRR
+        # Market prices (specs/backend (002) research R7, Jabama, 2026-11-05): whole places 10–100 million IRR
         # a night, rooms 2.5–10 million.
         low, high = (10_000_000, 100_000_000) if it["property_type"] == "entire_place" else (2_500_000, 10_000_000)
         if not low <= it["price_per_night"] <= high:
@@ -557,7 +557,7 @@ def add_persian_listings(rng, add_user, fake_person, listings, photos, amen_rows
             offset += nights + rng.randint(2, 20)
     too_big = [b[0] for b in bookings if b[12] == "IRR" and float(b[11]) > MAX_STORED_AMOUNT]
     if too_big:
-        raise SystemExit(f"IRR total_price over NUMERIC(14,2) for bookings {too_big[:5]} (specs/002)")
+        raise SystemExit(f"IRR total_price over NUMERIC(14,2) for bookings {too_big[:5]} (specs/backend (002))")
     return {"first_listing_id": first_id, "listings": len(items)}
 
 
@@ -612,7 +612,7 @@ def review_sql(admin, edge_cases):
     """New listings are pending by default (migration 0006), so the demo says what it means: every
     listing is approved, except the two review edge cases (research R5, R15)."""
     pending, rejected = edge_cases["pending_listing"], edge_cases["rejected_listing"]
-    return f"""-- listing review (specs/004-listing-approval): the column default is 'pending', so approve
+    return f"""-- listing review (specs/backend (004)): the column default is 'pending', so approve
 -- every listing explicitly, then make the two review edge cases.
 UPDATE listings SET review_status = 'approved', submitted_at = NULL;
 UPDATE listings SET review_status = 'pending', submitted_at = now() - interval '2 days'

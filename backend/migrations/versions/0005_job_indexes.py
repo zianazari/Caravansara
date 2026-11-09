@@ -1,9 +1,9 @@
-"""Index for the worker job that completes finished stays (specs/003-index-review, US3).
+"""Index for the worker job that completes finished stays (specs/backend (003), US3).
 
 The job runs every minute. It read every confirmed booking and joined it to its listing and city to
 compare the check-out in city time with now: 779 ms on the bulk data. The job now also bounds
 check_out by now + 14 hours (no time zone is further ahead of UTC), and this partial index finds
-just those stays: 40 ms, 3.3 MB (specs/003-index-review/measurements.md).
+just those stays: 40 ms, 3.3 MB (specs/backend/measurements.md (003)).
 
 Built CONCURRENTLY like 0004, for the same reason.
 

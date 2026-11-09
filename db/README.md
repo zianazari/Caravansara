@@ -30,7 +30,7 @@ backend exists, Alembic migrations are, and these files follow them).
 | Partial index on `bookings.hold_expires_at` `WHERE status = 'pending'` | The worker expires overdue holds without scanning all bookings |
 | `listings.public_location geography(Point, 4326)` + GiST index | Radial search with PostGIS; real `latitude`/`longitude` stay private |
 
-## Changes on 2026-11-06 (index review, [specs/003-index-review](../specs/003-index-review/measurements.md))
+## Changes on 2026-11-06 (index review, [specs/backend (003)](../specs/backend/measurements.md))
 
 Measured on 100,000 listings and 3 million bookings; medians in ms, before → after.
 
@@ -44,7 +44,7 @@ Measured on 100,000 listings and 3 million bookings; medians in ms, before → a
 
 Tried and not adopted, with the numbers in `measurements.md`: a covering index on `listings` (never chosen), SP-GiST instead of GiST on `public_location` (slower at every radius), extended statistics on `bookings (status, check_out)` (fixed the estimate, not the plan).
 
-## Changes on 2026-11-07 (listing review, migration 0006, [specs/004-listing-approval](../specs/004-listing-approval/))
+## Changes on 2026-11-07 (listing review, migration 0006, [specs/backend (004)](../specs/backend/))
 
 A new listing is public only after an admin approves it. Each new column, table and rule, why it exists, and what it changes:
 
@@ -61,7 +61,7 @@ A new listing is public only after an admin approves it. Each new column, table 
 | `listings_review_queue_idx (submitted_at, id) WHERE review_status = 'pending'` | The queue page, its count and the worker's oldest wait | Small: only waiting listings |
 | `listing_review_events` (append-only, trigger) | Who submitted, approved or rejected, when, which version, and why | A record nobody can rewrite. Its foreign key also means a listing with history cannot be deleted (listings never are) |
 | `admin_address_views` | Constitution V: which admin saw which exact address, when | One row per admin details answer, in the same transaction |
-| `ANALYZE listings` at the end of 0006 | `ADD COLUMN` leaves `review_status` without statistics, and autoanalyze does not start for it | Without it the city searches with dates switched plans, 36 → 170 ms; with it the plans are the ones before ([measurements](../specs/004-listing-approval/measurements.md)) |
+| `ANALYZE listings` at the end of 0006 | `ADD COLUMN` leaves `review_status` without statistics, and autoanalyze does not start for it | Without it the city searches with dates switched plans, 36 → 170 ms; with it the plans are the ones before ([measurements](../specs/backend/measurements.md)) |
 
 Downgrade sets unapproved listings inactive first, so nothing unreviewed becomes public, and deletes admin accounts, which would otherwise become members who can book. No listing, booking or review is deleted.
 

@@ -172,7 +172,7 @@ async def test_completion_bound_misses_no_stay_in_the_farthest_time_zones(
     client: AsyncClient, app: Any, db: AsyncEngine, factory: Factory, timezone: str, check_out_time: time,
     deadline_utc: datetime,
 ) -> None:  # fmt: skip
-    """The job only looks at check-outs up to 14 hours ahead of UTC (specs/003-index-review research R5)."""
+    """The job only looks at check-outs up to 14 hours ahead of UTC (specs/backend (003) research R5)."""
     country = (await sql(db, "SELECT country_id FROM cities ORDER BY id LIMIT 1"))[0][0]
     rows = await sql(
         db, "INSERT INTO cities (country_id, name, timezone) VALUES (:c, :n, :tz) RETURNING id",
@@ -194,7 +194,7 @@ async def test_completion_bound_misses_no_stay_in_the_farthest_time_zones(
         status = await sql(db, "SELECT status::text FROM bookings WHERE id = :id", id=booking.id)
         assert status[0][0] == "completed"
     finally:  # cities are catalog data the per-test cleanup keeps
-        # TRUNCATE, not DELETE: a listing's review history is append-only (specs/004-listing-approval).
+        # TRUNCATE, not DELETE: a listing's review history is append-only (specs/backend (004)).
         await sql(db, "TRUNCATE listings CASCADE")
         await sql(db, "DELETE FROM cities WHERE id = :id", id=city)
 

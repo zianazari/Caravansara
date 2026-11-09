@@ -1,4 +1,4 @@
-"""Listing review by an admin (specs/004-listing-approval): US1, US2 and US3.
+"""Listing review by an admin (specs/backend (004)): US1, US2 and US3.
 
 A listing is public only when it is active and approved. Every public path is tested once with a
 listing that is not (SC-001); every descriptive and non-descriptive field once (SC-003).

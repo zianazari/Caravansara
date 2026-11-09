@@ -1,4 +1,4 @@
-"""Each new index serves the query it was made for (specs/003-index-review, T014 and T021).
+"""Each new index serves the query it was made for (specs/backend (003), T014 and T021).
 
 The test database is tiny, so the planner would read a table instead; ``enable_seqscan = off`` makes it
 show which index it can use. The SQL is the catalog's, which test_query_catalog keeps equal to the

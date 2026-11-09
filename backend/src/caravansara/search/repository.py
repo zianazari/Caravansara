@@ -2,7 +2,7 @@
 
 Every fragment below is a fixed string; user input only ever travels as bind parameters.
 Only ``public_location`` is used: filtering, distance and the pin never touch the real point.
-Only public listings are found: active and approved by an admin (specs/004-listing-approval, FR-002).
+Only public listings are found: active and approved by an admin (specs/backend (004), FR-002).
 """
 
 from dataclasses import dataclass, field
@@ -37,7 +37,7 @@ _BLOCKING = """b.status IN ('pending', 'confirmed', 'completed')
                    AND  b.stay && daterange(CAST(:check_in AS date), CAST(:check_out AS date), '[)')"""
 
 # Up to this many nights a radius search tests the listings against one hashed list of the blocking
-# bookings instead of looking them up per listing (specs/003-index-review, measurements.md). The
+# bookings instead of looking them up per listing (specs/backend (003), measurements.md). The
 # planner guesses a radius holds a handful of listings (London 5 km: 10 guessed, 16,155 real), so it
 # looks the bookings up once per listing: 325 ms for three nights. The hashed list takes 52 ms, but it
 # grows with the window, and past a week it loses on small areas (1 km, 14 nights: 16 ms per listing,
@@ -49,7 +49,7 @@ _HASHED_MAX_NIGHTS = 7
 
 def _where(c: Criteria, *, with_amenities: bool) -> tuple[list[str], dict[str, Any]]:
     # The partial indexes (WHERE is_active) still serve these queries; the review condition is one
-    # more Filter on rows they return, so the plans stay the same (specs/004 research R9).
+    # more Filter on rows they return, so the plans stay the same (specs/backend (004) research R9).
     clauses = ["l.is_active", "l.review_status = 'approved'", "l.max_guests >= :guests"]
     params: dict[str, Any] = {"guests": c.guests}
     if c.radial:
@@ -99,7 +99,7 @@ async def search(
             return f"{alias}.distance_m, {alias}.id"
         return f"{alias}.avg_rating DESC NULLS LAST, {alias}.review_count DESC, {alias}.id"
 
-    # Two steps on purpose (specs/003-index-review, measurements.md): "matching" holds every match but
+    # Two steps on purpose (specs/backend (003), measurements.md): "matching" holds every match but
     # only what counting and sorting need, so the planner sees it must read them all and picks a hash
     # anti-join against the bookings for the dates. With LIMIT on the outer query it guessed a few rows
     # would do and probed the bookings once per listing (London with dates: 919 ms, now 67 ms). The
@@ -159,7 +159,7 @@ async def amenity_counts(session: AsyncSession, c: Criteria) -> tuple[int, list[
     source = _center(c, params)
     where = " AND ".join(clauses)
     # Count per amenity id first, then name the ~30 groups: joining names to every (listing, amenity)
-    # row first made a big city cost a third more (specs/003-index-review, measurements.md).
+    # row first made a big city cost a third more (specs/backend (003), measurements.md).
     counts_sql = f"""
         WITH matching AS (SELECT l.id FROM {source} JOIN listings l ON true WHERE {where}),
         {_COUNTS}

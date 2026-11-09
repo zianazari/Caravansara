@@ -176,7 +176,7 @@ def _set_location(listing: Listing, lat: float, lng: float) -> None:
 
 # What a guest reads to decide where to stay. Changing any of it sends an approved listing back to
 # review; the rest (price, capacity, times, pets, is_active) does not. The owner's list
-# (specs/004-listing-approval FR-009, FR-010); amenities and photos are checked where they change.
+# (specs/backend (004) FR-009, FR-010); amenities and photos are checked where they change.
 _DESCRIPTIVE = {"title", "description", "property_type", "city_id", "neighborhood", "address", "latitude", "longitude"}
 
 
@@ -449,7 +449,7 @@ async def require_host(session: AsyncSession, listing_id: int, user_id: int) -> 
         raise Forbidden("Only the host of this listing can do this.", code="not_listing_host")
 
 
-# ---- admin review (specs/004-listing-approval); called by the moderation module ----------
+# ---- admin review (specs/backend (004)); called by the moderation module ----------
 
 
 async def review_queue(session: AsyncSession, storage: Storage, limit: int, offset: int) -> AdminQueuePage:

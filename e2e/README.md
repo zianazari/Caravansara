@@ -46,7 +46,7 @@ each other. Nothing is deleted afterwards, so the data stays in the database for
 Two things the API cannot do on demand are done with SQL (`helpers.ts → sql`):
 moving a paid stay into the past so it can be reviewed, and letting a hold run out.
 
-A new listing, and a new photo, wait for an admin's review (specs/004-listing-approval). Admins
+A new listing, and a new photo, wait for an admin's review (specs/backend (004)). Admins
 exist only through `caravansara create-admin`, so `helpers.ts → createAdmin` runs that command in
 the API container (`docker compose exec`, from the repo root), which also checks the command is
 in the image. `createListing` and `addPhoto` then approve as that admin, because the other files

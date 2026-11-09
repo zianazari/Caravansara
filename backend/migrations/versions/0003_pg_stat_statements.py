@@ -1,4 +1,4 @@
-"""pg_stat_statements: query statistics for the Grafana "costly queries" panel (specs/003-index-review, FR-003).
+"""pg_stat_statements: query statistics for the Grafana "costly queries" panel (specs/backend (003), FR-003).
 
 The extension only answers when the server preloads it (``shared_preload_libraries``, set on the
 ``db`` service in docker-compose.yml). Creating it works without that, so this migration also runs

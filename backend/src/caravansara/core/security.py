@@ -4,7 +4,7 @@ The dependencies only decode the JWT; they need no database, so every module can
 without importing ``identity``.
 
 Two token types share the secret but never each other's endpoints: ``access`` for members and
-``admin`` for admins (specs/004-listing-approval, research R1). ``CurrentUserId`` accepts only
+``admin`` for admins (specs/backend, research R1). ` (004)`CurrentUserId`` accepts only
 ``access``, so an admin token cannot create a listing, book or open a member profile.
 """
 

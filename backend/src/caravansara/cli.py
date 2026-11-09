@@ -4,7 +4,7 @@ migrate, seed, seed-demo, seed-bulk, measure-queries, init-storage, worker, run-
 create-admin and disable-admin.
 
 Admin accounts exist only through create-admin, run by whoever can reach the server: no API path
-makes one (specs/004-listing-approval, FR-012, constitution V).
+makes one (specs/backend (004), FR-012, constitution V).
 """
 
 import argparse

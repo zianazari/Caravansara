@@ -1,4 +1,4 @@
-"""Measure the important queries on the bulk data with one fixed method (specs/003-index-review).
+"""Measure the important queries on the bulk data with one fixed method (specs/backend (003)).
 
 The query list lives in ``db/bulk/queries/``: ``catalog.json``, one ``<name>.sql`` per query (the SQL
 the app really sends, with ``:name`` parameters) and ``params.sql``, which picks representative values

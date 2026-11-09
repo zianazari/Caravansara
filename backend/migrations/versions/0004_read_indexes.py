@@ -1,7 +1,7 @@
-"""Indexes for the host's booking list and for search with dates (specs/003-index-review, US2).
+"""Indexes for the host's booking list and for search with dates (specs/backend (003), US2).
 
 Numbers are medians on the bulk data (100,000 listings, 3 million bookings), from
-specs/003-index-review/measurements.md:
+specs/backend/measurements.md (003):
 
 - ``bookings_listing_check_in_idx`` (listing_id, check_in, id): a host's "bookings of my listing",
   count and page, read the whole bookings table (Seq Scan, about 200 ms). Now an index scan in the

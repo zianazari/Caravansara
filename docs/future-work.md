@@ -1,6 +1,6 @@
 # کارهای آینده
 
-این فهرست کارهای پیش روی پروژه است و فقط کارهایی را دارد که هنوز شروع نشده‌اند. کارهای انجام‌شده، یعنی پیاده‌سازی بکند نسخه‌ی اول، تکمیل تست‌های آن، مانیتورینگ (لاگ، متریک و trace)، داده‌ی تست و ماک (اولین کار با Spec Kit، در [specs/001-test-mock-data/](../specs/001-test-mock-data/))، پهن کردن ستون‌های قیمت برای ریال ([specs/002-rial-price-columns/](../specs/002-rial-price-columns/))، بازبینی روش Spec Kit (constitution نسخه‌ی 1.2.0)، بررسی ایندکس‌ها ([specs/003-index-review/](../specs/003-index-review/))، تأیید آگهی توسط مدیر سیستم ([specs/004-listing-approval/](../specs/004-listing-approval/)) و بخش مهمانِ سایت وب ([specs/005-frontend-guest/](../specs/005-frontend-guest/))، در [backend-design.md](backend-design.md)، [backend/README.md](../backend/README.md) و [observability/README.md](../observability/README.md) ثبت شده‌اند.
+این فهرست کارهای پیش روی پروژه است و فقط کارهایی را دارد که هنوز شروع نشده‌اند. کارهای انجام‌شده، یعنی پیاده‌سازی بکند نسخه‌ی اول، تکمیل تست‌های آن، مانیتورینگ (لاگ، متریک و trace)، داده‌ی تست و ماک (اولین کار با Spec Kit، در [specs/backend (001)](../specs/backend/))، پهن کردن ستون‌های قیمت برای ریال ([specs/backend (002)](../specs/backend/))، بازبینی روش Spec Kit (constitution نسخه‌ی 1.2.0)، بررسی ایندکس‌ها ([specs/backend (003)](../specs/backend/))، تأیید آگهی توسط مدیر سیستم ([specs/backend (004)](../specs/backend/)) و بخش مهمانِ سایت وب ([specs/005-frontend-guest/](../specs/005-frontend-guest/))، در [backend-design.md](backend-design.md)، [backend/README.md](../backend/README.md) و [observability/README.md](../observability/README.md) ثبت شده‌اند.
 
 ## ترتیب پیشنهادی
 
@@ -79,7 +79,7 @@
 
 **هدف:** کم کردن زمان پاسخ و بار PostgreSQL در خواندن‌های پرتکرار. نسخه‌ی اول عمداً Redis ندارد (بخش «چرا Redis نداریم» در [backend-design.md](backend-design.md))، و همان‌جا کش جستجوی پرترافیک یکی از شرط‌های افزودن آن آمده است. بررسی ایندکس انجام شده است، و این کار از متریک‌های مانیتورینگ موجود استفاده می‌کند، چون اول باید با عدد معلوم شود کدام endpoint کند و پرتکرار است، و کوئری کند اول با ایندکس درست شود.
 
-**عددهای بررسی ایندکس** ([measurements.md](../specs/003-index-review/measurements.md)، داده‌ی حجیم، میانه‌ی گرم روی لپ‌تاپ و با باتری):
+**عددهای بررسی ایندکس** ([measurements.md](../specs/backend/measurements.md)، داده‌ی حجیم، میانه‌ی گرم روی لپ‌تاپ و با باتری):
 - جستجوی شهری لندن با تاریخ ۶۵ ms است.
 - جستجوی شعاعی ۵ km با تاریخ ۵۲ ms است.
 - نامزد اصلی کش شمارش امکانات پنل فیلترها (`GET /search/filters`) است: ۱۸۳ تا ۲۳۳ ms. این کوئری ۶۵۷ هزار ردیف (آگهی، امکان) را برای ۴۵ هزار آگهی جمع می‌زند، پس ایندکس آن را سریع‌تر نمی‌کند، و شمارش‌ها برای یک شهر و تاریخ کم تغییر می‌کنند.

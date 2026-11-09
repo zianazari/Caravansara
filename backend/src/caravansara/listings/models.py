@@ -75,7 +75,7 @@ class Listing(Base):
     review_count: Mapped[int] = mapped_column(Integer, server_default="0")
     is_active: Mapped[bool] = mapped_column(server_default="true")
     created_at: Mapped[datetime] = mapped_column(server_default=func.now())
-    # Review by an admin (specs/004-listing-approval). Public = is_active AND approved (FR-002).
+    # Review by an admin (specs/backend (004)). Public = is_active AND approved (FR-002).
     # The database default is pending, so a listing never skips the queue (migration 0006).
     review_status: Mapped[ReviewStatus] = mapped_column(
         _enum(ReviewStatus, "listing_review_status"), server_default="pending"

@@ -32,7 +32,7 @@ docker compose run --rm migrate caravansara measure-queries                 # ev
 docker compose run --rm migrate caravansara measure-queries --only search_city_london_dates --runs 9 --out after.json
 ```
 
-`db/bulk/queries/` holds the important queries the app sends: `catalog.json` (name, code source, endpoint, parameters, target), one `<name>.sql` each, and `params.sql`, which picks representative values from the data (the busiest listing, the London centre, ...). Each query gets 1 warm-up run and the median of 5 `EXPLAIN (ANALYZE, BUFFERS)` runs, each in its own connection and in a transaction that is rolled back, so nothing changes. A test keeps the catalog equal to the code. Results of the index review: [specs/003-index-review/measurements.md](../../specs/003-index-review/measurements.md).
+`db/bulk/queries/` holds the important queries the app sends: `catalog.json` (name, code source, endpoint, parameters, target), one `<name>.sql` each, and `params.sql`, which picks representative values from the data (the busiest listing, the London centre, ...). Each query gets 1 warm-up run and the median of 5 `EXPLAIN (ANALYZE, BUFFERS)` runs, each in its own connection and in a transaction that is rolled back, so nothing changes. A test keeps the catalog equal to the code. Results of the index review: [specs/backend/measurements.md (003)](../../specs/backend/measurements.md).
 
 ## Safety locks
 

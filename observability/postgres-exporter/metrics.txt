@@ -1,5 +1,5 @@
 # pg_stat_statements_* names postgres-exporter v0.17.1 really serves with --collector.stat_statements,
-# copied from its /metrics on 2026-11-06 (specs/003-index-review). Labels: datname, queryid, user.
+# copied from its /metrics on 2026-11-06 (specs/backend (003)). Labels: datname, queryid, user.
 # tests/test_monitoring_config.py checks that the dashboard uses only these.
 pg_stat_statements_block_read_seconds_total
 pg_stat_statements_block_write_seconds_total

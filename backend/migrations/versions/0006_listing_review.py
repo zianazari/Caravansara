@@ -1,4 +1,4 @@
-"""Listing review by an admin (specs/004-listing-approval).
+"""Listing review by an admin (specs/backend (004)).
 
 What this adds and why:
 
@@ -25,7 +25,7 @@ the table, hence the second step.
 Statistics. ADD COLUMN gives the new column no statistics, and autoanalyze does not start for it
 (no row changed). The planner then guesses that ``review_status = 'approved'`` keeps 0.5% of the
 rows, and on caravansara_bulk the city searches with dates switched plans and went from 36 ms to
-170 ms (specs/004-listing-approval/measurements.md). So the upgrade ends with ANALYZE listings:
+170 ms (specs/backend/measurements.md (004)). So the upgrade ends with ANALYZE listings:
 0.4 s on 100,000 listings, and the plans are the ones before the migration again.
 
 Downgrade (R16) never makes anything public that is not approved today: unapproved listings are set

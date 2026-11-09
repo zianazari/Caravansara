@@ -1,4 +1,4 @@
-"""The query catalog in db/bulk/queries/ stays complete and runnable (specs/003-index-review, SC-001).
+"""The query catalog in db/bulk/queries/ stays complete and runnable (specs/backend (003), SC-001).
 
 Its SQL is copied from what the app really sends, so these tests are what keeps it from drifting:
 every query function in the code is in the catalog or excluded with a reason, every entry points at

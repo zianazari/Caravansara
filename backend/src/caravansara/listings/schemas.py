@@ -7,7 +7,7 @@ from pydantic import BaseModel, ConfigDict, Field, model_validator
 from caravansara.catalog.schemas import AmenityCategoryOut, CityOut
 from caravansara.listings.models import PropertyType, ReviewStatus
 
-# Nightly price and cleaning fee, in every currency (specs/002-rial-price-columns, owner's choice
+# Nightly price and cleaning fee, in every currency (specs/backend (002), owner's choice
 # on 2026-11-05): ten times today's top Tehran price, so rial inflation has room. With 365 nights
 # the largest booking total still fits the NUMERIC(14,2) columns.
 MAX_PRICE = Decimal("1000000000.00")
@@ -140,7 +140,7 @@ class PhotoOut(BaseModel):
 
 
 class ListingReview(BaseModel):
-    """Where the listing is in the admin review (specs/004-listing-approval)."""
+    """Where the listing is in the admin review (specs/backend (004))."""
 
     status: ReviewStatus = Field(description="`pending` and `rejected` listings are not public.")
     rejection_reason: str | None = Field(description="The admin's reason; only while `rejected`.")
@@ -237,7 +237,7 @@ class PhotoOrderIn(BaseModel):
     photo_ids: list[int] = Field(min_length=1, description="Every photo of the listing, cover first.")
 
 
-# ---- admin review (specs/004-listing-approval) ----------------------------------------
+# ---- admin review (specs/backend (004)) ----------------------------------------
 
 
 class AdminQueueItem(BaseModel):

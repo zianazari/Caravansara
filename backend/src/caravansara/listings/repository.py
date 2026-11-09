@@ -94,7 +94,7 @@ async def set_amenities(session: AsyncSession, listing_id: int, ids: set[int]) -
     session.add_all(ListingAmenity(listing_id=listing_id, amenity_id=i) for i in sorted(ids))
 
 
-# ---- review (specs/004-listing-approval) ----------------------------------------------
+# ---- review (specs/backend (004)) ----------------------------------------------
 
 # Plain SQL on bookings, not bookings.service: bookings already imports listings.service, so the
 # other way round would be an import cycle (research R8). The live-booking rule is the same one

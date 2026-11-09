@@ -12,7 +12,7 @@ import {
   reserve,
 } from "./helpers";
 
-/** Listing review (specs/004-listing-approval) on the real stack, with an admin from create-admin. */
+/** Listing review (specs/backend (004)) on the real stack, with an admin from create-admin. */
 
 // Few listings take 47 guests, so the new one is on the first page however full the database is.
 const GUESTS = 47;

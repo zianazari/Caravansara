@@ -128,7 +128,7 @@ async def test_review_window_is_14_days_in_city_time(
     assert late.json()["error"]["code"] == "review_window_closed"
 
 
-# ---- listing review (specs/004-listing-approval) --------------------------------------
+# ---- listing review (specs/backend (004)) --------------------------------------
 
 
 @pytest.mark.parametrize("hidden_by", ["inactive", "pending"])

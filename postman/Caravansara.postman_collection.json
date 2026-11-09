@@ -1811,7 +1811,7 @@
     },
     {
       "name": "Admin (listing review)",
-      "description": "An admin account exists only through `caravansara create-admin` on the server (or `admin@example.com` in the demo data). Admin endpoints use their own token; a member token is refused, and an admin token works on no member endpoint (specs/004-listing-approval).",
+      "description": "An admin account exists only through `caravansara create-admin` on the server (or `admin@example.com` in the demo data). Admin endpoints use their own token; a member token is refused, and an admin token works on no member endpoint (specs/backend (004)).",
       "item": [
         {
           "name": "Admin log in",
