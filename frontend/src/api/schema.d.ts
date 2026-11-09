@@ -824,7 +824,7 @@ export interface components {
     };
     /**
      * AdminTokenOut
-     * @description No refresh token: an admin logs in again after ``expires_in`` (specs/004 research R2).
+     * @description No refresh token: an admin logs in again after ``expires_in`` (specs/backend (004) research R2).
      * @example {
      *       "access_token": "eyJhbGciOi...",
      *       "expires_in": 900,
@@ -1330,7 +1330,7 @@ export interface components {
     };
     /**
      * ListingReview
-     * @description Where the listing is in the admin review (specs/004-listing-approval).
+     * @description Where the listing is in the admin review (specs/backend (004)).
      * @example {
      *       "rejection_reason": "The photos are not of this flat.",
      *       "status": "rejected",

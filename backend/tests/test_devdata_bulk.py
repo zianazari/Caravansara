@@ -208,7 +208,7 @@ async def test_seed_bulk_loads_and_keeps_rules(bulk_settings: Settings, capsys: 
         " OR avg_rating IS DISTINCT FROM (SELECT round(avg(rating), 2) FROM reviews r WHERE r.listing_id = l.id)",
     )
     assert wrong[0] == 0
-    # specs/004-listing-approval: bulk listings are already public, so every one is approved and the
+    # specs/backend (004): bulk listings are already public, so every one is approved and the
     # public count is the active count (SC-002).
     ((unapproved, public, active),) = await _fetch(
         bulk_settings,

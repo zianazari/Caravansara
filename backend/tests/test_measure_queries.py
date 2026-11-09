@@ -1,4 +1,4 @@
-"""caravansara measure-queries: one fixed method for every before/after number (specs/003-index-review)."""
+"""caravansara measure-queries: one fixed method for every before/after number (specs/backend (003))."""
 
 import asyncio
 import json

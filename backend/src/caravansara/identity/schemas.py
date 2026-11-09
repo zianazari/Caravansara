@@ -37,7 +37,7 @@ class TokensOut(BaseModel):
 
 
 class AdminTokenOut(BaseModel):
-    """No refresh token: an admin logs in again after ``expires_in`` (specs/004 research R2)."""
+    """No refresh token: an admin logs in again after ``expires_in`` (specs/backend (004) research R2)."""
 
     access_token: str
     token_type: str = "bearer"

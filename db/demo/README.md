@@ -38,7 +38,7 @@ The Persian listings in Iran are written for this project in `fa_listings.json`:
 
 **Privacy.** Real host and reviewer names are dropped. A host's name in a review or description is replaced by the fake host's first name. A review that still names a real host or reviewer is skipped. The build stops before writing the file if any real name is left in a review. The real names are not in the repo, so CI cannot check them; this build step does instead.
 
-**Rial amounts.** The price columns are `NUMERIC(14,2)` (migration `0002`, [specs/002-rial-price-columns](../../specs/002-rial-price-columns/)), and the API accepts at most 1,000,000,000 a night. Persian stays are 1–14 nights like the rest of the demo, so the largest rial total (1,407,500,000) is far above the old limit of 99,999,999.99. The build stops if a price or a total would not fit.
+**Rial amounts.** The price columns are `NUMERIC(14,2)` (migration `0002`, [specs/backend (002)](../../specs/backend/)), and the API accepts at most 1,000,000,000 a night. Persian stays are 1–14 nights like the rest of the demo, so the largest rial total (1,407,500,000) is far above the old limit of 99,999,999.99. The build stops if a price or a total would not fit.
 
 ## Contents
 
@@ -61,9 +61,9 @@ Every account's password is `caravansara-demo`. The hash is argon2id.
 | `guest@example.com` | Omar Haddad: a finished stay (ended 3 days before load, can still be reviewed), 2 upcoming stays, a hold that expires 4 minutes after loading, and an expired hold |
 | `admin@example.com` | Ava Moradi, admin: log in with `POST /api/v1/admin/auth/login` (not `/auth/login`), then review `pending_listing` |
 
-**Development only.** `caravansara seed-demo` refuses to run when `CARAVANSARA_ENVIRONMENT=production` (`refused: demo data is for development only`). Every demo password is written above, and one of the accounts is an admin who can approve listings; on a real server, admins are made one by one with `caravansara create-admin` (specs/004-listing-approval, research R15).
+**Development only.** `caravansara seed-demo` refuses to run when `CARAVANSARA_ENVIRONMENT=production` (`refused: demo data is for development only`). Every demo password is written above, and one of the accounts is an admin who can approve listings; on a real server, admins are made one by one with `caravansara create-admin` (specs/backend (004), research R15).
 
-**Listing review.** A new listing waits for an admin (specs/004-listing-approval). The column default is therefore `pending`, so `seed_demo.sql` approves every listing explicitly and then makes the two review edge cases: `pending_listing` (in the queue) and `rejected_listing` (with a Persian reason the host sees in `GET /me/listings`, and a history row by the demo admin).
+**Listing review.** A new listing waits for an admin (specs/backend (004)). The column default is therefore `pending`, so `seed_demo.sql` approves every listing explicitly and then makes the two review edge cases: `pending_listing` (in the queue) and `rejected_listing` (with a Persian reason the host sees in `GET /me/listings`, and a history row by the demo admin).
 
 Any other host can log in too: find their email with `SELECT email FROM users u JOIN listings l ON l.host_id = u.id WHERE l.id = …`.
 

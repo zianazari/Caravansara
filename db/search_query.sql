@@ -2,7 +2,7 @@
 -- Change the values in "params"; in the app they become bind parameters.
 -- Where: send EITHER city/country OR lat + lng + radius_km (1–100 km, checked by the service).
 -- Privacy: only listings.public_location is used for filtering, distance and the pin.
--- Public:  only active listings an admin approved (specs/004-listing-approval, FR-002).
+-- Public:  only active listings an admin approved (specs/backend (004), FR-002).
 --          The real latitude/longitude never leave the database here.
 -- Amenities use AND logic, like Airbnb's filter chips. An empty array = no filter.
 WITH params AS (

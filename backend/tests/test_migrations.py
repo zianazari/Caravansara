@@ -56,7 +56,7 @@ async def test_downgrade_and_upgrade_again(prepared: Settings) -> None:
         await conn.close()
 
 
-# specs/002-rial-price-columns: the five money columns and their width after 0002.
+# specs/backend (002): the five money columns and their width after 0002.
 PRICE_COLUMNS = (
     ("listings", "price_per_night"),
     ("listings", "cleaning_fee"),
@@ -189,7 +189,7 @@ async def test_downgrade_stops_when_an_amount_no_longer_fits(scratch: Scratch) -
 
 
 async def test_0003_adds_pg_stat_statements_and_downgrade_keeps_the_data(scratch: Scratch) -> None:
-    """specs/003-index-review: the extension the Grafana query panel reads (FR-003)."""
+    """specs/backend (003): the extension the Grafana query panel reads (FR-003)."""
     await scratch.upgrade("head")
     extensions = "SELECT extname FROM pg_extension WHERE extname = 'pg_stat_statements'"
     assert [r[0] for r in await scratch.fetch(extensions)] == ["pg_stat_statements"]
@@ -216,7 +216,7 @@ INDEXES = "SELECT indexname, indexdef FROM pg_indexes WHERE tablename = 'booking
 async def test_index_migrations_add_valid_indexes_and_downgrade_removes_only_those(
     scratch: Scratch, revision: str, previous: str, added: set[str]
 ) -> None:
-    """specs/003-index-review: indexes only; no row or other index changes either way."""
+    """specs/backend (003): indexes only; no row or other index changes either way."""
     await scratch.upgrade(previous)
     await scratch.execute(*ROWS)
     await scratch.add_booking(Decimal("200000024.32"))
@@ -236,7 +236,7 @@ async def test_index_migrations_add_valid_indexes_and_downgrade_removes_only_tho
     assert [tuple(r) for r in await scratch.fetch(AMOUNTS)] == before_rows
 
 
-# ---- 0006: listing review (specs/004-listing-approval) --------------------------------
+# ---- 0006: listing review (specs/backend (004)) --------------------------------
 
 REVIEW = "SELECT review_status::text, submitted_at, rejection_reason, review_version FROM listings ORDER BY id"
 COUNTS = "SELECT (SELECT count(*) FROM listings), (SELECT count(*) FROM bookings), (SELECT count(*) FROM reviews)"

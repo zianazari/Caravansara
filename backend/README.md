@@ -91,7 +91,7 @@ src/caravansara/
   search/     city or radial search and filter counts
   jobs/       the worker loop
 migrations/   Alembic; 0001 is db/schema.sql, 0002 widens the price columns for rials, 0003 adds pg_stat_statements,
-              0004 and 0005 add the measured indexes (CONCURRENTLY; specs/003-index-review)
+              0004 and 0005 add the measured indexes (CONCURRENTLY; specs/backend)
 tests/
 ```
 

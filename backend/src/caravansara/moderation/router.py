@@ -1,4 +1,4 @@
-"""Admin endpoints under ``/api/v1/admin`` (specs/004-listing-approval, contracts/api.md).
+"""Admin endpoints under ``/api/v1/admin`` (specs/backend (004), contracts.md).
 
 Order of the checks, on every route: the Host guard first (when ``admin_host`` is set, any other
 Host gets 404, as if the routes were not there), then the admin token, then the account in the

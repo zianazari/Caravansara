@@ -63,7 +63,7 @@ async def test_demo_data_loads_and_logs_in(
             db, "SELECT (SELECT count(*) FROM users), (SELECT count(*) FROM listings), (SELECT count(*) FROM reviews)"
         )
     )[0]
-    assert tuple(counts) == (2044, 790, 9523)  # 2044: the demo admin (specs/004-listing-approval)
+    assert tuple(counts) == (2044, 790, 9523)  # 2044: the demo admin (specs/backend (004))
 
     login = await client.post("/auth/login", json={"email": "guest@example.com", "password": "caravansara-demo"})
     assert login.status_code == 200
@@ -83,7 +83,7 @@ async def test_demo_data_loads_and_logs_in(
         await cli.seed_demo(use_test_settings)
 
 
-# ---- admin accounts (specs/004-listing-approval, contracts/cli.md) --------------------
+# ---- admin accounts (specs/backend (004), contracts.md) --------------------
 
 
 async def test_create_admin_with_the_password_variable(

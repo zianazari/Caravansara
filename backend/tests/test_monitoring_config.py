@@ -15,7 +15,7 @@ OBSERVABILITY = Path(__file__).resolve().parents[2] / "observability"
 DASHBOARDS = sorted((OBSERVABILITY / "grafana" / "dashboards").glob("*.json"))
 ALERTS = OBSERVABILITY / "prometheus" / "alerts.yml"
 DATASOURCES = OBSERVABILITY / "grafana" / "provisioning" / "datasources" / "datasources.yml"
-# Names the postgres-exporter really serves, copied from its /metrics (specs/003-index-review, T012).
+# Names the postgres-exporter really serves, copied from its /metrics (specs/backend (003), T012).
 EXPORTER_METRICS = OBSERVABILITY / "postgres-exporter" / "metrics.txt"
 _SUFFIXES = re.compile(r"_(total|bucket|count|sum|created)$")
 

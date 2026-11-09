@@ -36,7 +36,7 @@ RATE_LIMITED = Counter(
 )
 REVIEWS = Counter("caravansara_reviews_total", "Reviews written.")
 
-# Listing review (specs/004-listing-approval, FR-016). "submitted" counts every entry to the queue:
+# Listing review (specs/backend (004), FR-016). "submitted" counts every entry to the queue:
 # a new listing, a resubmission and a descriptive edit of an approved listing.
 LISTING_REVIEW_EVENTS_LIST = ("submitted", "approved", "rejected")
 LISTING_REVIEW_EVENTS = Counter(

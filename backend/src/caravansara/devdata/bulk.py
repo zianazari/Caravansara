@@ -253,7 +253,7 @@ class BulkData:
             f"SRID=4326;POINT({plng} {plat})", guests, pets, max_pets, int(bedrooms), int(beds),
             round(float(baths), 1), _money(price), _money(cleaning), city.currency, active, _ts(created),
             # Said explicitly: the column default is 'pending' (migration 0006), and bulk data stands
-            # for listings that are already public (specs/004-listing-approval, research R5).
+            # for listings that are already public (specs/backend (004), research R5).
             "approved",
         )  # fmt: skip
         return _Listing(lid, city, rng, row, price, cleaning, guests, pets, max_pets, amenities)

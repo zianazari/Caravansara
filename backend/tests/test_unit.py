@@ -53,7 +53,7 @@ def test_total_price_is_nights_times_price_plus_cleaning() -> None:
 
 
 class TestStoredTotal:
-    """specs/002-rial-price-columns: a total must fit NUMERIC(14,2), or the API answers 422, not 500."""
+    """specs/backend (002): a total must fit NUMERIC(14,2), or the API answers 422, not 500."""
 
     def test_largest_allowed_total_fits(self) -> None:
         total = rules.total_price(date(2027, 1, 1), date(2028, 1, 1), MAX_PRICE, MAX_PRICE)  # 365 nights

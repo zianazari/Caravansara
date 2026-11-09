@@ -1,5 +1,5 @@
 {
-  "_about": "Important queries of the API and the worker, measured by `caravansara measure-queries` (specs/003-index-review). SQL copied from what the app sends; a parameter value starting with @ is a column of params.sql.",
+  "_about": "Important queries of the API and the worker, measured by `caravansara measure-queries` (specs/backend (003)). SQL copied from what the app sends; a parameter value starting with @ is a column of params.sql.",
   "queries": [
     {
       "name": "search_city_london",
@@ -383,7 +383,7 @@
         "guest_id": "@busy_guest"
       },
       "target_ms": 50,
-      "note": "only for a listing that is not public (specs/004-listing-approval, FR-019)"
+      "note": "only for a listing that is not public (specs/backend (004), FR-019)"
     },
     {
       "name": "review_queue_page",

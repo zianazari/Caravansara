@@ -70,7 +70,7 @@ def listing_body(city: int, **overrides: Any) -> dict[str, Any]:
 
 
 async def create_listing(client: AsyncClient, host: User, **overrides: Any) -> dict[str, Any]:
-    """A new listing waits for an admin (specs/004-listing-approval). ``approved=True`` (the default)
+    """A new listing waits for an admin (specs/backend (004)). ``approved=True`` (the default)
     approves it straight in the database, as an admin would, because the tests written before the
     review existed search, open and book public listings, and must pass unchanged (SC-007).
     Pass ``approved=False`` to get the listing as the host just made it."""

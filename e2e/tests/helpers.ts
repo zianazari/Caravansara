@@ -54,7 +54,7 @@ export async function amenityIds(request: APIRequestContext): Promise<Record<str
 
 /**
  * A listing at a random point inside Amsterdam, so radial searches find it.
- * A new listing waits for an admin's review (specs/004-listing-approval), so by default the
+ * A new listing waits for an admin's review (specs/backend (004)), so by default the
  * shared test admin approves it at once: the tests written before the review search and book
  * public listings. `approved: false` returns it as the host just made it.
  */
@@ -114,7 +114,7 @@ export async function reserve(
 
 /**
  * Upload the sample photo through the presigned POST and register it. A new photo sends an approved
- * listing back to review (specs/004-listing-approval, FR-009), so by default the test admin approves
+ * listing back to review (specs/backend (004), FR-009), so by default the test admin approves
  * it again, as the tests written before the review expect a public listing.
  */
 export async function addPhoto(

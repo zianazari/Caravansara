@@ -162,7 +162,7 @@ async def test_photo_upload_flow(client: AsyncClient, db: AsyncEngine) -> None:
     assert edited.json()["caption"] == "Sunny"
 
     assert (await client.delete(f"/listings/{lid}/photos/{ids[2]}", headers=host.auth)).status_code == 204
-    await approve(db, lid)  # new photos and a new caption sent it back to review (specs/004-listing-approval)
+    await approve(db, lid)  # new photos and a new caption sent it back to review (specs/backend (004))
     detail = (await client.get(f"/listings/{lid}")).json()
     assert [(p["id"], p["sort_order"]) for p in detail["photos"]] == [(ids[1], 0), (ids[0], 1)]
     cover = (await client.get("/me/listings", headers=host.auth)).json()["items"][0]["cover_url"]
@@ -224,7 +224,7 @@ async def _post_file(signed: dict[str, Any], content: bytes, content_type: str) 
         return await storage.post(signed["url"], data=fields, files={"file": ("f", content, content_type)})
 
 
-# specs/002-rial-price-columns: one limit of 1,000,000,000.00 for every currency.
+# specs/backend (002): one limit of 1,000,000,000.00 for every currency.
 @pytest.mark.parametrize(
     ("field", "value"),
     [

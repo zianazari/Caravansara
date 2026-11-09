@@ -31,7 +31,7 @@ def total_price(check_in: date, check_out: date, nightly: Decimal, cleaning_fee:
     return (nightly * nights(check_in, check_out) + cleaning_fee).quantize(Decimal("0.01"))
 
 
-# The widest amount the NUMERIC(14,2) price columns hold (specs/002-rial-price-columns). The
+# The widest amount the NUMERIC(14,2) price columns hold (specs/backend (002)). The
 # listing price limit and max_nights = 365 keep every total far below it; this only matters if
 # max_nights is raised to 999 or more.
 MAX_STORED_AMOUNT = Decimal("999999999999.99")

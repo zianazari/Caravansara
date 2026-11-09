@@ -155,7 +155,7 @@ async def test_radial_search_across_the_180_meridian(client: AsyncClient, db: As
         assert titles(r) == ["Dateline"]
         assert r.json()["items"][0]["distance_km"] < 2
     finally:
-        # TRUNCATE, not DELETE: a listing's review history is append-only (specs/004-listing-approval).
+        # TRUNCATE, not DELETE: a listing's review history is append-only (specs/backend (004)).
         await sql(db, "TRUNCATE listings CASCADE")
         await sql(db, "DELETE FROM cities WHERE name = 'Taveuni'")
         await sql(db, "DELETE FROM countries WHERE code = 'FJ'")
@@ -175,7 +175,7 @@ async def test_an_overdue_hold_does_not_hide_a_listing(
 
 
 async def test_search_total_matches_booking_total_for_long_rial_stay(client: AsyncClient) -> None:
-    """specs/002-rial-price-columns FR-009: one rule, one precision, for search and booking."""
+    """specs/backend (002) FR-009: one rule, one precision, for search and booking."""
     host = await register(client, "host")
     tehran = await city_id(client, "Tehran")
     await create_listing(
@@ -223,7 +223,7 @@ async def test_each_booking_status_blocks_the_same_on_every_search_path(
         assert filters.json()["total"] == 4
 
 
-# ---- listing review (specs/004-listing-approval) --------------------------------------
+# ---- listing review (specs/backend (004)) --------------------------------------
 
 
 @pytest.mark.parametrize("review", ["pending", "rejected"])

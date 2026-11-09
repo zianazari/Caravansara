@@ -1,4 +1,4 @@
-"""Admin review of listings (specs/004-listing-approval). Uses other modules through their service only.
+"""Admin review of listings (specs/backend (004)). Uses other modules through their service only.
 
 The review state lives in ``listings``; this module adds the admin's side: login, the queue, the
 details with the exact address (recorded), and decisions.

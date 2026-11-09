@@ -108,7 +108,7 @@ async def test_year_long_stay_and_last_bookable_day(demo: cli.DemoResult, client
     assert any(date.fromisoformat(b["check_in"]) == limit for b in last)
 
 
-# ---------- specs/004-listing-approval: review state of the demo ------------------------
+# ---------- specs/backend (004): review state of the demo ------------------------
 
 
 async def test_every_demo_listing_is_approved_except_the_two_review_cases(
@@ -304,7 +304,7 @@ async def test_persian_text_variety(demo: cli.DemoResult, db: AsyncEngine) -> No
 
 
 async def test_rial_prices_are_market_prices(demo: cli.DemoResult, db: AsyncEngine) -> None:
-    """specs/002-rial-price-columns US3: real Iranian prices, now that the columns hold them."""
+    """specs/backend (002) US3: real Iranian prices, now that the columns hold them."""
     rows = await sql(
         db,
         "SELECT property_type::text, min(price_per_night), max(price_per_night) FROM listings "

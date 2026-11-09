@@ -46580,7 +46580,7 @@ My stay in Brooklyn was absolutely wonderful, thanks to Babak! From start to fin
   (10745, 790, 1944, 4, 4, 3, 4, 3, 3, 4, 'همه‌چیز مرتب بود.', '2026-08-26 21:36:00+00'),
   (10746, 790, 1979, 5, 4, 4, 5, 5, 5, 4, 'میزبان ساعت ۱۲ شب هم جواب پیام‌مان را داد.', '2026-07-06 22:31:00+00');
 
--- listing review (specs/004-listing-approval): the column default is 'pending', so approve
+-- listing review (specs/backend (004)): the column default is 'pending', so approve
 -- every listing explicitly, then make the two review edge cases.
 UPDATE listings SET review_status = 'approved', submitted_at = NULL;
 UPDATE listings SET review_status = 'pending', submitted_at = now() - interval '2 days'

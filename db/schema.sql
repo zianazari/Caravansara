@@ -8,7 +8,7 @@
 --   + cities.timezone
 --   + bookings: partial index on hold_expires_at for pending holds
 --   + listings.public_location (PostGIS geography) for radial search
--- Updated 2026-11-07 for listing review by an admin (migration 0006, specs/004-listing-approval):
+-- Updated 2026-11-07 for listing review by an admin (migration 0006, specs/backend (004)):
 --   + users.kind, users.disabled_at; auth_attempts allows 'admin_login'
 --   + listings.review_status, submitted_at, rejection_reason, review_version
 --   + listing_review_events, admin_address_views (two new tables)
@@ -112,7 +112,7 @@ CREATE TABLE listings (
     beds             SMALLINT      NOT NULL DEFAULT 1 CHECK (beds      >= 0),
     bathrooms        NUMERIC(3,1)  NOT NULL DEFAULT 1 CHECK (bathrooms >= 0),
 
-    -- price + times. 14,2: rials; largest total = 1e9 x 365 + 1e9 (specs/002-rial-price-columns)
+    -- price + times. 14,2: rials; largest total = 1e9 x 365 + 1e9 (specs/backend (002))
     price_per_night  NUMERIC(14,2) NOT NULL CHECK (price_per_night > 0),
     cleaning_fee     NUMERIC(14,2) NOT NULL DEFAULT 0 CHECK (cleaning_fee >= 0),
     currency         CHAR(3)       NOT NULL DEFAULT 'EUR',
@@ -206,7 +206,7 @@ CREATE TABLE listing_amenities (
     amenity_id  SMALLINT NOT NULL REFERENCES amenities(id),
     PRIMARY KEY (listing_id, amenity_id)
 );
--- Search never reads it (specs/003-index-review); it stays for the foreign key: deleting an amenity
+-- Search never reads it (specs/backend (003)); it stays for the foreign key: deleting an amenity
 -- checks its listings in 4 ms with it, 120 ms (a full scan) without.
 CREATE INDEX listing_amenities_amenity_idx ON listing_amenities (amenity_id);
 
@@ -251,7 +251,7 @@ CREATE TABLE bookings (
 CREATE INDEX bookings_guest_idx ON bookings (guest_id);
 -- the worker expires overdue holds every minute without scanning all bookings
 CREATE INDEX bookings_pending_hold_idx ON bookings (hold_expires_at) WHERE status = 'pending';
--- Measured on 100,000 listings and 3 million bookings (specs/003-index-review/measurements.md):
+-- Measured on 100,000 listings and 3 million bookings (specs/backend/measurements.md (003)):
 -- a host's "bookings of my listing", in page order (was a full scan)
 CREATE INDEX bookings_listing_check_in_idx ON bookings (listing_id, check_in, id);
 -- search with dates: every booking that blocks the dates, at once (no_double_booking needs a listing)
