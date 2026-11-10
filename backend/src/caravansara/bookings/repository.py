@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import date, datetime
 
 from sqlalchemy import func, select, text, update
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -119,3 +119,21 @@ async def listing_bookings(
         select(Booking).where(*where).order_by(Booking.check_in, Booking.id).limit(limit).offset(offset)
     )
     return list(rows.scalars()), int(total)
+
+
+async def booked_ranges(
+    session: AsyncSession, listing_id: int, start: date, end: date, now: datetime
+) -> list[tuple[date, date]]:
+    """Stays that take any night in [start, end): the same rule as search (an unpaid hold counts until it
+    runs out). ``stay &&`` uses the exclusion constraint's GiST index on (listing_id, stay)."""
+    rows = await session.execute(
+        text(
+            """SELECT check_in, check_out FROM bookings
+               WHERE listing_id = :listing_id
+                 AND stay && daterange(CAST(:start AS date), CAST(:end AS date), '[)')
+                 AND (status IN ('confirmed', 'completed') OR (status = 'pending' AND hold_expires_at > :now))
+               ORDER BY check_in"""
+        ),
+        {"listing_id": listing_id, "start": start, "end": end, "now": now},
+    )
+    return [(row.check_in, row.check_out) for row in rows]

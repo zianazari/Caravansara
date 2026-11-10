@@ -1177,6 +1177,46 @@
             },
             "description": "After fixing what the admin's reason asked for. The listing waits for review again, at the end of the queue, and the old reason is cleared. Only for a `rejected` listing."
           }
+        },
+        {
+          "name": "Taken nights of a listing",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/listings/{{listingId}}/availability",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "listings",
+                "{{listingId}}",
+                "availability"
+              ],
+              "query": [
+                {
+                  "key": "start",
+                  "value": "2027-01-01",
+                  "disabled": true,
+                  "description": "First night; today in the listing's city by default."
+                },
+                {
+                  "key": "end",
+                  "value": "2027-03-01",
+                  "disabled": true,
+                  "description": "The day after the last night; a year later by default, at most 400 days."
+                }
+              ]
+            },
+            "description": "The nights taken in [start, end) by a confirmed or completed stay, or by an unpaid hold still running, for the calendar on the listing page. No guest data."
+          }
         }
       ]
     },

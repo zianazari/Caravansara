@@ -24,6 +24,7 @@ vi.mock("next/navigation", () => ({ useSearchParams: () => search }));
 vi.mock("sonner", () => ({ toast: { success: vi.fn() } }));
 
 import { BookingBox } from "@/components/listing/BookingBox";
+import { StayDatesProvider } from "@/components/listing/StayDates";
 import { ConfirmBooking } from "./ConfirmBooking";
 import { TripDetail } from "./TripDetail";
 
@@ -38,6 +39,12 @@ const listing = {
   max_pets: 0,
   timezone: "Europe/Amsterdam",
 };
+/** The booking box shares its dates with the page's calendar (feature 019). */
+const Box = () => (
+  <StayDatesProvider listingId={5} timezone="Europe/Amsterdam">
+    <BookingBox listing={listing} />
+  </StayDatesProvider>
+);
 const stay = {
   listing_id: 5,
   check_in: "2027-01-10",
@@ -88,7 +95,7 @@ beforeEach(() => {
 
 describe("BookingBox (US3, FR-023, FR-024)", () => {
   it("shows the total from the search's dates and saves a draft before going to book", async () => {
-    renderIn("en", <BookingBox listing={listing} />);
+    renderIn("en", <Box />);
     expect(screen.getByText("€390.00")).toBeInTheDocument();
     await userEvent.click(screen.getByRole("button", { name: "Reserve" }));
     expect(push).toHaveBeenCalledWith("/book/5");
@@ -97,28 +104,40 @@ describe("BookingBox (US3, FR-023, FR-024)", () => {
 
   it("stops more guests than the place allows before asking the API (US3/AC6)", async () => {
     search = new URLSearchParams("check_in=2027-01-10&check_out=2027-01-13&adults=3");
-    renderIn("fa", <BookingBox listing={listing} />);
+    renderIn("fa", <Box />);
     await userEvent.click(screen.getByRole("button", { name: "رزرو" }));
     expect(screen.getByRole("alert")).toHaveTextContent("تعداد مهمان‌ها از ظرفیت این اقامتگاه بیشتر است.");
     expect(push).not.toHaveBeenCalled();
   });
 
+  it("refuses dates that cross a taken night before going to book (feature 019)", async () => {
+    search = new URLSearchParams("check_in=2027-01-10&check_out=2027-01-13&adults=2");
+    GET.mockResolvedValue({
+      data: { start: "2027-01-01", end: "2028-01-01", booked_nights: ["2027-01-11"] },
+    });
+    renderIn("en", <Box />);
+    await waitFor(() => expect(GET).toHaveBeenCalled());
+    await userEvent.click(screen.getByRole("button", { name: "Reserve" }));
+    expect(await screen.findByRole("alert")).toHaveTextContent(/not available|taken|booked/i);
+    expect(push).not.toHaveBeenCalled();
+  });
+
   it("asks for dates first", async () => {
     search = new URLSearchParams();
-    renderIn("en", <BookingBox listing={listing} />);
+    renderIn("en", <Box />);
     await userEvent.click(screen.getByRole("button", { name: "Reserve" }));
     expect(screen.getByRole("alert")).toHaveTextContent("Choose check-in and check-out dates.");
   });
 
   it("offers no booking on the host's own listing", () => {
     me = { id: 3 };
-    renderIn("en", <BookingBox listing={listing} />);
+    renderIn("en", <Box />);
     expect(screen.queryByRole("button", { name: "Reserve" })).toBeNull();
     expect(screen.getByText("This is your own place.")).toBeInTheDocument();
   });
 
   it("is accessible", async () => {
-    const { container } = renderIn("fa", <BookingBox listing={listing} />);
+    const { container } = renderIn("fa", <Box />);
     await expectAccessible(container);
   });
 });

@@ -536,6 +536,26 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  "/api/v1/listings/{listing_id}/availability": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Taken nights of a listing
+     * @description The nights taken in [start, end) by a confirmed or completed stay, or by an unpaid hold still running, for the calendar on the listing page. No guest data. Defaults: from today in the listing's city for a year; at most 400 days. Visible to whoever may see the listing.
+     */
+    get: operations["availability_api_v1_listings__listing_id__availability_get"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   "/api/v1/bookings/{booking_id}/review": {
     parameters: {
       query?: never;
@@ -1197,6 +1217,30 @@ export interface components {
       full_name: string;
       /** Avatar Url */
       avatar_url: string | null;
+    };
+    /**
+     * ListingAvailability
+     * @description The nights of a listing that are taken (feature 019), for the calendar on its page. Only the nights,
+     *     never who booked them.
+     */
+    ListingAvailability: {
+      /**
+       * Start
+       * Format: date
+       * @description First night asked about (the listing city's today by default).
+       */
+      start: string;
+      /**
+       * End
+       * Format: date
+       * @description The day after the last night asked about.
+       */
+      end: string;
+      /**
+       * Booked Nights
+       * @description Each night taken by a confirmed or completed stay, or by an unpaid hold still running. A guest can check out on such a date but not stay that night.
+       */
+      booked_nights: string[];
     };
     /**
      * ListingCard
@@ -3473,6 +3517,49 @@ export interface operations {
         };
         content: {
           "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  availability_api_v1_listings__listing_id__availability_get: {
+    parameters: {
+      query?: {
+        start?: string | null;
+        end?: string | null;
+      };
+      header?: never;
+      path: {
+        listing_id: number;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ListingAvailability"];
+        };
+      };
+      /** @description Not found */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Invalid input or a broken business rule */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
         };
       };
     };

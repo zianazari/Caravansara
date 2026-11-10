@@ -67,7 +67,7 @@ function SiteHeader() {
       <nav
         aria-label={t("nav.mainMenu")}
         // The list pages are wider since feature 017; the header lines up with them.
-        className={`mx-auto flex items-center gap-3 px-4 py-3 md:px-6 ${WIDE.has(pathname) ? "max-w-[1920px] lg:px-10" : "max-w-7xl"}`}
+        className={`mx-auto flex items-center gap-3 px-4 py-3 md:px-6 ${WIDE.has(pathname) || pathname.startsWith("/listings/") ? "max-w-[1920px] lg:px-10" : "max-w-7xl"}`}
       >
         <Link href="/" className="me-auto rounded-lg" aria-label={t("common.siteName")}>
           <Logo />

@@ -5,6 +5,7 @@ import { useLocale, useTranslations } from "next-intl";
 import { useEffect, useRef, useState, type KeyboardEvent } from "react";
 import { Button } from "@/components/ui/button";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { canCheckIn, canCheckOut } from "@/lib/availability";
 import {
   addDays,
   calendarOf,
@@ -31,12 +32,15 @@ export function DateRangePicker({
   min,
   maxDaysAhead = 365,
   label,
+  booked,
 }: {
   value: Range;
   onChange: (range: Range) => void;
   min: string;
   maxDaysAhead?: number;
   label?: string;
+  /** A listing's taken nights (feature 019): struck through, and no stay may cross one. */
+  booked?: ReadonlySet<string>;
 }) {
   const t = useTranslations("dates");
   const locale = useLocale();
@@ -53,15 +57,18 @@ export function DateRangePicker({
     grid.current?.querySelector<HTMLButtonElement>(`[data-date="${focused}"]`)?.focus();
   }, [open, focused, month]);
 
-  const inRange = (iso: string) => iso >= min && iso <= max;
+  const taken = booked ?? new Set<string>();
+  const choosingOut = Boolean(value.checkIn && !value.checkOut);
+  const canIn = (iso: string) => iso >= min && iso <= max && canCheckIn(iso, taken, min);
+  const canOut = (iso: string) => choosingOut && iso <= max && canCheckOut(value.checkIn!, iso, taken);
+  const inRange = (iso: string) => canIn(iso) || canOut(iso);
 
   function pick(iso: string) {
-    if (!inRange(iso)) return;
-    if (!value.checkIn || value.checkOut || iso <= value.checkIn) {
-      onChange({ checkIn: iso, checkOut: undefined });
-    } else {
+    if (canOut(iso)) {
       onChange({ checkIn: value.checkIn, checkOut: iso });
       setOpen(false);
+    } else if (canIn(iso)) {
+      onChange({ checkIn: iso, checkOut: undefined });
     }
   }
 
@@ -178,6 +185,7 @@ export function DateRangePicker({
                       }}
                       className={cn(
                         "grid size-10 w-full place-content-center rounded-md text-sm hover:bg-muted disabled:text-muted-foreground/40 disabled:hover:bg-transparent",
+                        taken.has(iso) && "line-through",
                         value.checkIn &&
                           value.checkOut &&
                           iso > value.checkIn &&

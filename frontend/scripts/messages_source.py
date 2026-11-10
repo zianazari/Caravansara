@@ -184,6 +184,11 @@ M = {
   "checkOut": ("خروج تا {time} به وقت {city}", "Check-out by {time}, {city} time"),
   "location": ("محل", "Location"),
   "approximate": ("مکان دقیق پس از رزرو و پرداخت نشان داده می‌شود.", "The exact address is shown after you book and pay."),
+  # 019: the calendar on the listing page
+  "nightsIn": ("{count, plural, one {# شب} other {# شب}} در {city}", "{count, plural, one {# night} other {# nights}} in {city}"),
+  "chooseCheckIn": ("تاریخ ورود را انتخاب کنید", "Choose check-in"),
+  "calendarHint": ("شب‌های خط‌خورده رزرو شده‌اند.", "Struck-through nights are booked."),
+  "taken": ("رزرو شده", "booked"),
   "reviews": ("نظرها", "Reviews"),
   "noReviews": ("هنوز نظری ثبت نشده است.", "No reviews yet."),
   "moreReviews": ("نظرهای بیشتر", "More reviews"),

@@ -14,7 +14,14 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from caravansara.bookings import repository as repo
 from caravansara.bookings import rules
 from caravansara.bookings.models import Booking, BookingStatus
-from caravansara.bookings.schemas import BookingAddress, BookingCreate, BookingListing, BookingOut, BookingPage
+from caravansara.bookings.schemas import (
+    BookingAddress,
+    BookingCreate,
+    BookingListing,
+    BookingOut,
+    BookingPage,
+    ListingAvailability,
+)
 from caravansara.core.config import Settings
 from caravansara.core.db import constraint_name, sqlstate
 from caravansara.core.errors import Conflict, Forbidden, NotFound, Unprocessable
@@ -284,6 +291,29 @@ async def listing_bookings(
     await listings.require_host(session, listing_id, user_id)
     bookings, total = await repo.listing_bookings(session, listing_id, status, limit, offset)
     return await _render_page(session, storage, bookings, total, user_id)
+
+
+# A year and a bit: enough for the calendar's furthest month, small enough to answer quickly.
+MAX_AVAILABILITY_DAYS = 400
+
+
+async def availability(
+    session: AsyncSession, listing_id: int, viewer_id: int | None, start: date | None, end: date | None
+) -> ListingAvailability:
+    """The listing's taken nights (feature 019), for whoever may see its page."""
+    await listings.require_visible_listing(session, listing_id, viewer_id)
+    info = await listings.get_listing_info(session, listing_id)
+    start = start or today_in(info.city.timezone)
+    end = end or start + timedelta(days=365)
+    if end <= start or (end - start).days > MAX_AVAILABILITY_DAYS:
+        raise Unprocessable("invalid_dates", f"end must be after start, at most {MAX_AVAILABILITY_DAYS} days later.")
+    nights: set[date] = set()
+    for check_in, check_out in await repo.booked_ranges(session, listing_id, start, end, utcnow()):
+        day = max(check_in, start)
+        while day < min(check_out, end):
+            nights.add(day)
+            day += timedelta(days=1)
+    return ListingAvailability(start=start, end=end, booked_nights=sorted(nights))
 
 
 # ---- for other modules ----------------------------------------------------------------

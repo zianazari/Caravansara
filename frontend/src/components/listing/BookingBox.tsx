@@ -4,6 +4,8 @@ import { useTranslations } from "next-intl";
 import { useSearchParams } from "next/navigation";
 import { useState } from "react";
 import { DateRangePicker } from "@/components/date/DateRangePicker";
+import { stayIsFree } from "@/lib/availability";
+import { useStayDates } from "./StayDates";
 import { PriceBreakdown } from "@/components/booking/PriceBreakdown";
 import { GuestPicker, type Guests } from "@/components/search/GuestPicker";
 import { Button } from "@/components/ui/button";
@@ -38,10 +40,8 @@ export function BookingBox({ listing }: { listing: BookingBoxListing }) {
   const router = useRouter();
   const me = useMe();
   const initial = parseSearch(useSearchParams());
-  const [dates, setDates] = useState<{ checkIn?: string; checkOut?: string }>({
-    checkIn: initial.check_in,
-    checkOut: initial.check_out,
-  });
+  // The page's calendar and this box share the dates (feature 019).
+  const { dates, setDates, booked } = useStayDates();
   const [guests, setGuests] = useState<Guests>({
     adults: initial.adults,
     children: initial.children,
@@ -57,6 +57,10 @@ export function BookingBox({ listing }: { listing: BookingBoxListing }) {
       return;
     }
     const stay = { check_in: dates.checkIn, check_out: dates.checkOut, ...guests };
+    if (!stayIsFree(dates.checkIn, dates.checkOut, booked)) {
+      setProblem(t("errors.dates_unavailable"));
+      return;
+    }
     const issue = preCheck(listing, stay);
     if (issue) {
       setProblem(t(`booking.${issue}`));
@@ -82,6 +86,7 @@ export function BookingBox({ listing }: { listing: BookingBoxListing }) {
           setProblem(null);
         }}
         min={todayInZone(listing.timezone)}
+        booked={booked}
       />
       <GuestPicker value={guests} onChange={setGuests} />
       {dates.checkIn && dates.checkOut ? (

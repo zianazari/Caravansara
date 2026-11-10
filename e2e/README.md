@@ -1,6 +1,6 @@
 # API tests with Playwright
 
-End-to-end tests for all 44 endpoints of the Caravansara API and for the web site's wiring, run with
+End-to-end tests for all 45 endpoints of the Caravansara API and for the web site's wiring, run with
 Playwright's `request` fixture against the real `docker compose` stack: web site, API, worker,
 PostgreSQL + PostGIS and MinIO.
 
