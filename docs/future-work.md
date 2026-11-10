@@ -1,6 +1,6 @@
 # کارهای آینده
 
-این فهرست کارهای پیش روی پروژه است و فقط کارهایی را دارد که هنوز شروع نشده‌اند. کارهای انجام‌شده، یعنی پیاده‌سازی بکند نسخه‌ی اول، تکمیل تست‌های آن، مانیتورینگ (لاگ، متریک و trace)، داده‌ی تست و ماک (اولین کار با Spec Kit، در [specs/backend (001)](../specs/backend/))، پهن کردن ستون‌های قیمت برای ریال ([specs/backend (002)](../specs/backend/))، بازبینی روش Spec Kit (constitution نسخه‌ی 1.2.0)، بررسی ایندکس‌ها ([specs/backend (003)](../specs/backend/))، تأیید آگهی توسط مدیر سیستم ([specs/backend (004)](../specs/backend/)) و بخش مهمانِ سایت وب ([specs/005-frontend-guest/](../specs/005-frontend-guest/))، و تم کاروانسرایی سایت ([specs/007-caravansara-theme/](../specs/007-caravansara-theme/))، و آپلود عکس پروفایل از راه API ([specs/006-avatar-upload-via-api/](../specs/006-avatar-upload-via-api/))، و صفحه‌های میزبان ([specs/008-host-pages/](../specs/008-host-pages/))، و پنل مدیر (کار ۰۰۹، بی Spec Kit)، و قاعده‌ی ۳ عکس در API (کار ۰۱۰)، در [backend-design.md](backend-design.md)، [backend/README.md](../backend/README.md) و [observability/README.md](../observability/README.md) ثبت شده‌اند.
+این فهرست کارهای پیش روی پروژه است و فقط کارهایی را دارد که هنوز شروع نشده‌اند. کارهای انجام‌شده، یعنی پیاده‌سازی بکند نسخه‌ی اول، تکمیل تست‌های آن، مانیتورینگ (لاگ، متریک و trace)، داده‌ی تست و ماک (اولین کار با Spec Kit، در [specs/backend (001)](../specs/backend/))، پهن کردن ستون‌های قیمت برای ریال ([specs/backend (002)](../specs/backend/))، بازبینی روش Spec Kit (constitution نسخه‌ی 1.2.0)، بررسی ایندکس‌ها ([specs/backend (003)](../specs/backend/))، تأیید آگهی توسط مدیر سیستم ([specs/backend (004)](../specs/backend/)) و بخش مهمانِ سایت وب ([specs/005-frontend-guest/](../specs/005-frontend-guest/))، و تم کاروانسرایی سایت ([specs/007-caravansara-theme/](../specs/007-caravansara-theme/))، و آپلود عکس پروفایل از راه API ([specs/006-avatar-upload-via-api/](../specs/006-avatar-upload-via-api/))، و صفحه‌های میزبان ([specs/008-host-pages/](../specs/008-host-pages/))، و پنل مدیر (کار ۰۰۹، بی Spec Kit)، و قاعده‌ی ۳ عکس در API (کار ۰۱۰)، و نشست مدیر با refresh (کار ۰۱۱)، در [backend-design.md](backend-design.md)، [backend/README.md](../backend/README.md) و [observability/README.md](../observability/README.md) ثبت شده‌اند.
 
 ## ترتیب پیشنهادی
 
@@ -39,7 +39,7 @@
 
 **کارهای باقی‌مانده از پنل مدیر (کار ۰۰۹):**
 
-- [ ] **refresh برای نشست مدیر:** API به مدیر فقط توکن ۱۵ دقیقه‌ای می‌دهد، پس مدیر هر ۱۵ دقیقه دوباره وارد می‌شود. refresh کوتاه‌عمر برای مدیر endpoint و جدول تازه می‌خواهد (اصل III).
+- [ ] **چند نمونه‌ی سایت برای میزبان مدیر:** تازه‌سازی هم‌زمان توکن مدیر در حافظه‌ی یک پروسه یکی می‌شود (کار ۰۱۱). با چند نمونه پشت load balancer، میزبان مدیر sticky session می‌خواهد، یا قفل مشترک (مثلاً در Redis).
 - [ ] **reverse proxy در production برای میزبان مدیر:** باید `X-Forwarded-Host` را خودش بگذارد (نه از مرورگر)، چون پنل میزبان را از آن می‌خواند. محافظت اصلی همچنان ورود مدیر است.
 
 **کارهای باقی‌مانده از بخش مهمان (کار ۰۰۵)، که هر کدام تغییر API یا زیرساخت می‌خواهد:**

@@ -36,14 +36,25 @@ class TokensOut(BaseModel):
 
 
 class AdminTokenOut(BaseModel):
-    """No refresh token: an admin logs in again after ``expires_in`` (specs/backend (004) research R2)."""
+    """A short admin token and a rotating refresh token (feature 011). The session ends
+    ``session_expires_in`` seconds after log-in, however often it is refreshed."""
 
     access_token: str
+    refresh_token: str
     token_type: str = "bearer"
     expires_in: int = Field(description="Admin token lifetime in seconds.")
+    session_expires_in: int = Field(description="Seconds until the admin session ends and a new log-in is needed.")
 
     model_config = ConfigDict(
-        json_schema_extra={"example": {"access_token": "eyJhbGciOi...", "token_type": "bearer", "expires_in": 900}}
+        json_schema_extra={
+            "example": {
+                "access_token": "eyJhbGciOi...",
+                "refresh_token": "kq3...",
+                "token_type": "bearer",
+                "expires_in": 900,
+                "session_expires_in": 28800,
+            }
+        }
     )
 
 

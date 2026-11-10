@@ -2794,7 +2794,7 @@
           "Admin"
         ],
         "summary": "Admin log in",
-        "description": "Admin accounts are made only with `caravansara create-admin` on the server. The token lasts 15 minutes and has no refresh token. Member accounts cannot log in here, and an admin token works on no member endpoint.",
+        "description": "Admin accounts are made only with `caravansara create-admin` on the server. The token lasts 15 minutes; the refresh token renews it until the session ends, 8 hours after log-in (`session_expires_in`). Member accounts cannot log in here, and an admin token works on no member endpoint.",
         "operationId": "admin_login_api_v1_admin_auth_login_post",
         "requestBody": {
           "content": {
@@ -2839,6 +2839,93 @@
           },
           "429": {
             "description": "Too many attempts",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/admin/auth/refresh": {
+      "post": {
+        "tags": [
+          "Admin"
+        ],
+        "summary": "Renew the admin token",
+        "description": "Rotates the refresh token: the one sent stops working and a new pair comes back, with the same session end. A refresh token used twice ends every session of that admin. A member's refresh token, a disabled admin and an ended session get `401 invalid_token`.",
+        "operationId": "admin_refresh_api_v1_admin_auth_refresh_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RefreshIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AdminTokenOut"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, invalid or expired access token",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Invalid input or a broken business rule",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/admin/auth/logout": {
+      "post": {
+        "tags": [
+          "Admin"
+        ],
+        "summary": "End the admin session",
+        "description": "The refresh token stops working. The admin token itself ends within 15 minutes.",
+        "operationId": "admin_logout_api_v1_admin_auth_logout_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RefreshIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "422": {
+            "description": "Invalid input or a broken business rule",
             "content": {
               "application/json": {
                 "schema": {
@@ -3465,6 +3552,10 @@
             "type": "string",
             "title": "Access Token"
           },
+          "refresh_token": {
+            "type": "string",
+            "title": "Refresh Token"
+          },
           "token_type": {
             "type": "string",
             "title": "Token Type",
@@ -3474,18 +3565,27 @@
             "type": "integer",
             "title": "Expires In",
             "description": "Admin token lifetime in seconds."
+          },
+          "session_expires_in": {
+            "type": "integer",
+            "title": "Session Expires In",
+            "description": "Seconds until the admin session ends and a new log-in is needed."
           }
         },
         "type": "object",
         "required": [
           "access_token",
-          "expires_in"
+          "refresh_token",
+          "expires_in",
+          "session_expires_in"
         ],
         "title": "AdminTokenOut",
-        "description": "No refresh token: an admin logs in again after ``expires_in`` (specs/backend (004) research R2).",
+        "description": "A short admin token and a rotating refresh token (feature 011). The session ends\n``session_expires_in`` seconds after log-in, however often it is refreshed.",
         "example": {
           "access_token": "eyJhbGciOi...",
           "expires_in": 900,
+          "refresh_token": "kq3...",
+          "session_expires_in": 28800,
           "token_type": "bearer"
         }
       },

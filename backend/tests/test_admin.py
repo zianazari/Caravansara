@@ -35,7 +35,7 @@ async def _admin_login(client: AsyncClient, email: str, password: str = PASSWORD
 
 
 async def test_create_admin_and_log_in(client: AsyncClient, db: AsyncEngine, prepared: Settings) -> None:
-    """US4/AC1: a short admin token with its own type and no refresh token."""
+    """US4/AC1: a short admin token with its own type; since feature 011 a refresh token too, for 8 hours."""
     admin_id = await _create(db, "reviewer@example.com")
     assert (await sql(db, "SELECT kind::text FROM users WHERE id = :id", id=admin_id))[0][0] == "admin"
 
@@ -43,7 +43,8 @@ async def test_create_admin_and_log_in(client: AsyncClient, db: AsyncEngine, pre
     assert status == 200, body
     assert body["expires_in"] == 900
     assert body["token_type"] == "bearer"
-    assert "refresh_token" not in body
+    assert body["refresh_token"]
+    assert 8 * 3600 - 60 <= body["session_expires_in"] <= 8 * 3600
     payload = jwt.decode(str(body["access_token"]), prepared.jwt_secret, algorithms=[prepared.jwt_algorithm])
     assert payload["type"] == "admin"
     assert payload["sub"] == str(admin_id)
@@ -165,3 +166,78 @@ async def test_admin_login_is_rate_limited_on_its_own(client: AsyncClient, db: A
     member = await register(client, "member")
     host_listing = await create_listing(client, member)
     assert host_listing["id"]  # the member side still works
+
+
+# ---- admin refresh (feature 011) ----------------------------------------------------
+
+
+async def _admin_tokens(client: AsyncClient, db: AsyncEngine, email: str = "reviewer@example.com") -> dict[str, Any]:
+    await _create(db, email)
+    status, body = await _admin_login(client, email)
+    assert status == 200, body
+    return body
+
+
+async def test_admin_refresh_rotates_and_keeps_the_session_end(client: AsyncClient, db: AsyncEngine) -> None:
+    first = await _admin_tokens(client, db)
+    await sql(
+        db,
+        "UPDATE refresh_tokens SET expires_at = now() + interval '2 hours' WHERE user_id = "
+        "(SELECT id FROM users WHERE email = 'reviewer@example.com')",
+    )
+    r = await client.post("/admin/auth/refresh", json={"refresh_token": first["refresh_token"]})
+    assert r.status_code == 200, r.text
+    second = r.json()
+    assert second["refresh_token"] != first["refresh_token"]
+    assert 2 * 3600 - 60 <= second["session_expires_in"] <= 2 * 3600  # not extended to 8 hours again
+    queue = await client.get("/admin/listings/pending", headers={"Authorization": f"Bearer {second['access_token']}"})
+    assert queue.status_code == 200
+
+
+async def test_a_reused_admin_refresh_token_ends_every_session(client: AsyncClient, db: AsyncEngine) -> None:
+    first = await _admin_tokens(client, db)
+    second = (await client.post("/admin/auth/refresh", json={"refresh_token": first["refresh_token"]})).json()
+    reused = await client.post("/admin/auth/refresh", json={"refresh_token": first["refresh_token"]})
+    assert reused.status_code == 401
+    assert reused.json()["error"]["code"] == "invalid_token"
+    after = await client.post("/admin/auth/refresh", json={"refresh_token": second["refresh_token"]})
+    assert after.status_code == 401
+
+
+async def test_an_ended_admin_session_cannot_be_refreshed(client: AsyncClient, db: AsyncEngine) -> None:
+    tokens = await _admin_tokens(client, db)
+    await sql(
+        db,
+        "UPDATE refresh_tokens SET created_at = now() - interval '2 hours', expires_at = now() - interval '1 second'",
+    )
+    r = await client.post("/admin/auth/refresh", json={"refresh_token": tokens["refresh_token"]})
+    assert r.status_code == 401
+
+
+async def test_admin_and_member_refresh_tokens_never_cross(client: AsyncClient, db: AsyncEngine) -> None:
+    tokens = await _admin_tokens(client, db)
+    as_member = await client.post("/auth/refresh", json={"refresh_token": tokens["refresh_token"]})
+    assert as_member.status_code == 401
+    member = await register(client, "member")
+    as_admin = await client.post("/admin/auth/refresh", json={"refresh_token": member.refresh})
+    assert as_admin.status_code == 401
+    # Refused, not reused: both tokens still work on their own endpoint.
+    assert (
+        await client.post("/admin/auth/refresh", json={"refresh_token": tokens["refresh_token"]})
+    ).status_code == 200
+    assert (await client.post("/auth/refresh", json={"refresh_token": member.refresh})).status_code == 200
+
+
+async def test_disabling_an_admin_ends_its_refresh_tokens(client: AsyncClient, db: AsyncEngine) -> None:
+    tokens = await _admin_tokens(client, db)
+    async with AsyncSession(db, expire_on_commit=False) as session:
+        await identity.disable_admin(session, email="reviewer@example.com")
+    r = await client.post("/admin/auth/refresh", json={"refresh_token": tokens["refresh_token"]})
+    assert r.status_code == 401
+
+
+async def test_admin_logout_ends_the_refresh_token(client: AsyncClient, db: AsyncEngine) -> None:
+    tokens = await _admin_tokens(client, db)
+    assert (await client.post("/admin/auth/logout", json={"refresh_token": tokens["refresh_token"]})).status_code == 204
+    r = await client.post("/admin/auth/refresh", json={"refresh_token": tokens["refresh_token"]})
+    assert r.status_code == 401

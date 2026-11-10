@@ -4,7 +4,7 @@ import logging
 import uuid
 from collections.abc import AsyncIterator
 from dataclasses import dataclass
-from datetime import timedelta
+from datetime import datetime, timedelta
 
 from botocore.exceptions import BotoCoreError, ClientError
 from sqlalchemy.exc import IntegrityError
@@ -114,6 +114,10 @@ async def refresh(session: AsyncSession, settings: Settings, refresh_token: str)
     now = utcnow()
     row = await repo.get_refresh_token_for_update(session, hash_refresh_token(refresh_token))
     if row is None or row.expires_at <= now:
+        raise Unauthorized("The refresh token is not valid.", code="invalid_token")
+    # An admin's refresh token never gives a member token (feature 011): admin_refresh is its only way.
+    user = await repo.get_user(session, row.user_id)
+    if user is None or user.kind != AccountKind.member:
         raise Unauthorized("The refresh token is not valid.", code="invalid_token")
     if row.revoked_at is not None:
         await repo.revoke_all_tokens(session, row.user_id, now)
@@ -322,8 +326,45 @@ async def admin_login(
     await session.commit()
     if not ok or user is None:
         raise Unauthorized("Email or password is wrong.", code="invalid_credentials")
-    token, expires_in = create_access_token(settings, user.id, "admin")
-    return AdminTokenOut(access_token=token, expires_in=expires_in)
+    ends = utcnow() + timedelta(hours=settings.admin_session_hours)
+    tokens = await _issue_admin_tokens(session, settings, user.id, ends)
+    await session.commit()
+    return tokens
+
+
+async def _issue_admin_tokens(
+    session: AsyncSession, settings: Settings, admin_id: int, ends: datetime
+) -> AdminTokenOut:
+    token, expires_in = create_access_token(settings, admin_id, "admin")
+    refresh_token = new_refresh_token()
+    await repo.add_refresh_token(session, admin_id, hash_refresh_token(refresh_token), ends)
+    return AdminTokenOut(
+        access_token=token,
+        refresh_token=refresh_token,
+        expires_in=expires_in,
+        session_expires_in=max(0, int((ends - utcnow()).total_seconds())),
+    )
+
+
+async def admin_refresh(session: AsyncSession, settings: Settings, refresh_token: str) -> AdminTokenOut:
+    """Rotation as for members (refresh), with two differences (feature 011): the new token keeps the
+    session's end, set at log-in, so refreshing never extends it; and only an active admin account can
+    refresh, so disable-admin ends the session at once. A reused token revokes every session."""
+    now = utcnow()
+    row = await repo.get_refresh_token_for_update(session, hash_refresh_token(refresh_token))
+    if row is None or row.expires_at <= now:
+        raise Unauthorized("The refresh token is not valid.", code="invalid_token")
+    user = await repo.get_user(session, row.user_id)
+    if user is None or user.kind != AccountKind.admin or user.disabled_at is not None:
+        raise Unauthorized("The refresh token is not valid.", code="invalid_token")
+    if row.revoked_at is not None:
+        await repo.revoke_all_tokens(session, row.user_id, now)
+        await session.commit()
+        raise Unauthorized("The refresh token is not valid.", code="invalid_token")
+    row.revoked_at = now
+    tokens = await _issue_admin_tokens(session, settings, row.user_id, row.expires_at)
+    await session.commit()
+    return tokens
 
 
 async def require_active_admin(session: AsyncSession, admin_id: int) -> None:
@@ -360,5 +401,6 @@ async def disable_admin(session: AsyncSession, *, email: str) -> int:
     if user.disabled_at is not None:
         raise AdminRefused("this admin account is already disabled")
     user.disabled_at = utcnow()
+    await repo.revoke_all_tokens(session, user.id, user.disabled_at)  # its sessions end now (feature 011)
     await session.commit()
     return user.id

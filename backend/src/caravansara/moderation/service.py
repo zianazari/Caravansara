@@ -19,6 +19,14 @@ async def login(session: AsyncSession, settings: Settings, *, email: str, passwo
     return await identity.admin_login(session, settings, email=email, password=password, ip=ip)
 
 
+async def refresh(session: AsyncSession, settings: Settings, refresh_token: str) -> AdminTokenOut:
+    return await identity.admin_refresh(session, settings, refresh_token)
+
+
+async def logout(session: AsyncSession, refresh_token: str) -> None:
+    await identity.logout(session, refresh_token)
+
+
 async def queue(session: AsyncSession, storage: Storage, limit: int, offset: int) -> AdminQueuePage:
     return await listings.review_queue(session, storage, limit, offset)
 

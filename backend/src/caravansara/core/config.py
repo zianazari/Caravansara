@@ -23,9 +23,12 @@ class Settings(BaseSettings):
     jwt_algorithm: str = "HS256"
     access_token_minutes: int = 15
     refresh_token_days: int = 30
-    # Admin tokens are short and have no refresh token: a lost one is useless after 15 minutes,
-    # and every admin request also checks the account in the database (specs/backend (004) research R2).
+    # Admin tokens are short: a lost one is useless after 15 minutes, and every admin request also
+    # checks the account in the database (specs/backend (004) research R2). Since feature 011 an admin
+    # also gets a rotating refresh token, but its session ends a fixed time after log-in, however often
+    # it is refreshed: a working day, so a forgotten panel does not stay signed in for weeks.
     admin_token_minutes: int = 15
+    admin_session_hours: int = 8
     # Empty: the admin endpoints answer on any Host. Set (e.g. "admin.example.com"): they answer
     # only on that subdomain and look absent (404) everywhere else, so a deployment can keep them
     # off the public site (constitution 1.3.0 principle V, research R12).

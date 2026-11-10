@@ -196,12 +196,12 @@ describe("admin panel (feature 009)", () => {
       Response.json({ error: { code: "invalid_credentials" } }, { status: 401 }),
     );
     renderIn("fa", <AdminLogin />);
-    expect(screen.getByText(/پس از ۱۵ دقیقه تمام می‌شود/)).toBeInTheDocument();
+    expect(screen.getByText(/۸ ساعت پس از ورود تمام می‌شود/)).toBeInTheDocument();
     await userEvent.type(screen.getByLabelText("ایمیل"), "admin@example.com");
     await userEvent.type(screen.getByLabelText("رمز"), "wrong");
     await userEvent.click(screen.getByRole("button", { name: "ورود" }));
     expect(await screen.findByRole("alert")).toHaveTextContent("ایمیل یا رمز درست نیست.");
-    adminLogin.mockResolvedValueOnce(Response.json({ expires_in: 900 }));
+    adminLogin.mockResolvedValueOnce(Response.json({ session_expires_in: 28800 }));
     await userEvent.click(screen.getByRole("button", { name: "ورود" }));
     await waitFor(() => expect(replace).toHaveBeenCalledWith("/admin"));
     expect(adminLogin).toHaveBeenLastCalledWith("admin@example.com", "wrong");

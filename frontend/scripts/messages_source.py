@@ -324,7 +324,7 @@ M = {
   "login": ("ورود", "Log in"),
   "loggingIn": ("در حال ورود…", "Logging in…"),
   "logout": ("خروج", "Log out"),
-  "sessionEnded": ("نشست مدیر پس از ۱۵ دقیقه تمام می‌شود. دوباره وارد شوید.", "An admin session ends after 15 minutes. Log in again."),
+  "sessionEnded": ("نشست مدیر ۸ ساعت پس از ورود تمام می‌شود. دوباره وارد شوید.", "An admin session ends 8 hours after log-in. Log in again."),
   "queueTitle": ("صف بازبینی", "Review queue"),
   "queueCount": ("{count, plural, =0 {آگهی‌ای در انتظار نیست} other {# آگهی در انتظار}}", "{count, plural, =0 {No listings waiting} one {# listing waiting} other {# listings waiting}}"),
   "queueEmpty": ("همه‌ی آگهی‌ها بررسی شده‌اند.", "Every listing has been reviewed."),

@@ -151,9 +151,24 @@ test("the panel's pages have no sideways scroll and no axe violation, in both la
   }
 });
 
+test("an expired admin token is renewed with the refresh cookie, without a new log-in (011)", async ({ page }) => {
+  await logIn(page);
+  const refresh = (await page.context().cookies()).find((c) => c.name === "cv_admin_refresh")!;
+  expect(refresh).toMatchObject({ httpOnly: true, sameSite: "Strict", path: "/admin-api" });
+  expect(refresh.expires * 1000 - Date.now()).toBeGreaterThan(7.9 * 3600 * 1000);
+  // As if 15 minutes had passed: the browser drops the short cookie when the token ends.
+  await page.context().clearCookies({ name: "cv_admin" });
+  await page.reload();
+  await expect(page.getByRole("heading", { name: "صف بازبینی" })).toBeVisible();
+  const renewed = (await page.context().cookies()).find((c) => c.name === "cv_admin_refresh")!;
+  expect(renewed.value).not.toBe(refresh.value);
+  expect((await page.context().cookies()).some((c) => c.name === "cv_admin")).toBe(true);
+});
+
 test("logging out ends the session", async ({ page }) => {
   await logIn(page);
   await page.getByRole("button", { name: "خروج" }).click();
   await page.waitForURL(/\/fa\/admin\/login/);
   expect((await page.context().cookies()).find((c) => c.name === "cv_admin")).toBeUndefined();
+  expect((await page.context().cookies()).find((c) => c.name === "cv_admin_refresh")).toBeUndefined();
 });
