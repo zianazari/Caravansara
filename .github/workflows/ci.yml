@@ -82,6 +82,50 @@ jobs:
       - name: Build
         run: npm run build
 
+  # The whole system as it is deployed (feature 014): the built images in docker compose, then every
+  # Playwright test against it, the API ones and the pages in a real Chrome. Until now these ran only on a
+  # developer's machine, so a change that broke only the browser could reach main. On a failure the HTML
+  # report, the traces and the screenshots are kept for a week, so the cause is found without running it again.
+  e2e:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    defaults:
+      run:
+        working-directory: e2e
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: e2e/package-lock.json
+      - name: Admin host name
+        # The admin panel answers only on admin.localhost (ADMIN_HOST); Chrome knows *.localhost, Node may not.
+        run: echo "127.0.0.1 admin.localhost" | sudo tee -a /etc/hosts
+      - name: Start the stack
+        working-directory: .
+        run: docker compose -f docker-compose.yml -f e2e/compose.e2e.yml up -d --build --wait --wait-timeout 600
+      - name: Install
+        run: |
+          npm ci
+          npx playwright install --with-deps chromium
+      - name: Types
+        run: npm run typecheck
+      - name: Tests
+        run: npx playwright test
+      - name: Service logs on failure
+        if: failure()
+        working-directory: .
+        run: docker compose logs --no-color --tail 300 api worker web migrate
+      - uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: playwright-report
+          path: |
+            e2e/playwright-report
+            e2e/test-results
+          retention-days: 7
+
   # Monitoring config is code too: a broken rule or collector config would fail silently at run time.
   observability:
     runs-on: ubuntu-24.04

@@ -223,7 +223,7 @@ Two layers, because each one catches what the other can't:
 
 The web site has its own Vitest suite in `frontend/` (390 tests): every rule (Jalali calendar for every day of 1400–1410, city time zones on clock-change days, toman with exact decimals, the session lock across tabs), every acceptance scenario in Persian and English, and axe accessibility checks.
 
-Most Playwright tests use its `request` fixture and need no browser. `theme.spec.ts` opens every guest page and the host pages in a real Chrome, at five widths from 320 px and in both languages, and checks for sideways scroll and for accessibility problems with axe, colour contrast included. Some highlights:
+CI runs every Playwright test against the compose stack on each pull request, and keeps the report, traces and screenshots of a failure. Most Playwright tests use its `request` fixture and need no browser. `theme.spec.ts` opens every guest page and the host pages in a real Chrome, at five widths from 320 px and in both languages, and checks for sideways scroll and for accessibility problems with axe, colour contrast included. Some highlights:
 
 - 🏠 **A host in the browser:** `host.spec.ts` makes a listing through the eight steps with three photos, then changes the price (no review) and the title (with the warning), the cover, off and on, and a rejection sent again.
 - 🛡️ **The admin panel:** `admin.spec.ts` checks that the panel exists only on its own host, that the admin token sits in an HttpOnly cookie, that every view of an exact address is recorded, and that a host's change during review is caught (409) instead of approved unseen.
