@@ -137,7 +137,9 @@ test.describe("Listing photos", () => {
     expect((await file.body()).length).toBe(samplePhoto().length);
 
     const detail = await (await request.get(`${API}/listings/${listing.id}`)).json();
-    expect(detail.photos.map((p: { id: number }) => p.id)).toEqual([photo.id]);
+    // createListing gave it the 3 photos an admin needs (feature 010); the new one comes last.
+    expect(detail.photos.map((p: { id: number }) => p.id).at(-1)).toBe(photo.id);
+    expect(detail.photos).toHaveLength(4);
   });
 
   test("POST /photos/upload-url rejects other content types and non-hosts", async ({ request }) => {
@@ -206,14 +208,18 @@ test.describe("Listing photos", () => {
     const listing = await createListing(request, host);
     const first = await addPhoto(request, host, listing.id, "First");
     const second = await addPhoto(request, host, listing.id, "Second");
+    const before = (await (await request.get(`${API}/listings/${listing.id}`)).json()).photos.map(
+      (p: { id: number }) => p.id,
+    );
+    const order = [second.id, first.id, ...before.filter((id: number) => id !== first.id && id !== second.id)];
 
     const res = await request.put(`${API}/listings/${listing.id}/photos/order`, {
       headers: auth(host),
-      data: { photo_ids: [second.id, first.id] },
+      data: { photo_ids: order },
     });
     expect(res.status()).toBe(200);
     const detail = await (await request.get(`${API}/listings/${listing.id}`)).json();
-    expect(detail.photos.map((p: { id: number }) => p.id)).toEqual([second.id, first.id]);
+    expect(detail.photos.map((p: { id: number }) => p.id)).toEqual(order);
 
     await expectError(
       await request.put(`${API}/listings/${listing.id}/photos/order`, { headers: auth(host), data: { photo_ids: [first.id] } }),
@@ -222,7 +228,7 @@ test.describe("Listing photos", () => {
     );
   });
 
-  test("DELETE /photos/{id} removes a photo", async ({ request }) => {
+  test("DELETE /photos/{id} removes a photo, but never one of the last 3 (feature 010)", async ({ request }) => {
     const host = await register(request, "host");
     const other = await register(request, "other");
     const listing = await createListing(request, host);
@@ -231,7 +237,13 @@ test.describe("Listing photos", () => {
     await expectError(await request.delete(`${API}/listings/${listing.id}/photos/${photo.id}`, { headers: auth(other) }), 403);
     expect((await request.delete(`${API}/listings/${listing.id}/photos/${photo.id}`, { headers: auth(host) })).status()).toBe(204);
     const detail = await (await request.get(`${API}/listings/${listing.id}`)).json();
-    expect(detail.photos).toEqual([]);
+    expect(detail.photos).toHaveLength(3);
+    expect(detail.photos.map((p: { id: number }) => p.id)).not.toContain(photo.id);
     await expectError(await request.delete(`${API}/listings/${listing.id}/photos/${photo.id}`, { headers: auth(host) }), 404);
+    await expectError(
+      await request.delete(`${API}/listings/${listing.id}/photos/${detail.photos[0].id}`, { headers: auth(host) }),
+      409,
+      "too_few_photos",
+    );
   });
 });

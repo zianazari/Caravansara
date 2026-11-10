@@ -1,5 +1,6 @@
 import { expect, test } from "@playwright/test";
 import {
+  addPhoto,
   API,
   AMSTERDAM,
   adminLogin,
@@ -48,8 +49,19 @@ test.describe("Listing review", () => {
     }
     expect(inQueue).toBe(true);
 
+    const bare = await (await request.get(`${API}/admin/listings/${listing.id}`, { headers: admin })).json();
+    expect(bare.private_location).toMatchObject({ address: "Herengracht 1, Amsterdam" });
+    // Fewer than 3 photos cannot be approved (feature 010).
+    await expectError(
+      await request.post(`${API}/admin/listings/${listing.id}/approve`, {
+        headers: admin,
+        data: { review_version: bare.review_version },
+      }),
+      409,
+      "too_few_photos",
+    );
+    for (const caption of ["Yard", "Room", "Kitchen"]) await addPhoto(request, host, listing.id, caption, { approved: false });
     const detail = await (await request.get(`${API}/admin/listings/${listing.id}`, { headers: admin })).json();
-    expect(detail.private_location).toMatchObject({ address: "Herengracht 1, Amsterdam" });
     const approved = await request.post(`${API}/admin/listings/${listing.id}/approve`, {
       headers: admin,
       data: { review_version: detail.review_version },

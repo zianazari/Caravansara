@@ -404,7 +404,7 @@ async def test_an_inactive_rejected_listing_is_approved_but_stays_hidden(
 # ---- US3: a descriptive edit of an approved listing needs a new review ----------------
 
 
-async def _photos(db: AsyncEngine, listing_id: int, n: int = 2) -> list[int]:
+async def _photos(db: AsyncEngine, listing_id: int, n: int = 4) -> list[int]:
     """Photo rows straight in the database: their content does not matter here."""
     ids = []
     for i in range(n):
@@ -433,7 +433,7 @@ async def _upload(client: AsyncClient, host: User, listing_id: int) -> str:
 
 @pytest.fixture
 async def approved(client: AsyncClient, db: AsyncEngine, factory: Factory) -> dict[str, Any]:
-    """An approved, active listing with two photos and one amenity."""
+    """An approved, active listing with four photos (one can be removed, feature 010) and one amenity."""
     host = await factory.user("host")
     wifi = (await client.get("/amenities")).json()[0]["amenities"][0]["id"]
     listing = await factory.listing(host, amenity_ids=[wifi])
@@ -642,7 +642,33 @@ async def test_reviews_come_back_with_the_listing(client: AsyncClient, db: Async
     await client.post(
         f"/bookings/{stay.booking_id}/review", json={"rating": 4, "comment": "Fine."}, headers=stay.guest.auth
     )
+    await _photos(db, int(stay.listing["id"]), 3)  # an admin approves only with 3 photos (feature 010)
     await client.patch(f"/listings/{stay.listing['id']}", json={"title": "Renamed"}, headers=stay.host.auth)
     assert (await client.get(f"/listings/{stay.listing['id']}/reviews")).status_code == 404
     assert (await approve(client, await factory.admin(), stay.listing["id"])).status_code == 200
     assert (await client.get(f"/listings/{stay.listing['id']}/reviews")).json()["total"] == 1
+
+
+async def test_an_admin_cannot_approve_a_listing_with_fewer_than_3_photos(
+    client: AsyncClient, db: AsyncEngine, factory: Factory
+) -> None:
+    """Feature 010: the rule the site kept alone since 008 is now the API's. Rejecting stays possible."""
+    admin = await factory.admin()
+    listing = await factory.listing(approved=False, photos=2)
+    r = await approve(client, admin, int(listing["id"]))
+    assert r.status_code == 409
+    assert r.json()["error"]["code"] == "too_few_photos"
+    assert (await state(db, int(listing["id"])))[0] == "pending"
+    assert (await reject(client, admin, int(listing["id"]))).status_code == 200
+
+
+async def test_a_host_cannot_remove_one_of_the_last_3_photos(
+    client: AsyncClient, db: AsyncEngine, factory: Factory
+) -> None:
+    host = await factory.user("host")
+    listing = await factory.listing(host, approved=False)  # 3 photos
+    ids = [row[0] for row in await sql(db, "SELECT id FROM listing_photos WHERE listing_id = :l", l=int(listing["id"]))]
+    r = await client.delete(f"/listings/{listing['id']}/photos/{ids[0]}", headers=host.auth)
+    assert r.status_code == 409
+    assert r.json()["error"]["code"] == "too_few_photos"
+    assert len(ids) == 3

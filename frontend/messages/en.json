@@ -85,7 +85,8 @@
     "invalid_avatar_url": "Only a picture uploaded on this site can be used.",
     "listing_changed": "This listing has changed. Please reload the page.",
     "listing_not_pending": "This listing is no longer waiting for review.",
-    "listing_not_rejected": "This listing has not been rejected."
+    "listing_not_rejected": "This listing has not been rejected.",
+    "too_few_photos": "A listing needs at least 3 photos."
   },
   "validation": {
     "invalid": "This value is not valid.",
@@ -343,7 +344,8 @@
     "approved": "The listing is approved and public.",
     "rejected": "The listing is rejected; the host sees the reason.",
     "changed": "The host has just changed this listing. Look at the new version and decide again.",
-    "notPending": "This listing is no longer waiting for review."
+    "notPending": "This listing is no longer waiting for review.",
+    "fewPhotos": "This listing has fewer than 3 photos and cannot be approved. You can reject it with a reason."
   },
   "badge": {
     "guestFavourite": "Guest favourite",

@@ -49,9 +49,24 @@ class Factory:
     async def user(self, name: str = "user") -> User:
         return await register(self.client, name)
 
-    async def listing(self, host: User | None = None, **overrides: Any) -> dict[str, Any]:
-        """Approved by default: most tests need a public listing (tests/helpers.py, create_listing)."""
-        return await create_listing(self.client, host or await self.user("host"), **overrides)
+    async def listing(self, host: User | None = None, *, photos: int | None = None, **overrides: Any) -> dict[str, Any]:
+        """Approved by default: most tests need a public listing (tests/helpers.py, create_listing).
+
+        A listing left waiting (``approved=False``) gets 3 photo rows by default, the least an admin can
+        approve (feature 010), so review tests can approve it through the API. ``photos=n`` sets the number.
+        The rows point at no stored file; tests that read the picture upload one (test_listings.py)."""
+        listing = await create_listing(self.client, host or await self.user("host"), **overrides)
+        count = photos if photos is not None else (0 if overrides.get("approved", True) else 3)
+        for index in range(count):
+            await sql(
+                self.engine,
+                "INSERT INTO listing_photos (listing_id, storage_key, width, height, sort_order) "
+                "VALUES (:id, :key, 800, 600, :order)",
+                id=int(listing["id"]),
+                key=f"listings/{listing['id']}/factory-{index}.jpg",
+                order=index,
+            )
+        return listing
 
     async def admin(self, name: str = "admin") -> User:
         """An admin made the only way there is, the create-admin service, then logged in."""

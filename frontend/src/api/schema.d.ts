@@ -384,7 +384,10 @@ export interface paths {
     get?: never;
     put?: never;
     post?: never;
-    /** Delete a photo */
+    /**
+     * Delete a photo
+     * @description A listing keeps at least 3 photos: removing one of the last 3 is 409 too_few_photos.
+     */
     delete: operations["delete_photo_api_v1_listings__listing_id__photos__photo_id__delete"];
     options?: never;
     head?: never;
@@ -644,7 +647,7 @@ export interface paths {
     put?: never;
     /**
      * Approve a listing
-     * @description Makes a pending listing public (if the host keeps it active). `409 listing_not_pending`: it is no longer pending, e.g. another admin decided first. `409 listing_changed`: the host edited it after you opened it; open it again.
+     * @description Makes a pending listing public (if the host keeps it active). `409 listing_not_pending`: it is no longer pending, e.g. another admin decided first. `409 listing_changed`: the host edited it after you opened it; open it again. `409 too_few_photos`: it has fewer than 3 photos.
      */
     post: operations["approve_api_v1_admin_listings__listing_id__approve_post"];
     delete?: never;
@@ -2774,6 +2777,15 @@ export interface operations {
       };
       /** @description Not found */
       404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Conflict with the current state */
+      409: {
         headers: {
           [name: string]: unknown;
         };

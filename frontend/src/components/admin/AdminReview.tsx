@@ -16,6 +16,7 @@ import { formatClock } from "@/lib/cityTime";
 import { errorCode, errorMessage, type Translate } from "@/lib/errors";
 import { amenityName, cityName, countryName } from "@/lib/names";
 import { ExactMap } from "./ExactMap";
+import { MIN_PHOTOS } from "@/lib/listingStatus";
 import { AdminRequestError, useAdminGate } from "./useAdminGate";
 
 type Listing = components["schemas"]["AdminListingOut"];
@@ -227,8 +228,15 @@ export function AdminReview({
         />
       </section>
 
+      {/* The API refuses to approve a listing with fewer than 3 photos (feature 010); say so before trying. */}
+      {l.photos.length < MIN_PHOTOS ? <p className="text-sm font-medium">{t("admin.fewPhotos")}</p> : null}
       <div className="sticky bottom-0 flex gap-3 border-t bg-background py-3">
-        <Button type="button" className="rounded-full" disabled={busy} onClick={() => void decide("approve")}>
+        <Button
+          type="button"
+          className="rounded-full"
+          disabled={busy || l.photos.length < MIN_PHOTOS}
+          onClick={() => void decide("approve")}
+        >
           {t("admin.approve")}
         </Button>
         <Button
