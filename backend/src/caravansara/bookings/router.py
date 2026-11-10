@@ -11,6 +11,19 @@ from caravansara.core.deps import StorageDep
 from caravansara.core.errors import error_responses
 from caravansara.core.pagination import PageDep
 from caravansara.core.security import CurrentUserId, SettingsDep
+from caravansara.reviews import service as reviews
+
+
+async def _with_reviews(session: SessionDep, page: BookingPage) -> BookingPage:
+    """Marks the reviewed stays. In the router, not the bookings service, because reviews already depends on
+    bookings; the other way round would make the two modules import each other (feature 015)."""
+    done = await reviews.reviewed(session, [b.id for b in page.items])
+    return page.model_copy(update={"items": [b.model_copy(update={"has_review": b.id in done}) for b in page.items]})
+
+
+async def _one(session: SessionDep, booking: BookingOut) -> BookingOut:
+    return booking.model_copy(update={"has_review": bool(await reviews.reviewed(session, [booking.id]))})
+
 
 router = APIRouter(tags=["Bookings"])
 
@@ -46,7 +59,7 @@ async def create_booking(
     if not created:
         response.status_code = status.HTTP_200_OK
     booking, info = await service.get_booking(session, booking.id, user_id)
-    return await service.render(session, storage, booking, info, user_id)
+    return await _one(session, await service.render(session, storage, booking, info, user_id))
 
 
 @router.get(
@@ -55,7 +68,9 @@ async def create_booking(
 async def my_bookings(
     user_id: CurrentUserId, session: SessionDep, storage: StorageDep, page: PageDep, status: StatusFilter = None
 ) -> BookingPage:
-    return await service.my_bookings(session, storage, user_id, status, page.limit, page.offset)
+    return await _with_reviews(
+        session, await service.my_bookings(session, storage, user_id, status, page.limit, page.offset)
+    )
 
 
 @router.get(
@@ -66,7 +81,7 @@ async def my_bookings(
 )
 async def get_booking(booking_id: int, user_id: CurrentUserId, session: SessionDep, storage: StorageDep) -> BookingOut:
     booking, info = await service.get_booking(session, booking_id, user_id)
-    return await service.render(session, storage, booking, info, user_id)
+    return await _one(session, await service.render(session, storage, booking, info, user_id))
 
 
 @router.post(
@@ -77,7 +92,7 @@ async def get_booking(booking_id: int, user_id: CurrentUserId, session: SessionD
 )
 async def pay(booking_id: int, user_id: CurrentUserId, session: SessionDep, storage: StorageDep) -> BookingOut:
     booking, info = await service.pay(session, booking_id, user_id)
-    return await service.render(session, storage, booking, info, user_id)
+    return await _one(session, await service.render(session, storage, booking, info, user_id))
 
 
 @router.post(
@@ -88,7 +103,7 @@ async def pay(booking_id: int, user_id: CurrentUserId, session: SessionDep, stor
 )
 async def cancel(booking_id: int, user_id: CurrentUserId, session: SessionDep, storage: StorageDep) -> BookingOut:
     booking, info = await service.cancel(session, booking_id, user_id)
-    return await service.render(session, storage, booking, info, user_id)
+    return await _one(session, await service.render(session, storage, booking, info, user_id))
 
 
 @router.get(
@@ -105,4 +120,6 @@ async def listing_bookings(
     page: PageDep,
     status: StatusFilter = None,
 ) -> BookingPage:
-    return await service.listing_bookings(session, storage, listing_id, user_id, status, page.limit, page.offset)
+    return await _with_reviews(
+        session, await service.listing_bookings(session, storage, listing_id, user_id, status, page.limit, page.offset)
+    )

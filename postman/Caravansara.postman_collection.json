@@ -841,6 +841,12 @@
                   "value": "0",
                   "disabled": true,
                   "description": "Items to skip."
+                },
+                {
+                  "key": "property_type",
+                  "value": "entire_place",
+                  "disabled": true,
+                  "description": "Only this kind of place: entire_place, private_room or shared_room (feature 015)."
                 }
               ]
             },
@@ -937,6 +943,12 @@
                   "value": "{{amenityId}}",
                   "disabled": true,
                   "description": "Repeat the parameter; listings must have **all** of them."
+                },
+                {
+                  "key": "property_type",
+                  "value": "entire_place",
+                  "disabled": true,
+                  "description": "Only this kind of place: entire_place, private_room or shared_room (feature 015)."
                 }
               ]
             },

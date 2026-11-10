@@ -18,6 +18,8 @@ export type SearchState = {
   infants: number;
   pets: number;
   amenity_ids: number[];
+  /** Only this kind of place (feature 015). */
+  property_type?: "entire_place" | "private_room" | "shared_room";
   sort: "rating" | "distance";
   offset: number;
 };
@@ -82,6 +84,10 @@ export function parseSearch(query: Query): SearchState {
     state.check_out = checkOut;
   }
 
+  const type = first(query, "property_type");
+  if (type === "entire_place" || type === "private_room" || type === "shared_room")
+    state.property_type = type;
+
   const offset = int(first(query, "offset"), 0, 1_000_000, 0);
   state.offset = offset - (offset % PAGE_SIZE);
   return state;
@@ -109,6 +115,7 @@ export function toQuery(state: SearchState): URLSearchParams {
   if (state.infants) q.set("infants", String(state.infants));
   if (state.pets) q.set("pets", String(state.pets));
   for (const id of state.amenity_ids) q.append("amenity_ids", String(id));
+  if (state.property_type) q.set("property_type", state.property_type);
   if (state.sort === "distance" && state.lat !== undefined) q.set("sort", "distance");
   if (state.offset) q.set("offset", String(state.offset));
   return q;
@@ -128,6 +135,7 @@ export function toApiQuery(state: SearchState) {
     infants: state.infants,
     pets: state.pets,
     amenity_ids: state.amenity_ids,
+    property_type: state.property_type,
     sort: state.sort,
     limit: PAGE_SIZE,
     offset: state.offset,

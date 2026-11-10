@@ -367,6 +367,9 @@
   "category": {
     "label": "Categories",
     "all": "All",
+    "entire_place": "Entire place",
+    "private_room": "Private room",
+    "shared_room": "Shared room",
     "pets": "Pets allowed",
     "hot_tub": "Hot tub",
     "sauna": "Sauna",

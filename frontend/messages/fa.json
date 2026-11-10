@@ -367,6 +367,9 @@
   "category": {
     "label": "دسته‌ها",
     "all": "همه",
+    "entire_place": "کل اقامتگاه",
+    "private_room": "اتاق خصوصی",
+    "shared_room": "اتاق مشترک",
     "pets": "حیوان خانگی مجاز",
     "hot_tub": "جکوزی",
     "sauna": "سونا",

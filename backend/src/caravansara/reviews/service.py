@@ -62,6 +62,11 @@ async def create_review(
     return _out(review, await identity.get_public_user(session, user_id))
 
 
+async def reviewed(session: AsyncSession, booking_ids: list[int]) -> set[int]:
+    """Which of these bookings already have a review (feature 015, for BookingOut.has_review)."""
+    return await repo.reviewed_booking_ids(session, booking_ids)
+
+
 async def listing_reviews(
     session: AsyncSession, listing_id: int, viewer_id: int | None, limit: int, offset: int
 ) -> ReviewPage:

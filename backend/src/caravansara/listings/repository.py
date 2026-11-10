@@ -62,6 +62,18 @@ async def photos(session: AsyncSession, listing_id: int) -> list[ListingPhoto]:
     return list(rows.scalars())
 
 
+async def photo_counts(session: AsyncSession, listing_ids: list[int]) -> dict[int, int]:
+    """Photos per listing, one GROUP BY for a page of cards (feature 015)."""
+    if not listing_ids:
+        return {}
+    rows = await session.execute(
+        select(ListingPhoto.listing_id, func.count())
+        .where(ListingPhoto.listing_id.in_(listing_ids))
+        .group_by(ListingPhoto.listing_id)
+    )
+    return {int(listing_id): int(count) for listing_id, count in rows.all()}
+
+
 async def cover_keys(session: AsyncSession, listing_ids: list[int]) -> dict[int, str]:
     if not listing_ids:
         return {}

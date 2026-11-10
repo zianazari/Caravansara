@@ -30,20 +30,17 @@ const summary = (id: number, status: string, is_active = true, reason: string | 
   is_active,
   cover_url: `http://m/${id}.jpg`,
   review: { status, rejection_reason: reason, submitted_at: null },
+  photo_count: 3,
 });
 
 function serve(items: ReturnType<typeof summary>[], total = items.length, fewFor: number[] = []) {
-  GET.mockImplementation(
-    (path: string, opts: { params: { path?: { listing_id: number }; query?: { offset?: number } } }) => {
-      if (path === "/api/v1/me/listings") {
-        const offset = opts.params.query?.offset ?? 0;
-        return Promise.resolve({ data: { items: offset ? [summary(99, "approved")] : items, total } });
-      }
-      const id = opts.params.path!.listing_id;
-      const photos = fewFor.includes(id) ? hostListing().photos.slice(0, 1) : hostListing().photos;
-      return Promise.resolve({ data: hostListing({ id, photos }), response: new Response() });
-    },
-  );
+  // Since feature 015 the summary has photo_count; the cards ask for nothing else.
+  const counted = items.map((item) => ({ ...item, photo_count: fewFor.includes(item.id) ? 1 : 3 }));
+  GET.mockImplementation((path: string, opts: { params: { query?: { offset?: number } } }) => {
+    if (path !== "/api/v1/me/listings") throw new Error(`unexpected request ${path}`);
+    const offset = opts.params.query?.offset ?? 0;
+    return Promise.resolve({ data: { items: offset ? [summary(99, "approved")] : counted, total } });
+  });
 }
 
 describe("HostListings (specs/008-host-pages, US3)", () => {

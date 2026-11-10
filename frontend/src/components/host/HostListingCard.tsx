@@ -5,23 +5,21 @@ import type { components } from "@/api/schema";
 import { ArchFrame } from "@/components/brand/ArchFrame";
 import { useMoney } from "@/hooks/useMoney";
 import { Link } from "@/i18n/navigation";
-import { hasFewPhotos, statusOf } from "@/lib/listingStatus";
+import { MIN_PHOTOS, statusOf } from "@/lib/listingStatus";
 import { cityName } from "@/lib/names";
 import { FewPhotosBadge, StatusBadge } from "./StatusBadge";
-import { useHostListing } from "./useHostListing";
 
 type Summary = components["schemas"]["ListingSummary"];
 
 /**
  * One of the host's listings (specs/008-host-pages, US3/AC1): the cover in the lower arch, title, city, nightly
- * price and status. The list's summary has no photo count, so the card reads the listing itself to say when
- * photos are missing (FR-016), with a link straight to the photos tab.
+ * price and status. Since feature 015 the list's summary has the photo count, so the card says when photos are
+ * missing (FR-016), with a link straight to the photos tab, without reading each listing.
  */
 export function HostListingCard({ listing }: { listing: Summary }) {
   const t = useTranslations();
   const money = useMoney();
-  const detail = useHostListing(listing.id);
-  const few = detail.data ? hasFewPhotos(detail.data) : false;
+  const few = (listing.photo_count ?? 0) < MIN_PHOTOS;
   const href = `/host/listings/${listing.id}`;
   return (
     <article className="grid gap-3">

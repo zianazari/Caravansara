@@ -376,6 +376,9 @@ M = {
  "category": {
   "label": ("دسته‌ها", "Categories"),
   "all": ("همه", "All"),
+  "entire_place": ("کل اقامتگاه", "Entire place"),
+  "private_room": ("اتاق خصوصی", "Private room"),
+  "shared_room": ("اتاق مشترک", "Shared room"),
   "pets": ("حیوان خانگی مجاز", "Pets allowed"),
   "hot_tub": ("جکوزی", "Hot tub"),
   "sauna": ("سونا", "Sauna"),

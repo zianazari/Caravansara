@@ -843,6 +843,24 @@
             "description": "Repeat the parameter; listings must have **all** of them."
           },
           {
+            "name": "property_type",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "$ref": "#/components/schemas/PropertyType"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Only this kind of place (feature 015): the site's type categories.",
+              "title": "Property Type"
+            },
+            "description": "Only this kind of place (feature 015): the site's type categories."
+          },
+          {
             "name": "limit",
             "in": "query",
             "required": false,
@@ -1092,6 +1110,24 @@
               "title": "Amenity Ids"
             },
             "description": "Repeat the parameter; listings must have **all** of them."
+          },
+          {
+            "name": "property_type",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "$ref": "#/components/schemas/PropertyType"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Only this kind of place (feature 015): the site's type categories.",
+              "title": "Property Type"
+            },
+            "description": "Only this kind of place (feature 015): the site's type categories."
           }
         ],
         "responses": {
@@ -4158,6 +4194,12 @@
                 "type": "null"
               }
             ]
+          },
+          "has_review": {
+            "type": "boolean",
+            "title": "Has Review",
+            "description": "The guest has reviewed this stay, so the site no longer offers the review form (feature 015).",
+            "default": false
           }
         },
         "type": "object",
@@ -4953,6 +4995,12 @@
               }
             ],
             "title": "Cover Url"
+          },
+          "photo_count": {
+            "type": "integer",
+            "title": "Photo Count",
+            "description": "How many photos it has; fewer than 3 cannot be approved (feature 015, for 'photos not complete').",
+            "default": 0
           },
           "review": {
             "anyOf": [

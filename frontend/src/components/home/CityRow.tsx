@@ -6,9 +6,10 @@ import { useEffect, useRef, useState } from "react";
 import { api } from "@/api/client";
 import { ResultCard } from "@/components/search/ResultCard";
 import { Link } from "@/i18n/navigation";
+import type { CategoryFilter } from "@/lib/categories";
 import { cityName } from "@/lib/names";
 
-export type CategoryFilter = { amenity_ids?: number[]; pets?: number };
+export type { CategoryFilter } from "@/lib/categories";
 
 const FIVE_MINUTES = 5 * 60 * 1000;
 
@@ -82,6 +83,7 @@ export function CityRow({
   const all = new URLSearchParams({ city_id: String(cityId), adults: "1" });
   for (const id of filter.amenity_ids ?? []) all.append("amenity_ids", String(id));
   if (filter.pets) all.set("pets", String(filter.pets));
+  if (filter.property_type) all.set("property_type", filter.property_type);
   if (category) all.set("category", category);
   const name = cityName(t, city);
 

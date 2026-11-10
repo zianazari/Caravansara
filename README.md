@@ -4,9 +4,9 @@
 
 <p align="center">
   <a href="https://github.com/zianazari/Caravansara/actions/workflows/ci.yml"><img src="https://github.com/zianazari/Caravansara/actions/workflows/ci.yml/badge.svg" alt="CI"></a>
-  <img src="https://img.shields.io/badge/tests-384%20%C2%B7%2097.1%25%20coverage-b5651d" alt="384 backend tests, 97.1% coverage">
-  <img src="https://img.shields.io/badge/web-390%20Vitest%20tests-6E9F18" alt="390 Vitest tests for the web site">
-  <img src="https://img.shields.io/badge/e2e-111%20Playwright%20tests-2EAD33" alt="111 Playwright tests">
+  <img src="https://img.shields.io/badge/tests-387%20%C2%B7%2097.1%25%20coverage-b5651d" alt="387 backend tests, 97.1% coverage">
+  <img src="https://img.shields.io/badge/web-393%20Vitest%20tests-6E9F18" alt="393 Vitest tests for the web site">
+  <img src="https://img.shields.io/badge/e2e-112%20Playwright%20tests-2EAD33" alt="112 Playwright tests">
 </p>
 
 A *caravansara* (کاروانسرا) was a roadside inn on the Silk Road: travellers arrived at dusk, took a room for the night and moved on at dawn. **Caravansara** is the same idea for today: an Airbnb-like site where guests find a place, hold it, pay, save favourites and leave a review, and hosts list their homes.
@@ -219,9 +219,9 @@ Two layers, because each one catches what the other can't:
 | --- | --- | --- |
 | **Runs against** | PostgreSQL + PostGIS and MinIO that testcontainers starts for each run | The real `docker compose` stack, from outside, over HTTP |
 | **Proves** | Every rule in each module, exact race moments, DST, migrations, the API contract | The built image, real settings and wiring: all 44 endpoints, listing photo upload to MinIO, profile pictures through the API (bad files refused), an admin made with `create-admin` reviewing listings, the whole host and guest story, and the web site's proxy, session cookie, rate limit by visitor address and CSP |
-| **Size** | 384 tests, 97.1% coverage | 111 tests, under a minute |
+| **Size** | 387 tests, 97.1% coverage | 112 tests, under a minute |
 
-The web site has its own Vitest suite in `frontend/` (390 tests): every rule (Jalali calendar for every day of 1400–1410, city time zones on clock-change days, toman with exact decimals, the session lock across tabs), every acceptance scenario in Persian and English, and axe accessibility checks.
+The web site has its own Vitest suite in `frontend/` (393 tests): every rule (Jalali calendar for every day of 1400–1410, city time zones on clock-change days, toman with exact decimals, the session lock across tabs), every acceptance scenario in Persian and English, and axe accessibility checks.
 
 CI runs every Playwright test against the compose stack on each pull request, and keeps the report, traces and screenshots of a failure. Most Playwright tests use its `request` fixture and need no browser. `theme.spec.ts` opens every guest page and the host pages in a real Chrome, at five widths from 320 px and in both languages, and checks for sideways scroll and for accessibility problems with axe, colour contrast included. Some highlights:
 
@@ -272,7 +272,7 @@ The same description is committed as [`backend/openapi.json`](backend/openapi.js
 ```
 frontend/    Next.js web site for guests and hosts, Persian and English, Vitest tests  → frontend/README.md
 backend/     FastAPI app, Alembic migrations, tests  → backend/README.md
-e2e/         Playwright tests against the running stack (111 tests)  → e2e/README.md
+e2e/         Playwright tests against the running stack (112 tests)  → e2e/README.md
 postman/     Postman collection of all endpoints, with saved ids and tokens
 observability/  Alloy, Loki, Tempo, Prometheus (alerts + rule tests), Grafana dashboard  → observability/README.md
 .specify/    GitHub Spec Kit: constitution, templates, scripts (commands in .claude/skills/)

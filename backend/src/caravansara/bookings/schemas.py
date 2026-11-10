@@ -69,6 +69,10 @@ class BookingOut(BaseModel):
     hold_expires_at: datetime | None = Field(description="Pay before this time, or the hold expires.")
     created_at: datetime
     address: BookingAddress | None
+    has_review: bool = Field(
+        default=False,
+        description="The guest has reviewed this stay, so the site no longer offers the review form (feature 015).",
+    )
 
 
 class BookingPage(BaseModel):
