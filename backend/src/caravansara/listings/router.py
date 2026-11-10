@@ -161,7 +161,7 @@ async def update_photo(
     "/listings/{listing_id}/photos/{photo_id}",
     status_code=status.HTTP_204_NO_CONTENT,
     summary="Delete a photo",
-    description="A listing keeps at least 3 photos: removing one of the last 3 is 409 too_few_photos.",
+    description="A listing keeps at least 5 photos: removing one of the last 5 is 409 too_few_photos.",
     responses=error_responses(401, 403, 404, 409),
 )
 async def delete_photo(

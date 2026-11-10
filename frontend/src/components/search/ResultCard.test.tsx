@@ -71,9 +71,10 @@ describe("ResultCard (FR-017)", () => {
       "en",
       <ResultCard result={{ ...base, cover_url: null, avg_rating: null, review_count: 0 }} stay="" />,
     );
-    // 007: the placeholder is a warm drawing in the arch, named "No photo", not an <img> that could break.
-    expect(container.querySelector("img")).toBeNull();
-    expect(screen.getByRole("img", { name: "No photo" }).tagName.toLowerCase()).toBe("svg");
+    // 020: the default picture, named "No photo" and labelled as a sample, never a broken image.
+    expect(container.querySelector("[data-default-photo]")).toBeInTheDocument();
+    expect(screen.getByRole("img", { name: "No photo" })).toBeInTheDocument();
+    expect(screen.getByText("Sample picture")).toBeInTheDocument();
     expect(screen.getByText("New")).toBeInTheDocument();
     expect(screen.queryByLabelText(/Rated/)).toBeNull();
   });

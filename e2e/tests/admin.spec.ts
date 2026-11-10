@@ -28,7 +28,7 @@ let host: User;
 
 async function pendingListing(request: Parameters<typeof createListing>[0], title: string) {
   const listing = await createListing(request, host, { title }, { approved: false });
-  for (const caption of ["Yard", "Room", "Kitchen"]) await addPhoto(request, host, listing.id, caption, { approved: false });
+  for (const caption of ["Yard", "Room", "Kitchen", "Bath", "Hall"]) await addPhoto(request, host, listing.id, caption, { approved: false });
   return listing;
 }
 

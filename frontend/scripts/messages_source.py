@@ -21,6 +21,7 @@ M = {
   "errorText": ("لطفاً دوباره امتحان کنید.", "Please try again."),
   "footerNote": ("پرداخت در این نسخه شبیه‌سازی است.", "Payment in this version is simulated."),
   "mapAttribution": ("© مشارکت‌کنندگان OpenStreetMap", "© OpenStreetMap contributors"),
+  "samplePhoto": ("تصویر نمونه", "Sample picture"),
  },
  "home": {
   "siteName": ("کاروانسرا", "Caravansara"),
@@ -96,7 +97,7 @@ M = {
   "listing_changed": ("این آگهی تغییر کرده است. صفحه را دوباره باز کنید.", "This listing has changed. Please reload the page."),
   "listing_not_pending": ("این آگهی دیگر در انتظار بررسی نیست.", "This listing is no longer waiting for review."),
   "listing_not_rejected": ("این آگهی رد نشده است.", "This listing has not been rejected."),
-  "too_few_photos": ("آگهی دست‌کم ۳ عکس لازم دارد.", "A listing needs at least 3 photos."),
+  "too_few_photos": ("آگهی دست‌کم ۵ عکس لازم دارد.", "A listing needs at least 5 photos."),
   "wishlist_full": ("فهرست علاقه‌مندی‌ها پر است (۵۰۰ آگهی). یکی را بردارید.", "Your wishlist is full (500 listings). Remove one first."),
  },
  "validation": {
@@ -168,6 +169,10 @@ M = {
   "photo": ("عکس {index, number} از {count, number}", "Photo {index, number} of {count, number}"),
   "previousPhoto": ("عکس قبلی", "Previous photo"),
   "nextPhoto": ("عکس بعدی", "Next photo"),
+  # 021: the mosaic and its dialog
+  "showAllPhotos": ("نمایش همه‌ی عکس‌ها", "Show all photos"),
+  "allPhotos": ("{count, plural, one {# عکس} other {# عکس}}", "{count, plural, one {# photo} other {# photos}}"),
+  "close": ("بستن", "Close"),
   "hostedBy": ("میزبان: {name}", "Hosted by {name}"),
   "capacity": ("ظرفیت", "Capacity"),
   "maxGuests": ("{count, plural, one {# مهمان} other {# مهمان}}", "{count, plural, one {# guest} other {# guests}}"),
@@ -218,7 +223,7 @@ M = {
   "status_inactive": ("غیرفعال", "Inactive"),
   "status_rejected": ("رد شده", "Rejected"),
   "fewPhotos": ("عکس‌ها کامل نیست", "Photos incomplete"),
-  "fewPhotosHint": ("{count, plural, =0 {هنوز عکسی ندارد} other {# عکس دارد}}؛ دست‌کم ۳ عکس لازم است.", "{count, plural, =0 {No photos yet} one {# photo} other {# photos}}; at least 3 are needed."),
+  "fewPhotosHint": ("{count, plural, =0 {هنوز عکسی ندارد} other {# عکس دارد}}؛ دست‌کم ۵ عکس لازم است.", "{count, plural, =0 {No photos yet} one {# photo} other {# photos}}; at least 5 are needed."),
   "completePhotos": ("تکمیل عکس‌ها", "Add photos"),
   "pendingNote": ("پس از تأیید مدیر سیستم، مهمان‌ها این آگهی را می‌بینند.", "Guests see this listing once a system admin approves it."),
   "rejectionReason": ("دلیل رد: {reason}", "Reason: {reason}"),
@@ -301,7 +306,7 @@ M = {
  },
  "photos": {
   "choose": ("انتخاب عکس‌ها", "Choose photos"),
-  "hint": ("JPEG، PNG یا WebP، هر کدام تا ۱۰ مگابایت. دست‌کم ۳ عکس.", "JPEG, PNG or WebP, each up to 10 MB. At least 3 photos."),
+  "hint": ("JPEG، PNG یا WebP، هر کدام تا ۱۰ مگابایت. دست‌کم ۵ عکس.", "JPEG, PNG or WebP, each up to 10 MB. At least 5 photos."),
   "count": ("{count, plural, =0 {هنوز عکسی نیست} other {# عکس}}", "{count, plural, =0 {No photos yet} one {# photo} other {# photos}}"),
   "photo": ("عکس {index, number}", "Photo {index, number}"),
   "cover": ("کاور", "Cover"),
@@ -317,8 +322,8 @@ M = {
   "uploading": ("در حال آپلود: {percent, number}٪", "Uploading: {percent, number}%"),
   "queued": ("در صف آپلود", "Waiting to upload"),
   "failed": ("آپلود نشد.", "Not uploaded."),
-  "minNeeded": ("دست‌کم ۳ عکس لازم است.", "At least 3 photos are needed."),
-  "cannotRemove": ("حذف ممکن نیست: آگهی دست‌کم ۳ عکس لازم دارد. اول عکس تازه بگذارید.", "You cannot remove it: a listing needs at least 3 photos. Add a new photo first."),
+  "minNeeded": ("دست‌کم ۵ عکس لازم است.", "At least 5 photos are needed."),
+  "cannotRemove": ("حذف ممکن نیست: آگهی دست‌کم ۵ عکس لازم دارد. اول عکس تازه بگذارید.", "You cannot remove it: a listing needs at least 5 photos. Add a new photo first."),
   "too_large": ("هر عکس حداکثر ۱۰ مگابایت می‌تواند باشد.", "Each photo can be at most 10 MB."),
   "wrong_type": ("فقط عکس JPEG، PNG یا WebP پذیرفته می‌شود.", "Only JPEG, PNG or WebP photos are accepted."),
   "not_image": ("این فایل عکس نیست.", "This file is not a picture."),
@@ -363,7 +368,7 @@ M = {
   "rejected": ("آگهی رد شد و دلیل به میزبان رسید.", "The listing is rejected; the host sees the reason."),
   "changed": ("میزبان همین حالا آگهی را تغییر داد. نسخه‌ی تازه را ببینید و دوباره تصمیم بگیرید.", "The host has just changed this listing. Look at the new version and decide again."),
   "notPending": ("این آگهی دیگر در انتظار بررسی نیست.", "This listing is no longer waiting for review."),
-  "fewPhotos": ("این آگهی کمتر از ۳ عکس دارد و تأیید نمی‌شود. می‌توانید آن را با دلیل رد کنید.", "This listing has fewer than 3 photos and cannot be approved. You can reject it with a reason."),
+  "fewPhotos": ("این آگهی کمتر از ۵ عکس دارد و تأیید نمی‌شود. می‌توانید آن را با دلیل رد کنید.", "This listing has fewer than 5 photos and cannot be approved. You can reject it with a reason."),
  },
  # 012, wishlists: saved listings, the heart on cards and the listing page
  "wishlist": {

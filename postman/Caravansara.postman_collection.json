@@ -1473,7 +1473,7 @@
                 "{{photoId}}"
               ]
             },
-            "description": "A listing keeps at least 3 photos: removing one of the last 3 is 409 too_few_photos."
+            "description": "A listing keeps at least 5 photos: removing one of the last 5 is 409 too_few_photos."
           }
         }
       ]
@@ -2103,7 +2103,7 @@
                 "approve"
               ]
             },
-            "description": "Makes a pending listing public (if the host keeps it active). `409 listing_not_pending`: it is no longer pending, e.g. another admin decided first. `409 listing_changed`: the host edited it after you opened it; open it again. `409 too_few_photos`: it has fewer than 3 photos.",
+            "description": "Makes a pending listing public (if the host keeps it active). `409 listing_not_pending`: it is no longer pending, e.g. another admin decided first. `409 listing_changed`: the host edited it after you opened it; open it again. `409 too_few_photos`: it has fewer than 5 photos.",
             "body": {
               "mode": "raw",
               "raw": "{\n  \"review_version\": {{reviewVersion}}\n}",

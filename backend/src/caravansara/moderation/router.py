@@ -108,7 +108,7 @@ async def review_detail(
     description=(
         "Makes a pending listing public (if the host keeps it active). `409 listing_not_pending`: it is "
         "no longer pending, e.g. another admin decided first. `409 listing_changed`: the host edited it "
-        "after you opened it; open it again. `409 too_few_photos`: it has fewer than 3 photos."
+        "after you opened it; open it again. `409 too_few_photos`: it has fewer than 5 photos."
     ),
     responses=error_responses(401, 404, 409, 422),
 )

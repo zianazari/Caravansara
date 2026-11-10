@@ -16,8 +16,8 @@ import {
 
 /**
  * The host pages in a real Chrome on the running stack (specs/008-host-pages): a new user makes a listing
- * through the eight steps, with three photos, and then keeps it: price without review, title with the review
- * warning, the cover, the three-photo rule, off and on, a rejection and sending again. The pages themselves are
+ * through the eight steps, with five photos (feature 021), and then keeps it: price without review, title with the review
+ * warning, the cover, the five-photo rule, off and on, a rejection and sending again. The pages themselves are
  * tested with Vitest; this checks the real API, storage and browser together.
  */
 test.use({ extraHTTPHeaders: {} });
@@ -53,7 +53,7 @@ async function hostGet(page: Page, path: string) {
 
 const next = (page: Page) => page.getByRole("button", { name: "بعدی" }).click();
 
-test("a new user makes a listing in eight steps, with three photos (US1, US2)", async ({ page, request }) => {
+test("a new user makes a listing in eight steps, with five photos (US1, US2)", async ({ page, request }) => {
   host = await signUp(page, "webhost");
   await page.goto(`${WEB}/fa`);
   await page.getByRole("link", { name: "میزبان شوید" }).click();
@@ -88,9 +88,9 @@ test("a new user makes a listing in eight steps, with three photos (US1, US2)", 
   await next(page); // the usual times
 
   const send = page.getByRole("button", { name: "ارسال برای بازبینی" });
-  await page.getByLabel("انتخاب عکس‌ها").setInputFiles([photo("a.jpg"), photo("b.jpg")]);
+  await page.getByLabel("انتخاب عکس‌ها").setInputFiles([photo("a.jpg"), photo("b.jpg"), photo("c.jpg"), photo("d.jpg")]);
   await expect(send).toBeDisabled();
-  await page.getByLabel("انتخاب عکس‌ها").setInputFiles([photo("c.jpg")]);
+  await page.getByLabel("انتخاب عکس‌ها").setInputFiles([photo("e.jpg")]);
   await send.click();
 
   await page.waitForURL(/\/fa\/host\/listings\/\d+/);
@@ -101,7 +101,7 @@ test("a new user makes a listing in eight steps, with three photos (US1, US2)", 
   expect(saved.title).toBe(title);
   expect(saved.price_per_night).toBe("1200000.00"); // toman × 10
   expect(saved.currency).toBe("IRR");
-  expect(saved.photos).toHaveLength(3);
+  expect(saved.photos).toHaveLength(5);
   expect(saved.amenities.flatMap((g: { amenities: { name: string }[] }) => g.amenities.map((a) => a.name))).toContain("Wifi");
 
   const admin = await testAdmin(request);
@@ -141,7 +141,7 @@ test("price needs no review, the title does, and the host is told first (US3, R8
   expect((await hostGet(page, `/listings/${listingId}`)).review.status).toBe("pending");
 });
 
-test("photos: a new cover shows on the card, removal stops at three, a 5 MB photo arrives in time (US2, SC-005)", async ({
+test("photos: a new cover shows on the card, removal stops at five, a 5 MB photo arrives in time (US2, SC-005)", async ({
   page,
   request,
 }) => {
@@ -162,7 +162,7 @@ test("photos: a new cover shows on the card, removal stops at three, a 5 MB phot
   const started = Date.now();
   await page.getByLabel("انتخاب عکس‌ها").setInputFiles([photo("big.jpg", 5 * 1024 * 1024)]);
   await page.getByRole("dialog").getByRole("button", { name: "ذخیره و فرستادن برای بازبینی" }).click();
-  await expect(page.getByRole("group", { name: "عکس ۴" })).toBeVisible({ timeout: 15_000 });
+  await expect(page.getByRole("group", { name: "عکس ۶" })).toBeVisible({ timeout: 15_000 });
   const seconds = (Date.now() - started) / 1000;
   console.log(`SC-005: a 5 MB photo from choosing to shown in the listing: ${seconds.toFixed(1)} s`);
   expect(seconds).toBeLessThan(15);

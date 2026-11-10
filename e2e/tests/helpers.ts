@@ -54,8 +54,8 @@ export async function amenityIds(request: APIRequestContext): Promise<Record<str
 
 /**
  * A listing at a random point inside Amsterdam, so radial searches find it.
- * A new listing waits for an admin's review (specs/backend (004)), so by default it gets the 3 photos an
- * admin needs (feature 010) and the shared test admin approves it at once: the tests written before the
+ * A new listing waits for an admin's review (specs/backend (004)), so by default it gets the 5 photos an
+ * admin needs (features 010, 021) and the shared test admin approves it at once: the tests written before the
  * review search and book public listings. `approved: false` returns it as the host just made it, with none.
  */
 export async function createListing(
@@ -66,8 +66,8 @@ export async function createListing(
 ) {
   const listing = await postListing(request, host, extra);
   if (approved) {
-    // An admin approves a listing only with at least 3 photos (feature 010).
-    for (const caption of ["Living room", "Bedroom", "Kitchen"]) {
+    // An admin approves a listing only with at least 5 photos (features 010, 021).
+    for (const caption of ["Living room", "Bedroom", "Kitchen", "Bathroom", "Balcony"]) {
       await addPhoto(request, host, listing.id, caption, { approved: false });
     }
     await approve(request, listing.id);

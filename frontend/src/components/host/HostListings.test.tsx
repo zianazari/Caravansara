@@ -30,12 +30,12 @@ const summary = (id: number, status: string, is_active = true, reason: string | 
   is_active,
   cover_url: `http://m/${id}.jpg`,
   review: { status, rejection_reason: reason, submitted_at: null },
-  photo_count: 3,
+  photo_count: 5,
 });
 
 function serve(items: ReturnType<typeof summary>[], total = items.length, fewFor: number[] = []) {
   // Since feature 015 the summary has photo_count; the cards ask for nothing else.
-  const counted = items.map((item) => ({ ...item, photo_count: fewFor.includes(item.id) ? 1 : 3 }));
+  const counted = items.map((item) => ({ ...item, photo_count: fewFor.includes(item.id) ? 1 : 5 }));
   GET.mockImplementation((path: string, opts: { params: { query?: { offset?: number } } }) => {
     if (path !== "/api/v1/me/listings") throw new Error(`unexpected request ${path}`);
     const offset = opts.params.query?.offset ?? 0;

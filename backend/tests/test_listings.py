@@ -133,7 +133,7 @@ async def test_photo_upload_flow(client: AsyncClient, db: AsyncEngine) -> None:
     host = await register(client, "host")
     listing = await create_listing(client, host)
     lid = listing["id"]
-    keys = [await _upload(client, host.auth, lid, f"image-{i}".encode()) for i in range(4)]
+    keys = [await _upload(client, host.auth, lid, f"image-{i}".encode()) for i in range(6)]
     photos = []
     for i, key in enumerate(keys):
         r = await client.post(
@@ -143,7 +143,7 @@ async def test_photo_upload_flow(client: AsyncClient, db: AsyncEngine) -> None:
         )
         assert r.status_code == 201, r.text
         photos.append(r.json())
-    assert [p["sort_order"] for p in photos] == [0, 1, 2, 3]
+    assert [p["sort_order"] for p in photos] == [0, 1, 2, 3, 4, 5]
     async with httpx.AsyncClient() as public:
         assert (await public.get(photos[0]["url"])).content == b"image-0"
 
@@ -162,15 +162,21 @@ async def test_photo_upload_flow(client: AsyncClient, db: AsyncEngine) -> None:
     assert edited.json()["caption"] == "Sunny"
 
     assert (await client.delete(f"/listings/{lid}/photos/{ids[2]}", headers=host.auth)).status_code == 204
-    # Three are left, the least a listing keeps (feature 010): the next removal is refused.
+    # Five are left, the least a listing keeps (features 010, 021): the next removal is refused.
     kept = await client.delete(f"/listings/{lid}/photos/{ids[0]}", headers=host.auth)
     assert kept.status_code == 409
     assert kept.json()["error"]["code"] == "too_few_photos"
     await approve(db, lid)  # new photos and a new caption sent it back to review (specs/backend (004))
     detail = (await client.get(f"/listings/{lid}")).json()
-    assert [(p["id"], p["sort_order"]) for p in detail["photos"]] == [(ids[3], 0), (ids[1], 1), (ids[0], 2)]
+    assert [(p["id"], p["sort_order"]) for p in detail["photos"]] == [
+        (ids[5], 0),
+        (ids[4], 1),
+        (ids[3], 2),
+        (ids[1], 3),
+        (ids[0], 4),
+    ]
     cover = (await client.get("/me/listings", headers=host.auth)).json()["items"][0]["cover_url"]
-    assert cover.endswith(keys[3])
+    assert cover.endswith(keys[5])
     async with httpx.AsyncClient() as public:
         assert (await public.get(photos[2]["url"])).status_code == 404  # file removed from storage
 

@@ -16,7 +16,8 @@
     "errorTitle": "Something went wrong",
     "errorText": "Please try again.",
     "footerNote": "Payment in this version is simulated.",
-    "mapAttribution": "© OpenStreetMap contributors"
+    "mapAttribution": "© OpenStreetMap contributors",
+    "samplePhoto": "Sample picture"
   },
   "home": {
     "siteName": "Caravansara",
@@ -90,7 +91,7 @@
     "listing_changed": "This listing has changed. Please reload the page.",
     "listing_not_pending": "This listing is no longer waiting for review.",
     "listing_not_rejected": "This listing has not been rejected.",
-    "too_few_photos": "A listing needs at least 3 photos.",
+    "too_few_photos": "A listing needs at least 5 photos.",
     "wishlist_full": "Your wishlist is full (500 listings). Remove one first."
   },
   "validation": {
@@ -162,6 +163,9 @@
     "photo": "Photo {index, number} of {count, number}",
     "previousPhoto": "Previous photo",
     "nextPhoto": "Next photo",
+    "showAllPhotos": "Show all photos",
+    "allPhotos": "{count, plural, one {# photo} other {# photos}}",
+    "close": "Close",
     "hostedBy": "Hosted by {name}",
     "capacity": "Capacity",
     "maxGuests": "{count, plural, one {# guest} other {# guests}}",
@@ -210,7 +214,7 @@
     "status_inactive": "Inactive",
     "status_rejected": "Rejected",
     "fewPhotos": "Photos incomplete",
-    "fewPhotosHint": "{count, plural, =0 {No photos yet} one {# photo} other {# photos}}; at least 3 are needed.",
+    "fewPhotosHint": "{count, plural, =0 {No photos yet} one {# photo} other {# photos}}; at least 5 are needed.",
     "completePhotos": "Add photos",
     "pendingNote": "Guests see this listing once a system admin approves it.",
     "rejectionReason": "Reason: {reason}",
@@ -293,7 +297,7 @@
   },
   "photos": {
     "choose": "Choose photos",
-    "hint": "JPEG, PNG or WebP, each up to 10 MB. At least 3 photos.",
+    "hint": "JPEG, PNG or WebP, each up to 10 MB. At least 5 photos.",
     "count": "{count, plural, =0 {No photos yet} one {# photo} other {# photos}}",
     "photo": "Photo {index, number}",
     "cover": "Cover",
@@ -309,8 +313,8 @@
     "uploading": "Uploading: {percent, number}%",
     "queued": "Waiting to upload",
     "failed": "Not uploaded.",
-    "minNeeded": "At least 3 photos are needed.",
-    "cannotRemove": "You cannot remove it: a listing needs at least 3 photos. Add a new photo first.",
+    "minNeeded": "At least 5 photos are needed.",
+    "cannotRemove": "You cannot remove it: a listing needs at least 5 photos. Add a new photo first.",
     "too_large": "Each photo can be at most 10 MB.",
     "wrong_type": "Only JPEG, PNG or WebP photos are accepted.",
     "not_image": "This file is not a picture.",
@@ -354,7 +358,7 @@
     "rejected": "The listing is rejected; the host sees the reason.",
     "changed": "The host has just changed this listing. Look at the new version and decide again.",
     "notPending": "This listing is no longer waiting for review.",
-    "fewPhotos": "This listing has fewer than 3 photos and cannot be approved. You can reject it with a reason."
+    "fewPhotos": "This listing has fewer than 5 photos and cannot be approved. You can reject it with a reason."
   },
   "wishlist": {
     "title": "Wishlists",

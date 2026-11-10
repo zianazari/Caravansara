@@ -380,10 +380,11 @@ async def update_photo(
     return _photo_out(storage, photo)
 
 
-# A listing needs at least this many photos (owner decision Q1 of feature 008, 2026-11-10; in the API since
-# feature 010): an admin cannot approve one with fewer, and a host cannot remove a photo that would leave
-# fewer. Guests decide from the photos, and a listing with one picture says little about the place.
-MIN_PHOTOS = 3
+# A listing needs at least this many photos (owner decision Q1 of feature 008, in the API since feature 010;
+# raised from 3 to 5 in feature 021, owner's request, 2026-11-10, so the listing page's gallery of one large
+# and four small photos is always full): an admin cannot approve one with fewer, and a host cannot remove a
+# photo that would leave fewer. Guests decide from the photos.
+MIN_PHOTOS = 5
 
 
 async def delete_photo(session: AsyncSession, storage: Storage, listing_id: int, photo_id: int, user_id: int) -> None:

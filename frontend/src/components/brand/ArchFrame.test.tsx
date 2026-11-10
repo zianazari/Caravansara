@@ -1,9 +1,12 @@
-import { screen } from "@testing-library/react";
+import { fireEvent, screen } from "@testing-library/react";
 import { renderIn } from "@/test/render";
 import { ArchFrame } from "./ArchFrame";
 
 vi.mock("next/image", () => ({
-  default: (p: { src: string; alt: string }) => <img src={p.src} alt={p.alt} />,
+  // onError passes through, as next/image does, so a missing file can be simulated.
+  default: (p: { src: string; alt: string; onError?: () => void }) => (
+    <img src={p.src} alt={p.alt} onError={p.onError} />
+  ),
 }));
 
 describe("ArchFrame", () => {
@@ -25,14 +28,19 @@ describe("ArchFrame", () => {
     expect(container.firstElementChild).toHaveClass("arch");
   });
 
-  it("draws a warm placeholder, not a grey box, without a photo (US2/AC2)", () => {
-    const { container } = renderIn("fa", <ArchFrame src={null} alt="بدون عکس" />);
-    expect(screen.getByRole("img", { name: "بدون عکس" }).tagName.toLowerCase()).toBe("svg");
-    expect(container.querySelector("img")).toBeNull();
+  it("shows the default listing picture, labelled as a sample, when there is no photo (feature 020)", () => {
+    const { container } = renderIn("fa", <ArchFrame alt="بی عکس" />);
+    expect(container.querySelector("[data-default-photo]")).toBeInTheDocument();
+    expect(screen.getByRole("img", { name: "بی عکس" })).toBeInTheDocument();
+    expect(screen.getByText("تصویر نمونه")).toBeInTheDocument();
   });
 
-  it("hides a decorative placeholder from screen readers", () => {
-    const { container } = renderIn("fa", <ArchFrame alt="" />);
-    expect(container.querySelector("svg")).toHaveAttribute("aria-hidden", "true");
+  it("shows the default picture instead of a broken image when the file cannot be loaded", () => {
+    const { container } = renderIn("fa", <ArchFrame src="https://media.example/missing.jpg" alt="" />);
+    const img = container.querySelector("img")!;
+    expect(img).toHaveAttribute("src", "https://media.example/missing.jpg");
+    fireEvent.error(img);
+    expect(container.querySelector('img[src="https://media.example/missing.jpg"]')).toBeNull();
+    expect(container.querySelector("[data-default-photo]")).toBeInTheDocument();
   });
 });
