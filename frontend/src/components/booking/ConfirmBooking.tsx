@@ -5,6 +5,7 @@ import { useLocale, useTranslations } from "next-intl";
 import { useState } from "react";
 import { api } from "@/api/client";
 import { PriceBreakdown } from "@/components/booking/PriceBreakdown";
+import { ArchFrame } from "@/components/brand/ArchFrame";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Link, useRouter } from "@/i18n/navigation";
@@ -74,14 +75,23 @@ export function ConfirmBooking({ listingId }: { listingId: number }) {
 
   const guests = usable.adults + usable.children;
   return (
-    <div className="grid max-w-lg gap-5">
+    <div className="mx-auto grid w-full max-w-lg gap-5 rounded-3xl border bg-card p-6 shadow-xl shadow-foreground/5">
       <h1 className="text-2xl font-bold">{t("booking.confirmTitle")}</h1>
-      <div className="grid gap-1">
-        <h2 className="font-semibold">{listing.data.title}</h2>
-        <p className="text-sm text-muted-foreground">
-          {t("booking.checkIn")}: {formatDate(usable.check_in, locale, "long")} · {t("booking.checkOut")}:{" "}
-          {formatDate(usable.check_out, locale, "long")} · {t("booking.guestsLine", { count: guests })}
-        </p>
+      <div className="flex items-start gap-4">
+        {/* 007: the cover photo in the lower caravansara arch. */}
+        <ArchFrame
+          src={[...(listing.data.photos ?? [])].sort((x, y) => x.sort_order - y.sort_order)[0]?.url}
+          alt=""
+          sizes="96px"
+          className="h-24 w-20 shrink-0"
+        />
+        <div className="grid gap-1">
+          <h2 className="font-semibold">{listing.data.title}</h2>
+          <p className="text-sm text-muted-foreground">
+            {t("booking.checkIn")}: {formatDate(usable.check_in, locale, "long")} · {t("booking.checkOut")}:{" "}
+            {formatDate(usable.check_out, locale, "long")} · {t("booking.guestsLine", { count: guests })}
+          </p>
+        </div>
       </div>
       <PriceBreakdown
         pricePerNight={listing.data.price_per_night}

@@ -30,7 +30,7 @@ export function UserAvatar({
     <span
       role="img"
       aria-label={user.full_name}
-      className={cn(classes, "font-semibold text-white")}
+      className={cn(classes, "font-semibold text-primary-foreground")}
       style={{ backgroundColor: avatarColor(user.id) }}
     >
       <span aria-hidden>{initialOf(user.full_name)}</span>

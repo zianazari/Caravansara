@@ -22,9 +22,12 @@
     "siteName": "Caravansara",
     "title": "Caravansara: a place for your next trip",
     "description": "Find a place to stay, hold the dates and book.",
-    "heading": "Where are you going next?",
-    "lead": "Choose a city and your dates to see the places that are free.",
-    "popular": "Suggested cities"
+    "heroTitle": "A place to stay, in every city on the way",
+    "heroSubtitle": "Places that hosts have made ready with care, from Tehran to Amsterdam.",
+    "whereTo": "Where to?",
+    "anyWhereAnyWhen": "Any city · Any week · Guests",
+    "popularIn": "Popular in {city}",
+    "showAll": "Show all"
   },
   "nav": {
     "skipToContent": "Skip to main content",
@@ -37,7 +40,9 @@
     "logout": "Log out",
     "language": "Language",
     "switchTo": "فارسی",
-    "mainMenu": "Main menu"
+    "mainMenu": "Main menu",
+    "profile": "Profile",
+    "bottomNav": "Bottom navigation"
   },
   "errors": {
     "unknown": "Something went wrong. Please try again.",
@@ -141,8 +146,7 @@
     "new": "New",
     "rating": "Rated {rating} out of 5, {count, number} reviews",
     "noPhoto": "No photo",
-    "distance": "{km} km away",
-    "suggested": "Suggested cities"
+    "distance": "{km} km away"
   },
   "listing": {
     "photos": "Photos",
@@ -180,6 +184,22 @@
     "cleaningFee": "Cleaning fee: {price}",
     "chooseDates": "Choose dates to see the total price.",
     "neighborhood": "{name} neighborhood"
+  },
+  "badge": {
+    "guestFavourite": "Guest favourite",
+    "new": "New"
+  },
+  "category": {
+    "label": "Categories",
+    "all": "All",
+    "pets": "Pets allowed",
+    "hot_tub": "Hot tub",
+    "sauna": "Sauna",
+    "lake_access": "Lake access",
+    "balcony": "Balcony",
+    "free_parking": "Free parking",
+    "workspace": "Workspace",
+    "kitchen": "Kitchen"
   },
   "auth": {
     "loginTitle": "Log in",

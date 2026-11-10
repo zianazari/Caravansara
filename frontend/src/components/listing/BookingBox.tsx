@@ -68,7 +68,10 @@ export function BookingBox({ listing }: { listing: BookingBoxListing }) {
   }
 
   return (
-    <aside aria-label={t("listing.price")} className="grid gap-4 rounded-xl border bg-card p-4 shadow-sm">
+    <aside
+      aria-label={t("listing.price")}
+      className="grid gap-4 rounded-2xl border bg-card p-5 shadow-xl shadow-foreground/10"
+    >
       <p className="text-lg font-semibold">
         {t("listing.perNight", { price: money(listing.price_per_night, listing.currency) })}
       </p>
@@ -100,7 +103,7 @@ export function BookingBox({ listing }: { listing: BookingBoxListing }) {
       {own ? (
         <p className="text-sm text-muted-foreground">{t("booking.ownListing")}</p>
       ) : (
-        <Button size="lg" onClick={reserve}>
+        <Button size="lg" className="rounded-full" onClick={reserve}>
           {t("booking.reserve")}
         </Button>
       )}

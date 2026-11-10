@@ -2,27 +2,46 @@
 @import "tw-animate-css";
 
 /*
- * Colours as tokens, light only for now. Every text/background pair below meets WCAG AA contrast (FR-009).
- * Layout uses logical properties (ms-*, ps-*, start-*), so one stylesheet serves right-to-left Persian and
- * left-to-right English (FR-008).
+ * The caravansara theme (specs/007-caravansara-theme). This file is the only place with colours: every
+ * component reads these tokens (bg-primary, text-muted-foreground, …), so the whole site changes here, and
+ * src/no-raw-colors.test.ts keeps it that way (FR-001). Every text/background pair is measured against WCAG AA
+ * in src/theme.test.ts (FR-002).
+ *
+ * The palette is the one of the README diagrams. Buttons and links use a darker copper (#9a5418): white text
+ * on the diagrams' copper (#b5651d) is only 4.3:1, below AA; #9a5418 reaches 5.75:1 and looks the same at a
+ * glance (research R2). Copper and amber stay for shapes, icons and glow.
+ *
+ * Light only (spec, Assumptions); color-scheme keeps form controls light under a dark system theme. Layout
+ * uses logical properties (ms-*, ps-*, start-*), so one stylesheet serves right-to-left Persian and
+ * left-to-right English.
  */
 :root {
-  --background: oklch(0.99 0.004 85);
-  --foreground: oklch(0.22 0.02 260);
-  --muted: oklch(0.96 0.006 85);
-  --muted-foreground: oklch(0.45 0.02 260);
-  --card: oklch(1 0 0);
-  --border: oklch(0.89 0.01 85);
-  --primary: oklch(0.45 0.13 30);
-  --primary-foreground: oklch(0.99 0 0);
-  --accent: oklch(0.94 0.03 70);
-  --destructive: oklch(0.5 0.19 27);
-  --ring: oklch(0.55 0.15 30);
-  --radius: 0.75rem;
+  color-scheme: light;
+  --background: #fffaf2; /* cream */
+  --surface: #f8efe1; /* second surface: filters, trips table */
+  --card: #ffffff;
+  --foreground: #3b1f08; /* dark brown text */
+  --muted: #f3e4cc; /* light sand */
+  --muted-foreground: #6b4a2b;
+  --border: #e3cfae; /* sand */
+  --primary: #9a5418; /* dark copper: buttons, links, the active item */
+  --primary-foreground: #ffffff;
+  --accent: #f3e4cc;
+  --destructive: #9c3b28; /* brick */
+  --ring: #9a5418;
+  --copper: #b5651d; /* shapes, large icons, the search button's gradient */
+  --amber: #e08a2e; /* glow only, never under text */
+  --sand-strong: #d9b27c; /* inactive category icons, decorative arches */
+  --night: #07101e; /* hero sky */
+  --gold: #f3c98b; /* hero subtitle, footer site name */
+  --on-dark: #fffaf2; /* text on night and dark brown */
+  --on-dark-muted: #e3cfae; /* quiet text on dark brown (footer) */
+  --radius: 1rem;
 }
 
 @theme inline {
   --color-background: var(--background);
+  --color-surface: var(--surface);
   --color-foreground: var(--foreground);
   --color-muted: var(--muted);
   --color-muted-foreground: var(--muted-foreground);
@@ -33,7 +52,14 @@
   --color-accent: var(--accent);
   --color-destructive: var(--destructive);
   --color-ring: var(--ring);
-  --radius-md: calc(var(--radius) - 2px);
+  --color-copper: var(--copper);
+  --color-amber: var(--amber);
+  --color-sand-strong: var(--sand-strong);
+  --color-night: var(--night);
+  --color-gold: var(--gold);
+  --color-on-dark: var(--on-dark);
+  --color-on-dark-muted: var(--on-dark-muted);
+  --radius-md: calc(var(--radius) - 4px);
   --radius-lg: var(--radius);
   --radius-xl: calc(var(--radius) + 4px);
   --font-sans: var(--font-vazirmatn), ui-sans-serif, system-ui, sans-serif;
@@ -52,5 +78,65 @@
   }
   :focus-visible {
     @apply outline-2 outline-offset-2 outline-ring;
+  }
+}
+
+/*
+ * The pointed caravansara arch, the site's recurring shape (FR-003). A mask, not clip-path: url(#arch):
+ * that needs an <svg><defs> on every page and Safari does not always apply it to HTML elements; a data: mask
+ * stretches with the element and adds nothing to the DOM. The CSP already allows data: images (research R3).
+ * .arch is the tall doorway (logo, hero, category icons, bottom bar); .arch-soft is lower, for photos, so a
+ * grid of cards still reads like a familiar booking site. The shape is symmetric, so it does not flip in LTR.
+ */
+@layer components {
+  .arch,
+  .arch-soft {
+    -webkit-mask-size: 100% 100%;
+    mask-size: 100% 100%;
+    -webkit-mask-repeat: no-repeat;
+    mask-repeat: no-repeat;
+  }
+  .arch {
+    -webkit-mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1 1' preserveAspectRatio='none'%3E%3Cpath d='M0,1 V0.36 C0,0.17 0.28,0.07 0.5,0 C0.72,0.07 1,0.17 1,0.36 V1 Z'/%3E%3C/svg%3E");
+    mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1 1' preserveAspectRatio='none'%3E%3Cpath d='M0,1 V0.36 C0,0.17 0.28,0.07 0.5,0 C0.72,0.07 1,0.17 1,0.36 V1 Z'/%3E%3C/svg%3E");
+  }
+  .arch-soft {
+    -webkit-mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1 1' preserveAspectRatio='none'%3E%3Cpath d='M0,1 V0.2 C0,0.085 0.3,0.035 0.5,0 C0.7,0.035 1,0.085 1,0.2 V1 Z'/%3E%3C/svg%3E");
+    mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1 1' preserveAspectRatio='none'%3E%3Cpath d='M0,1 V0.2 C0,0.085 0.3,0.035 0.5,0 C0.7,0.035 1,0.085 1,0.2 V1 Z'/%3E%3C/svg%3E");
+  }
+  /* The hero lamps glow only when the visitor has not asked for less motion (FR-009). */
+  .hero-glow {
+    animation: hero-glow 4s ease-in-out infinite alternate;
+  }
+}
+
+@keyframes hero-glow {
+  from {
+    opacity: 0.45;
+  }
+  to {
+    opacity: 0.95;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation: none !important;
+    transition: none !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* Printing a booking or a trip: no dark surfaces or decoration, dark text on white (edge case: print). */
+@media print {
+  :root {
+    --background: #ffffff;
+    --surface: #ffffff;
+    --night: #ffffff;
+  }
+  .no-print {
+    display: none !important;
   }
 }

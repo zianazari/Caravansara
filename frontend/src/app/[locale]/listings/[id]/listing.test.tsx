@@ -1,4 +1,4 @@
-import { screen } from "@testing-library/react";
+import { screen, within } from "@testing-library/react";
 import { vi } from "vitest";
 import { expectAccessible, renderIn } from "@/test/render";
 
@@ -119,7 +119,11 @@ describe("listing page", () => {
     expect(screen.getByText("حداکثر ۱ حیوان خانگی")).toBeInTheDocument();
     expect(screen.getByText("وای‌فای")).toBeInTheDocument();
     expect(screen.getByText("ورود از ۱۵:۰۰ به وقت تهران")).toBeInTheDocument();
-    expect(screen.getByText("۵٬۰۰۰٬۰۰۰ تومان هر شب")).toBeInTheDocument();
+    // 007: the price is in the booking box and, for phones, in the fixed booking bar (FR-007).
+    expect(
+      within(screen.getByRole("complementary", { name: "قیمت" })).getByText("۵٬۰۰۰٬۰۰۰ تومان هر شب"),
+    ).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "رزرو" })).toHaveAttribute("href", "#booking");
     expect(screen.getByText("Lovely stay.")).toBeInTheDocument();
     expect(screen.getByRole("img", { name: "Garden" })).toBeInTheDocument(); // the cover comes first
   });

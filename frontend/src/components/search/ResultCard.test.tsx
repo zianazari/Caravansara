@@ -63,13 +63,55 @@ describe("ResultCard (FR-017)", () => {
   });
 
   it("uses a placeholder for a listing without photo or reviews, never a broken image or zero", () => {
-    renderIn(
+    const { container } = renderIn(
       "en",
       <ResultCard result={{ ...base, cover_url: null, avg_rating: null, review_count: 0 }} stay="" />,
     );
-    expect(screen.queryByRole("img")).toBeNull();
-    expect(screen.getByText("No photo")).toBeInTheDocument();
+    // 007: the placeholder is a warm drawing in the arch, named "No photo", not an <img> that could break.
+    expect(container.querySelector("img")).toBeNull();
+    expect(screen.getByRole("img", { name: "No photo" }).tagName.toLowerCase()).toBe("svg");
     expect(screen.getByText("New")).toBeInTheDocument();
+    expect(screen.queryByLabelText(/Rated/)).toBeNull();
+  });
+
+  // specs/007-caravansara-theme, FR-006 and FR-015
+  it("puts the photo in the lower caravansara arch", () => {
+    const { container } = renderIn("fa", <ResultCard result={base} stay="" />);
+    expect(container.querySelector("[data-arch='soft']")).toHaveClass("arch-soft");
+  });
+
+  it("marks a guest favourite: 4.8 or more with at least 3 reviews", () => {
+    renderIn("fa", <ResultCard result={{ ...base, avg_rating: "4.90", review_count: 3 }} stay="" />);
+    expect(screen.getByText("انتخاب مهمان‌ها")).toBeInTheDocument();
+  });
+
+  it("gives no badge below the threshold", () => {
+    renderIn("fa", <ResultCard result={base} stay="" />);
+    expect(screen.queryByText("انتخاب مهمان‌ها")).toBeNull();
+    expect(screen.queryByText("تازه")).toBeNull();
+  });
+
+  it("shows the place type, the country and the dates of the search", () => {
+    renderIn(
+      "fa",
+      <ResultCard result={base} nights={3} stay="check_in=2026-12-01&check_out=2026-12-04&adults=2" />,
+    );
+    expect(screen.getByText("کل اقامتگاه")).toBeInTheDocument();
+    expect(screen.getByText(/ایران/)).toBeInTheDocument();
+    expect(screen.getByText(/۱۰ آذر/)).toBeInTheDocument();
+  });
+
+  it("keeps a long title on one line, so the card keeps its layout (edge case: long text)", () => {
+    const title = "خانه‌ی باغ ".repeat(30).trim();
+    renderIn("fa", <ResultCard result={{ ...base, title }} stay="" />);
+    expect(screen.getByRole("heading", { name: title })).toHaveClass("line-clamp-1");
+  });
+
+  it("has no wishlist heart: that comes with its own feature (Q3)", () => {
+    renderIn("fa", <ResultCard result={base} stay="" />);
+    expect(screen.queryByRole("button")).toBeNull();
+    expect(screen.getAllByRole("link")).toHaveLength(1);
+    expect(screen.getByRole("link")).toHaveAccessibleName(/خانه‌ی باغ در تجریش/);
   });
 
   it("is accessible", async () => {

@@ -7,6 +7,7 @@ import { serverApi } from "@/api/server";
 import { UserAvatar } from "@/components/account/UserAvatar";
 import { AmenityList } from "@/components/listing/AmenityList";
 import { BookingBox } from "@/components/listing/BookingBox";
+import { MobileBookingBar } from "@/components/listing/MobileBookingBar";
 import { Gallery } from "@/components/listing/Gallery";
 import { ReviewList } from "@/components/listing/ReviewList";
 import { formatClock } from "@/lib/cityTime";
@@ -131,7 +132,7 @@ export default async function ListingPage({ params }: Props) {
             <ReviewList listingId={listing.id} first={reviews} />
           </section>
         </div>
-        <div className="lg:sticky lg:top-4 lg:self-start">
+        <div id="booking" className="scroll-mt-24 lg:sticky lg:top-24 lg:self-start">
           <Suspense>
             <BookingBox
               listing={{
@@ -149,6 +150,7 @@ export default async function ListingPage({ params }: Props) {
           </Suspense>
         </div>
       </div>
+      <MobileBookingBar price={listing.price_per_night} currency={listing.currency} />
     </article>
   );
 }

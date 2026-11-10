@@ -1,11 +1,10 @@
 "use client";
 
 import { useInfiniteQuery, useQueryClient } from "@tanstack/react-query";
-import { ImageOffIcon } from "lucide-react";
-import Image from "next/image";
 import { useLocale, useTranslations } from "next-intl";
 import type { components } from "@/api/schema";
 import { api } from "@/api/client";
+import { ArchFrame } from "@/components/brand/ArchFrame";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useMoney } from "@/hooks/useMoney";
@@ -41,7 +40,7 @@ export function TripList() {
   const all = trips.data.pages.flatMap((p) => p.items);
   if (all.length === 0) {
     return (
-      <div className="grid justify-items-start gap-3 rounded-xl border bg-muted p-6">
+      <div className="grid justify-items-start gap-3 rounded-2xl border bg-surface p-6">
         <p>{t("trips.empty")}</p>
         <Button asChild>
           <Link href="/">{t("trips.findPlace")}</Link>
@@ -92,14 +91,9 @@ function TripRow({ booking: b }: { booking: Booking }) {
   const locale = useLocale();
   const money = useMoney();
   return (
-    <article className="flex gap-3 rounded-xl border bg-card p-3">
-      <div className="relative size-20 shrink-0 overflow-hidden rounded-lg bg-muted">
-        {b.listing.cover_url ? (
-          <Image src={b.listing.cover_url} alt="" fill sizes="80px" className="object-cover" />
-        ) : (
-          <ImageOffIcon className="m-auto size-6 h-full text-muted-foreground" aria-hidden />
-        )}
-      </div>
+    <article className="flex gap-4 rounded-2xl border bg-card p-3 shadow-sm">
+      {/* 007: the trip's photo in the lower caravansara arch, or the warm placeholder. */}
+      <ArchFrame src={b.listing.cover_url} alt="" sizes="96px" className="h-24 w-20 shrink-0" />
       <div className="grid min-w-0 flex-1 gap-0.5">
         <Link href={`/trips/${b.id}`} className="truncate font-semibold hover:underline">
           {b.listing.title}

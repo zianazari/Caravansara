@@ -88,7 +88,7 @@ export function FiltersPanel({
           {state.amenity_ids.length ? ` (${number(state.amenity_ids.length)})` : ""}
         </Button>
       </DialogTrigger>
-      <DialogContent closeLabel={t("common.close")} side="end" className="content-start">
+      <DialogContent closeLabel={t("common.close")} side="end" className="content-start bg-surface">
         <DialogTitle>{t("search.filtersTitle")}</DialogTitle>
         <DialogDescription>{t("search.filtersHint")}</DialogDescription>
         {counts.isPending ? <p>{t("common.loading")}</p> : null}
@@ -109,7 +109,7 @@ export function FiltersPanel({
             ))}
           </fieldset>
         ))}
-        <div className="sticky bottom-0 flex justify-between gap-2 bg-card pt-2">
+        <div className="sticky bottom-0 flex justify-between gap-2 bg-surface pt-2">
           <Button variant="ghost" onClick={() => setChosen([])}>
             {t("search.clearFilters")}
           </Button>

@@ -5,6 +5,7 @@ import localFont from "next/font/local";
 import { notFound } from "next/navigation";
 import { connection } from "next/server";
 import type { ReactNode } from "react";
+import { BottomNav } from "@/components/layout/BottomNav";
 import { Footer } from "@/components/layout/Footer";
 import { Header } from "@/components/layout/Header";
 import { Providers } from "@/components/providers";
@@ -45,14 +46,17 @@ export default async function LocaleLayout({
 
   return (
     <html lang={locale} dir={dir} className={vazirmatn.variable}>
-      <body className="flex min-h-dvh flex-col">
+      {/* On a phone a fixed bar sits at the bottom (BottomNav, or a listing's booking bar), so the page keeps
+          room for it and nothing hides under it (specs/007-caravansara-theme, FR-008). */}
+      <body className="flex min-h-dvh flex-col pb-[calc(4.5rem+env(safe-area-inset-bottom))] md:pb-0">
         <NextIntlClientProvider>
           <Providers dir={dir}>
             <Header />
-            <main id="main" className="mx-auto w-full max-w-6xl flex-1 px-4 py-6">
+            <main id="main" className="mx-auto w-full max-w-7xl flex-1 px-4 py-6 md:px-6">
               {children}
             </main>
             <Footer />
+            <BottomNav />
           </Providers>
         </NextIntlClientProvider>
       </body>
