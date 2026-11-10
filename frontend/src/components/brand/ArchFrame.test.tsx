@@ -1,9 +1,12 @@
-import { screen } from "@testing-library/react";
+import { fireEvent, screen } from "@testing-library/react";
 import { renderIn } from "@/test/render";
 import { ArchFrame } from "./ArchFrame";
 
 vi.mock("next/image", () => ({
-  default: (p: { src: string; alt: string }) => <img src={p.src} alt={p.alt} />,
+  // onError passes through, as next/image does, so a missing file can be simulated.
+  default: (p: { src: string; alt: string; onError?: () => void }) => (
+    <img src={p.src} alt={p.alt} onError={p.onError} />
+  ),
 }));
 
 describe("ArchFrame", () => {
@@ -34,5 +37,19 @@ describe("ArchFrame", () => {
   it("hides a decorative placeholder from screen readers", () => {
     const { container } = renderIn("fa", <ArchFrame alt="" />);
     expect(container.querySelector("svg")).toHaveAttribute("aria-hidden", "true");
+  });
+
+  it("shows the default listing picture when there is no photo (feature 020)", () => {
+    const { container } = renderIn("fa", <ArchFrame alt="بی عکس" />);
+    expect(container.querySelector("[data-default-photo]")).toBeInTheDocument();
+    expect(screen.getByRole("img", { name: "بی عکس" })).toBeInTheDocument();
+  });
+
+  it("shows the default picture instead of a broken image when the file cannot be loaded", () => {
+    const { container } = renderIn("fa", <ArchFrame src="https://media.example/missing.jpg" alt="" />);
+    const img = container.querySelector("img")!;
+    fireEvent.error(img);
+    expect(container.querySelector("img")).toBeNull();
+    expect(container.querySelector("[data-default-photo]")).toBeInTheDocument();
   });
 });
