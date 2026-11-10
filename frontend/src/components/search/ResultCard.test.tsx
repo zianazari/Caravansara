@@ -110,7 +110,7 @@ describe("ResultCard (FR-017)", () => {
   it("keeps a long title on one line, so the card keeps its layout (edge case: long text)", () => {
     const title = "خانه‌ی باغ ".repeat(30).trim();
     renderIn("fa", <ResultCard result={{ ...base, title }} stay="" />);
-    expect(screen.getByRole("heading", { name: title })).toHaveClass("line-clamp-1");
+    expect(screen.getByRole("heading", { name: title })).toHaveClass("truncate"); // one line, cut with …
   });
 
   it("has a wishlist heart over the photo, outside the card's link (feature 012)", () => {

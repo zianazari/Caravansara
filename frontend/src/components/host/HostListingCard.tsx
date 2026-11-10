@@ -22,16 +22,16 @@ export function HostListingCard({ listing }: { listing: Summary }) {
   const few = (listing.photo_count ?? 0) < MIN_PHOTOS;
   const href = `/host/listings/${listing.id}`;
   return (
-    <article className="grid gap-3">
+    <article className="grid min-w-0 grid-cols-1 gap-3">
       <Link href={href} className="rounded-2xl" aria-label={listing.title}>
         <ArchFrame
           src={listing.cover_url}
           alt=""
           sizes="(min-width: 1024px) 25vw, (min-width: 640px) 50vw, 100vw"
-          className="aspect-[4/5] w-full"
+          className="aspect-[1/0.96] w-full"
         />
       </Link>
-      <div className="grid gap-1">
+      <div className="grid min-w-0 gap-1">
         <div className="flex flex-wrap gap-1.5">
           <StatusBadge status={statusOf({ ...listing, photos: [] })} />
           {few ? <FewPhotosBadge /> : null}

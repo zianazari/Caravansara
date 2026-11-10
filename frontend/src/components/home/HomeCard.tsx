@@ -30,10 +30,10 @@ export function HomeCard({ result }: { result: Result }) {
         )
       : null;
   return (
-    <article className="relative grid gap-1.5">
+    <article className="relative grid min-w-0 grid-cols-1 gap-1.5">
       <Link
         href={`/listings/${result.id}`}
-        className="group grid gap-1.5 rounded-2xl focus-visible:outline-2"
+        className="group grid min-w-0 grid-cols-1 gap-1.5 rounded-2xl focus-visible:outline-2"
       >
         <div className="relative aspect-[1/0.96] overflow-hidden rounded-2xl bg-muted">
           {result.cover_url ? (

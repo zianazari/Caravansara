@@ -68,7 +68,8 @@ export default async function SearchPage({ params, searchParams }: Props) {
   const pageLink = (offset: number) => `/search?${toQuery({ ...state, offset }).toString()}`;
 
   return (
-    <div className="grid gap-6">
+    // data-wide: up to 1920 px with small margins, like the home page (feature 017).
+    <div className="grid gap-6" data-wide>
       <SearchForm
         today={today}
         initial={state}
@@ -85,7 +86,7 @@ export default async function SearchPage({ params, searchParams }: Props) {
         </p>
       ) : null}
       {page ? (
-        <div className="grid gap-6 lg:grid-cols-[3fr_2fr]">
+        <div className="grid gap-6 lg:grid-cols-[minmax(0,3fr)_minmax(0,2fr)] 2xl:grid-cols-[minmax(0,2fr)_minmax(0,1fr)]">
           <section aria-labelledby="results-heading" className="grid content-start gap-4">
             <h1 id="results-heading" className="text-xl font-bold" aria-live="polite">
               {t("search.results", { count: page.total })}
@@ -96,7 +97,7 @@ export default async function SearchPage({ params, searchParams }: Props) {
                 <p className="text-muted-foreground">{t("search.emptyHint")}</p>
               </div>
             ) : (
-              <ul className="grid gap-x-6 gap-y-8 sm:grid-cols-2 2xl:grid-cols-3">
+              <ul className="grid [&>li]:min-w-0 grid-cols-2 gap-x-4 gap-y-6 md:grid-cols-3 lg:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4">
                 {page.items.map((result) => (
                   <li key={result.id}>
                     <ResultCard result={result} nights={nights} stay={stay} />

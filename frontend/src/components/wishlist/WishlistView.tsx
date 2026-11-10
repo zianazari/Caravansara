@@ -55,7 +55,7 @@ export function WishlistView() {
   }
   return (
     <div className="grid gap-6">
-      <ul className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4">
+      <ul className="grid [&>li]:min-w-0 grid-cols-2 gap-x-4 gap-y-6 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6">
         {items.map((item) => (
           <li key={item.listing_id}>{item.listing ? <SavedCard item={item} /> : <GoneCard item={item} />}</li>
         ))}
@@ -85,13 +85,16 @@ function SavedCard({ item }: { item: Item }) {
       )
     : null;
   return (
-    <article className="relative grid gap-1">
-      <Link href={`/listings/${l.id}`} className="group grid gap-1 rounded-xl focus-visible:outline-2">
+    <article className="relative grid min-w-0 grid-cols-1 gap-1">
+      <Link
+        href={`/listings/${l.id}`}
+        className="group grid min-w-0 grid-cols-1 gap-1 rounded-xl focus-visible:outline-2"
+      >
         <ArchFrame
           src={l.cover_url}
           alt={l.cover_url ? "" : t("search.noPhoto")}
           sizes="(min-width: 1024px) 25vw, (min-width: 640px) 50vw, 100vw"
-          className="mb-2 aspect-square"
+          className="mb-1 aspect-[1/0.96]"
         />
         <div className="flex items-start justify-between gap-2">
           <p className="font-bold">{cityName(t, l.city.name)}</p>
@@ -112,11 +115,11 @@ function SavedCard({ item }: { item: Item }) {
           <span className="text-sm text-muted-foreground">{t("search.perNight")}</span>
         </p>
       </Link>
-      <div className="pointer-events-none absolute inset-x-0 top-0 aspect-square">
+      <div className="pointer-events-none absolute inset-x-0 top-0 aspect-[1/0.96]">
         <HeartButton
           listingId={l.id}
           title={l.title}
-          className="pointer-events-auto absolute end-3 bottom-3"
+          className="pointer-events-auto absolute end-2.5 top-2.5 size-8 sm:end-3 sm:top-3 sm:size-9"
         />
       </div>
     </article>
@@ -128,7 +131,7 @@ function GoneCard({ item }: { item: Item }) {
   const { toggle } = useWishlist();
   return (
     <article className="grid gap-2 rounded-2xl border bg-surface p-4">
-      <ArchFrame alt="" className="aspect-square w-full opacity-60" />
+      <ArchFrame alt="" className="aspect-[1/0.96] w-full opacity-60" />
       <p className="font-semibold">{t("unavailable")}</p>
       <p className="text-sm text-muted-foreground">{t("unavailableText")}</p>
       <Button

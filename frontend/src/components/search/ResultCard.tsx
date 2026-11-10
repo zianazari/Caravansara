@@ -38,25 +38,25 @@ export function ResultCard({ result, nights, stay }: { result: Result; nights?: 
   const checkIn = query.get("check_in");
   const checkOut = query.get("check_out");
   return (
-    <article className="relative grid gap-2">
+    <article className="relative grid min-w-0 grid-cols-1 gap-2">
       <Link
         href={`/listings/${result.id}${stay ? `?${stay}` : ""}`}
-        className="group grid gap-1 rounded-xl focus-visible:outline-2"
+        className="group grid min-w-0 grid-cols-1 gap-1 rounded-xl focus-visible:outline-2"
       >
         <ArchFrame
           src={result.cover_url}
           alt={result.cover_url ? "" : t("search.noPhoto")}
           sizes="(min-width: 1280px) 25vw, (min-width: 1024px) 33vw, (min-width: 640px) 50vw, 100vw"
-          className="mb-2 aspect-[1/0.95] md:aspect-[1/1.04]"
+          className="mb-1 aspect-[1/0.96]"
         >
           {badge ? (
-            <span className="absolute start-3 top-3 max-w-[calc(100%-4rem)] truncate rounded-full bg-background px-3 py-1 text-xs font-bold text-foreground shadow-sm">
+            <span className="absolute start-2.5 top-2.5 max-w-[calc(100%-3.75rem)] truncate rounded-full bg-background px-2 py-0.5 text-[11px] font-bold text-foreground shadow-sm sm:start-3 sm:top-3 sm:px-2.5 sm:py-1 sm:text-xs">
               {t(badge === "new" ? "badge.new" : "badge.guestFavourite")}
             </span>
           ) : null}
         </ArchFrame>
         <div className="flex items-start justify-between gap-2">
-          <p className="font-bold">
+          <p className="min-w-0 truncate text-sm font-bold">
             <span>{cityName(t, result.city)}</span>
             {locale === "fa" ? "، " : ", "}
             <span>{countryName(result.country_code, locale)}</span>
@@ -72,7 +72,7 @@ export function ResultCard({ result, nights, stay }: { result: Result; nights?: 
             </span>
           ) : null}
         </div>
-        <h3 className="line-clamp-1 text-sm text-muted-foreground group-hover:underline">{result.title}</h3>
+        <h3 className="truncate text-sm text-muted-foreground group-hover:underline">{result.title}</h3>
         <p className="text-sm text-muted-foreground">
           {t(`propertyTypes.${result.property_type}`)}
           {result.distance_km !== null && result.distance_km !== undefined
@@ -84,8 +84,8 @@ export function ResultCard({ result, nights, stay }: { result: Result; nights?: 
             {formatDate(checkIn, locale)} – {formatDate(checkOut, locale)}
           </p>
         ) : null}
-        <p className="mt-1 break-words">
-          <span className="font-extrabold">{money(result.price_per_night, result.currency)}</span>{" "}
+        <p className="break-words">
+          <span className="text-sm font-bold">{money(result.price_per_night, result.currency)}</span>{" "}
           <span className="text-sm text-muted-foreground">{t("search.perNight")}</span>
         </p>
         {result.total_price && nights ? (
@@ -94,7 +94,11 @@ export function ResultCard({ result, nights, stay }: { result: Result; nights?: 
           </p>
         ) : null}
       </Link>
-      <HeartButton listingId={result.id} title={result.title} className="absolute end-3 top-3" />
+      <HeartButton
+        listingId={result.id}
+        title={result.title}
+        className="absolute end-2.5 top-2.5 size-8 sm:end-3 sm:top-3 sm:size-9"
+      />
     </article>
   );
 }

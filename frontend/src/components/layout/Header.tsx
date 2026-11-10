@@ -40,6 +40,9 @@ export function useHostLink(): { href: string; label: "becomeHost" | "myListings
     : { href: "/host/new", label: "becomeHost" };
 }
 
+/** Pages that use the whole width (data-wide): the lists of places (feature 017). */
+const WIDE = new Set(["/", "/search", "/wishlists", "/host"]);
+
 /** The admin panel's pages (feature 009, only on the admin host) have their own header and no host link. */
 export function Header() {
   const pathname = usePathname();
@@ -63,8 +66,8 @@ function SiteHeader() {
       </a>
       <nav
         aria-label={t("nav.mainMenu")}
-        // The home page is wider since feature 017; the header lines up with its rows.
-        className={`mx-auto flex items-center gap-3 px-4 py-3 md:px-6 ${pathname === "/" ? "max-w-[1920px] lg:px-10" : "max-w-7xl"}`}
+        // The list pages are wider since feature 017; the header lines up with them.
+        className={`mx-auto flex items-center gap-3 px-4 py-3 md:px-6 ${WIDE.has(pathname) ? "max-w-[1920px] lg:px-10" : "max-w-7xl"}`}
       >
         <Link href="/" className="me-auto rounded-lg" aria-label={t("common.siteName")}>
           <Logo />
