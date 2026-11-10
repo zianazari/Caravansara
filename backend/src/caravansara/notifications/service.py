@@ -10,7 +10,8 @@ is paid in it. The users table has no language, and the currency already says wh
 """
 
 import logging
-from datetime import datetime, timedelta
+from datetime import date, datetime, timedelta
+from decimal import Decimal
 
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
@@ -20,6 +21,7 @@ from caravansara.core.metrics import EMAILS
 from caravansara.core.timeutil import utcnow
 from caravansara.identity import service as identity
 from caravansara.notifications import repository as repo
+from caravansara.notifications.formats import format_day, format_money, persian_digits
 from caravansara.notifications.models import OutboxEmail
 
 log = logging.getLogger("caravansara.notifications")
@@ -68,6 +70,84 @@ async def queue_review_result(
     subject, body = review_result_email(title=title, approved=approved, reason=reason, link=link, language=language)
     kind = "listing_approved" if approved else "listing_rejected"
     await repo.add(session, OutboxEmail(kind=kind, user_id=host_id, subject=subject, body=body, attempts=0))
+
+
+def booking_confirmed_emails(
+    *,
+    title: str,
+    check_in: date,
+    check_out: date,
+    guests: int,
+    total: Decimal,
+    currency: str,
+    language: str,
+    trip_link: str,
+    host_link: str,
+) -> tuple[tuple[str, str], tuple[str, str]]:
+    """(subject, body) for the guest, then for the host. No exact address: it would leave the system in an
+    inbox; the trip page shows it to the paying guest."""
+    from_day, to_day = format_day(check_in, language), format_day(check_out, language)
+    amount = format_money(total, currency, language)
+    if language == "fa":
+        count = persian_digits(str(guests))
+        guest = (
+            "رزرو شما قطعی شد",
+            f"رزرو «{title}» قطعی شد.\nاز {from_day} تا {to_day}، {count} مهمان، جمع {amount}.\n"
+            f"نشانی دقیق و ساعت ورود در صفحه‌ی سفر است:\n{trip_link}\n\nکاروانسرا\n",
+        )
+        host = (
+            "رزرو تازه برای آگهی شما",
+            f"«{title}» رزرو شد و پرداخت انجام شد.\nاز {from_day} تا {to_day}، {count} مهمان، جمع {amount}.\n"
+            f"{host_link}\n\nکاروانسرا\n",
+        )
+        return guest, host
+    guest = (
+        "Your booking is confirmed",
+        f'Your booking of "{title}" is confirmed.\n{from_day} to {to_day}, {guests} guests, {amount} in total.\n'
+        f"The exact address and check-in time are on your trip page:\n{trip_link}\n\nCaravansara\n",
+    )
+    host = (
+        "New booking for your listing",
+        f'"{title}" is booked and paid.\n{from_day} to {to_day}, {guests} guests, {amount} in total.\n'
+        f"{host_link}\n\nCaravansara\n",
+    )
+    return guest, host
+
+
+async def queue_booking_confirmed(
+    session: AsyncSession,
+    settings: Settings,
+    *,
+    booking_id: int,
+    guest_id: int,
+    host_id: int,
+    listing_id: int,
+    title: str,
+    check_in: date,
+    check_out: date,
+    guests: int,
+    total: Decimal,
+    currency: str,
+) -> None:
+    """Called inside the payment's transaction; the caller commits. One email to each side."""
+    language = language_for(currency)
+    site = settings.site_url.rstrip("/")
+    guest, host = booking_confirmed_emails(
+        title=title,
+        check_in=check_in,
+        check_out=check_out,
+        guests=guests,
+        total=total,
+        currency=currency,
+        language=language,
+        trip_link=f"{site}/{language}/trips/{booking_id}",
+        host_link=f"{site}/{language}/host/listings/{listing_id}?tab=bookings",
+    )
+    for kind, user_id, (subject, body) in (
+        ("booking_confirmed_guest", guest_id, guest),
+        ("booking_confirmed_host", host_id, host),
+    ):
+        await repo.add(session, OutboxEmail(kind=kind, user_id=user_id, subject=subject, body=body, attempts=0))
 
 
 def _wait_after(attempts: int) -> timedelta:

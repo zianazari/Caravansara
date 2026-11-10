@@ -1,5 +1,5 @@
 import { expect, test } from "@playwright/test";
-import { API, addPhoto, adminLogin, createAdmin, createListing, register } from "./helpers";
+import { API, addPhoto, adminLogin, auth, createAdmin, createListing, day, register, reserve } from "./helpers";
 
 /**
  * The review-result email on the running stack (feature 013): the decision writes it to the outbox, the
@@ -53,5 +53,23 @@ test.describe("Review-result emails", () => {
     expect(body.Text).toContain("دلیل: Please add a photo of the bathroom.");
     expect(body.Text).toMatch(/\/fa\/host\/listings\/\d+/);
     expect(body.Text).not.toContain("Reason");
+  });
+
+  test("a paid booking sends the guest and the host a confirmation (feature 016)", async ({ request }) => {
+    const host = await register(request, "mailbookhost");
+    const guest = await register(request, "mailbookguest");
+    const listing = await createListing(request, host, { title: "E2E email booking" });
+    const booking = await (await reserve(request, guest, listing.id, day(90), day(92))).json();
+    expect((await request.post(`${API}/bookings/${booking.id}/pay`, { headers: auth(guest) })).status()).toBe(200);
+
+    await expect.poll(() => messageTo(request, guest.email), { timeout: 30_000 }).toBeTruthy();
+    const toGuest = (await messageTo(request, guest.email))!;
+    expect(toGuest.Subject).toBe("Your booking is confirmed");
+    const text = (await (await request.get(`${MAILPIT}/api/v1/message/${toGuest.ID}`)).json()).Text as string;
+    expect(text).toContain(`/en/trips/${booking.id}`);
+    expect(text).not.toContain("Herengracht"); // the exact address stays on the trip page
+
+    await expect.poll(() => messageTo(request, host.email), { timeout: 30_000 }).toBeTruthy();
+    expect((await messageTo(request, host.email))!.Subject).toBe("New booking for your listing");
   });
 });
