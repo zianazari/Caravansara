@@ -46,13 +46,17 @@ export function cancelDeadline(booking: Pick<Booking, "check_in" | "listing">): 
   return new Date(startOfDayInZone(booking.check_in, booking.listing.timezone).getTime() - 1);
 }
 
-/** A completed stay can be reviewed until 14 days after check-out, in the city (FR-031). */
+/**
+ * A completed stay can be reviewed until 14 days after check-out, in the city (FR-031), once. Since feature 015
+ * the API says whether it already has a review (`has_review`), so the form is never offered for one that has.
+ */
 export function canReview(
-  booking: Pick<Booking, "status" | "check_out" | "listing">,
+  booking: Pick<Booking, "status" | "check_out" | "listing"> & { has_review?: boolean },
   now: Date = new Date(),
 ): boolean {
   return (
     booking.status === "completed" &&
+    !booking.has_review &&
     todayInZone(booking.listing.timezone, now) <= addDays(booking.check_out, REVIEW_DAYS)
   );
 }

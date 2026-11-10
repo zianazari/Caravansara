@@ -6,19 +6,34 @@ type AmenityGroup = components["schemas"]["AmenityCategoryOut"];
  * The category row (specs/007-caravansara-theme, FR-014, answer Q2): a quick way in, built from filters the
  * search already has, so the API does not change. Each category is one amenity (amenity_ids) or pets.
  *
- * There are no categories by place type (entire place, private room, shared room): GET /search/listings has
- * no filter for it, and filtering in the browser would break the paging and the total (research R5). That
- * filter, and new categories such as "traditional house", are later work in docs/future-work.md.
+ * Since feature 015 there are also categories by place type (entire place, private room, shared room), with
+ * the search's own `property_type` filter, so paging and the total stay right. New categories such as
+ * "traditional house" are later work in docs/future-work.md.
  */
-export type CategoryKey =
-  "all" | "pets" | "hot_tub" | "sauna" | "lake_access" | "balcony" | "free_parking" | "workspace" | "kitchen";
+export type PropertyType = components["schemas"]["PropertyType"];
+export const PROPERTY_TYPES: readonly PropertyType[] = ["entire_place", "private_room", "shared_room"];
 
-export type Category = { key: CategoryKey; amenity?: string; icon: string };
-export type CategoryFilter = { amenity_ids?: number[]; pets?: number };
+export type CategoryKey =
+  | "all"
+  | PropertyType
+  | "pets"
+  | "hot_tub"
+  | "sauna"
+  | "lake_access"
+  | "balcony"
+  | "free_parking"
+  | "workspace"
+  | "kitchen";
+
+export type Category = { key: CategoryKey; amenity?: string; type?: PropertyType; icon: string };
+export type CategoryFilter = { amenity_ids?: number[]; pets?: number; property_type?: PropertyType };
 
 /** In display order. `amenity` is the English name in GET /amenities; `icon` a lucide-react name. */
 export const CATEGORIES: readonly Category[] = [
   { key: "all", icon: "LayoutGrid" },
+  { key: "entire_place", type: "entire_place", icon: "House" },
+  { key: "private_room", type: "private_room", icon: "DoorClosed" },
+  { key: "shared_room", type: "shared_room", icon: "Users" },
   { key: "pets", icon: "PawPrint" },
   { key: "hot_tub", amenity: "Hot tub", icon: "Bath" },
   { key: "sauna", amenity: "Sauna", icon: "Flame" },
@@ -37,7 +52,7 @@ function amenityId(name: string, groups: AmenityGroup[] | undefined): number | u
   return undefined;
 }
 
-/** The categories to show: all and pets always; an amenity's category only if the amenity list has it. */
+/** The categories to show: all, the place types and pets always; an amenity's only if the amenity list has it. */
 export function categoriesFor(groups: AmenityGroup[] | undefined): Category[] {
   return CATEGORIES.filter((c) => !c.amenity || amenityId(c.amenity, groups) !== undefined);
 }
@@ -46,6 +61,7 @@ export function categoriesFor(groups: AmenityGroup[] | undefined): Category[] {
 export function filterOf(key: CategoryKey, groups: AmenityGroup[] | undefined): CategoryFilter {
   if (key === "pets") return { pets: 1 };
   const category = CATEGORIES.find((c) => c.key === key);
+  if (category?.type) return { property_type: category.type };
   const id = category?.amenity ? amenityId(category.amenity, groups) : undefined;
   return id === undefined ? {} : { amenity_ids: [id] };
 }

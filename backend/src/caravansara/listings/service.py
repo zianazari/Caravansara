@@ -281,6 +281,7 @@ async def set_amenities(
 async def my_listings(session: AsyncSession, storage: Storage, host_id: int, limit: int, offset: int) -> ListingPage:
     listings, total = await repo.host_listings(session, host_id, limit, offset)
     covers = await repo.cover_keys(session, [listing.id for listing in listings])
+    counts = await repo.photo_counts(session, [listing.id for listing in listings])
     items = []
     for listing in listings:
         city = await catalog.require_city(session, listing.city_id)
@@ -297,6 +298,7 @@ async def my_listings(session: AsyncSession, storage: Storage, host_id: int, lim
                 is_active=listing.is_active,
                 cover_url=storage.public_url(cover) if cover else None,
                 review=_review_out(listing),
+                photo_count=counts.get(listing.id, 0),
             )
         )
     return ListingPage(items=items, total=total)

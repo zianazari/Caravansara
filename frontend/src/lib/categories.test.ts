@@ -13,12 +13,27 @@ const groups = [
 ];
 
 describe("categories (specs/007-caravansara-theme, FR-014, research R5)", () => {
-  it("always offers all and pets, and only the amenities the list has", () => {
-    expect(categoriesFor(groups).map((c) => c.key)).toEqual(["all", "pets", "sauna", "balcony", "kitchen"]);
+  it("always offers all, the place types and pets, and only the amenities the list has", () => {
+    expect(categoriesFor(groups).map((c) => c.key)).toEqual([
+      "all",
+      "entire_place",
+      "private_room",
+      "shared_room",
+      "pets",
+      "sauna",
+      "balcony",
+      "kitchen",
+    ]);
   });
 
-  it("offers all and pets even before the amenity list arrives", () => {
-    expect(categoriesFor(undefined).map((c) => c.key)).toEqual(["all", "pets"]);
+  it("offers all, the place types and pets even before the amenity list arrives", () => {
+    expect(categoriesFor(undefined).map((c) => c.key)).toEqual([
+      "all",
+      "entire_place",
+      "private_room",
+      "shared_room",
+      "pets",
+    ]);
   });
 
   it("turns a category into the search's own filters", () => {
@@ -26,6 +41,7 @@ describe("categories (specs/007-caravansara-theme, FR-014, research R5)", () => 
     expect(filterOf("pets", groups)).toEqual({ pets: 1 });
     expect(filterOf("sauna", groups)).toEqual({ amenity_ids: [26] });
     expect(filterOf("hot_tub", groups)).toEqual({});
+    expect(filterOf("private_room", groups)).toEqual({ property_type: "private_room" }); // feature 015
   });
 
   it("reads an unknown key in the address as all", () => {

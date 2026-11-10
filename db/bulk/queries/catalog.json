@@ -742,6 +742,14 @@
     {
       "source": "caravansara.notifications.repository:queue_stats",
       "reason": "count and min over the partial index of unsent emails, once a minute by the worker"
+    },
+    {
+      "source": "caravansara.listings.repository:photo_counts",
+      "reason": "one page of a host's listings (at most 100) by listing_photos' (listing_id, sort_order) index"
+    },
+    {
+      "source": "caravansara.reviews.repository:reviewed_booking_ids",
+      "reason": "one page of bookings (at most 100) by reviews' unique booking_id"
     }
   ]
 }

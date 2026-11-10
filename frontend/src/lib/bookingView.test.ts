@@ -45,6 +45,8 @@ describe("booking rules", () => {
     const stay = { status: "completed" as const, check_out: "2026-11-01", listing: tehran };
     expect(canReview(stay, new Date("2026-11-15T12:00:00Z"))).toBe(true); // day 14
     expect(canReview(stay, new Date("2026-11-15T20:31:00Z"))).toBe(false); // 16 Nov in Tehran: day 15
+    // feature 015: a stay that already has a review is not offered the form again
+    expect(canReview({ ...stay, has_review: true }, new Date("2026-11-15T12:00:00Z"))).toBe(false);
     expect(canReview({ ...stay, status: "confirmed" }, new Date("2026-11-02T00:00:00Z"))).toBe(false);
   });
 

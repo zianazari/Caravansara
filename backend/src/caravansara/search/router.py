@@ -8,6 +8,7 @@ from caravansara.core.deps import StorageDep
 from caravansara.core.errors import error_responses
 from caravansara.core.pagination import PageDep
 from caravansara.core.security import SettingsDep
+from caravansara.listings.service import PropertyType
 from caravansara.search import service
 from caravansara.search.repository import Criteria
 from caravansara.search.schemas import FilterCounts, SearchPage, SortBy
@@ -36,6 +37,9 @@ def criteria(
     amenity_ids: Annotated[
         list[int], Query(description="Repeat the parameter; listings must have **all** of them.")
     ] = [],  # noqa: B006 (FastAPI copies query defaults)
+    property_type: Annotated[
+        PropertyType | None, Query(description="Only this kind of place (feature 015): the site's type categories.")
+    ] = None,
 ) -> Criteria:
     return service.build_criteria(
         settings,
@@ -49,6 +53,7 @@ def criteria(
         children=children,
         pets=pets,
         amenity_ids=amenity_ids,
+        property_type=property_type,
     )
 
 

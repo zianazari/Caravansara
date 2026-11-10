@@ -130,3 +130,15 @@ test.describe("Search", () => {
     await expectError(await request.get(`${API}/search/filters`), 422, "invalid_search_area");
   });
 });
+
+test.describe("Search by place type (feature 015)", () => {
+  test("property_type keeps only that kind of place", async ({ request }) => {
+    const host = await register(request, "typehost");
+    const room = await createListing(request, host, { property_type: "private_room", title: "E2E type room" });
+    const flat = await createListing(request, host, { property_type: "entire_place", title: "E2E type flat" });
+    expect(await findInSearch(request, { city_id: 1, property_type: "private_room" }, room.id)).toBeTruthy();
+    expect(await findInSearch(request, { city_id: 1, property_type: "private_room" }, flat.id)).toBeUndefined();
+    const bad = await request.get(`${API}/search/listings`, { params: { city_id: 1, property_type: "castle" } });
+    expect(bad.status()).toBe(422);
+  });
+});

@@ -79,4 +79,12 @@ describe("search state in the address", () => {
     );
     expect(toQuery(parseSearch({ adults: "1" })).toString()).toBe("adults=1");
   });
+
+  it("keeps a known place type and drops any other (feature 015)", () => {
+    const state = parseSearch(new URLSearchParams("city_id=3&property_type=shared_room"));
+    expect(state.property_type).toBe("shared_room");
+    expect(toQuery(state).get("property_type")).toBe("shared_room");
+    expect(toApiQuery(state).property_type).toBe("shared_room");
+    expect(parseSearch(new URLSearchParams("city_id=3&property_type=castle")).property_type).toBeUndefined();
+  });
 });

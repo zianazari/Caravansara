@@ -24,6 +24,7 @@ class Criteria:
     guests: int = 1
     pets: int = 0
     amenity_ids: list[int] = field(default_factory=list)
+    property_type: str | None = None
 
     @property
     def radial(self) -> bool:
@@ -61,6 +62,10 @@ def _where(c: Criteria, *, with_amenities: bool) -> tuple[list[str], dict[str, A
     if c.pets:
         clauses.append("l.pets_allowed AND l.max_pets >= :pets")
         params["pets"] = c.pets
+    if c.property_type:
+        # One more filter on rows the partial indexes return (feature 015); the plans stay the same.
+        clauses.append("l.property_type = CAST(:property_type AS property_type)")
+        params["property_type"] = c.property_type
     if c.check_in and c.check_out:
         if c.radial and (c.check_out - c.check_in).days <= _HASHED_MAX_NIGHTS:
             clauses.append(f"l.id NOT IN (SELECT b.listing_id FROM bookings b WHERE {_BLOCKING})")  # noqa: S608

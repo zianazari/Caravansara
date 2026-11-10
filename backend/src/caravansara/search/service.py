@@ -25,6 +25,7 @@ def build_criteria(
     children: int,
     pets: int,
     amenity_ids: list[int],
+    property_type: str | None = None,
 ) -> Criteria:
     radial_parts = (lat, lng, radius_km)
     radial = all(v is not None for v in radial_parts)
@@ -51,6 +52,7 @@ def build_criteria(
         guests=adults + children,  # infants don't count
         pets=pets,
         amenity_ids=sorted(set(amenity_ids)),
+        property_type=property_type,
     )
 
 

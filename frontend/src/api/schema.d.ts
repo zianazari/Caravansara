@@ -1103,6 +1103,12 @@ export interface components {
        */
       created_at: string;
       address: components["schemas"]["BookingAddress"] | null;
+      /**
+       * Has Review
+       * @description The guest has reviewed this stay, so the site no longer offers the review form (feature 015).
+       * @default false
+       */
+      has_review: boolean;
     };
     /** BookingPage */
     BookingPage: {
@@ -1428,6 +1434,12 @@ export interface components {
       is_active: boolean;
       /** Cover Url */
       cover_url: string | null;
+      /**
+       * Photo Count
+       * @description How many photos it has; fewer than 3 cannot be approved (feature 015, for 'photos not complete').
+       * @default 0
+       */
+      photo_count: number;
       review?: components["schemas"]["ListingReview"] | null;
     };
     /**
@@ -2377,6 +2389,8 @@ export interface operations {
         pets?: number;
         /** @description Repeat the parameter; listings must have **all** of them. */
         amenity_ids?: number[];
+        /** @description Only this kind of place (feature 015): the site's type categories. */
+        property_type?: components["schemas"]["PropertyType"] | null;
         /** @description Items per page. */
         limit?: number;
         /** @description Items to skip. */
@@ -2429,6 +2443,8 @@ export interface operations {
         pets?: number;
         /** @description Repeat the parameter; listings must have **all** of them. */
         amenity_ids?: number[];
+        /** @description Only this kind of place (feature 015): the site's type categories. */
+        property_type?: components["schemas"]["PropertyType"] | null;
       };
       header?: never;
       path?: never;

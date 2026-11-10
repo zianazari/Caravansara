@@ -5,11 +5,14 @@ import {
   BathIcon,
   CircleParkingIcon,
   CookingPotIcon,
+  DoorClosedIcon,
   FenceIcon,
   FlameIcon,
+  HouseIcon,
   LaptopIcon,
   LayoutGridIcon,
   PawPrintIcon,
+  UsersIcon,
   WavesIcon,
   type LucideIcon,
 } from "lucide-react";
@@ -31,6 +34,9 @@ const ICONS: Record<string, LucideIcon> = {
   CircleParking: CircleParkingIcon,
   Laptop: LaptopIcon,
   CookingPot: CookingPotIcon,
+  House: HouseIcon,
+  DoorClosed: DoorClosedIcon,
+  Users: UsersIcon,
 };
 
 /** The amenity list, shared with the filters panel's names; it changes rarely. */
@@ -64,9 +70,12 @@ export function CategoryBar({ mode }: { mode: "home" | "search" }) {
   if (mode === "search" && active !== "all") {
     const want = filterOf(active, groups);
     const ids = params.getAll("amenity_ids");
-    const matches = want.pets
-      ? ids.length === 0 && Number(params.get("pets") ?? 0) >= 1
-      : ids.length === 1 && ids[0] === String(want.amenity_ids?.[0]);
+    const type = params.get("property_type");
+    const matches = want.property_type
+      ? ids.length === 0 && type === want.property_type
+      : want.pets
+        ? ids.length === 0 && !type && Number(params.get("pets") ?? 0) >= 1
+        : !type && ids.length === 1 && ids[0] === String(want.amenity_ids?.[0]);
     if (!matches) active = "all";
   }
 
@@ -75,6 +84,7 @@ export function CategoryBar({ mode }: { mode: "home" | "search" }) {
     next.delete("category");
     if (mode === "search") {
       next.delete("amenity_ids");
+      next.delete("property_type");
       next.delete("offset");
       if (active === "pets") next.delete("pets");
     }
@@ -83,6 +93,7 @@ export function CategoryBar({ mode }: { mode: "home" | "search" }) {
       const filter = filterOf(key, groups);
       for (const id of filter.amenity_ids ?? []) next.append("amenity_ids", String(id));
       if (filter.pets) next.set("pets", String(Math.max(filter.pets, Number(params.get("pets") ?? 0))));
+      if (filter.property_type) next.set("property_type", filter.property_type);
     }
     const query = next.toString();
     return query ? `${pathname}?${query}` : pathname;
