@@ -1,16 +1,17 @@
 "use client";
 
-import { useQuery } from "@tanstack/react-query";
-import { MenuIcon } from "lucide-react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { LogOutIcon, MenuIcon } from "lucide-react";
 import { useTranslations } from "next-intl";
-import { Suspense } from "react";
+import { Suspense, useState } from "react";
 import { api } from "@/api/client";
 import { UserAvatar } from "@/components/account/UserAvatar";
 import { Logo } from "@/components/brand/Logo";
 import { AdminHeader } from "@/components/admin/AdminHeader";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { useAuthState, useMe } from "@/hooks/useAuth";
-import { Link, usePathname } from "@/i18n/navigation";
+import { Link, usePathname, useRouter } from "@/i18n/navigation";
+import { logout } from "@/lib/session";
 import { LocaleSwitch } from "./LocaleSwitch";
 
 /**
@@ -55,6 +56,18 @@ function SiteHeader() {
   const me = useMe();
   const pathname = usePathname();
   const host = useHostLink();
+  const queryClient = useQueryClient();
+  const router = useRouter();
+  const [menuOpen, setMenuOpen] = useState(false);
+
+  // Log-out at the bottom of the account menu (feature 024), as on the account page: the session ends, the
+  // user's cached data goes, and the home page opens.
+  async function signOut() {
+    setMenuOpen(false);
+    await logout();
+    queryClient.removeQueries({ queryKey: ["me"] });
+    router.replace("/");
+  }
   const item = "block rounded-lg px-3 py-2 hover:bg-muted";
   return (
     <header className="sticky top-0 z-40 border-b bg-background/95 backdrop-blur">
@@ -93,7 +106,7 @@ function SiteHeader() {
             {t("nav.login")}
           </Link>
         ) : state === "signedIn" ? (
-          <Popover>
+          <Popover open={menuOpen} onOpenChange={setMenuOpen}>
             <PopoverTrigger
               className="flex items-center gap-2 rounded-full border bg-card py-1 ps-3 pe-1 shadow-sm hover:shadow-md"
               aria-label={t("nav.account")}
@@ -111,13 +124,13 @@ function SiteHeader() {
                   {t(`nav.${host.label}`)}
                 </Link>
               ) : null}
-              <Link href="/wishlists" className={item}>
+              <Link href="/wishlists" className={item} onClick={() => setMenuOpen(false)}>
                 {t("nav.wishlists")}
               </Link>
-              <Link href="/trips" className={item}>
+              <Link href="/trips" className={item} onClick={() => setMenuOpen(false)}>
                 {t("nav.trips")}
               </Link>
-              <Link href="/account" className={item}>
+              <Link href="/account" className={item} onClick={() => setMenuOpen(false)}>
                 {t("nav.account")}
               </Link>
               <span className="border-t pt-1 md:hidden">
@@ -125,6 +138,16 @@ function SiteHeader() {
                   <LocaleSwitch />
                 </Suspense>
               </span>
+              <div className="mt-1 border-t pt-1">
+                <button
+                  type="button"
+                  onClick={() => void signOut()}
+                  className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-start hover:bg-muted"
+                >
+                  <LogOutIcon className="size-4 rtl:-scale-x-100" aria-hidden />
+                  {t("nav.logout")}
+                </button>
+              </div>
             </PopoverContent>
           </Popover>
         ) : (
