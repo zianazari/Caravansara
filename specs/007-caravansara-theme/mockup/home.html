@@ -1,0 +1,201 @@
+<!doctype html>
+<html lang="fa" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>کاروانسرا</title>
+<link href="https://fonts.googleapis.com/css2?family=Vazirmatn:wght@400;500;700;800&display=swap" rel="stylesheet">
+<style>
+:root{
+  --cream:#fffaf2; --paper:#f8efe1; --sand-1:#f3e4cc; --sand-2:#e3cfae; --sand-3:#d9b27c;
+  --copper:#b5651d; --amber:#e08a2e; --brick:#9c3b28; --brown:#3b1f08; --brown-2:#6b4a2b; --night:#07101e;
+  --gold:#f3c98b;
+}
+*{box-sizing:border-box;margin:0}
+body{font-family:Vazirmatn,system-ui,sans-serif;background:var(--cream);color:var(--brown)}
+/* the pointed caravansara arch, used for the hero, every photo frame and the logo */
+.arch{clip-path:url(#arch)}
+svg.defs{position:absolute;width:0;height:0}
+
+/* header */
+header{display:flex;align-items:center;justify-content:space-between;padding:18px 48px;border-bottom:1px solid var(--sand-1);background:var(--cream);position:sticky;top:0}
+.logo{display:flex;align-items:center;gap:10px;font-weight:800;font-size:24px;color:var(--copper)}
+.logo i{display:block;width:30px;height:36px;background:linear-gradient(180deg,var(--amber),var(--copper));}
+.nav{display:flex;align-items:center;gap:18px;font-size:15px}
+.nav a{color:var(--brown);text-decoration:none;font-weight:500}
+.me{display:flex;align-items:center;gap:10px;border:1px solid var(--sand-2);border-radius:999px;padding:6px 6px 6px 14px;background:#fff}
+.me b{width:32px;height:32px;border-radius:50%;background:#115e59;color:#fff;display:grid;place-items:center;font-size:14px}
+.menu{width:18px;height:2px;background:var(--brown);box-shadow:0 6px var(--brown),0 -6px var(--brown)}
+
+/* hero: a courtyard seen through an arch */
+.hero{position:relative;margin:28px 48px 0;height:420px;border-radius:28px;overflow:hidden;background:var(--night)}
+.hero .sky{position:absolute;inset:0;background:radial-gradient(120% 90% at 30% 110%,#e08a2e 0%,#9c3b28 32%,#3b1f08 62%,#07101e 100%)}
+.hero .doorway{position:absolute;left:70px;bottom:0;width:360px;height:380px;background:
+  radial-gradient(60% 50% at 50% 85%,#ffb95c 0%,#e08a2e 40%,rgba(224,138,46,0) 75%),
+  linear-gradient(180deg,#3a1f0b 0%,#5a2e0c 60%,#8a4513 100%);border:0}
+.hero .doorway-frame{position:absolute;left:52px;bottom:0;width:396px;height:398px;background:linear-gradient(180deg,#d9b27c,#b5651d)}
+.hero .lamps{position:absolute;left:70px;bottom:120px;width:360px;display:flex;justify-content:space-around}
+.hero .lamps span{width:10px;height:10px;border-radius:50%;background:#fff3d6;box-shadow:0 0 18px 6px #ffb95c}
+.hero .row{position:absolute;bottom:0;left:460px;right:0;height:150px;display:flex;gap:18px;padding-left:24px;align-items:flex-end}
+.hero .row i{flex:1;height:120px;background:linear-gradient(180deg,#5a2e0c,#3b1f08);opacity:.85}
+.hero .text{position:absolute;right:64px;top:70px;width:560px;color:var(--cream)}
+.hero h1{font-size:46px;line-height:1.35;font-weight:800}
+.hero p{margin-top:14px;font-size:18px;color:var(--gold)}
+
+/* search pill, like the well-known booking sites, in warm colours */
+.search{position:relative;margin:-44px auto 0;width:min(860px,calc(100% - 96px));display:flex;align-items:center;background:#fff;border-radius:999px;box-shadow:0 10px 30px rgba(59,31,8,.18);border:1px solid var(--sand-1);padding:8px}
+.search .f{flex:1;padding:10px 26px;border-left:1px solid var(--sand-1)}
+.search .f:last-of-type{border-left:0}
+.search .f small{display:block;font-size:12px;font-weight:700;color:var(--brown)}
+.search .f span{font-size:14px;color:var(--brown-2)}
+.search button{width:56px;height:56px;border-radius:50%;border:0;background:linear-gradient(180deg,var(--amber),var(--copper));display:grid;place-items:center}
+.search button svg{width:22px;height:22px}
+
+/* categories */
+.cats{display:flex;gap:34px;justify-content:center;margin:34px 48px 0;padding-bottom:14px;border-bottom:1px solid var(--sand-1)}
+.cat{display:flex;flex-direction:column;align-items:center;gap:6px;font-size:13px;color:var(--brown-2);padding-bottom:10px}
+.cat i{width:30px;height:34px;background:var(--sand-3)}
+.cat.on{color:var(--brown);font-weight:700;border-bottom:2px solid var(--copper);margin-bottom:-16px}
+.cat.on i{background:var(--copper)}
+
+/* listing cards */
+main{padding:30px 48px 60px}
+.h2{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:18px}
+.h2 h2{font-size:22px}
+.h2 a{color:var(--copper);font-weight:700;font-size:14px;text-decoration:none}
+.grid{display:grid;grid-template-columns:repeat(4,1fr);gap:26px}
+.card .ph{position:relative;aspect-ratio:1/1.04;background-size:cover;background-position:center;clip-path:url(#arch-soft)}
+.card .ph .heart{position:absolute;top:16%;left:14px;width:30px;height:30px;border-radius:50%;background:rgba(255,250,242,.9);display:grid;place-items:center}
+.card .ph .badge{position:absolute;bottom:14px;right:14px;background:var(--cream);color:var(--brown);font-size:12px;font-weight:700;padding:5px 10px;border-radius:999px}
+.dots{position:absolute;bottom:16px;left:50%;transform:translateX(-50%);display:flex;gap:5px}
+.dots i{width:6px;height:6px;border-radius:50%;background:rgba(255,255,255,.6)}.dots i:first-child{background:#fff}
+.card .t{display:flex;justify-content:space-between;margin-top:12px;font-weight:700;font-size:15px}
+.card .t span{font-weight:500;font-size:14px}
+.card .s{color:var(--brown-2);font-size:14px;margin-top:3px}
+.card .p{margin-top:6px;font-size:15px}.card .p b{font-weight:800}
+/* warm painted "photos": placeholders for the demo pictures */
+.card .p1{background-image:url(s1.svg)}
+.card .p2{background-image:url(s2.svg)}
+.card .p3{background-image:url(s3.svg)}
+.card .p4{background-image:url(s4.svg)}
+.card .p5{background-image:url(s5.svg)}
+.card .p6{background-image:url(s6.svg)}
+.card .p7{background-image:url(s7.svg)}
+.card .p8{background-image:url(s8.svg)}
+
+/* a decorative band of small arches, like the arcade of a courtyard */
+.arcade{display:flex;gap:10px;margin:46px 48px 0;height:46px}
+.arcade i{flex:1;background:var(--sand-1)}
+footer{background:var(--brown);color:var(--sand-2);padding:30px 48px;display:flex;justify-content:space-between;font-size:14px}
+footer b{color:var(--gold)}
+
+/* phone */
+.m-search,.tabbar{display:none}
+@media (max-width:640px){
+  header{padding:14px 16px}
+  .nav a{display:none}
+  .hero{margin:14px 16px 0;height:300px;border-radius:22px}
+  .hero .doorway-frame{left:14px;width:132px;height:150px}
+  .hero .doorway{left:24px;width:112px;height:140px}
+  .hero .lamps{left:24px;bottom:52px;width:112px}
+  .hero .row{display:none}
+  .hero .text{right:20px;top:30px;width:calc(100% - 40px)}
+  .hero h1{font-size:26px}
+  .hero p{font-size:14px}
+  .search{display:none}
+  .m-search{display:flex;align-items:center;gap:12px;margin:-30px 16px 0;position:relative;background:#fff;border-radius:999px;box-shadow:0 8px 24px rgba(59,31,8,.18);border:1px solid var(--sand-1);padding:10px 14px}
+  .m-search svg{width:20px;height:20px}
+  .m-search b{display:block;font-size:14px}
+  .m-search span{font-size:12px;color:var(--brown-2)}
+  .cats{justify-content:flex-start;overflow:hidden;margin:22px 0 0;padding:0 16px 12px;gap:26px;white-space:nowrap}
+  .cat.on{margin-bottom:-14px}
+  main{padding:22px 16px 90px}
+  .grid{grid-template-columns:1fr;gap:28px}
+  .card .ph{aspect-ratio:1/0.95}
+  .arcade,footer{display:none}
+  .tabbar{display:flex;position:fixed;bottom:0;left:0;right:0;background:#fff;border-top:1px solid var(--sand-1);justify-content:space-around;padding:8px 0 14px;font-size:11px;color:var(--brown-2)}
+  .tabbar div{display:flex;flex-direction:column;align-items:center;gap:4px}
+  .tabbar i{width:22px;height:24px;background:var(--sand-3)}
+  .tabbar .on{color:var(--copper);font-weight:700}.tabbar .on i{background:var(--copper)}
+}
+</style>
+</head>
+<body>
+<svg class="defs" aria-hidden="true"><defs>
+  <!-- pointed "four-centred" arch: straight sides, two curves meeting at a point -->
+  <!-- a lower arch for photo cards, so the grid still reads like a familiar booking site -->
+  <clipPath id="arch-soft" clipPathUnits="objectBoundingBox">
+    <path d="M0,1 V0.2 C0,0.085 0.3,0.035 0.5,0 C0.7,0.035 1,0.085 1,0.2 V1 Z"/>
+  </clipPath>
+  <clipPath id="arch" clipPathUnits="objectBoundingBox">
+    <path d="M0,1 V0.36 C0,0.17 0.28,0.07 0.5,0 C0.72,0.07 1,0.17 1,0.36 V1 Z"/>
+  </clipPath>
+</defs></svg>
+
+<header>
+  <div class="logo"><i class="arch"></i>کاروانسرا</div>
+  <nav class="nav">
+    <a href="#">میزبان شوید</a>
+    <a href="#">English</a>
+    <div class="me"><div class="menu"></div><b>ز</b></div>
+  </nav>
+</header>
+
+<section class="hero">
+  <div class="sky"></div>
+  <div class="doorway-frame arch"></div>
+  <div class="doorway arch"></div>
+  <div class="lamps"><span></span><span></span><span></span></div>
+  <div class="row"><i class="arch"></i><i class="arch"></i><i class="arch"></i><i class="arch"></i><i class="arch"></i></div>
+  <div class="text">
+    <h1>جایی برای ماندن،<br>در هر شهر سر راه</h1>
+    <p>اقامتگاه‌هایی که میزبان‌ها با دقت آماده کرده‌اند، از تهران تا آمستردام.</p>
+  </div>
+</section>
+
+<div class="search">
+  <div class="f"><small>کجا</small><span>جستجوی شهر</span></div>
+  <div class="f"><small>ورود</small><span>۱۸ آبان</span></div>
+  <div class="f"><small>خروج</small><span>۲۲ آبان</span></div>
+  <div class="f"><small>مهمان‌ها</small><span>۲ بزرگسال</span></div>
+  <button aria-label="جستجو"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.6" stroke-linecap="round"><circle cx="10.5" cy="10.5" r="6.5"/><path d="M15.5 15.5 21 21"/></svg></button>
+</div>
+
+<div class="m-search"><svg viewBox="0 0 24 24" fill="none" stroke="#3b1f08" stroke-width="2.4" stroke-linecap="round"><circle cx="10.5" cy="10.5" r="6.5"/><path d="M15.5 15.5 21 21"/></svg><div><b>کجا می‌روید؟</b><span>هر شهر · هر زمان · مهمان‌ها</span></div></div>
+<div class="cats">
+  <div class="cat on"><i class="arch"></i>همه</div>
+  <div class="cat"><i class="arch"></i>خانه‌ی سنتی</div>
+  <div class="cat"><i class="arch"></i>کنار دریا</div>
+  <div class="cat"><i class="arch"></i>کویر</div>
+  <div class="cat"><i class="arch"></i>کوهستان</div>
+  <div class="cat"><i class="arch"></i>آپارتمان شهری</div>
+  <div class="cat"><i class="arch"></i>با استخر</div>
+  <div class="cat"><i class="arch"></i>حیوان خانگی مجاز</div>
+</div>
+
+<main>
+  <div class="h2"><h2>محبوب در این هفته</h2><a href="#">نمایش همه</a></div>
+  <div class="grid">
+    <div class="card"><div class="ph p1"><div class="heart">♡</div><div class="badge">انتخاب مهمان‌ها</div><div class="dots"><i></i><i></i><i></i></div></div>
+      <div class="t">کاشان، ایران<span>★ ۴٫۹۲</span></div><div class="s">خانه‌ی سنتی با حیاط و حوض</div><div class="s">۱۸ تا ۲۲ آبان</div><div class="p"><b>۳٬۲۰۰٬۰۰۰ تومان</b> شبی</div></div>
+    <div class="card"><div class="ph p2"><div class="heart">♡</div><div class="dots"><i></i><i></i><i></i></div></div>
+      <div class="t">رامسر، ایران<span>★ ۴٫۸۱</span></div><div class="s">ویلا رو به دریا</div><div class="s">۱۸ تا ۲۲ آبان</div><div class="p"><b>۵٬۸۰۰٬۰۰۰ تومان</b> شبی</div></div>
+    <div class="card"><div class="ph p3"><div class="heart">♡</div><div class="badge">تازه</div><div class="dots"><i></i><i></i><i></i></div></div>
+      <div class="t">یزد، ایران<span>★ ۵٫۰</span></div><div class="s">اقامتگاه بوم‌گردی با بادگیر</div><div class="s">۱۸ تا ۲۲ آبان</div><div class="p"><b>۲٬۴۰۰٬۰۰۰ تومان</b> شبی</div></div>
+    <div class="card"><div class="ph p4"><div class="heart">♡</div><div class="dots"><i></i><i></i><i></i></div></div>
+      <div class="t">آمستردام، هلند<span>★ ۴٫۷۶</span></div><div class="s">آپارتمان کنار کانال</div><div class="s">۱۸ تا ۲۲ آبان</div><div class="p"><b>۱۸۰ یورو</b> شبی</div></div>
+    <div class="card"><div class="ph p5"><div class="heart">♡</div><div class="dots"><i></i><i></i><i></i></div></div>
+      <div class="t">تهران، ایران<span>★ ۴٫۸۸</span></div><div class="s">آپارتمان با منظره‌ی البرز</div><div class="s">۲۵ تا ۲۸ آبان</div><div class="p"><b>۴٬۱۰۰٬۰۰۰ تومان</b> شبی</div></div>
+    <div class="card"><div class="ph p6"><div class="heart">♡</div><div class="badge">انتخاب مهمان‌ها</div><div class="dots"><i></i><i></i><i></i></div></div>
+      <div class="t">اصفهان، ایران<span>★ ۴٫۹۵</span></div><div class="s">خانه‌ی باغ نزدیک میدان</div><div class="s">۱ تا ۴ آذر</div><div class="p"><b>۳٬۶۰۰٬۰۰۰ تومان</b> شبی</div></div>
+    <div class="card"><div class="ph p7"><div class="heart">♡</div><div class="dots"><i></i><i></i><i></i></div></div>
+      <div class="t">لندن، بریتانیا<span>★ ۴٫۷۰</span></div><div class="s">اتاق خصوصی در خانه‌ی ویکتوریایی</div><div class="s">۲ تا ۵ آذر</div><div class="p"><b>۱۲۰ پوند</b> شبی</div></div>
+    <div class="card"><div class="ph p8"><div class="heart">♡</div><div class="dots"><i></i><i></i><i></i></div></div>
+      <div class="t">شیراز، ایران<span>★ ۴٫۹۰</span></div><div class="s">خانه‌ی قدیمی با نارنجستان</div><div class="s">۸ تا ۱۱ آذر</div><div class="p"><b>۲٬۹۰۰٬۰۰۰ تومان</b> شبی</div></div>
+  </div>
+  <div class="arcade"><i class="arch"></i><i class="arch"></i><i class="arch"></i><i class="arch"></i><i class="arch"></i><i class="arch"></i><i class="arch"></i><i class="arch"></i><i class="arch"></i><i class="arch"></i><i class="arch"></i><i class="arch"></i></div>
+</main>
+<footer><span>© ۱۴۰۵ <b>کاروانسرا</b></span><span>درباره‌ی ما · میزبانی · راهنما · حریم خصوصی</span></footer>
+<nav class="tabbar"><div class="on"><i class="arch"></i>جستجو</div><div><i class="arch"></i>علاقه‌مندی‌ها</div><div><i class="arch"></i>سفرها</div><div><i class="arch"></i>پروفایل</div></nav>
+</body>
+</html>
