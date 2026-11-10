@@ -16,7 +16,9 @@ import {
   UsersIcon,
 } from "lucide-react";
 import { AmenityList } from "@/components/listing/AmenityList";
+import { AvailabilityCalendar } from "@/components/listing/AvailabilityCalendar";
 import { BookingBox } from "@/components/listing/BookingBox";
+import { StayDatesProvider } from "@/components/listing/StayDates";
 import { MobileBookingBar } from "@/components/listing/MobileBookingBar";
 import { Gallery } from "@/components/listing/Gallery";
 import { ReviewList } from "@/components/listing/ReviewList";
@@ -72,7 +74,8 @@ export default async function ListingPage({ params }: Props) {
   const rating = listing.avg_rating ? number(Number(listing.avg_rating)) : null;
 
   return (
-    <article className="grid gap-8">
+    // data-wide: up to 1920 px with small margins, like the home page (owner's request, feature 019).
+    <article className="grid gap-8" data-wide>
       <header className="grid gap-1">
         <div className="flex items-start justify-between gap-3">
           <h1 className="text-2xl font-bold md:text-3xl">{listing.title}</h1>
@@ -89,95 +92,102 @@ export default async function ListingPage({ params }: Props) {
 
       <Gallery photos={listing.photos} title={listing.title} />
 
-      <div className="grid gap-8 lg:grid-cols-[2fr_1fr]">
-        <div className="grid content-start gap-8">
-          <section className="flex items-center gap-3">
-            <UserAvatar user={listing.host} />
-            <p className="font-medium">{t("listing.hostedBy", { name: listing.host.full_name })}</p>
-          </section>
+      {/* The calendar and the booking box share one choice of dates (feature 019). */}
+      <Suspense>
+        <StayDatesProvider listingId={listing.id} timezone={listing.city.timezone}>
+          <div className="grid gap-8 lg:grid-cols-[minmax(0,2fr)_minmax(0,1fr)] xl:grid-cols-[minmax(0,5fr)_minmax(0,2fr)]">
+            <div className="grid content-start gap-8">
+              <section className="flex items-center gap-3">
+                <UserAvatar user={listing.host} />
+                <p className="font-medium">{t("listing.hostedBy", { name: listing.host.full_name })}</p>
+              </section>
 
-          <section aria-labelledby="capacity" className="grid gap-2">
-            <h2 id="capacity" className="text-xl font-semibold">
-              {t("listing.capacity")}
-            </h2>
-            {/* Each fact with its line icon (feature 018); the icons are decoration, the words say it. */}
-            <ul className="grid grid-cols-2 gap-x-6 gap-y-3 sm:grid-cols-3">
-              {[
-                { Icon: UsersIcon, text: t("listing.maxGuests", { count: listing.max_guests }) },
-                { Icon: DoorOpenIcon, text: t("listing.bedrooms", { count: listing.bedrooms }) },
-                { Icon: BedDoubleIcon, text: t("listing.beds", { count: listing.beds }) },
-                { Icon: BathIcon, text: t("listing.bathrooms", { count: Number(listing.bathrooms) }) },
-                {
-                  Icon: PawPrintIcon,
-                  text: listing.pets_allowed
-                    ? t("listing.petsAllowed", { count: listing.max_pets })
-                    : t("listing.noPets"),
-                },
-              ].map(({ Icon, text }) => (
-                <li key={text} className="flex items-center gap-3">
-                  <Icon className="size-6 shrink-0 stroke-[1.5]" aria-hidden />
-                  <span>{text}</span>
-                </li>
-              ))}
-            </ul>
-          </section>
+              <section aria-labelledby="capacity" className="grid gap-2">
+                <h2 id="capacity" className="text-xl font-semibold">
+                  {t("listing.capacity")}
+                </h2>
+                {/* Each fact with its line icon (feature 018); the icons are decoration, the words say it. */}
+                <ul className="grid grid-cols-2 gap-x-6 gap-y-3 sm:grid-cols-3">
+                  {[
+                    { Icon: UsersIcon, text: t("listing.maxGuests", { count: listing.max_guests }) },
+                    { Icon: DoorOpenIcon, text: t("listing.bedrooms", { count: listing.bedrooms }) },
+                    { Icon: BedDoubleIcon, text: t("listing.beds", { count: listing.beds }) },
+                    { Icon: BathIcon, text: t("listing.bathrooms", { count: Number(listing.bathrooms) }) },
+                    {
+                      Icon: PawPrintIcon,
+                      text: listing.pets_allowed
+                        ? t("listing.petsAllowed", { count: listing.max_pets })
+                        : t("listing.noPets"),
+                    },
+                  ].map(({ Icon, text }) => (
+                    <li key={text} className="flex items-center gap-3">
+                      <Icon className="size-6 shrink-0 stroke-[1.5]" aria-hidden />
+                      <span>{text}</span>
+                    </li>
+                  ))}
+                </ul>
+              </section>
 
-          {listing.description ? (
-            <section aria-labelledby="about" className="grid gap-2">
-              <h2 id="about" className="text-xl font-semibold">
-                {t("listing.description")}
-              </h2>
-              <p className="whitespace-pre-line">{listing.description}</p>
-            </section>
-          ) : null}
+              {listing.description ? (
+                <section aria-labelledby="about" className="grid gap-2">
+                  <h2 id="about" className="text-xl font-semibold">
+                    {t("listing.description")}
+                  </h2>
+                  <p className="whitespace-pre-line">{listing.description}</p>
+                </section>
+              ) : null}
 
-          <section aria-labelledby="amenities" className="grid gap-3">
-            <h2 id="amenities" className="text-xl font-semibold">
-              {t("listing.amenities")}
-            </h2>
-            <AmenityList categories={listing.amenities} />
-          </section>
+              <section aria-labelledby="amenities" className="grid gap-3">
+                <h2 id="amenities" className="text-xl font-semibold">
+                  {t("listing.amenities")}
+                </h2>
+                <AmenityList categories={listing.amenities} />
+              </section>
 
-          <section aria-labelledby="times" className="grid gap-1">
-            <h2 id="times" className="mb-2 text-xl font-semibold">
-              {t("listing.checkTimes")}
-            </h2>
-            <p className="flex items-center gap-3">
-              <LogInIcon className="size-6 shrink-0 stroke-[1.5] rtl:-scale-x-100" aria-hidden />
-              {t("listing.checkIn", { time: formatClock(listing.check_in_time, locale), city })}
-            </p>
-            <p className="flex items-center gap-3">
-              <LogOutIcon className="size-6 shrink-0 stroke-[1.5] rtl:-scale-x-100" aria-hidden />
-              {t("listing.checkOut", { time: formatClock(listing.check_out_time, locale), city })}
-            </p>
-            <p className="text-sm text-muted-foreground">{t("listing.approximate")}</p>
-          </section>
+              <section aria-labelledby="times" className="grid gap-1">
+                <h2 id="times" className="mb-2 text-xl font-semibold">
+                  {t("listing.checkTimes")}
+                </h2>
+                <p className="flex items-center gap-3">
+                  <LogInIcon className="size-6 shrink-0 stroke-[1.5] rtl:-scale-x-100" aria-hidden />
+                  {t("listing.checkIn", { time: formatClock(listing.check_in_time, locale), city })}
+                </p>
+                <p className="flex items-center gap-3">
+                  <LogOutIcon className="size-6 shrink-0 stroke-[1.5] rtl:-scale-x-100" aria-hidden />
+                  {t("listing.checkOut", { time: formatClock(listing.check_out_time, locale), city })}
+                </p>
+                <p className="text-sm text-muted-foreground">{t("listing.approximate")}</p>
+              </section>
 
-          <section aria-labelledby="reviews" className="grid gap-3">
-            <h2 id="reviews" className="text-xl font-semibold">
-              {t("listing.reviews")}
-            </h2>
-            <ReviewList listingId={listing.id} first={reviews} />
-          </section>
-        </div>
-        <div id="booking" className="scroll-mt-24 lg:sticky lg:top-24 lg:self-start">
-          <Suspense>
-            <BookingBox
-              listing={{
-                id: listing.id,
-                host_id: listing.host.id,
-                price_per_night: listing.price_per_night,
-                cleaning_fee: listing.cleaning_fee,
-                currency: listing.currency,
-                max_guests: listing.max_guests,
-                pets_allowed: listing.pets_allowed,
-                max_pets: listing.max_pets,
-                timezone: listing.city.timezone,
-              }}
-            />
-          </Suspense>
-        </div>
-      </div>
+              <AvailabilityCalendar city={city} />
+
+              <section aria-labelledby="reviews" className="grid gap-3">
+                <h2 id="reviews" className="text-xl font-semibold">
+                  {t("listing.reviews")}
+                </h2>
+                <ReviewList listingId={listing.id} first={reviews} />
+              </section>
+            </div>
+            <div id="booking" className="scroll-mt-24 lg:sticky lg:top-24 lg:self-start">
+              <Suspense>
+                <BookingBox
+                  listing={{
+                    id: listing.id,
+                    host_id: listing.host.id,
+                    price_per_night: listing.price_per_night,
+                    cleaning_fee: listing.cleaning_fee,
+                    currency: listing.currency,
+                    max_guests: listing.max_guests,
+                    pets_allowed: listing.pets_allowed,
+                    max_pets: listing.max_pets,
+                    timezone: listing.city.timezone,
+                  }}
+                />
+              </Suspense>
+            </div>
+          </div>
+        </StayDatesProvider>
+      </Suspense>
       <MobileBookingBar price={listing.price_per_night} currency={listing.currency} />
     </article>
   );

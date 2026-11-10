@@ -2631,6 +2631,99 @@
         }
       }
     },
+    "/api/v1/listings/{listing_id}/availability": {
+      "get": {
+        "tags": [
+          "Bookings",
+          "Listings"
+        ],
+        "summary": "Taken nights of a listing",
+        "description": "The nights taken in [start, end) by a confirmed or completed stay, or by an unpaid hold still running, for the calendar on the listing page. No guest data. Defaults: from today in the listing's city for a year; at most 400 days. Visible to whoever may see the listing.",
+        "operationId": "availability_api_v1_listings__listing_id__availability_get",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "listing_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Listing Id"
+            }
+          },
+          {
+            "name": "start",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "date"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Start"
+            }
+          },
+          {
+            "name": "end",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "date"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "End"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ListingAvailability"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Invalid input or a broken business rule",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/bookings/{booking_id}/review": {
       "post": {
         "tags": [
@@ -4441,6 +4534,39 @@
           "avatar_url"
         ],
         "title": "HostOut"
+      },
+      "ListingAvailability": {
+        "properties": {
+          "start": {
+            "type": "string",
+            "format": "date",
+            "title": "Start",
+            "description": "First night asked about (the listing city's today by default)."
+          },
+          "end": {
+            "type": "string",
+            "format": "date",
+            "title": "End",
+            "description": "The day after the last night asked about."
+          },
+          "booked_nights": {
+            "items": {
+              "type": "string",
+              "format": "date"
+            },
+            "type": "array",
+            "title": "Booked Nights",
+            "description": "Each night taken by a confirmed or completed stay, or by an unpaid hold still running. A guest can check out on such a date but not stay that night."
+          }
+        },
+        "type": "object",
+        "required": [
+          "start",
+          "end",
+          "booked_nights"
+        ],
+        "title": "ListingAvailability",
+        "description": "The nights of a listing that are taken (feature 019), for the calendar on its page. Only the nights,\nnever who booked them."
       },
       "ListingCard": {
         "properties": {

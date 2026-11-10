@@ -1,16 +1,17 @@
 import uuid
+from datetime import date
 from typing import Annotated
 
 from fastapi import APIRouter, Header, Query, Response, status
 
 from caravansara.bookings import service
 from caravansara.bookings.models import BookingStatus
-from caravansara.bookings.schemas import BookingCreate, BookingOut, BookingPage
+from caravansara.bookings.schemas import BookingCreate, BookingOut, BookingPage, ListingAvailability
 from caravansara.core.db import SessionDep
 from caravansara.core.deps import StorageDep
 from caravansara.core.errors import error_responses
 from caravansara.core.pagination import PageDep
-from caravansara.core.security import CurrentUserId, SettingsDep
+from caravansara.core.security import CurrentUserId, OptionalUserId, SettingsDep
 from caravansara.reviews import service as reviews
 
 
@@ -125,3 +126,24 @@ async def listing_bookings(
     return await _with_reviews(
         session, await service.listing_bookings(session, storage, listing_id, user_id, status, page.limit, page.offset)
     )
+
+
+@router.get(
+    "/listings/{listing_id}/availability",
+    summary="Taken nights of a listing",
+    tags=["Listings"],
+    description=(
+        "The nights taken in [start, end) by a confirmed or completed stay, or by an unpaid hold still running, "
+        "for the calendar on the listing page. No guest data. Defaults: from today in the listing's city for a "
+        "year; at most 400 days. Visible to whoever may see the listing."
+    ),
+    responses=error_responses(404, 422),
+)
+async def availability(
+    listing_id: int,
+    session: SessionDep,
+    viewer_id: OptionalUserId,
+    start: Annotated[date | None, Query()] = None,
+    end: Annotated[date | None, Query()] = None,
+) -> ListingAvailability:
+    return await service.availability(session, listing_id, viewer_id, start, end)

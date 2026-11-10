@@ -78,3 +78,15 @@ class BookingOut(BaseModel):
 class BookingPage(BaseModel):
     items: list[BookingOut]
     total: int
+
+
+class ListingAvailability(BaseModel):
+    """The nights of a listing that are taken (feature 019), for the calendar on its page. Only the nights,
+    never who booked them."""
+
+    start: date = Field(description="First night asked about (the listing city's today by default).")
+    end: date = Field(description="The day after the last night asked about.")
+    booked_nights: list[date] = Field(
+        description="Each night taken by a confirmed or completed stay, or by an unpaid hold still running. "
+        "A guest can check out on such a date but not stay that night."
+    )

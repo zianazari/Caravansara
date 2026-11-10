@@ -750,6 +750,10 @@
     {
       "source": "caravansara.reviews.repository:reviewed_booking_ids",
       "reason": "one page of bookings (at most 100) by reviews' unique booking_id"
+    },
+    {
+      "source": "caravansara.bookings.repository:booked_ranges",
+      "reason": "one listing's stays in at most 400 days, on the exclusion constraint's GiST index (listing_id, stay)"
     }
   ]
 }
