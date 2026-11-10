@@ -6,8 +6,11 @@ import { useAuthState } from "@/hooks/useAuth";
 import { Link, usePathname } from "@/i18n/navigation";
 import { cn } from "@/lib/cn";
 
-/** Pages that have their own fixed booking bar at the bottom instead (research R7). */
-const OWN_BAR = ["/listings/", "/book/"];
+/**
+ * Pages that have their own fixed bar at the bottom instead: booking (research R7 of 007), and the new-listing
+ * form, whose back and next buttons sit there (specs/008-host-pages, T025).
+ */
+const OWN_BAR = ["/listings/", "/book/", "/host/new"];
 
 /**
  * The phone's bottom bar (specs/007-caravansara-theme, FR-008): search, trips and profile (or log in), each an

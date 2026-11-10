@@ -1,4 +1,5 @@
 import { mediaBaseUrl } from "./env";
+import { checkImageFile, type ImageProblem } from "./imageCheck";
 
 /**
  * Profile pictures (FR-037 to FR-041, research R20; data-model, "Avatar").
@@ -42,22 +43,13 @@ export function isOwnMediaUrl(url: string | null | undefined): url is string {
   return typeof url === "string" && url.startsWith(`${mediaBaseUrl}/avatars/`);
 }
 
-export type AvatarFileProblem = "too_large" | "wrong_type" | "not_image";
-
-const PNG = [0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a];
-const JPEG = [0xff, 0xd8, 0xff];
-
-function startsWith(bytes: Uint8Array, signature: number[]): boolean {
-  return signature.every((byte, i) => bytes[i] === byte);
-}
+export type AvatarFileProblem = ImageProblem;
 
 /**
  * Checks a chosen file before any upload, so the message comes at once (FR-038). The server checks the same
- * rules again and stays the final word: size, declared type, and the file's real first bytes.
+ * rules again and stays the final word: size, declared type, and the file's real first bytes. The check
+ * itself is shared with listing photos (lib/imageCheck.ts, specs/008-host-pages).
  */
-export async function checkAvatarFile(file: Blob): Promise<AvatarFileProblem | null> {
-  if (file.size > MAX_AVATAR_BYTES) return "too_large";
-  if (!(AVATAR_TYPES as readonly string[]).includes(file.type)) return "wrong_type";
-  const head = new Uint8Array(await file.slice(0, 8).arrayBuffer());
-  return startsWith(head, PNG) || startsWith(head, JPEG) ? null : "not_image";
+export function checkAvatarFile(file: Blob): Promise<AvatarFileProblem | null> {
+  return checkImageFile(file, { maxBytes: MAX_AVATAR_BYTES, types: AVATAR_TYPES });
 }

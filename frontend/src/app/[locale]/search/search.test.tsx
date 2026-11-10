@@ -50,7 +50,9 @@ async function show(locale: "fa" | "en", query: Record<string, string>) {
 }
 
 describe("search page", () => {
-  beforeEach(() => GET.mockReset());
+  beforeEach(() => {
+    GET.mockReset();
+  });
 
   it("searches on the server with the address's choices, and pages without repeats (US1/AC2, AC5)", async () => {
     GET.mockResolvedValue({ data: { items: [item(1), item(2)], total: 45, limit: 20, offset: 20 } });

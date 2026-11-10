@@ -1,9 +1,11 @@
 # Caravansara web site
 
-The guest part of the site (specs/005-frontend-guest). Guests can search by city or on the map, open a listing,
-sign up and log in, upload a profile picture, book and pay (payment is simulated), see their trips, cancel, and
-review. The site is in Persian, right-to-left with Vazirmatn, at `/fa` (the default), and in English at `/en`.
-Host pages (feature 006) and the admin panel (feature 007) come later.
+The guest and host parts of the site (specs/005-frontend-guest, specs/008-host-pages). Guests can search by city
+or on the map, open a listing, sign up and log in, upload a profile picture, book and pay (payment is simulated),
+see their trips, cancel, and review. Hosts make a listing in eight steps with at least three photos, then keep it:
+status and rejection reason, edits with a warning when an approved listing goes back to review, photos (order,
+cover, labels), off and on, bookings and reviews. The site is in Persian, right-to-left with Vazirmatn, at `/fa`
+(the default), and in English at `/en`. The admin panel (feature 009) comes later.
 
 Why each piece is built the way it is: [`docs/backend-design.md`](../docs/backend-design.md), section «فرانت‌اند وب».
 
@@ -40,15 +42,17 @@ Every key there has both languages, so the two files can never disagree. Edit th
 src/
   app/
     [locale]/          pages: home, search, listings/[id], login, register, account, book/[listingId],
-                       trips, trips/[bookingId], trips/[bookingId]/review
+                       trips, trips/[bookingId], trips/[bookingId]/review,
+                       host (my listings), host/new?step=1..8, host/listings/[id]?tab=details|photos|bookings|reviews
     api/v1/[...path]/  forwards /api/v1 to the API (one origin, no CORS)
     session/           login, register, refresh, logout: the refresh token in the HttpOnly cv_refresh cookie
   proxy.ts             language prefix, the CSP with a fresh nonce, and 404 for /api/v1/auth/*
   api/                 typed clients: browser (token, refresh on 401) and server (no token, no cache)
   lib/                 the rules, each with its tests: session and the cross-tab lock, Jalali calendar, city time,
-                       money (rial as toman), search state, booking draft and booking rules, avatar, errors
+                       money (rial as toman), search state, booking draft and booking rules, avatar, errors,
+                       listing draft and form rules, image check, photo upload, review fields, listing status
   components/          ui (shadcn style on Radix), brand (logo, hero, arch frame), home (categories, city rows),
-                       search, date, listing, booking, account, auth, layout
+                       search, date, listing, booking, account, auth, layout, host (wizard, steps, photos, editor)
   i18n/                next-intl routing and messages
 ```
 
@@ -71,6 +75,10 @@ src/
 - **Profile picture:** checked in the browser first (size, type, first bytes), then sent in one `PUT /me/avatar`
   with the file as the body; the API checks it again before storing anything (`specs/006-avatar-upload-via-api`).
   The `/api/v1` proxy streams bodies to the API and refuses one over 5 MB + 64 KB with the API's own 413.
+- **Host pages:** a listing is created only at the last step, then its photos upload two at a time and are put
+  in order; the draft (answers only, not files) is in `sessionStorage` as `cv-listing-draft`. At least three
+  photos is a rule of the site only (`MIN_PHOTOS`). Rial prices are typed in toman and sent ×10. The fields that
+  send an approved listing back to review are listed once in `lib/reviewFields.ts`.
 - **Errors:** every API error code has a message in both languages. A test reads the codes from the backend
   source.
 - **Time:** dates that decide cancelling and reviewing are counted in the listing city's time zone, as the API

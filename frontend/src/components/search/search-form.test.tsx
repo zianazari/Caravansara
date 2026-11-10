@@ -26,7 +26,9 @@ const shiraz = {
 };
 
 describe("CityCombobox (US1/AC1)", () => {
-  beforeEach(() => GET.mockReset());
+  beforeEach(() => {
+    GET.mockReset();
+  });
 
   it("suggests cities with their country in the page's language, and is chosen with the keyboard", async () => {
     GET.mockResolvedValue({ data: [tehran, shiraz] });
@@ -37,7 +39,7 @@ describe("CityCombobox (US1/AC1)", () => {
     expect(await screen.findByRole("option", { name: /تهران/ })).toHaveTextContent("ایران");
     expect(GET).toHaveBeenCalledWith("/api/v1/cities", { params: { query: { q: "ت", limit: 8 } } });
     await userEvent.keyboard("{ArrowDown}{Enter}");
-    expect(onChange).toHaveBeenLastCalledWith({ id: 8, label: "شیراز" });
+    expect(onChange).toHaveBeenLastCalledWith({ id: 8, label: "شیراز", country: "IR" });
     expect(box).toHaveValue("شیراز");
   });
 

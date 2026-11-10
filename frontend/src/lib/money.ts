@@ -57,3 +57,40 @@ export function add(...amounts: string[]): string {
     2,
   );
 }
+
+/** The API's limit for a nightly price or a cleaning fee, in any currency (specs/backend (002)). */
+export const MAX_AMOUNT = "1000000000.00";
+
+const PERSIAN = "۰۱۲۳۴۵۶۷۸۹";
+const ARABIC = "٠١٢٣٤٥٦٧٨٩";
+
+/**
+ * What a host typed into a price field (specs/008-host-pages, research R7): Persian or Arabic digits, the
+ * Persian decimal mark and thousands separators are accepted. Returns a plain decimal string with at most two
+ * decimals, or null when it is not a number.
+ */
+export function parseAmountInput(text: string): string | null {
+  const plain = [...text.trim()]
+    .map((c) => {
+      const p = PERSIAN.indexOf(c);
+      if (p >= 0) return String(p);
+      const a = ARABIC.indexOf(c);
+      if (a >= 0) return String(a);
+      return c === "٫" ? "." : c;
+    })
+    .join("")
+    .replace(/[,٬\s]/g, "");
+  return /^\d+(\.\d{1,2})?$/.test(plain) ? plain : null;
+}
+
+/**
+ * Toman typed by a host to rial for the API, exactly (×10 on whole hundredths), or null over the API's limit.
+ * The site shows rial as toman everywhere (owner decision, 2026-11-08), so the host types toman too.
+ */
+export function tomanToRial(toman: string): string | null {
+  const rial = toHundredths(toman) * 10n;
+  if (rial > toHundredths(MAX_AMOUNT)) return null;
+  return decimal(rial, 2)
+    .replace(/^(\d+)$/, "$1.00")
+    .replace(/^(\d+\.\d)$/, "$10");
+}

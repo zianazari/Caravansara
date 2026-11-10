@@ -24,9 +24,16 @@ const eslintConfig = defineConfig([
     },
   },
   {
-    // The draft holds no secret: listing, dates, guests and the idempotency key (research R13). The session
+    // The drafts hold no secret: listing, dates, guests and the idempotency key (research R13). The session
     // test reads web storage only to prove that nothing was written there (SC-006).
-    files: ["src/lib/bookingDraft.ts", "src/lib/bookingDraft.test.ts", "src/lib/session.test.ts"],
+    // The listing draft is the same kind of thing (specs/008-host-pages, research R2).
+    files: [
+      "src/lib/bookingDraft.ts",
+      "src/lib/bookingDraft.test.ts",
+      "src/lib/listingDraft.ts",
+      "src/lib/listingDraft.test.ts",
+      "src/lib/session.test.ts",
+    ],
     rules: { "no-restricted-properties": "off" },
   },
   {

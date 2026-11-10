@@ -43,7 +43,7 @@ describe("BottomNav (specs/007-caravansara-theme, FR-008)", () => {
     expect(screen.getAllByRole("link")).toHaveLength(3);
   });
 
-  it.each(["/listings/5", "/book/5"])(
+  it.each(["/listings/5", "/book/5", "/host/new"])(
     "is not shown on %s, where the booking bar takes its place (R7)",
     (p) => {
       path = p;

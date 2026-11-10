@@ -29,7 +29,7 @@ const AXE = path.join(__dirname, "..", "node_modules", "axe-core", "axe.min.js")
 const SCREENS = path.join(__dirname, "..", "..", "specs", "007-caravansara-theme", "screens");
 const WIDTHS = [320, 360, 390, 768, 1280];
 
-type World = { guest: User; listingId: number; tripId: number; reviewId: number };
+type World = { guest: User; host: User; listingId: number; tripId: number; reviewId: number };
 let world: World;
 
 test.beforeAll(async ({ request }) => {
@@ -46,19 +46,19 @@ test.beforeAll(async ({ request }) => {
     "UPDATE bookings SET check_in = CURRENT_DATE - 3, check_out = CURRENT_DATE - 1, status = 'completed' WHERE id = $1",
     [stay.id],
   );
-  world = { guest, listingId: listing.id, tripId: trip.id, reviewId: stay.id };
+  world = { guest, host, listingId: listing.id, tripId: trip.id, reviewId: stay.id };
 });
 
-/** The guest's session in the browser, through the site's own login (the refresh cookie is HttpOnly). */
-async function signIn(page: Page) {
+/** A session in the browser, through the site's own login (the refresh cookie is HttpOnly). */
+async function signIn(page: Page, who: User = world.guest) {
   const res = await page.request.post(`${WEB}/session/login`, {
     headers: { origin: WEB },
-    data: { email: world.guest.email, password: PASSWORD },
+    data: { email: who.email, password: PASSWORD },
   });
   expect(res.status(), await res.text()).toBe(200);
 }
 
-type PageCase = { name: string; path: () => string; signedIn?: boolean; draft?: boolean };
+type PageCase = { name: string; path: () => string; signedIn?: boolean; asHost?: boolean; draft?: boolean };
 const PAGES: PageCase[] = [
   { name: "home", path: () => "/" },
   { name: "search", path: () => `/search?city_id=1&check_in=${day(60)}&check_out=${day(63)}&adults=2` },
@@ -71,10 +71,14 @@ const PAGES: PageCase[] = [
   { name: "review", path: () => `/trips/${world.reviewId}/review`, signedIn: true },
   { name: "account", path: () => "/account", signedIn: true },
   { name: "not-found", path: () => "/no-such-page" },
+  // The host pages (specs/008-host-pages, SC-004), as the listing's host.
+  { name: "host", path: () => "/host", signedIn: true, asHost: true },
+  { name: "host-new", path: () => "/host/new?step=1", signedIn: true, asHost: true },
+  { name: "host-photos", path: () => `/host/listings/${world.listingId}?tab=photos`, signedIn: true, asHost: true },
 ];
 
 async function open(page: Page, locale: "fa" | "en", c: PageCase) {
-  if (c.signedIn) await signIn(page);
+  if (c.signedIn) await signIn(page, c.asHost ? world.host : world.guest);
   if (c.draft) {
     const draft = {
       listing_id: world.listingId,

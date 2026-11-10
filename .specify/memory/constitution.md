@@ -1,8 +1,8 @@
 # Caravansara Constitution
 
 Caravansara is a place reservation platform: guests search, hold, pay, stay and review; hosts
-list their places. Every Spec Kit plan is checked against these principles in its
-Constitution Check, before research and again after design.
+list their places. Every change is checked against these principles: in its short plan before
+the code, and in the review of its pull request.
 
 ## Core Principles
 
@@ -127,30 +127,24 @@ Rationale: every component adds setup, monitoring and tests; it must pay for its
 
 ## Development Workflow and Quality Gates
 
-- Every feature follows Spec Kit: `/speckit-specify` → `/speckit-clarify` (when the spec has open
-  questions) → `/speckit-plan` → `/speckit-tasks` → `/speckit-analyze` → `/speckit-implement` →
-  `/speckit-converge`. Small fixes that change no behaviour (typos, docs wording) may skip it.
-- `research.md` MUST check every assumption about data, tools and current behaviour against the
-  real source (the code, a real database or service, the real data file or site) and say how it
-  was checked. Rationale: in features 001 and 002, assumptions taken from memory or from
-  `docs/future-work.md` were wrong (a column name, where an error really happened, a price
-  range), and only checking the source caught them.
-- In `tasks.md`, tasks that edit the same file are grouped together within a phase, so each file
-  is opened and reviewed once and the order of its edits stays visible.
-- `/speckit-converge` MUST report Converged before the pull request is opened; tasks it appends
-  are done first.
-- Acceptance criteria are written as Given/When/Then so each one maps to a test.
-- `spec.md`, `plan.md`, `tasks.md` and checklists are written in Persian, as plain Markdown
-  without direction marks. Template section headings and identifiers (`FR-001`, `SC-001`,
-  `T001`, `[P]`, `[US1]`) stay exactly as in the templates, because `/speckit-analyze` and
-  `/speckit-converge` find requirements and tasks by them. Code, commands, paths, API fields
-  and error codes stay in English. This constitution stays in English, the language of the
-  templates and commands that read it.
-- Each feature is done on its own branch and merged through a pull request with green CI. Its
-  spec folder (`specs/NNN-name/`) is committed in the same pull request. The branch is made by
-  hand and named like the spec folder (`NNN-short-name`); the Spec Kit `git` extension is not
-  installed, because a hand-made branch was enough in features 001 and 002 and the extension
-  adds hooks and a naming scheme to maintain.
+- From feature 009 on, work is not run through Spec Kit (owner decision, 2026-11-10). Its
+  documents cost more to write, read and keep in step than they returned: the decisions were
+  taken by the owner in the conversation, and the defects were found by tests, not by the
+  documents. Features 001 to 008 keep their `specs/` folders as history.
+- Before the code, each feature gets a short plan in the conversation: what changes, which files,
+  and the open decisions, each with its reason. Questions go to the owner only for choices that
+  change scope, security or what users see.
+- Every assumption about data, tools and current behaviour is checked against the real source
+  (the code, a real database or service, the real data file or site) before it is relied on.
+  Rationale: in features 001 and 002, assumptions taken from memory or from
+  `docs/future-work.md` were wrong, and only checking the source caught them.
+- Tests are written before or with the code, as principle IV says; lint, type checks and the
+  end-to-end tests on the running stack pass before the pull request is opened.
+- Each feature is done on its own branch, made by hand and named `NNN-short-name`, and merged
+  through a pull request with green CI.
+- Every new column, table, setting or mechanism gets its reason and its effect written down:
+  in `docs/future-work.md` while planned, then in `docs/backend-design.md` and a short code
+  comment once built.
 - When a feature is done, its decisions move into `docs/backend-design.md` (Persian, the single
   source of truth for architecture) and the matching section leaves `docs/future-work.md`, which
   lists only unstarted work. README and CONTEXT summaries are updated in the same pull request.
@@ -160,13 +154,10 @@ Rationale: every component adds setup, monitoring and tests; it must pay for its
 ## Governance
 
 - This constitution supersedes other practices. Where a plan cannot meet a principle, the plan
-  MUST say so in Complexity Tracking with the reason and the simpler alternative rejected; the
-  owner decides.
-- Amendments are made with `/speckit-constitution` in a pull request, approved by the project
-  owner, and version this file with semantic versioning: MAJOR for removed or redefined
+  MUST say so with the reason and the simpler alternative rejected; the owner decides.
+- Amendments are made in a pull request, approved by the project owner, and version this file with semantic versioning: MAJOR for removed or redefined
   principles, MINOR for added or materially expanded ones, PATCH for wording.
-- Reviews of every pull request check compliance; `/speckit-analyze` checks spec, plan and tasks
-  against it before implementation.
+- Reviews of every pull request check compliance.
 - Day-to-day guidance for agents lives in `CONTEXT.md`.
 
-**Version**: 1.4.0 | **Ratified**: 2026-11-05 | **Last Amended**: 2026-11-10
+**Version**: 2.0.0 | **Ratified**: 2026-11-05 | **Last Amended**: 2026-11-10

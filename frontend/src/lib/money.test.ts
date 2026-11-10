@@ -1,4 +1,12 @@
-import { add, formatMoney, multiply, rialToToman, toHundredths } from "./money";
+import {
+  add,
+  formatMoney,
+  multiply,
+  parseAmountInput,
+  rialToToman,
+  toHundredths,
+  tomanToRial,
+} from "./money";
 
 describe("money", () => {
   it("reads decimal strings exactly", () => {
@@ -37,5 +45,23 @@ describe("money", () => {
     expect(multiply("0.10", 3)).toBe("0.3");
     expect(add(multiply("1000000000.00", 365), "1000000000.00")).toBe("366000000000");
     expect(add("0.10", "0.20")).toBe("0.3");
+  });
+
+  // specs/008-host-pages, research R7: a host types toman; the API stores rial.
+  it("reads what a host types, with Persian digits and separators", () => {
+    expect(parseAmountInput("۲٬۵۰۰٬۰۰۰")).toBe("2500000");
+    expect(parseAmountInput("2,500,000.5")).toBe("2500000.5");
+    expect(parseAmountInput(" ۱۲۰٫۵ ")).toBe("120.5");
+    expect(parseAmountInput("")).toBeNull();
+    expect(parseAmountInput("12a")).toBeNull();
+    expect(parseAmountInput("1.234")).toBeNull(); // more than two decimals
+  });
+
+  it("turns toman into rial exactly, and keeps to the API's limit", () => {
+    expect(tomanToRial("2500000")).toBe("25000000.00");
+    expect(tomanToRial("2500000.5")).toBe("25000005.00");
+    expect(tomanToRial("0.05")).toBe("0.50");
+    expect(tomanToRial("100000000")).toBe("1000000000.00");
+    expect(tomanToRial("100000000.01")).toBeNull(); // over 1,000,000,000 rial
   });
 });

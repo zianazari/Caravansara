@@ -1,8 +1,10 @@
 "use client";
 
+import { useQuery } from "@tanstack/react-query";
 import { MenuIcon } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { Suspense } from "react";
+import { api } from "@/api/client";
 import { UserAvatar } from "@/components/account/UserAvatar";
 import { Logo } from "@/components/brand/Logo";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
@@ -11,15 +13,38 @@ import { Link, usePathname } from "@/i18n/navigation";
 import { LocaleSwitch } from "./LocaleSwitch";
 
 /**
- * Caravansara theme (specs/007-caravansara-theme, FR-004): the arch logo, the other language, and a round
- * account menu (menu icon and avatar) as on the booking sites people know. No "become a host" link until the
- * host pages exist. On a phone the bottom bar carries search, trips and profile, so the header stays small.
+ * Caravansara theme (specs/007-caravansara-theme, FR-004): the arch logo, the other language, the host link
+ * (specs/008-host-pages, R11) and a round account menu (menu icon and avatar) as on the booking sites people
+ * know. On a phone the bottom bar carries search, trips and profile, so the header stays small and the host
+ * link moves into the account menu.
  */
+/**
+ * "Become a host" or "My listings" (FR-001, research R11): a signed-in user with a listing goes to their
+ * listings; anyone else to the new-listing form, through the login page when not signed in. One small request
+ * (GET /me/listings?limit=1), kept five minutes, and only for a signed-in user.
+ */
+export function useHostLink(): { href: string; label: "becomeHost" | "myListings" } | null {
+  const state = useAuthState();
+  const listings = useQuery({
+    queryKey: ["me", "listings", "any"],
+    enabled: state === "signedIn",
+    staleTime: 5 * 60 * 1000,
+    queryFn: async () =>
+      (await api.GET("/api/v1/me/listings", { params: { query: { limit: 1 } } })).data ?? null,
+  });
+  if (state === "signedOut") return { href: "/login?returnTo=/host/new", label: "becomeHost" };
+  if (state !== "signedIn" || listings.isPending) return null;
+  return (listings.data?.total ?? 0) > 0
+    ? { href: "/host", label: "myListings" }
+    : { href: "/host/new", label: "becomeHost" };
+}
+
 export function Header() {
   const t = useTranslations();
   const state = useAuthState();
   const me = useMe();
   const pathname = usePathname();
+  const host = useHostLink();
   const item = "block rounded-lg px-3 py-2 hover:bg-muted";
   return (
     <header className="sticky top-0 z-40 border-b bg-background/95 backdrop-blur">
@@ -41,6 +66,14 @@ export function Header() {
             <LocaleSwitch />
           </Suspense>
         </span>
+        {host ? (
+          <Link
+            href={host.href}
+            className="hidden rounded-full px-3 py-2 text-sm font-semibold hover:bg-muted md:block"
+          >
+            {t(`nav.${host.label}`)}
+          </Link>
+        ) : null}
         {state === "signedOut" ? (
           <Link
             href={{ pathname: "/login", query: { returnTo: pathname } }}
@@ -62,6 +95,11 @@ export function Header() {
               )}
             </PopoverTrigger>
             <PopoverContent align="end" className="grid w-56 gap-1 p-2">
+              {host ? (
+                <Link href={host.href} className={`${item} md:hidden`}>
+                  {t(`nav.${host.label}`)}
+                </Link>
+              ) : null}
               <Link href="/trips" className={item}>
                 {t("nav.trips")}
               </Link>
