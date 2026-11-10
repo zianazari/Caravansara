@@ -1,10 +1,11 @@
 "use client";
 
 import { useQuery } from "@tanstack/react-query";
-import { useTranslations } from "next-intl";
+import { useLocale, useTranslations } from "next-intl";
 import { useEffect, useRef, useState } from "react";
 import { api } from "@/api/client";
-import { ResultCard } from "@/components/search/ResultCard";
+import { ChevronLeftIcon, ChevronRightIcon, ArrowLeftIcon } from "lucide-react";
+import { HomeCard } from "./HomeCard";
 import { Link } from "@/i18n/navigation";
 import type { CategoryFilter } from "@/lib/categories";
 import { cityName } from "@/lib/names";
@@ -31,7 +32,9 @@ export function CityRow({
   filter?: CategoryFilter;
 }) {
   const t = useTranslations();
+  const locale = useLocale();
   const ref = useRef<HTMLElement>(null);
+  const track = useRef<HTMLDivElement>(null);
   const [near, setNear] = useState(false);
 
   useEffect(() => {
@@ -64,7 +67,7 @@ export function CityRow({
     staleTime: FIVE_MINUTES,
     queryFn: async () => {
       const { data, error } = await api.GET("/api/v1/search/listings", {
-        params: { query: { city_id: cityId!, sort: "rating", limit: 8, ...filter } },
+        params: { query: { city_id: cityId!, sort: "rating", limit: 12, ...filter } },
       });
       if (!data) {
         console.error("home city row failed", city, error);
@@ -87,24 +90,62 @@ export function CityRow({
   if (category) all.set("category", category);
   const name = cityName(t, city);
 
+  /** One screen of cards back or forward; in Persian, forward is to the left. */
+  function scroll(forward: boolean) {
+    const el = track.current;
+    if (!el) return;
+    const sign = (locale === "fa" ? -1 : 1) * (forward ? 1 : -1);
+    el.scrollBy({ left: sign * el.clientWidth * 0.9, behavior: "smooth" });
+  }
+  const Back = locale === "fa" ? ChevronRightIcon : ChevronLeftIcon;
+  const Next = locale === "fa" ? ChevronLeftIcon : ChevronRightIcon;
+
   return (
     <section ref={ref} aria-labelledby={`row-${city}`} className="grid min-w-0 gap-4 pb-10 last:pb-0">
-      <div className="flex items-baseline justify-between gap-4">
-        <h2 id={`row-${city}`} className="text-xl font-bold">
-          {t("home.popularIn", { city: name })}
+      <div className="flex items-center justify-between gap-4">
+        <h2 id={`row-${city}`} className="flex items-center gap-2 text-xl font-bold">
+          <Link
+            href={`/search?${all.toString()}`}
+            className="flex items-center gap-2 rounded-lg hover:underline"
+          >
+            {t("home.popularIn", { city: name })}
+            <span className="sr-only">{` (${t("home.showAll")})`}</span>
+            <span className="grid size-8 place-items-center rounded-full bg-muted" aria-hidden>
+              <ArrowLeftIcon className="size-4 ltr:rotate-180" />
+            </span>
+          </Link>
         </h2>
-        <Link
-          href={`/search?${all.toString()}`}
-          className="shrink-0 text-sm font-bold text-primary hover:underline"
-        >
-          {t("home.showAll")}
-        </Link>
+        {/* Wide screens: arrows move the row a screen at a time. On a phone the row is swiped. */}
+        <div className="hidden gap-2 md:flex">
+          <button
+            type="button"
+            onClick={() => scroll(false)}
+            aria-label={t("home.previous", { city: name })}
+            className="grid size-8 place-items-center rounded-full border bg-card shadow-sm hover:shadow-md"
+          >
+            <Back className="size-4" aria-hidden />
+          </button>
+          <button
+            type="button"
+            onClick={() => scroll(true)}
+            aria-label={t("home.next", { city: name })}
+            className="grid size-8 place-items-center rounded-full border bg-card shadow-sm hover:shadow-md"
+          >
+            <Next className="size-4" aria-hidden />
+          </button>
+        </div>
       </div>
-      {/* A phone scrolls the row sideways, card by card; a wide screen shows a grid of four. */}
-      <div className="-mx-4 flex snap-x snap-mandatory scroll-px-4 gap-4 overflow-x-auto px-4 pb-2 md:mx-0 md:grid md:grid-cols-3 md:overflow-visible md:px-0 lg:grid-cols-4">
+      {/* One row that scrolls sideways, card by card: about 2 on a phone and 7 on a wide screen (feature 017). */}
+      <div
+        ref={track}
+        className="-mx-4 flex snap-x snap-mandatory scroll-px-4 gap-4 overflow-x-auto px-4 pb-2 [scrollbar-width:none] md:mx-0 md:px-0"
+      >
         {items.map((result) => (
-          <div key={result.id} className="w-[78%] shrink-0 snap-start sm:w-[45%] md:w-auto">
-            <ResultCard result={result} stay="" />
+          <div
+            key={result.id}
+            className="w-[44%] shrink-0 snap-start sm:w-[30%] md:w-[calc((100%-3*1rem)/4)] lg:w-[calc((100%-4*1rem)/5)] xl:w-[calc((100%-5*1rem)/6)] 2xl:w-[calc((100%-6*1rem)/7)]"
+          >
+            <HomeCard result={result} />
           </div>
         ))}
       </div>

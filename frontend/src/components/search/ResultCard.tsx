@@ -17,12 +17,11 @@ type Result = components["schemas"]["SearchResult"];
  * One search result (FR-017): cover photo, title, city, rating, price per night and, with dates, the total.
  * A listing without a photo or without reviews gets a placeholder, never a broken image or a zero rating.
  *
- * Caravansara theme (specs/007-caravansara-theme, FR-006, contracts/ui.md): the photo sits in the lower arch,
- * with a "guest favourite" or "new" badge on it; then the city and country with the rating, the title, the
+ * Caravansara theme (specs/007-caravansara-theme, FR-006, contracts/ui.md): the photo, a plain rounded rectangle
+ * since feature 017, with a "guest favourite" or "new" badge in its top corner; then the city and country with the rating, the title, the
  * place type and, for a search with dates, the dates; the price per night and the total last, as on the
  * booking sites people know. The whole card is one link; the wishlist heart (feature 012) is a separate button
- * laid over the photo's lower corner, not inside the link, because a button inside a link is not allowed and
- * the arch hides the top corners.
+ * on the photo's other top corner, not inside the link, because a button inside a link is not allowed.
  */
 export function ResultCard({ result, nights, stay }: { result: Result; nights?: number; stay: string }) {
   const t = useTranslations();
@@ -51,7 +50,7 @@ export function ResultCard({ result, nights, stay }: { result: Result; nights?: 
           className="mb-2 aspect-[1/0.95] md:aspect-[1/1.04]"
         >
           {badge ? (
-            <span className="absolute start-3 bottom-3 rounded-full bg-background px-3 py-1 text-xs font-bold text-foreground shadow-sm">
+            <span className="absolute start-3 top-3 max-w-[calc(100%-4rem)] truncate rounded-full bg-background px-3 py-1 text-xs font-bold text-foreground shadow-sm">
               {t(badge === "new" ? "badge.new" : "badge.guestFavourite")}
             </span>
           ) : null}
@@ -95,14 +94,7 @@ export function ResultCard({ result, nights, stay }: { result: Result; nights?: 
           </p>
         ) : null}
       </Link>
-      {/* The same shape as the photo, laid over it, so the heart sits on the photo's lower corner. */}
-      <div className="pointer-events-none absolute inset-x-0 top-0 aspect-[1/0.95] md:aspect-[1/1.04]">
-        <HeartButton
-          listingId={result.id}
-          title={result.title}
-          className="pointer-events-auto absolute end-3 bottom-3"
-        />
-      </div>
+      <HeartButton listingId={result.id} title={result.title} className="absolute end-3 top-3" />
     </article>
   );
 }

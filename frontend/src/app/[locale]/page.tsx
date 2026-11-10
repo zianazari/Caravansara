@@ -15,7 +15,7 @@ export default async function HomePage({ params }: { params: Promise<{ locale: s
   const { locale } = await params;
   setRequestLocale(locale);
   return (
-    <div className="grid gap-10">
+    <div className="grid gap-10" data-wide>
       <div>
         <Hero />
         <SearchForm

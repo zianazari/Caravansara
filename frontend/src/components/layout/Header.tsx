@@ -63,7 +63,8 @@ function SiteHeader() {
       </a>
       <nav
         aria-label={t("nav.mainMenu")}
-        className="mx-auto flex max-w-7xl items-center gap-3 px-4 py-3 md:px-6"
+        // The home page is wider since feature 017; the header lines up with its rows.
+        className={`mx-auto flex items-center gap-3 px-4 py-3 md:px-6 ${pathname === "/" ? "max-w-[1920px] lg:px-10" : "max-w-7xl"}`}
       >
         <Link href="/" className="me-auto rounded-lg" aria-label={t("common.siteName")}>
           <Logo />

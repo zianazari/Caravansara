@@ -64,8 +64,9 @@ src/
   `src/no-raw-colors.test.ts` refuses a colour anywhere else, and `src/theme.test.ts` checks every text and
   background pair against WCAG AA. Buttons and links use the darker copper `#9a5418`, because white on the
   diagrams' copper is below AA.
-- **The arch:** the classes `arch` (tall) and `arch-soft` (lower, for photos) are CSS masks; `ArchFrame` puts a
-  photo, or a warm placeholder, inside one.
+- **The arch:** the class `arch` (the tall doorway) is a CSS mask, for decoration only. Listing photos are plain
+  rounded rectangles since feature 017; `ArchFrame` puts a photo, or a warm placeholder, in one. A page that marks
+  itself `data-wide` (the home page) gets up to 1920 px; the others stay at 1280 px.
 
 - **Tokens:** a token is never kept where page scripts can read it after a reload. The access token is only in
   memory. The refresh token is only in the `cv_refresh` cookie, which page scripts cannot read. ESLint refuses

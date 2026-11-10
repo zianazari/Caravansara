@@ -33,6 +33,9 @@ M = {
   "anyWhereAnyWhen": ("هر شهر · هر زمان · مهمان‌ها", "Any city · Any week · Guests"),
   "popularIn": ("محبوب در {city}", "Popular in {city}"),
   "showAll": ("نمایش همه", "Show all"),
+  "typeInCity": ("{type} در {city}", "{type} in {city}"),
+  "previous": ("آگهی‌های قبلی در {city}", "Previous places in {city}"),
+  "next": ("آگهی‌های بعدی در {city}", "Next places in {city}"),
  },
  "nav": {
   "skipToContent": ("رفتن به محتوای اصلی", "Skip to main content"),

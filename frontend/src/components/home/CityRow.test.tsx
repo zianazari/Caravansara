@@ -75,22 +75,22 @@ describe("CityRow (specs/007-caravansara-theme, FR-013)", () => {
     renderIn("fa", <CityRow city="Tehran" />);
     expect(GET).not.toHaveBeenCalled();
     visible!();
-    await screen.findByRole("heading", { name: "محبوب در تهران" });
+    await screen.findByRole("heading", { name: /محبوب در تهران/ });
   });
 
   it("shows the city's best places, top rated first, with a link to all of them", async () => {
     respond([{ ...tehran, id: 70, name: "Tehranpars" }, tehran], [result(1), result(2)]);
     renderIn("fa", <CityRow city="Tehran" />);
     visible!();
-    expect(await screen.findByRole("heading", { name: "محبوب در تهران" })).toBeInTheDocument();
+    expect(await screen.findByRole("heading", { name: /محبوب در تهران/ })).toBeInTheDocument();
     expect(screen.getAllByRole("article")).toHaveLength(2);
-    expect(screen.getByRole("link", { name: "نمایش همه" })).toHaveAttribute(
+    expect(screen.getByRole("link", { name: /نمایش همه/ })).toHaveAttribute(
       "href",
       "/search?city_id=7&adults=1",
     );
     // The exact city name, not the first suggestion (Tehranpars).
     expect(GET).toHaveBeenCalledWith("/api/v1/search/listings", {
-      params: { query: { city_id: 7, sort: "rating", limit: 8 } },
+      params: { query: { city_id: 7, sort: "rating", limit: 12 } },
     });
   });
 
@@ -98,11 +98,11 @@ describe("CityRow (specs/007-caravansara-theme, FR-013)", () => {
     respond([tehran], [result(1)]);
     renderIn("fa", <CityRow city="Tehran" category="sauna" filter={{ amenity_ids: [26] }} />);
     visible!();
-    await screen.findByRole("heading", { name: "محبوب در تهران" });
+    await screen.findByRole("heading", { name: /محبوب در تهران/ });
     expect(GET).toHaveBeenCalledWith("/api/v1/search/listings", {
-      params: { query: { city_id: 7, sort: "rating", limit: 8, amenity_ids: [26] } },
+      params: { query: { city_id: 7, sort: "rating", limit: 12, amenity_ids: [26] } },
     });
-    expect(screen.getByRole("link", { name: "نمایش همه" })).toHaveAttribute(
+    expect(screen.getByRole("link", { name: /نمایش همه/ })).toHaveAttribute(
       "href",
       "/search?city_id=7&adults=1&amenity_ids=26&category=sauna",
     );
