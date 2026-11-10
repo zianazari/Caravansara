@@ -297,7 +297,7 @@
   },
   "photos": {
     "choose": "Choose photos",
-    "hint": "JPEG, PNG or WebP, each up to 10 MB. At least 5 photos.",
+    "hint": "JPEG, PNG, WebP or AVIF, each up to 10 MB. At least 5 photos.",
     "count": "{count, plural, =0 {No photos yet} one {# photo} other {# photos}}",
     "photo": "Photo {index, number}",
     "cover": "Cover",
@@ -316,7 +316,7 @@
     "minNeeded": "At least 5 photos are needed.",
     "cannotRemove": "You cannot remove it: a listing needs at least 5 photos. Add a new photo first.",
     "too_large": "Each photo can be at most 10 MB.",
-    "wrong_type": "Only JPEG, PNG or WebP photos are accepted.",
+    "wrong_type": "Only JPEG, PNG, WebP or AVIF photos are accepted.",
     "not_image": "This file is not a picture.",
     "rejectedFile": "{name}: {reason}",
     "reorderHint": "Drag the photos, or move them with the buttons. The first photo is the cover."

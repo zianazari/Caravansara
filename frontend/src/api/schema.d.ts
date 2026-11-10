@@ -1846,7 +1846,7 @@ export interface components {
        * Content Type
        * @enum {string}
        */
-      content_type: "image/jpeg" | "image/png" | "image/webp";
+      content_type: "image/jpeg" | "image/png" | "image/webp" | "image/avif";
     };
     /** UploadUrlOut */
     UploadUrlOut: {

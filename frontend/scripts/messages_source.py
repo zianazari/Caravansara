@@ -306,7 +306,7 @@ M = {
  },
  "photos": {
   "choose": ("انتخاب عکس‌ها", "Choose photos"),
-  "hint": ("JPEG، PNG یا WebP، هر کدام تا ۱۰ مگابایت. دست‌کم ۵ عکس.", "JPEG, PNG or WebP, each up to 10 MB. At least 5 photos."),
+  "hint": ("JPEG، PNG، WebP یا AVIF، هر کدام تا ۱۰ مگابایت. دست‌کم ۵ عکس.", "JPEG, PNG, WebP or AVIF, each up to 10 MB. At least 5 photos."),
   "count": ("{count, plural, =0 {هنوز عکسی نیست} other {# عکس}}", "{count, plural, =0 {No photos yet} one {# photo} other {# photos}}"),
   "photo": ("عکس {index, number}", "Photo {index, number}"),
   "cover": ("کاور", "Cover"),
@@ -325,7 +325,7 @@ M = {
   "minNeeded": ("دست‌کم ۵ عکس لازم است.", "At least 5 photos are needed."),
   "cannotRemove": ("حذف ممکن نیست: آگهی دست‌کم ۵ عکس لازم دارد. اول عکس تازه بگذارید.", "You cannot remove it: a listing needs at least 5 photos. Add a new photo first."),
   "too_large": ("هر عکس حداکثر ۱۰ مگابایت می‌تواند باشد.", "Each photo can be at most 10 MB."),
-  "wrong_type": ("فقط عکس JPEG، PNG یا WebP پذیرفته می‌شود.", "Only JPEG, PNG or WebP photos are accepted."),
+  "wrong_type": ("فقط عکس JPEG، PNG، WebP یا AVIF پذیرفته می‌شود.", "Only JPEG, PNG, WebP or AVIF photos are accepted."),
   "not_image": ("این فایل عکس نیست.", "This file is not a picture."),
   "rejectedFile": ("{name}: {reason}", "{name}: {reason}"),
   "reorderHint": ("عکس‌ها را بکشید، یا با دکمه‌ها جابه‌جا کنید. نخستین عکس کاور است.", "Drag the photos, or move them with the buttons. The first photo is the cover."),
