@@ -206,7 +206,10 @@ async def test_a_reused_admin_refresh_token_ends_every_session(client: AsyncClie
 
 async def test_an_ended_admin_session_cannot_be_refreshed(client: AsyncClient, db: AsyncEngine) -> None:
     tokens = await _admin_tokens(client, db)
-    await sql(db, "UPDATE refresh_tokens SET created_at = now() - interval '2 hours', expires_at = now() - interval '1 second'")
+    await sql(
+        db,
+        "UPDATE refresh_tokens SET created_at = now() - interval '2 hours', expires_at = now() - interval '1 second'",
+    )
     r = await client.post("/admin/auth/refresh", json={"refresh_token": tokens["refresh_token"]})
     assert r.status_code == 401
 
