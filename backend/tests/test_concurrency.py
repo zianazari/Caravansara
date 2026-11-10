@@ -240,16 +240,16 @@ async def test_an_edit_racing_an_approval_never_publishes_an_unseen_version(
         assert title == f"Unseen {round_}"
 
 
-async def test_two_removals_at_once_never_leave_fewer_than_3_photos(
+async def test_two_removals_at_once_never_leave_fewer_than_5_photos(
     client: AsyncClient, db: AsyncEngine, factory: Factory
 ) -> None:
-    """Feature 010: the listing row is locked for each removal, so of two at once on 4 photos one is refused."""
+    """Features 010, 021: the listing row is locked for each removal, so of two at once on 6 photos one is refused."""
     host = await factory.user("host")
-    listing = await factory.listing(host, approved=False, photos=4)
+    listing = await factory.listing(host, approved=False, photos=6)
     lid = int(listing["id"])
     ids = [row[0] for row in await sql(db, "SELECT id FROM listing_photos WHERE listing_id = :l", l=lid)]
     results = await asyncio.gather(
         *(client.delete(f"/listings/{lid}/photos/{photo_id}", headers=host.auth) for photo_id in ids[:2])
     )
     assert sorted(r.status_code for r in results) == [204, 409]
-    assert len(await sql(db, "SELECT id FROM listing_photos WHERE listing_id = :l", l=lid)) == 3
+    assert len(await sql(db, "SELECT id FROM listing_photos WHERE listing_id = :l", l=lid)) == 5

@@ -52,11 +52,11 @@ class Factory:
     async def listing(self, host: User | None = None, *, photos: int | None = None, **overrides: Any) -> dict[str, Any]:
         """Approved by default: most tests need a public listing (tests/helpers.py, create_listing).
 
-        A listing left waiting (``approved=False``) gets 3 photo rows by default, the least an admin can
-        approve (feature 010), so review tests can approve it through the API. ``photos=n`` sets the number.
+        A listing left waiting (``approved=False``) gets 5 photo rows by default, the least an admin can
+        approve (features 010, 021), so review tests can approve it through the API. ``photos=n`` sets the number.
         The rows point at no stored file; tests that read the picture upload one (test_listings.py)."""
         listing = await create_listing(self.client, host or await self.user("host"), **overrides)
-        count = photos if photos is not None else (0 if overrides.get("approved", True) else 3)
+        count = photos if photos is not None else (0 if overrides.get("approved", True) else 5)
         for index in range(count):
             await sql(
                 self.engine,

@@ -142,18 +142,19 @@ describe("PhotoManager (specs/008-host-pages, US2)", () => {
     );
   });
 
-  it("does not remove a photo when that would leave fewer than 3 (Q1)", () => {
-    setup();
+  it("does not remove a photo when that would leave fewer than 5 (Q1, feature 021)", () => {
+    setup("pending", [photo(1, 0), photo(2, 1), photo(3, 2), photo(4, 3), photo(5, 4)]);
     const remove = within(screen.getByRole("group", { name: "عکس ۱" })).getByRole("button", {
       name: "حذف عکس",
     });
     expect(remove).toBeDisabled();
-    expect(screen.getByText(/دست‌کم ۳ عکس لازم دارد/)).toBeInTheDocument();
+    expect(screen.getByText(/دست‌کم ۵ عکس لازم دارد/)).toBeInTheDocument();
   });
 
-  it("removes one of four after asking", async () => {
+  it("removes one of six after asking", async () => {
     DELETE.mockResolvedValue({ data: undefined, response: new Response(null, { status: 204 }) });
-    const onChange = setup("pending", [photo(1, 0), photo(2, 1), photo(3, 2), photo(4, 3)]);
+    const six = [photo(1, 0), photo(2, 1), photo(3, 2), photo(4, 3), photo(5, 4), photo(6, 5)];
+    const onChange = setup("pending", six);
     await userEvent.click(
       within(screen.getByRole("group", { name: "عکس ۴" })).getByRole("button", { name: "حذف عکس" }),
     );

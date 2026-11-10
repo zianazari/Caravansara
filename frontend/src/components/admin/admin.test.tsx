@@ -75,7 +75,7 @@ const listing = () => ({
   review_count: 0,
   is_active: true,
   host,
-  photos: [1, 2, 3].map((id) => ({
+  photos: [1, 2, 3, 4, 5].map((id) => ({
     id,
     url: `http://m/${id}.jpg`,
     storage_key: "k",
@@ -182,11 +182,11 @@ describe("admin panel (feature 009)", () => {
     expect(push).toHaveBeenCalledTimes(1);
   });
 
-  it("cannot approve a listing with fewer than 3 photos, and says why (feature 010)", async () => {
-    GET.mockResolvedValue(ok({ ...listing(), photos: listing().photos.slice(0, 2) }));
+  it("cannot approve a listing with fewer than 5 photos, and says why (features 010, 021)", async () => {
+    GET.mockResolvedValue(ok({ ...listing(), photos: listing().photos.slice(0, 4) }));
     renderIn("fa", <AdminReview id={4} loadMap={noMap} />);
     expect(await screen.findByRole("button", { name: "تأیید و انتشار" })).toBeDisabled();
-    expect(screen.getByText(/کمتر از ۳ عکس دارد/)).toBeInTheDocument();
+    expect(screen.getByText(/کمتر از ۵ عکس دارد/)).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "رد" })).toBeEnabled();
   });
 

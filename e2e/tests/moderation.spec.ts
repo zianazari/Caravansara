@@ -51,7 +51,7 @@ test.describe("Listing review", () => {
 
     const bare = await (await request.get(`${API}/admin/listings/${listing.id}`, { headers: admin })).json();
     expect(bare.private_location).toMatchObject({ address: "Herengracht 1, Amsterdam" });
-    // Fewer than 3 photos cannot be approved (feature 010).
+    // Fewer than 5 photos cannot be approved (features 010, 021).
     await expectError(
       await request.post(`${API}/admin/listings/${listing.id}/approve`, {
         headers: admin,
@@ -60,7 +60,7 @@ test.describe("Listing review", () => {
       409,
       "too_few_photos",
     );
-    for (const caption of ["Yard", "Room", "Kitchen"]) await addPhoto(request, host, listing.id, caption, { approved: false });
+    for (const caption of ["Yard", "Room", "Kitchen", "Bath", "Hall"]) await addPhoto(request, host, listing.id, caption, { approved: false });
     const detail = await (await request.get(`${API}/admin/listings/${listing.id}`, { headers: admin })).json();
     const approved = await request.post(`${API}/admin/listings/${listing.id}/approve`, {
       headers: admin,

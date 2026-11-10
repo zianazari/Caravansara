@@ -137,9 +137,9 @@ test.describe("Listing photos", () => {
     expect((await file.body()).length).toBe(samplePhoto().length);
 
     const detail = await (await request.get(`${API}/listings/${listing.id}`)).json();
-    // createListing gave it the 3 photos an admin needs (feature 010); the new one comes last.
+    // createListing gave it the 5 photos an admin needs (features 010, 021); the new one comes last.
     expect(detail.photos.map((p: { id: number }) => p.id).at(-1)).toBe(photo.id);
-    expect(detail.photos).toHaveLength(4);
+    expect(detail.photos).toHaveLength(6);
   });
 
   test("POST /photos/upload-url rejects other content types and non-hosts", async ({ request }) => {
@@ -228,7 +228,7 @@ test.describe("Listing photos", () => {
     );
   });
 
-  test("DELETE /photos/{id} removes a photo, but never one of the last 3 (feature 010)", async ({ request }) => {
+  test("DELETE /photos/{id} removes a photo, but never one of the last 5 (features 010, 021)", async ({ request }) => {
     const host = await register(request, "host");
     const other = await register(request, "other");
     const listing = await createListing(request, host);
@@ -237,7 +237,7 @@ test.describe("Listing photos", () => {
     await expectError(await request.delete(`${API}/listings/${listing.id}/photos/${photo.id}`, { headers: auth(other) }), 403);
     expect((await request.delete(`${API}/listings/${listing.id}/photos/${photo.id}`, { headers: auth(host) })).status()).toBe(204);
     const detail = await (await request.get(`${API}/listings/${listing.id}`)).json();
-    expect(detail.photos).toHaveLength(3);
+    expect(detail.photos).toHaveLength(5);
     expect(detail.photos.map((p: { id: number }) => p.id)).not.toContain(photo.id);
     await expectError(await request.delete(`${API}/listings/${listing.id}/photos/${photo.id}`, { headers: auth(host) }), 404);
     await expectError(

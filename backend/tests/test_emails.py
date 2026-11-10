@@ -66,7 +66,7 @@ async def test_a_rial_listing_gets_its_email_in_persian_only(
 
 async def test_a_refused_decision_writes_no_email(client: AsyncClient, db: AsyncEngine, factory: Factory) -> None:
     admin = await factory.admin()
-    listing = await factory.listing(approved=False, photos=2)  # too few photos: 409
+    listing = await factory.listing(approved=False, photos=4)  # too few photos: 409
     detail = (await client.get(f"/admin/listings/{listing['id']}", headers=admin.auth)).json()
     r = await client.post(
         f"/admin/listings/{listing['id']}/approve",

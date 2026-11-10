@@ -29,7 +29,8 @@ describe("Gallery", () => {
     expect(screen.getByText("عکس ۱ از ۳")).toBeInTheDocument();
     await userEvent.click(screen.getByRole("button", { name: "عکس بعدی" }));
     expect(screen.getByText("Kitchen")).toBeInTheDocument();
-    fireEvent.keyDown(screen.getByRole("region", { name: "عکس‌ها" }), { key: "ArrowLeft" }); // forward in RTL
+    // The phone carousel comes first; the mosaic is hidden there by CSS, which jsdom does not apply.
+    fireEvent.keyDown(screen.getAllByRole("region", { name: "عکس‌ها" })[0]!, { key: "ArrowLeft" }); // forward in RTL
     expect(screen.getByRole("img")).toHaveAttribute("src", "http://m/3.jpg");
     await userEvent.click(screen.getByRole("button", { name: "عکس بعدی" }));
     expect(screen.getByRole("img")).toHaveAttribute("src", "http://m/1.jpg");
@@ -79,5 +80,31 @@ describe("Gallery", () => {
     fireEvent.pointerDown(figure, { clientX: 200, pointerId: 1 });
     fireEvent.pointerUp(figure, { clientX: 100, pointerId: 1 });
     expect(screen.getByRole("img")).toHaveAttribute("src", "http://m/2.jpg");
+  });
+});
+
+describe("Gallery mosaic (feature 021)", () => {
+  const five = [1, 2, 3, 4, 5, 6].map((id) => photo(id, id - 1, id === 2 ? "Kitchen" : null));
+
+  it("shows the cover large and the next four, and opens all photos at the one clicked", async () => {
+    renderIn("en", <Gallery title="Flat" photos={five} />);
+    const tiles = screen.getAllByRole("button", { name: /^Photo \d of 6: / });
+    expect(tiles).toHaveLength(5);
+    expect(tiles[0]!.parentElement).toHaveClass("col-span-2", "row-span-2");
+    await userEvent.click(screen.getByRole("button", { name: "Photo 2 of 6: Kitchen" }));
+    const dialog = await screen.findByRole("dialog", { name: "6 photos" });
+    expect(dialog.querySelectorAll("img")).toHaveLength(6);
+  });
+
+  it("has a show-all button", async () => {
+    renderIn("fa", <Gallery title="Flat" photos={five} />);
+    await userEvent.click(screen.getByRole("button", { name: "نمایش همه‌ی عکس‌ها" }));
+    expect(await screen.findByRole("dialog")).toBeInTheDocument();
+  });
+
+  it("fills the empty tiles of an older listing with the sample picture", () => {
+    const { container } = renderIn("fa", <Gallery title="Flat" photos={five.slice(0, 3)} />);
+    const mosaic = container.querySelector("section.hidden")!;
+    expect(mosaic.querySelectorAll("[data-default-photo]")).toHaveLength(2);
   });
 });

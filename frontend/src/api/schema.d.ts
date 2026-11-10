@@ -386,7 +386,7 @@ export interface paths {
     post?: never;
     /**
      * Delete a photo
-     * @description A listing keeps at least 3 photos: removing one of the last 3 is 409 too_few_photos.
+     * @description A listing keeps at least 5 photos: removing one of the last 5 is 409 too_few_photos.
      */
     delete: operations["delete_photo_api_v1_listings__listing_id__photos__photo_id__delete"];
     options?: never;
@@ -707,7 +707,7 @@ export interface paths {
     put?: never;
     /**
      * Approve a listing
-     * @description Makes a pending listing public (if the host keeps it active). `409 listing_not_pending`: it is no longer pending, e.g. another admin decided first. `409 listing_changed`: the host edited it after you opened it; open it again. `409 too_few_photos`: it has fewer than 3 photos.
+     * @description Makes a pending listing public (if the host keeps it active). `409 listing_not_pending`: it is no longer pending, e.g. another admin decided first. `409 listing_changed`: the host edited it after you opened it; open it again. `409 too_few_photos`: it has fewer than 5 photos.
      */
     post: operations["approve_api_v1_admin_listings__listing_id__approve_post"];
     delete?: never;
@@ -1480,7 +1480,7 @@ export interface components {
       cover_url: string | null;
       /**
        * Photo Count
-       * @description How many photos it has; fewer than 3 cannot be approved (feature 015, for 'photos not complete').
+       * @description How many photos it has; fewer than 5 cannot be approved (for 'photos not complete').
        * @default 0
        */
       photo_count: number;

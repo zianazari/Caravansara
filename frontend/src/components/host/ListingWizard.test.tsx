@@ -90,11 +90,14 @@ function open(step: number, draft?: object) {
   return renderIn("fa", <ListingWizard loadMap={() => Promise.reject(new Error("no map in tests"))} />);
 }
 
-async function threePhotosAndSend() {
+/** Five photos, the least a listing needs since feature 021. */
+async function fivePhotosAndSend() {
   await userEvent.upload(screen.getByLabelText("انتخاب عکس‌ها"), [
     jpeg("a.jpg"),
     jpeg("b.jpg"),
     jpeg("c.jpg"),
+    jpeg("d.jpg"),
+    jpeg("e.jpg"),
   ]);
   await userEvent.click(await screen.findByRole("button", { name: "ارسال برای بازبینی" }));
 }
@@ -168,11 +171,16 @@ describe("ListingWizard (specs/008-host-pages, US1)", () => {
     expect(screen.getByText("گام ۲ از ۸")).toBeInTheDocument();
   });
 
-  it("cannot send with fewer than three photos (Q1)", async () => {
+  it("cannot send with fewer than five photos (Q1, feature 021)", async () => {
     open(8, full);
     expect(screen.getByRole("button", { name: "ارسال برای بازبینی" })).toBeDisabled();
-    expect(screen.getByText("دست‌کم ۳ عکس لازم است.")).toBeInTheDocument();
-    await userEvent.upload(screen.getByLabelText("انتخاب عکس‌ها"), [jpeg("a.jpg"), jpeg("b.jpg")]);
+    expect(screen.getByText("دست‌کم ۵ عکس لازم است.")).toBeInTheDocument();
+    await userEvent.upload(screen.getByLabelText("انتخاب عکس‌ها"), [
+      jpeg("a.jpg"),
+      jpeg("b.jpg"),
+      jpeg("c.jpg"),
+      jpeg("d.jpg"),
+    ]);
     expect(screen.getByRole("button", { name: "ارسال برای بازبینی" })).toBeDisabled();
   });
 
@@ -182,7 +190,7 @@ describe("ListingWizard (specs/008-host-pages, US1)", () => {
     let next = 10;
     uploadPhoto.mockImplementation(async () => ({ id: ++next }));
     open(8, full);
-    await threePhotosAndSend();
+    await fivePhotosAndSend();
 
     await waitFor(() => expect(nav.push).toHaveBeenLastCalledWith("/host/listings/7"));
     expect(POST).toHaveBeenCalledTimes(1);
@@ -194,14 +202,14 @@ describe("ListingWizard (specs/008-host-pages, US1)", () => {
       price_per_night: "120",
       latitude: 52.37,
     });
-    expect(uploadPhoto).toHaveBeenCalledTimes(3);
-    expect(uploadPhoto.mock.calls.map((c) => c[0])).toEqual([7, 7, 7]);
+    expect(uploadPhoto).toHaveBeenCalledTimes(5);
+    expect(uploadPhoto.mock.calls.map((c) => c[0])).toEqual([7, 7, 7, 7, 7]);
     expect(uploadPhoto.mock.calls[0]![1].file.name).toBe("a.jpg");
     const order = PUT.mock.invocationCallOrder[0]!;
     expect(Math.max(...uploadPhoto.mock.invocationCallOrder)).toBeLessThan(order);
     expect(PUT).toHaveBeenCalledWith("/api/v1/listings/{listing_id}/photos/order", {
       params: { path: { listing_id: 7 } },
-      body: { photo_ids: [11, 12, 13] },
+      body: { photo_ids: [11, 12, 13, 14, 15] },
     });
     expect(sessionStorage.getItem(KEY)).toBeNull();
   });
@@ -211,10 +219,10 @@ describe("ListingWizard (specs/008-host-pages, US1)", () => {
     PUT.mockResolvedValue({ data: [] });
     uploadPhoto.mockImplementation(async (_id: number, p: { file: File }) => {
       if (p.file.name === "b.jpg") throw new Error("storage 500");
-      return { id: p.file.name === "a.jpg" ? 21 : 23 };
+      return { id: { "a.jpg": 21, "c.jpg": 23, "d.jpg": 24, "e.jpg": 25 }[p.file.name]! };
     });
     open(8, full);
-    await threePhotosAndSend();
+    await fivePhotosAndSend();
     expect(await screen.findByText(/همه‌ی عکس‌ها آپلود نشدند/)).toBeInTheDocument();
     expect(JSON.parse(sessionStorage.getItem(KEY)!)).toMatchObject({ listing_id: 7 });
     expect(PUT).not.toHaveBeenCalled();
@@ -223,8 +231,8 @@ describe("ListingWizard (specs/008-host-pages, US1)", () => {
     await userEvent.click(screen.getByRole("button", { name: "دوباره" }));
     await waitFor(() => expect(nav.push).toHaveBeenLastCalledWith("/host/listings/7"));
     expect(POST).toHaveBeenCalledTimes(1);
-    expect(uploadPhoto).toHaveBeenCalledTimes(4);
-    expect(PUT.mock.calls[0]![1].body).toEqual({ photo_ids: [21, 22, 23] });
+    expect(uploadPhoto).toHaveBeenCalledTimes(6);
+    expect(PUT.mock.calls[0]![1].body).toEqual({ photo_ids: [21, 22, 23, 24, 25] });
   });
 
   it("takes rial prices in toman and sends ten times the amount (R7)", async () => {
@@ -236,7 +244,7 @@ describe("ListingWizard (specs/008-host-pages, US1)", () => {
     await userEvent.type(screen.getByRole("textbox", { name: "قیمت هر شب" }), "۱۲۰٬۰۰۰");
     await userEvent.click(screen.getByRole("button", { name: "بعدی" }));
     await userEvent.click(await screen.findByRole("button", { name: "بعدی" }));
-    await threePhotosAndSend();
+    await fivePhotosAndSend();
     await waitFor(() => expect(POST).toHaveBeenCalled());
     expect(POST.mock.calls[0]![1].body).toMatchObject({ currency: "IRR", price_per_night: "1200000.00" });
   });
@@ -246,7 +254,7 @@ describe("ListingWizard (specs/008-host-pages, US1)", () => {
       error: { error: { code: "validation_error", details: { fields: ["title"] } } },
     });
     open(8, full);
-    await threePhotosAndSend();
+    await fivePhotosAndSend();
     await waitFor(() => expect(nav.push).toHaveBeenLastCalledWith("/host/new?step=5"));
     expect(await screen.findByText("گام ۵ از ۸")).toBeInTheDocument();
     const title = screen.getByRole("textbox", { name: "عنوان" });

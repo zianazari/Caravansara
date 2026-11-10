@@ -38,7 +38,7 @@ test.describe("Review-result emails", () => {
       { title: "E2E email rejected", currency: "IRR", price_per_night: 12000000, cleaning_fee: 0 },
       { approved: false },
     );
-    for (const caption of ["A", "B", "C"]) await addPhoto(request, host, listing.id, caption, { approved: false });
+    for (const caption of ["A", "B", "C", "D", "E"]) await addPhoto(request, host, listing.id, caption, { approved: false });
     const admin = await adminLogin(request, createAdmin("mailer").email);
     const detail = await (await request.get(`${API}/admin/listings/${listing.id}`, { headers: admin })).json();
     const rejected = await request.post(`${API}/admin/listings/${listing.id}/reject`, {

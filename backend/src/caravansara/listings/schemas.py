@@ -200,7 +200,7 @@ class ListingSummary(BaseModel):
     cover_url: str | None
     photo_count: int = Field(
         default=0,
-        description="How many photos it has; fewer than 3 cannot be approved (feature 015, for 'photos not complete').",
+        description="How many photos it has; fewer than 5 cannot be approved (for 'photos not complete').",
     )
     review: ListingReview | None = None
 
