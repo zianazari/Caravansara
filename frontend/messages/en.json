@@ -462,6 +462,9 @@
     "viewTrip": "View booking"
   },
   "trips": {
+    "viewListing": "View the listing",
+    "thePlace": "The place of this trip",
+    "listingGone": "This listing is no longer shown.",
     "title": "My trips",
     "upcoming": "Upcoming",
     "past": "Past",

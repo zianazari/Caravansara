@@ -20,6 +20,7 @@ import { cityName } from "@/lib/names";
 import { stayQuery } from "@/lib/searchParams";
 import { HoldCountdown } from "./HoldCountdown";
 import { PriceBreakdown } from "./PriceBreakdown";
+import { TripListing } from "./TripListing";
 
 export type Booking = components["schemas"]["BookingOut"];
 
@@ -94,7 +95,7 @@ export function TripDetail({
   const again = `/listings/${b.listing.id}?${stayQuery(b).toString()}`;
 
   return (
-    <article className="grid max-w-2xl gap-5">
+    <article className="grid max-w-4xl gap-5">
       <header className="grid gap-1">
         <p className="text-sm font-medium text-primary">{t(`booking.status_${b.status}`)}</p>
         <h1 className="text-2xl font-bold">{b.listing.title}</h1>
@@ -103,6 +104,9 @@ export function TripDetail({
           {t("booking.guestsLine", { count: b.adults + b.children })}
         </p>
       </header>
+
+      {/* The place itself, its photos and a link back to it (feature 022). */}
+      <TripListing listingId={b.listing.id} title={b.listing.title} />
 
       <PriceBreakdown
         pricePerNight={b.nightly_price}
