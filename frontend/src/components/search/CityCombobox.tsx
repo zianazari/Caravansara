@@ -8,7 +8,8 @@ import { api } from "@/api/client";
 import { cityName, countryName } from "@/lib/names";
 import { cn } from "@/lib/cn";
 
-export type CityChoice = { id: number; label: string };
+/** A chosen city; `country` is its ISO code, which the host's form uses to start the currency (008, R7). */
+export type CityChoice = { id: number; label: string; country?: string };
 
 /**
  * City with suggestions from GET /cities?q= (US1/AC1). A combobox in the ARIA pattern: type, move with the
@@ -17,9 +18,16 @@ export type CityChoice = { id: number; label: string };
 export function CityCombobox({
   value,
   onChange,
+  label,
+  invalid,
+  describedBy,
 }: {
   value?: CityChoice;
   onChange: (city?: CityChoice) => void;
+  /** The field's name; search's "Where" when not given. */
+  label?: string;
+  invalid?: boolean;
+  describedBy?: string;
 }) {
   const t = useTranslations();
   const locale = useLocale();
@@ -51,13 +59,14 @@ export function CityCombobox({
   const options = (cities.data ?? []).map((c) => ({
     id: c.id,
     label: cityName(t, c.name),
+    code: c.country.code,
     country: countryName(c.country.code, locale),
   }));
 
   function choose(index: number) {
     const option = options[index];
     if (!option) return;
-    onChange({ id: option.id, label: option.label });
+    onChange({ id: option.id, label: option.label, country: option.code });
     setText(option.label);
     setOpen(false);
   }
@@ -83,7 +92,7 @@ export function CityCombobox({
   return (
     <div className="relative grid gap-1.5">
       <label htmlFor={id} className="text-sm font-medium">
-        {t("search.where")}
+        {label ?? t("search.where")}
       </label>
       <div className="relative">
         <MapPinIcon className="pointer-events-none absolute start-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
@@ -94,6 +103,8 @@ export function CityCombobox({
           aria-controls={listId}
           aria-autocomplete="list"
           aria-activedescendant={showList && options[active] ? `${listId}-${active}` : undefined}
+          aria-invalid={invalid || undefined}
+          aria-describedby={describedBy}
           autoComplete="off"
           placeholder={t("search.wherePlaceholder")}
           value={text}
@@ -112,7 +123,7 @@ export function CityCombobox({
       <ul
         id={listId}
         role="listbox"
-        aria-label={t("search.where")}
+        aria-label={label ?? t("search.where")}
         hidden={!showList}
         className="absolute top-full z-40 mt-1 w-full overflow-hidden rounded-lg border bg-card shadow-lg"
       >

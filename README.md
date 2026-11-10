@@ -5,13 +5,13 @@
 <p align="center">
   <a href="https://github.com/zianazari/Caravansara/actions/workflows/ci.yml"><img src="https://github.com/zianazari/Caravansara/actions/workflows/ci.yml/badge.svg" alt="CI"></a>
   <img src="https://img.shields.io/badge/tests-362%20%C2%B7%2097.4%25%20coverage-b5651d" alt="362 backend tests, 97.4% coverage">
-  <img src="https://img.shields.io/badge/web-266%20Vitest%20tests-6E9F18" alt="266 Vitest tests for the web site">
-  <img src="https://img.shields.io/badge/e2e-85%20Playwright%20tests-2EAD33" alt="85 Playwright tests">
+  <img src="https://img.shields.io/badge/web-365%20Vitest%20tests-6E9F18" alt="365 Vitest tests for the web site">
+  <img src="https://img.shields.io/badge/e2e-97%20Playwright%20tests-2EAD33" alt="97 Playwright tests">
 </p>
 
 A *caravansara* (کاروانسرا) was a roadside inn on the Silk Road: travellers arrived at dusk, took a room for the night and moved on at dawn. **Caravansara** is the same idea for today: an Airbnb-like site where guests find a place, hold it, pay and leave a review, and hosts list their homes.
 
-This repository holds the **backend**, the **database design** and the **web site for guests**. The site wears a caravansara theme: the warm colours of the diagrams below and the pointed arch of a caravansara's gateway, laid out the way people know from Airbnb (search pill, photo cards, a bottom bar on phones). Hosts and admins still use the API through **Swagger UI** until their pages are built.
+This repository holds the **backend**, the **database design** and the **web site for guests and hosts**. The site wears a caravansara theme: the warm colours of the diagrams below and the pointed arch of a caravansara's gateway, laid out the way people know from Airbnb (search pill, photo cards, a bottom bar on phones). Hosts make and keep their listings on the site; admins still review them through **Swagger UI** until their panel is built.
 
 <p align="center">
   <img src="docs/images/readme/site-home.jpg" alt="The home page on a desktop and on a phone: a night-blue hero with a lit caravansara doorway, the search pill, categories and rows of places in arch-shaped frames" width="100%">
@@ -76,7 +76,7 @@ Caravansara is a **modular monolith**: one FastAPI codebase and one PostgreSQL d
 
 | Process / service | Role | Why it's separate |
 | --- | --- | --- |
-| **Web site** (Next.js, port 3001) | Pages for guests in Persian and English; forwards `/api/v1` to the API; keeps the refresh token in an HttpOnly cookie | The browser talks to one origin only, and no token the page can read outlives a reload |
+| **Web site** (Next.js, port 3001) | Pages for guests and hosts in Persian and English; forwards `/api/v1` to the API; keeps the refresh token in an HttpOnly cookie | The browser talks to one origin only, and no token the page can read outlives a reload |
 | **API** (FastAPI, uvicorn) | All endpoints under `/api/v1`, Swagger at `/docs` | Stateless, so any number of copies can run behind a load balancer |
 | **Worker** (`caravansara worker`) | Every minute: expire unpaid holds, complete finished stays | Scheduled jobs would run once per API copy if they lived in the API |
 | **PostgreSQL 16 + PostGIS** | The single source of truth; enforces the critical rules | The only place every API copy shares, so the only safe place for race-proof rules |
@@ -177,7 +177,7 @@ docker compose exec -e CARAVANSARA_ADMIN_PASSWORD=… api caravansara create-adm
 docker compose run --rm migrate caravansara seed-bulk   # optional: 100,000 listings in their own database, for measuring
 ```
 
-Open **http://localhost:3001** for the site (Persian at `/fa`, English at `/en`): search, open a listing, sign up, book and pay (payment is simulated), see your trips, cancel and review. Or open **http://localhost:8000/docs**, log in with `POST /auth/login` as `guest@example.com` / `caravansara-demo`, press **Authorize**, paste the `access_token`, and every endpoint is ready to try. To review listings, log in with `POST /admin/auth/login` as `admin@example.com` (demo) or the admin you created, and paste that token under **AdminBearer**. Admin accounts exist only through `caravansara create-admin`; `seed-demo` refuses to run in production, because its passwords are public.
+Open **http://localhost:3001** for the site (Persian at `/fa`, English at `/en`): search, open a listing, sign up, book and pay (payment is simulated), see your trips, cancel and review. Hosts choose «Become a host», make a listing in eight steps with at least three photos, and manage it under «My listings». Or open **http://localhost:8000/docs**, log in with `POST /auth/login` as `guest@example.com` / `caravansara-demo`, press **Authorize**, paste the `access_token`, and every endpoint is ready to try. To review listings, log in with `POST /admin/auth/login` as `admin@example.com` (demo) or the admin you created, and paste that token under **AdminBearer**. Admin accounts exist only through `caravansara create-admin`; `seed-demo` refuses to run in production, because its passwords are public.
 
 The demo data comes from [Inside Airbnb](https://insideairbnb.com/) (CC BY 4.0): real titles, prices, amenities and review text from Amsterdam, Lisbon, Copenhagen, Stockholm, London and New York City, plus 40 hand-written Persian listings in Tehran, Isfahan and Shiraz priced in rials. People, addresses, bookings and photos are synthetic. It also holds nine edge cases, such as a listing waiting for review, a rejected one, a hold that expires four minutes after loading and a 365-night stay, each listed with its id. See [`db/demo/README.md`](db/demo/README.md).
 
@@ -218,10 +218,11 @@ Two layers, because each one catches what the other can't:
 | **Proves** | Every rule in each module, exact race moments, DST, migrations, the API contract | The built image, real settings and wiring: all 38 endpoints, listing photo upload to MinIO, profile pictures through the API (bad files refused), an admin made with `create-admin` reviewing listings, the whole host and guest story, and the web site's proxy, session cookie, rate limit by visitor address and CSP |
 | **Size** | 362 tests, 97.4% coverage | 85 tests, under a minute |
 
-The web site has its own Vitest suite in `frontend/` (266 tests): every rule (Jalali calendar for every day of 1400–1410, city time zones on clock-change days, toman with exact decimals, the session lock across tabs), every acceptance scenario in Persian and English, and axe accessibility checks.
+The web site has its own Vitest suite in `frontend/` (365 tests): every rule (Jalali calendar for every day of 1400–1410, city time zones on clock-change days, toman with exact decimals, the session lock across tabs), every acceptance scenario in Persian and English, and axe accessibility checks.
 
-Most Playwright tests use its `request` fixture and need no browser. `theme.spec.ts` opens every guest page in a real Chrome, at five widths from 320 px and in both languages, and checks for sideways scroll and for accessibility problems with axe, colour contrast included. Some highlights:
+Most Playwright tests use its `request` fixture and need no browser. `theme.spec.ts` opens every guest page and the host pages in a real Chrome, at five widths from 320 px and in both languages, and checks for sideways scroll and for accessibility problems with axe, colour contrast included. Some highlights:
 
+- 🏠 **A host in the browser:** `host.spec.ts` makes a listing through the eight steps with three photos, then changes the price (no review) and the title (with the warning), the cover, off and on, and a rejection sent again.
 - 🏁 **Booking race:** six guests reserve the same nights at the same moment, and exactly one wins (the others get `409 dates_unavailable`).
 - 🔁 **Idempotency:** a retried reservation with the same `Idempotency-Key` returns the same booking.
 - 🔐 **Privacy:** the real address appears only after payment; a reused refresh token revokes every session of that user.
@@ -264,9 +265,9 @@ The same description is committed as [`backend/openapi.json`](backend/openapi.js
 ## Repository
 
 ```
-frontend/    Next.js web site for guests, Persian and English, Vitest tests  → frontend/README.md
+frontend/    Next.js web site for guests and hosts, Persian and English, Vitest tests  → frontend/README.md
 backend/     FastAPI app, Alembic migrations, tests  → backend/README.md
-e2e/         Playwright tests against the running stack (85 tests)  → e2e/README.md
+e2e/         Playwright tests against the running stack (97 tests)  → e2e/README.md
 postman/     Postman collection of all endpoints, with saved ids and tokens
 observability/  Alloy, Loki, Tempo, Prometheus (alerts + rule tests), Grafana dashboard  → observability/README.md
 .specify/    GitHub Spec Kit: constitution, templates, scripts (commands in .claude/skills/)
@@ -281,17 +282,9 @@ Tests run against real PostgreSQL + PostGIS and MinIO in containers, because the
 
 ## How we work
 
-Every feature goes through [GitHub Spec Kit](https://github.com/github/spec-kit), so decisions are written and reviewed before code:
+Features 001 to 008 went through [GitHub Spec Kit](https://github.com/github/spec-kit) (specify, plan, tasks, implement, converge). From feature 009 on we work without it (owner decision, 2026-11-10): its documents cost more to write and keep in step than they returned, because the decisions were taken in conversation and the defects were found by tests. Each feature now gets a short plan with its open decisions before the code, tests before or with the code, lint, type checks and the end-to-end tests on the stack before the pull request, and its decisions written once in [`docs/backend-design.md`](docs/backend-design.md). The rules are in [`.specify/memory/constitution.md`](.specify/memory/constitution.md) (v2.0.0).
 
-| Step | Command | Output |
-| --- | --- | --- |
-| Principles (once) | `/speckit-constitution` | [`.specify/memory/constitution.md`](.specify/memory/constitution.md) |
-| What and why, with Given/When/Then acceptance criteria | `/speckit-specify`, `/speckit-clarify` | `specs/NNN-name/spec.md` |
-| Technical plan, checked against the principles | `/speckit-plan` | `plan.md` |
-| Ordered task list, then a consistency check | `/speckit-tasks`, `/speckit-analyze` | `tasks.md` |
-| Code and tests, until the code matches the docs | `/speckit-implement`, `/speckit-converge` | code, tests |
-
-The four finished backend features (001 to 004) are merged into [`specs/backend/`](specs/backend/): one file per kind (spec, plan, research, tasks …), a section per feature. Their identifiers (`FR-001`, `T001`, `R1`) count within each feature's section, so a reference reads like `specs/backend (004), research R5`. Later features keep their own `specs/NNN-name/` folder.
+The four finished backend features (001 to 004) are merged into [`specs/backend/`](specs/backend/): one file per kind (spec, plan, research, tasks …), a section per feature. Their identifiers (`FR-001`, `T001`, `R1`) count within each feature's section, so a reference reads like `specs/backend (004), research R5`. Features 005 to 008 keep their own `specs/NNN-name/` folder, as history.
 
 The constitution comes from decisions already in this repo: the database guards the critical rules, module borders are enforced, the API contract comes first, tests run on real infrastructure, privacy by default, everything observable, and nothing added before the numbers ask for it.
 

@@ -1,16 +1,11 @@
 ## What and why
 
-<!-- One or two sentences: what changes and the reason. Link the spec: specs/NNN-name/spec.md -->
-
-## Spec Kit
-
-- [ ] `spec.md`, `plan.md` and `tasks.md` are in `specs/NNN-name/` and match what was built (`/speckit-converge` reports Converged)
-- [ ] The plan's Constitution Check passes, or each exception is justified in Complexity Tracking
-- [ ] Not a feature (typo, docs wording, dependency bump): Spec Kit skipped on purpose
+<!-- One or two sentences: what changes and the reason, and the decisions taken on the way. -->
 
 ## Checks
 
-- [ ] Every acceptance criterion (Given/When/Then) has a test
+- [ ] Every behaviour that changed has a test, written before or with the code
+- [ ] The change follows the constitution (`.specify/memory/constitution.md`), or the exception and its reason are stated above
 - [ ] API changes start in `backend/openapi.json` (`caravansara export-openapi`), and error codes stay stable
 - [ ] New endpoints or events have metrics and logs; the dashboard and alerts still use only exported metrics
 - [ ] CI is green: ruff, mypy, import-linter, tests (coverage ≥ 90%), monitoring config, and for the web site: the API client in sync with `openapi.json`, ESLint, Prettier, `tsc`, Vitest (coverage ≥ 90% for `src/lib` and `src/api`), build
