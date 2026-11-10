@@ -18,7 +18,7 @@ export default async function WishlistsPage({ params }: { params: Promise<{ loca
   setRequestLocale((await params).locale);
   const t = await getTranslations("wishlist");
   return (
-    <div className="grid gap-6">
+    <div className="grid gap-6" data-wide>
       <h1 className="text-2xl font-bold">{t("title")}</h1>
       <Suspense>
         <RequireAuth>

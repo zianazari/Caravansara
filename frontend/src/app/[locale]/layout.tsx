@@ -52,7 +52,11 @@ export default async function LocaleLayout({
         <NextIntlClientProvider>
           <Providers dir={dir}>
             <Header />
-            <main id="main" className="mx-auto w-full max-w-7xl flex-1 px-4 py-6 md:px-6">
+            {/* A page that marks itself data-wide (the home page, feature 017) gets almost the whole screen. */}
+            <main
+              id="main"
+              className="mx-auto w-full max-w-7xl flex-1 px-4 py-6 md:px-6 has-[>[data-wide]]:max-w-[1920px] has-[>[data-wide]]:lg:px-10"
+            >
               {children}
             </main>
             <Footer />

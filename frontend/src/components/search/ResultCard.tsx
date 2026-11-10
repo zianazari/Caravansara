@@ -17,12 +17,11 @@ type Result = components["schemas"]["SearchResult"];
  * One search result (FR-017): cover photo, title, city, rating, price per night and, with dates, the total.
  * A listing without a photo or without reviews gets a placeholder, never a broken image or a zero rating.
  *
- * Caravansara theme (specs/007-caravansara-theme, FR-006, contracts/ui.md): the photo sits in the lower arch,
- * with a "guest favourite" or "new" badge on it; then the city and country with the rating, the title, the
+ * Caravansara theme (specs/007-caravansara-theme, FR-006, contracts/ui.md): the photo, a plain rounded rectangle
+ * since feature 017, with a "guest favourite" or "new" badge in its top corner; then the city and country with the rating, the title, the
  * place type and, for a search with dates, the dates; the price per night and the total last, as on the
  * booking sites people know. The whole card is one link; the wishlist heart (feature 012) is a separate button
- * laid over the photo's lower corner, not inside the link, because a button inside a link is not allowed and
- * the arch hides the top corners.
+ * on the photo's other top corner, not inside the link, because a button inside a link is not allowed.
  */
 export function ResultCard({ result, nights, stay }: { result: Result; nights?: number; stay: string }) {
   const t = useTranslations();
@@ -39,25 +38,25 @@ export function ResultCard({ result, nights, stay }: { result: Result; nights?: 
   const checkIn = query.get("check_in");
   const checkOut = query.get("check_out");
   return (
-    <article className="relative grid gap-2">
+    <article className="relative grid min-w-0 grid-cols-1 gap-2">
       <Link
         href={`/listings/${result.id}${stay ? `?${stay}` : ""}`}
-        className="group grid gap-1 rounded-xl focus-visible:outline-2"
+        className="group grid min-w-0 grid-cols-1 gap-1 rounded-xl focus-visible:outline-2"
       >
         <ArchFrame
           src={result.cover_url}
           alt={result.cover_url ? "" : t("search.noPhoto")}
           sizes="(min-width: 1280px) 25vw, (min-width: 1024px) 33vw, (min-width: 640px) 50vw, 100vw"
-          className="mb-2 aspect-[1/0.95] md:aspect-[1/1.04]"
+          className="mb-1 aspect-[1/0.96]"
         >
           {badge ? (
-            <span className="absolute start-3 bottom-3 rounded-full bg-background px-3 py-1 text-xs font-bold text-foreground shadow-sm">
+            <span className="absolute start-2.5 top-2.5 max-w-[calc(100%-3.75rem)] truncate rounded-full bg-background px-2 py-0.5 text-[11px] font-bold text-foreground shadow-sm sm:start-3 sm:top-3 sm:px-2.5 sm:py-1 sm:text-xs">
               {t(badge === "new" ? "badge.new" : "badge.guestFavourite")}
             </span>
           ) : null}
         </ArchFrame>
         <div className="flex items-start justify-between gap-2">
-          <p className="font-bold">
+          <p className="min-w-0 truncate text-sm font-bold">
             <span>{cityName(t, result.city)}</span>
             {locale === "fa" ? "، " : ", "}
             <span>{countryName(result.country_code, locale)}</span>
@@ -73,7 +72,7 @@ export function ResultCard({ result, nights, stay }: { result: Result; nights?: 
             </span>
           ) : null}
         </div>
-        <h3 className="line-clamp-1 text-sm text-muted-foreground group-hover:underline">{result.title}</h3>
+        <h3 className="truncate text-sm text-muted-foreground group-hover:underline">{result.title}</h3>
         <p className="text-sm text-muted-foreground">
           {t(`propertyTypes.${result.property_type}`)}
           {result.distance_km !== null && result.distance_km !== undefined
@@ -85,8 +84,8 @@ export function ResultCard({ result, nights, stay }: { result: Result; nights?: 
             {formatDate(checkIn, locale)} – {formatDate(checkOut, locale)}
           </p>
         ) : null}
-        <p className="mt-1 break-words">
-          <span className="font-extrabold">{money(result.price_per_night, result.currency)}</span>{" "}
+        <p className="break-words">
+          <span className="text-sm font-bold">{money(result.price_per_night, result.currency)}</span>{" "}
           <span className="text-sm text-muted-foreground">{t("search.perNight")}</span>
         </p>
         {result.total_price && nights ? (
@@ -95,14 +94,11 @@ export function ResultCard({ result, nights, stay }: { result: Result; nights?: 
           </p>
         ) : null}
       </Link>
-      {/* The same shape as the photo, laid over it, so the heart sits on the photo's lower corner. */}
-      <div className="pointer-events-none absolute inset-x-0 top-0 aspect-[1/0.95] md:aspect-[1/1.04]">
-        <HeartButton
-          listingId={result.id}
-          title={result.title}
-          className="pointer-events-auto absolute end-3 bottom-3"
-        />
-      </div>
+      <HeartButton
+        listingId={result.id}
+        title={result.title}
+        className="absolute end-2.5 top-2.5 size-8 sm:end-3 sm:top-3 sm:size-9"
+      />
     </article>
   );
 }

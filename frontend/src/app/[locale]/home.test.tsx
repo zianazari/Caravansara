@@ -88,7 +88,7 @@ describe("home page (US1/AC1)", () => {
       expect(container.querySelector("[data-hero='doorway']")).not.toBeNull();
       expect(screen.getByRole("search")).toContainElement(screen.getByRole("button", { name: search }));
       expect(screen.getByRole("navigation", { name: categories })).toBeInTheDocument();
-      expect(await screen.findByRole("heading", { name: firstRow })).toBeInTheDocument();
+      expect(await screen.findByRole("heading", { name: new RegExp(firstRow) })).toBeInTheDocument();
       expect(await screen.findAllByRole("heading", { level: 2 })).toHaveLength(SUGGESTED.length);
       // The arcade band: a row of small decorative arches.
       expect(container.querySelectorAll("[aria-hidden] > .arch.bg-muted")).toHaveLength(12);

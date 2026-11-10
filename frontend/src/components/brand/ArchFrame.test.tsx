@@ -7,13 +7,14 @@ vi.mock("next/image", () => ({
 }));
 
 describe("ArchFrame", () => {
-  it("shows the photo inside the lower arch by default", () => {
+  it("shows the photo in a plain rounded frame by default (feature 017)", () => {
     const { container } = renderIn("fa", <ArchFrame src="https://media.example/p.jpg" alt="Garden flat" />);
     expect(screen.getByRole("img", { name: "Garden flat" })).toHaveAttribute(
       "src",
       "https://media.example/p.jpg",
     );
-    expect(container.firstElementChild).toHaveClass("arch-soft");
+    expect(container.firstElementChild).toHaveClass("rounded-2xl");
+    expect(container.firstElementChild).not.toHaveClass("arch");
   });
 
   it("uses the tall arch when asked", () => {

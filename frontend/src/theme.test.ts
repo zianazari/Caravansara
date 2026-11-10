@@ -78,9 +78,9 @@ describe("theme tokens", () => {
     expect(root).toMatch(/color-scheme:\s*light/);
   });
 
-  it("defines both arch shapes and switches decoration off for reduced motion", () => {
+  it("defines the arch shape and switches decoration off for reduced motion", () => {
     expect(css).toMatch(/\.arch\s*\{[^}]*mask-image/);
-    expect(css).toMatch(/\.arch-soft\s*\{[^}]*mask-image/);
+    expect(css).not.toMatch(/\.arch-soft/); // photos are plain rounded since feature 017
     expect(css).toMatch(/@media\s*\(prefers-reduced-motion:\s*reduce\)/);
   });
 });

@@ -2,10 +2,10 @@ import Image from "next/image";
 import { cn } from "@/lib/cn";
 
 /**
- * A photo inside the caravansara arch (specs/007-caravansara-theme, FR-003). "soft" is the lower arch for
- * listing cards and the listing's main photo; "tall" is the doorway shape. Without a photo it shows a warm
- * placeholder (an arch of sand on cream, drawn here, no request) instead of a grey box (US2/AC2, research
- * R10). Nothing that matters sits in the top corners, which the arch hides.
+ * A listing photo in its frame. "soft", for every card and photo, is a plain rounded rectangle since feature 017
+ * (owner's request: the lower arch of 007 made photos smaller and hid their top corners); "tall" is the
+ * caravansara doorway, kept for decoration (an empty page). Without a photo it shows a warm placeholder (an
+ * arch of sand on cream, drawn here, no request) instead of a grey box (specs/007-caravansara-theme, US2/AC2).
  */
 export function ArchFrame({
   src,
@@ -28,7 +28,7 @@ export function ArchFrame({
     <div
       className={cn(
         "relative overflow-hidden bg-muted",
-        variant === "soft" ? "arch-soft" : "arch",
+        variant === "soft" ? "rounded-2xl" : "arch",
         className,
       )}
       data-arch={variant}

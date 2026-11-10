@@ -27,7 +27,10 @@
     "whereTo": "کجا می‌روید؟",
     "anyWhereAnyWhen": "هر شهر · هر زمان · مهمان‌ها",
     "popularIn": "محبوب در {city}",
-    "showAll": "نمایش همه"
+    "showAll": "نمایش همه",
+    "typeInCity": "{type} در {city}",
+    "previous": "آگهی‌های قبلی در {city}",
+    "next": "آگهی‌های بعدی در {city}"
   },
   "nav": {
     "skipToContent": "رفتن به محتوای اصلی",

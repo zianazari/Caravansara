@@ -27,7 +27,10 @@
     "whereTo": "Where to?",
     "anyWhereAnyWhen": "Any city · Any week · Guests",
     "popularIn": "Popular in {city}",
-    "showAll": "Show all"
+    "showAll": "Show all",
+    "typeInCity": "{type} in {city}",
+    "previous": "Previous places in {city}",
+    "next": "Next places in {city}"
   },
   "nav": {
     "skipToContent": "Skip to main content",
