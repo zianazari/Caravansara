@@ -228,6 +228,26 @@ async def test_upload_over_the_size_limit_is_refused(client: AsyncClient, settin
     assert wrong_type.status_code == 403
 
 
+async def test_an_avif_photo_goes_through_the_whole_upload(client: AsyncClient) -> None:
+    """Feature 023: AVIF is a listing photo type, with its own extension and the type pinned in the policy."""
+    host = await register(client, "host")
+    listing = await create_listing(client, host)
+    lid = listing["id"]
+    r = await client.post(f"/listings/{lid}/photos/upload-url", json={"content_type": "image/avif"}, headers=host.auth)
+    assert r.status_code == 200, r.text
+    signed = r.json()
+    assert signed["storage_key"].endswith(".avif")
+    up = await _post_file(signed, b"\0\0\0\x1cftypavif\0\0\0\0avifmif1miaf", "image/avif")
+    assert up.status_code == 204, up.text
+    photo = await client.post(
+        f"/listings/{lid}/photos",
+        json={"storage_key": signed["storage_key"], "width": 1200, "height": 800},
+        headers=host.auth,
+    )
+    assert photo.status_code == 201, photo.text
+    assert photo.json()["url"].endswith(".avif")
+
+
 async def _post_file(signed: dict[str, Any], content: bytes, content_type: str) -> httpx.Response:
     fields = dict(signed["fields"]) | {"Content-Type": content_type}
     async with httpx.AsyncClient() as storage:

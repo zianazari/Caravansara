@@ -41,7 +41,8 @@ from caravansara.notifications import service as notifications
 
 __all__ = ["ListingInfo", "PropertyType", "ReviewStatus"]
 
-_EXTENSIONS = {"image/jpeg": "jpg", "image/png": "png", "image/webp": "webp"}
+# AVIF since feature 023 (owner's request): smaller files than JPEG at the same quality.
+_EXTENSIONS = {"image/jpeg": "jpg", "image/png": "png", "image/webp": "webp", "image/avif": "avif"}
 _REQUIRED = {
     "title", "property_type", "city_id", "address", "max_guests", "pets_allowed", "max_pets",
     "bedrooms", "beds", "bathrooms", "price_per_night", "cleaning_fee", "currency",

@@ -223,7 +223,7 @@ class ListingPage(BaseModel):
     total: int
 
 
-ImageType = Literal["image/jpeg", "image/png", "image/webp"]
+ImageType = Literal["image/jpeg", "image/png", "image/webp", "image/avif"]
 
 
 class UploadUrlIn(BaseModel):

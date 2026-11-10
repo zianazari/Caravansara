@@ -16,10 +16,18 @@ const WEBP = [..."RIFF"]
     [..."WEBP"].map((c) => c.charCodeAt(0)),
   );
 
+/** An ISO-BMFF ftyp box: 4-byte size, "ftyp", the major brand, a version, then the compatible brands. */
+function ftyp(major: string, ...compatible: string[]): number[] {
+  const size = 16 + 4 * compatible.length;
+  const chars = (t: string) => [...t].map((c) => c.charCodeAt(0));
+  return [0, 0, 0, size, ...chars("ftyp"), ...chars(major), 0, 0, 0, 0, ...compatible.flatMap(chars)];
+}
+const AVIF = ftyp("avif", "mif1", "miaf");
+
 describe("image check (specs/008-host-pages, research R5)", () => {
   it("accepts JPEG, PNG and WebP up to 10 MB", async () => {
     expect(MAX_PHOTO_BYTES).toBe(10_485_760);
-    expect(PHOTO_TYPES).toEqual(["image/jpeg", "image/png", "image/webp"]);
+    expect(PHOTO_TYPES).toEqual(["image/jpeg", "image/png", "image/webp", "image/avif"]);
     expect(await checkPhotoFile(file(JPEG, "image/jpeg"))).toBeNull();
     expect(await checkPhotoFile(file(PNG, "image/png"))).toBeNull();
     expect(await checkPhotoFile(file(WEBP, "image/webp"))).toBeNull();
@@ -46,5 +54,13 @@ describe("image check (specs/008-host-pages, research R5)", () => {
     const options = { maxBytes: 5 * 1024 * 1024, types: ["image/png", "image/jpeg"] as const };
     expect(await checkImageFile(file(PNG, "image/png"), options)).toBeNull();
     expect(await checkImageFile(file(WEBP, "image/webp"), options)).toBe("wrong_type");
+  });
+
+  it("accepts AVIF by its ftyp brand, and refuses HEIC, which has the same box (feature 023)", async () => {
+    expect(await checkPhotoFile(file(AVIF, "image/avif"))).toBeNull();
+    expect(await checkPhotoFile(file(ftyp("mif1", "avif", "miaf"), "image/avif"))).toBeNull(); // avif as compatible
+    expect(await checkPhotoFile(file(ftyp("avis", "msf1"), "image/avif"))).toBeNull(); // an animated AVIF
+    expect(await checkPhotoFile(file(ftyp("heic", "mif1"), "image/avif"))).toBe("not_image");
+    expect(await checkPhotoFile(file("not a picture at all", "image/avif"))).toBe("not_image");
   });
 });
