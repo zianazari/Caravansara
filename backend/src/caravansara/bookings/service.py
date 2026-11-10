@@ -23,6 +23,7 @@ from caravansara.core.storage import Storage
 from caravansara.core.timeutil import today_in, utcnow
 from caravansara.listings import service as listings
 from caravansara.listings.service import ListingInfo
+from caravansara.notifications import service as notifications
 
 __all__ = ["BookingInfo", "BookingStatus"]
 
@@ -143,13 +144,29 @@ async def _participant_booking(session: AsyncSession, booking_id: int, user_id: 
     return booking, info
 
 
-async def pay(session: AsyncSession, booking_id: int, user_id: int) -> tuple[Booking, ListingInfo]:
+async def pay(session: AsyncSession, settings: Settings, booking_id: int, user_id: int) -> tuple[Booking, ListingInfo]:
     """Simulated payment. A real gateway would replace only this function's caller."""
     booking, info = await _participant_booking(session, booking_id, user_id)
     if booking.guest_id != user_id:
         raise Forbidden("Only the guest of this booking can pay.")
     now = utcnow()
     if await repo.confirm_if_payable(session, booking.id, user_id, now):
+        # Both confirmation emails commit with the payment (feature 016): they exist exactly when the
+        # booking is confirmed, and the worker sends them, so a mail server never touches the payment.
+        await notifications.queue_booking_confirmed(
+            session,
+            settings,
+            booking_id=booking.id,
+            guest_id=booking.guest_id,
+            host_id=info.host_id,
+            listing_id=info.id,
+            title=info.title,
+            check_in=booking.check_in,
+            check_out=booking.check_out,
+            guests=booking.adults + booking.children,
+            total=booking.total_price,
+            currency=booking.currency,
+        )
         await session.commit()
         BOOKING_EVENTS.labels("confirmed").inc()
         await session.refresh(booking)

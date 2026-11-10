@@ -90,8 +90,10 @@ async def get_booking(booking_id: int, user_id: CurrentUserId, session: SessionD
     description="Confirms a pending hold. After `hold_expires_at` it fails with **409 hold_expired**.",
     responses=error_responses(401, 403, 404, 409),
 )
-async def pay(booking_id: int, user_id: CurrentUserId, session: SessionDep, storage: StorageDep) -> BookingOut:
-    booking, info = await service.pay(session, booking_id, user_id)
+async def pay(
+    booking_id: int, user_id: CurrentUserId, session: SessionDep, storage: StorageDep, settings: SettingsDep
+) -> BookingOut:
+    booking, info = await service.pay(session, settings, booking_id, user_id)
     return await _one(session, await service.render(session, storage, booking, info, user_id))
 
 

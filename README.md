@@ -4,9 +4,9 @@
 
 <p align="center">
   <a href="https://github.com/zianazari/Caravansara/actions/workflows/ci.yml"><img src="https://github.com/zianazari/Caravansara/actions/workflows/ci.yml/badge.svg" alt="CI"></a>
-  <img src="https://img.shields.io/badge/tests-387%20%C2%B7%2097.1%25%20coverage-b5651d" alt="387 backend tests, 97.1% coverage">
+  <img src="https://img.shields.io/badge/tests-392%20%C2%B7%2097.1%25%20coverage-b5651d" alt="392 backend tests, 97.1% coverage">
   <img src="https://img.shields.io/badge/web-393%20Vitest%20tests-6E9F18" alt="393 Vitest tests for the web site">
-  <img src="https://img.shields.io/badge/e2e-112%20Playwright%20tests-2EAD33" alt="112 Playwright tests">
+  <img src="https://img.shields.io/badge/e2e-113%20Playwright%20tests-2EAD33" alt="113 Playwright tests">
 </p>
 
 A *caravansara* (کاروانسرا) was a roadside inn on the Silk Road: travellers arrived at dusk, took a room for the night and moved on at dawn. **Caravansara** is the same idea for today: an Airbnb-like site where guests find a place, hold it, pay, save favourites and leave a review, and hosts list their homes.
@@ -180,7 +180,7 @@ docker compose exec -e CARAVANSARA_ADMIN_PASSWORD=… api caravansara create-adm
 docker compose run --rm migrate caravansara seed-bulk   # optional: 100,000 listings in their own database, for measuring
 ```
 
-Emails the system sends (a host hears the result of a review) land in Mailpit at **http://localhost:8025**. Open **http://localhost:3001** for the site (Persian at `/fa`, English at `/en`): search, open a listing, sign up, book and pay (payment is simulated), see your trips, cancel and review. Hosts choose «Become a host», make a listing in eight steps with at least three photos, and manage it under «My listings». Or open **http://localhost:8000/docs**, log in with `POST /auth/login` as `guest@example.com` / `caravansara-demo`, press **Authorize**, paste the `access_token`, and every endpoint is ready to try. To review listings, open **http://admin.localhost:3001** (the admin panel, only on that host) and log in as `admin@example.com` (demo) or the admin you created. Through Swagger: log in with `POST /admin/auth/login` as `admin@example.com` (demo) or the admin you created, and paste that token under **AdminBearer**. Admin accounts exist only through `caravansara create-admin`; `seed-demo` refuses to run in production, because its passwords are public.
+Emails the system sends (a host hears the result of a review; guest and host get a booking confirmation) land in Mailpit at **http://localhost:8025**. Open **http://localhost:3001** for the site (Persian at `/fa`, English at `/en`): search, open a listing, sign up, book and pay (payment is simulated), see your trips, cancel and review. Hosts choose «Become a host», make a listing in eight steps with at least three photos, and manage it under «My listings». Or open **http://localhost:8000/docs**, log in with `POST /auth/login` as `guest@example.com` / `caravansara-demo`, press **Authorize**, paste the `access_token`, and every endpoint is ready to try. To review listings, open **http://admin.localhost:3001** (the admin panel, only on that host) and log in as `admin@example.com` (demo) or the admin you created. Through Swagger: log in with `POST /admin/auth/login` as `admin@example.com` (demo) or the admin you created, and paste that token under **AdminBearer**. Admin accounts exist only through `caravansara create-admin`; `seed-demo` refuses to run in production, because its passwords are public.
 
 The demo data comes from [Inside Airbnb](https://insideairbnb.com/) (CC BY 4.0): real titles, prices, amenities and review text from Amsterdam, Lisbon, Copenhagen, Stockholm, London and New York City, plus 40 hand-written Persian listings in Tehran, Isfahan and Shiraz priced in rials. People, addresses, bookings and photos are synthetic. It also holds nine edge cases, such as a listing waiting for review, a rejected one, a hold that expires four minutes after loading and a 365-night stay, each listed with its id. See [`db/demo/README.md`](db/demo/README.md).
 
@@ -219,7 +219,7 @@ Two layers, because each one catches what the other can't:
 | --- | --- | --- |
 | **Runs against** | PostgreSQL + PostGIS and MinIO that testcontainers starts for each run | The real `docker compose` stack, from outside, over HTTP |
 | **Proves** | Every rule in each module, exact race moments, DST, migrations, the API contract | The built image, real settings and wiring: all 44 endpoints, listing photo upload to MinIO, profile pictures through the API (bad files refused), an admin made with `create-admin` reviewing listings, the whole host and guest story, and the web site's proxy, session cookie, rate limit by visitor address and CSP |
-| **Size** | 387 tests, 97.1% coverage | 112 tests, under a minute |
+| **Size** | 392 tests, 97.1% coverage | 113 tests, under a minute |
 
 The web site has its own Vitest suite in `frontend/` (393 tests): every rule (Jalali calendar for every day of 1400–1410, city time zones on clock-change days, toman with exact decimals, the session lock across tabs), every acceptance scenario in Persian and English, and axe accessibility checks.
 
@@ -272,7 +272,7 @@ The same description is committed as [`backend/openapi.json`](backend/openapi.js
 ```
 frontend/    Next.js web site for guests and hosts, Persian and English, Vitest tests  → frontend/README.md
 backend/     FastAPI app, Alembic migrations, tests  → backend/README.md
-e2e/         Playwright tests against the running stack (112 tests)  → e2e/README.md
+e2e/         Playwright tests against the running stack (113 tests)  → e2e/README.md
 postman/     Postman collection of all endpoints, with saved ids and tokens
 observability/  Alloy, Loki, Tempo, Prometheus (alerts + rule tests), Grafana dashboard  → observability/README.md
 .specify/    GitHub Spec Kit: constitution, templates, scripts (commands in .claude/skills/)

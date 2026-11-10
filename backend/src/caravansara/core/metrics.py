@@ -46,7 +46,7 @@ LISTING_REVIEW_EVENTS = Counter(
 )
 # Only the worker sets these two, once a run (research R10). Each API copy would otherwise report
 # its own stale number, and Prometheus would add them up.
-EMAIL_KINDS = ("listing_approved", "listing_rejected")
+EMAIL_KINDS = ("listing_approved", "listing_rejected", "booking_confirmed_guest", "booking_confirmed_host")
 EMAIL_RESULTS = ("sent", "retry", "failed")
 EMAILS = Counter(
     "caravansara_emails_total",
