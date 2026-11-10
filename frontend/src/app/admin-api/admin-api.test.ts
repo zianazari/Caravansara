@@ -25,6 +25,13 @@ const request = (path: string, method = "GET", body?: unknown, origin: string | 
     body: body === undefined ? undefined : JSON.stringify(body),
   });
 const params = (...path: string[]) => ({ params: Promise.resolve({ path }) });
+const tokens = (n = "") => ({
+  access_token: `admin-secret${n}`,
+  refresh_token: `refresh-secret${n}`,
+  token_type: "bearer",
+  expires_in: 900,
+  session_expires_in: 28800,
+});
 
 describe("admin panel handlers (feature 009)", () => {
   let fetchMock: ReturnType<typeof vi.fn>;
@@ -39,19 +46,22 @@ describe("admin panel handlers (feature 009)", () => {
     vi.unstubAllEnvs();
   });
 
-  it("logs in: the admin token goes into an HttpOnly cookie for /admin-api only, never into the body", async () => {
-    fetchMock.mockResolvedValue(
-      Response.json({ access_token: "admin-secret", token_type: "bearer", expires_in: 900 }),
-    );
+  it("logs in: both tokens go into HttpOnly cookies for /admin-api only, never into the body", async () => {
+    fetchMock.mockResolvedValue(Response.json(tokens()));
     const res = await login(request("/admin-api/login", "POST", { email: "a@b.c", password: "pw" }));
     expect(res.status).toBe(200);
     const text = await res.text();
     expect(text).not.toContain("admin-secret");
-    expect(JSON.parse(text)).toEqual({ expires_in: 900 });
+    expect(text).not.toContain("refresh-secret");
+    expect(JSON.parse(text)).toEqual({ session_expires_in: 28800 });
     expect(fetchMock.mock.calls[0]![0]).toBe("http://api:8000/api/v1/admin/auth/login");
     expect(jar.get("cv_admin")).toMatchObject({
       value: "admin-secret",
-      options: { httpOnly: true, sameSite: "strict", path: "/admin-api", maxAge: 900 },
+      options: { httpOnly: true, sameSite: "strict", path: "/admin-api", maxAge: 870 },
+    });
+    expect(jar.get("cv_admin_refresh")).toMatchObject({
+      value: "refresh-secret",
+      options: { httpOnly: true, sameSite: "strict", path: "/admin-api", maxAge: 28800 },
     });
   });
 
@@ -99,9 +109,47 @@ describe("admin panel handlers (feature 009)", () => {
     expect(fetchMock).not.toHaveBeenCalled();
   });
 
-  it("logs out by clearing the cookie", async () => {
+  it("renews the admin token with the refresh token when it is gone, once for requests at the same moment (011)", async () => {
+    jar.set("cv_admin_refresh", { value: "refresh-secret", options: {} });
+    fetchMock.mockImplementation(async (url: string) =>
+      url.endsWith("/admin/auth/refresh")
+        ? Response.json(tokens("-2"))
+        : Response.json({ items: [], total: 0 }),
+    );
+    const [a, b] = await Promise.all([
+      GET(request("/admin-api/api/v1/admin/listings/pending"), params("listings", "pending")),
+      GET(request("/admin-api/api/v1/admin/listings/pending"), params("listings", "pending")),
+    ]);
+    expect([a.status, b.status]).toEqual([200, 200]);
+    const refreshes = fetchMock.mock.calls.filter(([url]) => String(url).endsWith("/admin/auth/refresh"));
+    expect(refreshes).toHaveLength(1);
+    expect(JSON.parse(refreshes[0]![1].body as string)).toEqual({ refresh_token: "refresh-secret" });
+    const forwarded = fetchMock.mock.calls.filter(([url]) => String(url).endsWith("/listings/pending"));
+    expect((forwarded[0]![1].headers as Headers).get("authorization")).toBe("Bearer admin-secret-2");
+    expect(jar.get("cv_admin")?.value).toBe("admin-secret-2");
+    expect(jar.get("cv_admin_refresh")?.value).toBe("refresh-secret-2");
+  });
+
+  it("asks to log in again when the session has ended, and clears both cookies", async () => {
+    jar.set("cv_admin_refresh", { value: "old", options: {} });
+    fetchMock.mockResolvedValue(
+      Response.json({ error: { code: "invalid_token", message: "x" } }, { status: 401 }),
+    );
+    const res = await GET(request("/admin-api/api/v1/admin/listings/pending"), params("listings", "pending"));
+    expect(res.status).toBe(401);
+    expect(jar.get("cv_admin_refresh")).toMatchObject({ value: "", options: { maxAge: 0 } });
+  });
+
+  it("logs out: the API ends the refresh token and both cookies are cleared", async () => {
     jar.set("cv_admin", { value: "t", options: {} });
+    jar.set("cv_admin_refresh", { value: "refresh-secret", options: {} });
+    fetchMock.mockResolvedValue(new Response(null, { status: 204 }));
     expect((await logout(request("/admin-api/logout", "POST"))).status).toBe(204);
+    expect(fetchMock.mock.calls[0]![0]).toBe("http://api:8000/api/v1/admin/auth/logout");
+    expect(JSON.parse(fetchMock.mock.calls[0]![1].body as string)).toEqual({
+      refresh_token: "refresh-secret",
+    });
     expect(jar.get("cv_admin")).toMatchObject({ value: "", options: { maxAge: 0 } });
+    expect(jar.get("cv_admin_refresh")).toMatchObject({ value: "", options: { maxAge: 0 } });
   });
 });

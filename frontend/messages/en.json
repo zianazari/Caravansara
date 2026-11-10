@@ -316,7 +316,7 @@
     "login": "Log in",
     "loggingIn": "Logging in…",
     "logout": "Log out",
-    "sessionEnded": "An admin session ends after 15 minutes. Log in again.",
+    "sessionEnded": "An admin session ends 8 hours after log-in. Log in again.",
     "queueTitle": "Review queue",
     "queueCount": "{count, plural, =0 {No listings waiting} one {# listing waiting} other {# listings waiting}}",
     "queueEmpty": "Every listing has been reviewed.",

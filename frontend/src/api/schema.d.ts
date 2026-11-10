@@ -587,9 +587,49 @@ export interface paths {
     put?: never;
     /**
      * Admin log in
-     * @description Admin accounts are made only with `caravansara create-admin` on the server. The token lasts 15 minutes and has no refresh token. Member accounts cannot log in here, and an admin token works on no member endpoint.
+     * @description Admin accounts are made only with `caravansara create-admin` on the server. The token lasts 15 minutes; the refresh token renews it until the session ends, 8 hours after log-in (`session_expires_in`). Member accounts cannot log in here, and an admin token works on no member endpoint.
      */
     post: operations["admin_login_api_v1_admin_auth_login_post"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/admin/auth/refresh": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Renew the admin token
+     * @description Rotates the refresh token: the one sent stops working and a new pair comes back, with the same session end. A refresh token used twice ends every session of that admin. A member's refresh token, a disabled admin and an ended session get `401 invalid_token`.
+     */
+    post: operations["admin_refresh_api_v1_admin_auth_refresh_post"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/admin/auth/logout": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * End the admin session
+     * @description The refresh token stops working. The admin token itself ends within 15 minutes.
+     */
+    post: operations["admin_logout_api_v1_admin_auth_logout_post"];
     delete?: never;
     options?: never;
     head?: never;
@@ -807,16 +847,21 @@ export interface components {
     };
     /**
      * AdminTokenOut
-     * @description No refresh token: an admin logs in again after ``expires_in`` (specs/backend (004) research R2).
+     * @description A short admin token and a rotating refresh token (feature 011). The session ends
+     *     ``session_expires_in`` seconds after log-in, however often it is refreshed.
      * @example {
      *       "access_token": "eyJhbGciOi...",
      *       "expires_in": 900,
+     *       "refresh_token": "kq3...",
+     *       "session_expires_in": 28800,
      *       "token_type": "bearer"
      *     }
      */
     AdminTokenOut: {
       /** Access Token */
       access_token: string;
+      /** Refresh Token */
+      refresh_token: string;
       /**
        * Token Type
        * @default bearer
@@ -827,6 +872,11 @@ export interface components {
        * @description Admin token lifetime in seconds.
        */
       expires_in: number;
+      /**
+       * Session Expires In
+       * @description Seconds until the admin session ends and a new log-in is needed.
+       */
+      session_expires_in: number;
     };
     /** AmenitiesIn */
     AmenitiesIn: {
@@ -3461,6 +3511,79 @@ export interface operations {
       };
       /** @description Too many attempts */
       429: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+    };
+  };
+  admin_refresh_api_v1_admin_auth_refresh_post: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["RefreshIn"];
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["AdminTokenOut"];
+        };
+      };
+      /** @description Missing, invalid or expired access token */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Invalid input or a broken business rule */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+    };
+  };
+  admin_logout_api_v1_admin_auth_logout_post: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["RefreshIn"];
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      204: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Invalid input or a broken business rule */
+      422: {
         headers: {
           [name: string]: unknown;
         };
