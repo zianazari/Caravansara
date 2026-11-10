@@ -3257,6 +3257,239 @@
         }
       }
     },
+    "/api/v1/me/wishlist": {
+      "get": {
+        "tags": [
+          "Wishlist"
+        ],
+        "summary": "My wishlist",
+        "description": "Saved listings, newest first. One that is no longer public stays as `available: false`, without its details.",
+        "operationId": "my_wishlist_api_v1_me_wishlist_get",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 100,
+              "minimum": 1,
+              "description": "Items per page.",
+              "default": 20,
+              "title": "Limit"
+            },
+            "description": "Items per page."
+          },
+          {
+            "name": "offset",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 0,
+              "description": "Items to skip.",
+              "default": 0,
+              "title": "Offset"
+            },
+            "description": "Items to skip."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WishlistPage"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, invalid or expired access token",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/me/wishlist/ids": {
+      "get": {
+        "tags": [
+          "Wishlist"
+        ],
+        "summary": "Ids of my saved listings",
+        "description": "Every saved listing id, newest first (at most 500), to show which cards are saved.",
+        "operationId": "my_wishlist_ids_api_v1_me_wishlist_ids_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WishlistIds"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, invalid or expired access token",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ]
+      }
+    },
+    "/api/v1/me/wishlist/{listing_id}": {
+      "put": {
+        "tags": [
+          "Wishlist"
+        ],
+        "summary": "Save a listing",
+        "description": "Saving twice keeps the first save. Only a public listing can be saved (404 otherwise). `409 wishlist_full`: the wishlist already holds 500 listings.",
+        "operationId": "save_api_v1_me_wishlist__listing_id__put",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "listing_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Listing Id"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "401": {
+            "description": "Missing, invalid or expired access token",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict with the current state",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "Wishlist"
+        ],
+        "summary": "Remove a saved listing",
+        "description": "Removing one that is not saved is not an error.",
+        "operationId": "unsave_api_v1_me_wishlist__listing_id__delete",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "listing_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Listing Id"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "401": {
+            "description": "Missing, invalid or expired access token",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/health": {
       "get": {
         "tags": [
@@ -4166,6 +4399,68 @@
           "avatar_url"
         ],
         "title": "HostOut"
+      },
+      "ListingCard": {
+        "properties": {
+          "id": {
+            "type": "integer",
+            "title": "Id"
+          },
+          "title": {
+            "type": "string",
+            "title": "Title"
+          },
+          "city": {
+            "$ref": "#/components/schemas/CityOut"
+          },
+          "price_per_night": {
+            "type": "string",
+            "title": "Price Per Night"
+          },
+          "currency": {
+            "type": "string",
+            "title": "Currency"
+          },
+          "avg_rating": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Avg Rating"
+          },
+          "review_count": {
+            "type": "integer",
+            "title": "Review Count"
+          },
+          "cover_url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Cover Url"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "title",
+          "city",
+          "price_per_night",
+          "currency",
+          "avg_rating",
+          "review_count",
+          "cover_url"
+        ],
+        "title": "ListingCard",
+        "description": "A public listing as a card, for another module's list (the wishlist, feature 012): no host-only field."
       },
       "ListingCreate": {
         "properties": {
@@ -5920,6 +6215,81 @@
           "type"
         ],
         "title": "ValidationError"
+      },
+      "WishlistIds": {
+        "properties": {
+          "listing_ids": {
+            "items": {
+              "type": "integer"
+            },
+            "type": "array",
+            "title": "Listing Ids",
+            "description": "Every saved listing, newest first, to mark the hearts on cards."
+          }
+        },
+        "type": "object",
+        "required": [
+          "listing_ids"
+        ],
+        "title": "WishlistIds"
+      },
+      "WishlistItemOut": {
+        "properties": {
+          "listing_id": {
+            "type": "integer",
+            "title": "Listing Id"
+          },
+          "saved_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Saved At"
+          },
+          "available": {
+            "type": "boolean",
+            "title": "Available",
+            "description": "False when the listing is no longer public (off, or back in review)."
+          },
+          "listing": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ListingCard"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The listing's card; null when it is not available."
+          }
+        },
+        "type": "object",
+        "required": [
+          "listing_id",
+          "saved_at",
+          "available",
+          "listing"
+        ],
+        "title": "WishlistItemOut"
+      },
+      "WishlistPage": {
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/WishlistItemOut"
+            },
+            "type": "array",
+            "title": "Items"
+          },
+          "total": {
+            "type": "integer",
+            "title": "Total"
+          }
+        },
+        "type": "object",
+        "required": [
+          "items",
+          "total"
+        ],
+        "title": "WishlistPage"
       }
     },
     "securitySchemes": {

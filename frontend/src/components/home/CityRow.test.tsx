@@ -3,6 +3,10 @@ import { vi } from "vitest";
 import { renderIn } from "@/test/render";
 
 const GET = vi.fn();
+// The heart's own behaviour is tested in components/wishlist (feature 012).
+vi.mock("@/hooks/useWishlist", () => ({
+  useWishlist: () => ({ saved: new Set<number>(), toggle: () => {}, ready: true }),
+}));
 vi.mock("@/api/client", () => ({ api: { GET: (...args: unknown[]) => GET(...args) } }));
 vi.mock("next/image", () => ({
   default: (p: { src: string; alt: string }) => <img src={p.src} alt={p.alt} />,

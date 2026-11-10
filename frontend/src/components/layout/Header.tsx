@@ -107,6 +107,9 @@ function SiteHeader() {
                   {t(`nav.${host.label}`)}
                 </Link>
               ) : null}
+              <Link href="/wishlists" className={item}>
+                {t("nav.wishlists")}
+              </Link>
               <Link href="/trips" className={item}>
                 {t("nav.trips")}
               </Link>

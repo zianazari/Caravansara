@@ -183,7 +183,7 @@ All tested on PostgreSQL 16 with PostGIS 3.4.
 ## Out of scope
 
 - Real payments and refunds (payment is simulated)
-- Wishlists, guest–host messages and host replies to reviews
+- Guest–host messages and host replies to reviews (wishlists were added later: `wishlist_items`, migration 0007, `docs/backend-design.md`)
 - Host date blocking and different prices per night
 - Changing booking dates (cancel and rebook instead), currency conversion, and editing catalogs from a panel (catalogs change only through seed data; the admin review panel for listings is planned work)
 

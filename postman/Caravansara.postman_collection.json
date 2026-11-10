@@ -2177,6 +2177,125 @@
           ]
         }
       ]
+    },
+    {
+      "name": "Wishlist",
+      "description": "The listings a member saved (feature 012).",
+      "item": [
+        {
+          "name": "My wishlist",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/me/wishlist?limit=20&offset=0",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "me",
+                "wishlist"
+              ],
+              "query": [
+                {
+                  "key": "limit",
+                  "value": "20"
+                },
+                {
+                  "key": "offset",
+                  "value": "0"
+                }
+              ]
+            },
+            "description": "Saved listings, newest first. One that is no longer public stays as `available: false`, without its details."
+          }
+        },
+        {
+          "name": "Ids of my saved listings",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/me/wishlist/ids",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "me",
+                "wishlist",
+                "ids"
+              ]
+            },
+            "description": "Every saved listing id, newest first (at most 500), to show which cards are saved."
+          }
+        },
+        {
+          "name": "Save a listing",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/me/wishlist/{{listingId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "me",
+                "wishlist",
+                "{{listingId}}"
+              ]
+            },
+            "description": "Saving twice keeps the first save. Only a public listing can be saved (404 otherwise). `409 wishlist_full`: the wishlist already holds 500 listings."
+          }
+        },
+        {
+          "name": "Remove a saved listing",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/me/wishlist/{{listingId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "me",
+                "wishlist",
+                "{{listingId}}"
+              ]
+            },
+            "description": "Removing one that is not saved is not an error."
+          }
+        }
+      ]
     }
   ]
 }

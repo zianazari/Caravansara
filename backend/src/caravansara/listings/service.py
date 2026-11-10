@@ -23,6 +23,7 @@ from caravansara.listings.schemas import (
     AdminQueueItem,
     AdminQueuePage,
     HostOut,
+    ListingCard,
     ListingCreate,
     ListingOut,
     ListingPage,
@@ -446,6 +447,26 @@ async def require_visible_listing(session: AsyncSession, listing_id: int, viewer
     listing = await _get(session, listing_id)
     if not await _visible_to(session, listing, viewer_id):
         raise NotFound("Listing not found.")
+
+
+async def public_cards(session: AsyncSession, storage: Storage, listing_ids: list[int]) -> dict[int, ListingCard]:
+    """Cards for the public listings among these ids; a listing that is not public is simply missing."""
+    found = await repo.public_by_ids(session, listing_ids)
+    covers = await repo.cover_keys(session, [listing.id for listing in found])
+    cards = {}
+    for listing in found:
+        cover = covers.get(listing.id)
+        cards[listing.id] = ListingCard(
+            id=listing.id,
+            title=listing.title,
+            city=await catalog.require_city(session, listing.city_id),
+            price_per_night=listing.price_per_night,
+            currency=listing.currency,
+            avg_rating=listing.avg_rating,
+            review_count=listing.review_count,
+            cover_url=storage.public_url(cover) if cover else None,
+        )
+    return cards
 
 
 async def cover_urls(session: AsyncSession, storage: Storage, listing_ids: list[int]) -> dict[int, str]:

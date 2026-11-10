@@ -716,6 +716,70 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  "/api/v1/me/wishlist": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * My wishlist
+     * @description Saved listings, newest first. One that is no longer public stays as `available: false`, without its details.
+     */
+    get: operations["my_wishlist_api_v1_me_wishlist_get"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/me/wishlist/ids": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Ids of my saved listings
+     * @description Every saved listing id, newest first (at most 500), to show which cards are saved.
+     */
+    get: operations["my_wishlist_ids_api_v1_me_wishlist_ids_get"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/me/wishlist/{listing_id}": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    /**
+     * Save a listing
+     * @description Saving twice keeps the first save. Only a public listing can be saved (404 otherwise). `409 wishlist_full`: the wishlist already holds 500 listings.
+     */
+    put: operations["save_api_v1_me_wishlist__listing_id__put"];
+    post?: never;
+    /**
+     * Remove a saved listing
+     * @description Removing one that is not saved is not an error.
+     */
+    delete: operations["unsave_api_v1_me_wishlist__listing_id__delete"];
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   "/health": {
     parameters: {
       query?: never;
@@ -1127,6 +1191,27 @@ export interface components {
       full_name: string;
       /** Avatar Url */
       avatar_url: string | null;
+    };
+    /**
+     * ListingCard
+     * @description A public listing as a card, for another module's list (the wishlist, feature 012): no host-only field.
+     */
+    ListingCard: {
+      /** Id */
+      id: number;
+      /** Title */
+      title: string;
+      city: components["schemas"]["CityOut"];
+      /** Price Per Night */
+      price_per_night: string;
+      /** Currency */
+      currency: string;
+      /** Avg Rating */
+      avg_rating: string | null;
+      /** Review Count */
+      review_count: number;
+      /** Cover Url */
+      cover_url: string | null;
     };
     /**
      * ListingCreate
@@ -1757,6 +1842,38 @@ export interface components {
       input?: unknown;
       /** Context */
       ctx?: Record<string, never>;
+    };
+    /** WishlistIds */
+    WishlistIds: {
+      /**
+       * Listing Ids
+       * @description Every saved listing, newest first, to mark the hearts on cards.
+       */
+      listing_ids: number[];
+    };
+    /** WishlistItemOut */
+    WishlistItemOut: {
+      /** Listing Id */
+      listing_id: number;
+      /**
+       * Saved At
+       * Format: date-time
+       */
+      saved_at: string;
+      /**
+       * Available
+       * @description False when the listing is no longer public (off, or back in review).
+       */
+      available: boolean;
+      /** @description The listing's card; null when it is not available. */
+      listing: components["schemas"]["ListingCard"] | null;
+    };
+    /** WishlistPage */
+    WishlistPage: {
+      /** Items */
+      items: components["schemas"]["WishlistItemOut"][];
+      /** Total */
+      total: number;
     };
   };
   responses: never;
@@ -3805,6 +3922,172 @@ export interface operations {
         };
         content: {
           "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+    };
+  };
+  my_wishlist_api_v1_me_wishlist_get: {
+    parameters: {
+      query?: {
+        /** @description Items per page. */
+        limit?: number;
+        /** @description Items to skip. */
+        offset?: number;
+      };
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["WishlistPage"];
+        };
+      };
+      /** @description Missing, invalid or expired access token */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  my_wishlist_ids_api_v1_me_wishlist_ids_get: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["WishlistIds"];
+        };
+      };
+      /** @description Missing, invalid or expired access token */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+    };
+  };
+  save_api_v1_me_wishlist__listing_id__put: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        listing_id: number;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      204: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Missing, invalid or expired access token */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Not found */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Conflict with the current state */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  unsave_api_v1_me_wishlist__listing_id__delete: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        listing_id: number;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      204: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Missing, invalid or expired access token */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
         };
       };
     };

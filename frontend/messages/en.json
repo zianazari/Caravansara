@@ -44,7 +44,8 @@
     "profile": "Profile",
     "bottomNav": "Bottom navigation",
     "becomeHost": "Become a host",
-    "myListings": "My listings"
+    "myListings": "My listings",
+    "wishlists": "Wishlists"
   },
   "errors": {
     "unknown": "Something went wrong. Please try again.",
@@ -86,7 +87,8 @@
     "listing_changed": "This listing has changed. Please reload the page.",
     "listing_not_pending": "This listing is no longer waiting for review.",
     "listing_not_rejected": "This listing has not been rejected.",
-    "too_few_photos": "A listing needs at least 3 photos."
+    "too_few_photos": "A listing needs at least 3 photos.",
+    "wishlist_full": "Your wishlist is full (500 listings). Remove one first."
   },
   "validation": {
     "invalid": "This value is not valid.",
@@ -346,6 +348,17 @@
     "changed": "The host has just changed this listing. Look at the new version and decide again.",
     "notPending": "This listing is no longer waiting for review.",
     "fewPhotos": "This listing has fewer than 3 photos and cannot be approved. You can reject it with a reason."
+  },
+  "wishlist": {
+    "title": "Wishlists",
+    "save": "Save to wishlist: {title}",
+    "remove": "Remove from wishlist: {title}",
+    "emptyTitle": "You have not saved a place yet",
+    "emptyText": "Tap the heart on any listing to keep it here for later.",
+    "more": "More",
+    "unavailable": "No longer available",
+    "unavailableText": "The host has taken this listing out of search for now.",
+    "removeGone": "Remove from the list"
   },
   "badge": {
     "guestFavourite": "Guest favourite",

@@ -51,6 +51,7 @@ M = {
   # 008, host pages
   "becomeHost": ("میزبان شوید", "Become a host"),
   "myListings": ("آگهی‌های من", "My listings"),
+  "wishlists": ("علاقه‌مندی‌ها", "Wishlists"),
  },
  "errors": {
   "unknown": ("مشکلی پیش آمد. لطفاً دوباره امتحان کنید.", "Something went wrong. Please try again."),
@@ -93,6 +94,7 @@ M = {
   "listing_not_pending": ("این آگهی دیگر در انتظار بررسی نیست.", "This listing is no longer waiting for review."),
   "listing_not_rejected": ("این آگهی رد نشده است.", "This listing has not been rejected."),
   "too_few_photos": ("آگهی دست‌کم ۳ عکس لازم دارد.", "A listing needs at least 3 photos."),
+  "wishlist_full": ("فهرست علاقه‌مندی‌ها پر است (۵۰۰ آگهی). یکی را بردارید.", "Your wishlist is full (500 listings). Remove one first."),
  },
  "validation": {
   "invalid": ("این مقدار درست نیست.", "This value is not valid."),
@@ -354,6 +356,18 @@ M = {
   "changed": ("میزبان همین حالا آگهی را تغییر داد. نسخه‌ی تازه را ببینید و دوباره تصمیم بگیرید.", "The host has just changed this listing. Look at the new version and decide again."),
   "notPending": ("این آگهی دیگر در انتظار بررسی نیست.", "This listing is no longer waiting for review."),
   "fewPhotos": ("این آگهی کمتر از ۳ عکس دارد و تأیید نمی‌شود. می‌توانید آن را با دلیل رد کنید.", "This listing has fewer than 3 photos and cannot be approved. You can reject it with a reason."),
+ },
+ # 012, wishlists: saved listings, the heart on cards and the listing page
+ "wishlist": {
+  "title": ("علاقه‌مندی‌ها", "Wishlists"),
+  "save": ("ذخیره در علاقه‌مندی‌ها: {title}", "Save to wishlist: {title}"),
+  "remove": ("برداشتن از علاقه‌مندی‌ها: {title}", "Remove from wishlist: {title}"),
+  "emptyTitle": ("هنوز جایی را ذخیره نکرده‌اید", "You have not saved a place yet"),
+  "emptyText": ("روی قلب هر آگهی بزنید تا اینجا بماند و بعداً پیدایش کنید.", "Tap the heart on any listing to keep it here for later."),
+  "more": ("بیشتر", "More"),
+  "unavailable": ("دیگر در دسترس نیست", "No longer available"),
+  "unavailableText": ("میزبان این آگهی را فعلاً از جستجو برداشته است.", "The host has taken this listing out of search for now."),
+  "removeGone": ("برداشتن از فهرست", "Remove from the list"),
  },
  "badge": {
   "guestFavourite": ("انتخاب مهمان‌ها", "Guest favourite"),

@@ -1,6 +1,6 @@
 "use client";
 
-import { LuggageIcon, SearchIcon, UserRoundIcon, type LucideIcon } from "lucide-react";
+import { HeartIcon, LuggageIcon, SearchIcon, UserRoundIcon, type LucideIcon } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { useAuthState } from "@/hooks/useAuth";
 import { Link, usePathname } from "@/i18n/navigation";
@@ -14,8 +14,8 @@ const OWN_BAR = ["/listings/", "/book/", "/host/new", "/admin"]; // the admin pa
 
 /**
  * The phone's bottom bar (specs/007-caravansara-theme, FR-008): search, trips and profile (or log in), each an
- * icon in the caravansara arch, the current one copper. Three items, not four: wishlists come with their own
- * feature (answer Q3). The listing and booking pages show their booking bar here instead, because two fixed
+ * icon in the caravansara arch, the current one copper. Wishlists joined as the fourth item with their own
+ * feature (012, answer Q3 of 007). The listing and booking pages show their booking bar here instead, because two fixed
  * bars would take half of a small screen (research R7). The layout keeps room for it, so nothing hides under it.
  */
 export function BottomNav() {
@@ -31,6 +31,7 @@ export function BottomNav() {
       Icon: SearchIcon,
       on: pathname === "/" || pathname.startsWith("/search"),
     },
+    { href: "/wishlists", label: t("wishlists"), Icon: HeartIcon, on: pathname.startsWith("/wishlists") },
     { href: "/trips", label: t("trips"), Icon: LuggageIcon, on: pathname.startsWith("/trips") },
     state === "signedIn"
       ? { href: "/account", label: t("profile"), Icon: UserRoundIcon, on: pathname.startsWith("/account") }

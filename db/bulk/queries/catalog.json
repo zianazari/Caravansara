@@ -706,6 +706,30 @@
     {
       "source": "caravansara.moderation.repository:record_address_view",
       "reason": "one INSERT into admin_address_views"
+    },
+    {
+      "source": "caravansara.wishlists.repository:count",
+      "reason": "one user's rows by the primary key's prefix; at most 500 (MAX_ITEMS)"
+    },
+    {
+      "source": "caravansara.wishlists.repository:add",
+      "reason": "one row by primary key, INSERT … ON CONFLICT DO NOTHING"
+    },
+    {
+      "source": "caravansara.wishlists.repository:remove",
+      "reason": "one row by primary key"
+    },
+    {
+      "source": "caravansara.wishlists.repository:page",
+      "reason": "one user's rows, newest first, on wishlist_items_user_saved_idx; at most 500"
+    },
+    {
+      "source": "caravansara.wishlists.repository:listing_ids",
+      "reason": "one user's rows on wishlist_items_user_saved_idx; at most 500"
+    },
+    {
+      "source": "caravansara.listings.repository:public_by_ids",
+      "reason": "at most one page of ids (100) by primary key"
     }
   ]
 }

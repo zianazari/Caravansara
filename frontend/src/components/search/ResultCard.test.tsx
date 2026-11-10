@@ -4,6 +4,10 @@ import type { components } from "@/api/schema";
 import { expectAccessible, renderIn } from "@/test/render";
 import { ResultCard } from "./ResultCard";
 
+// The heart's own behaviour is tested in components/wishlist (feature 012).
+vi.mock("@/hooks/useWishlist", () => ({
+  useWishlist: () => ({ saved: new Set<number>(), toggle: () => {}, ready: true }),
+}));
 vi.mock("next/image", () => ({
   default: (props: { src: string; alt: string }) => <img src={props.src} alt={props.alt} />,
 }));
@@ -107,11 +111,11 @@ describe("ResultCard (FR-017)", () => {
     expect(screen.getByRole("heading", { name: title })).toHaveClass("line-clamp-1");
   });
 
-  it("has no wishlist heart: that comes with its own feature (Q3)", () => {
+  it("has a wishlist heart over the photo, outside the card's link (feature 012)", () => {
     renderIn("fa", <ResultCard result={base} stay="" />);
-    expect(screen.queryByRole("button")).toBeNull();
-    expect(screen.getAllByRole("link")).toHaveLength(1);
-    expect(screen.getByRole("link")).toHaveAccessibleName(/خانه‌ی باغ در تجریش/);
+    const heart = screen.getByRole("button", { name: /ذخیره در علاقه‌مندی‌ها/ });
+    expect(heart).toHaveAttribute("aria-pressed", "false");
+    expect(heart.closest("a")).toBeNull();
   });
 
   it("is accessible", async () => {

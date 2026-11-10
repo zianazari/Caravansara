@@ -1,6 +1,6 @@
 # کارهای آینده
 
-این فهرست کارهای پیش روی پروژه است و فقط کارهایی را دارد که هنوز شروع نشده‌اند. کارهای انجام‌شده، یعنی پیاده‌سازی بکند نسخه‌ی اول، تکمیل تست‌های آن، مانیتورینگ (لاگ، متریک و trace)، داده‌ی تست و ماک (اولین کار با Spec Kit، در [specs/backend (001)](../specs/backend/))، پهن کردن ستون‌های قیمت برای ریال ([specs/backend (002)](../specs/backend/))، بازبینی روش Spec Kit (constitution نسخه‌ی 1.2.0)، بررسی ایندکس‌ها ([specs/backend (003)](../specs/backend/))، تأیید آگهی توسط مدیر سیستم ([specs/backend (004)](../specs/backend/)) و بخش مهمانِ سایت وب ([specs/005-frontend-guest/](../specs/005-frontend-guest/))، و تم کاروانسرایی سایت ([specs/007-caravansara-theme/](../specs/007-caravansara-theme/))، و آپلود عکس پروفایل از راه API ([specs/006-avatar-upload-via-api/](../specs/006-avatar-upload-via-api/))، و صفحه‌های میزبان ([specs/008-host-pages/](../specs/008-host-pages/))، و پنل مدیر (کار ۰۰۹، بی Spec Kit)، و قاعده‌ی ۳ عکس در API (کار ۰۱۰)، و نشست مدیر با refresh (کار ۰۱۱)، در [backend-design.md](backend-design.md)، [backend/README.md](../backend/README.md) و [observability/README.md](../observability/README.md) ثبت شده‌اند.
+این فهرست کارهای پیش روی پروژه است و فقط کارهایی را دارد که هنوز شروع نشده‌اند. کارهای انجام‌شده، یعنی پیاده‌سازی بکند نسخه‌ی اول، تکمیل تست‌های آن، مانیتورینگ (لاگ، متریک و trace)، داده‌ی تست و ماک (اولین کار با Spec Kit، در [specs/backend (001)](../specs/backend/))، پهن کردن ستون‌های قیمت برای ریال ([specs/backend (002)](../specs/backend/))، بازبینی روش Spec Kit (constitution نسخه‌ی 1.2.0)، بررسی ایندکس‌ها ([specs/backend (003)](../specs/backend/))، تأیید آگهی توسط مدیر سیستم ([specs/backend (004)](../specs/backend/)) و بخش مهمانِ سایت وب ([specs/005-frontend-guest/](../specs/005-frontend-guest/))، و تم کاروانسرایی سایت ([specs/007-caravansara-theme/](../specs/007-caravansara-theme/))، و آپلود عکس پروفایل از راه API ([specs/006-avatar-upload-via-api/](../specs/006-avatar-upload-via-api/))، و صفحه‌های میزبان ([specs/008-host-pages/](../specs/008-host-pages/))، و پنل مدیر (کار ۰۰۹، بی Spec Kit)، و قاعده‌ی ۳ عکس در API (کار ۰۱۰)، و نشست مدیر با refresh (کار ۰۱۱)، و علاقه‌مندی‌ها (کار ۰۱۲)، در [backend-design.md](backend-design.md)، [backend/README.md](../backend/README.md) و [observability/README.md](../observability/README.md) ثبت شده‌اند.
 
 ## ترتیب پیشنهادی
 
@@ -18,9 +18,8 @@
 
 **هدف:** کامل کردن سایت وب. مهمان، میزبان و مدیر سیستم همه بی Swagger کار می‌کنند (کار ۰۰۵ تا ۰۰۹). بخش مهمان ساخته شده است (کار ۰۰۵، [specs/005-frontend-guest/](../specs/005-frontend-guest/))، و پایه‌ی آن آماده است: `frontend/`، نشست، ترجمه‌ها، تقویم شمسی، تومان، CSP، سرویس `web` و CI. تصمیم‌ها و دلیل هر ساختار در [backend-design.md](backend-design.md)، بخش «فرانت‌اند وب»، آمده‌اند.
 
-**کارهای باقی‌مانده از تم کاروانسرایی (کار ۰۰۷).** چهار کار اول API تازه می‌خواهند (اصل III)، و دو کار آخر نه:
+**کارهای باقی‌مانده از تم کاروانسرایی (کار ۰۰۷).** سه کار اول API تازه می‌خواهند (اصل III)، و دو کار آخر نه:
 
-- [ ] **علاقه‌مندی‌ها:** قلب روی کارت و بخش «علاقه‌مندی‌ها» در نوار پایین گوشی. جدول تازه و endpointهای افزودن، برداشتن و فهرست می‌خواهد، و ذخیره برای حساب کاربر است، روی همه‌ی دستگاه‌ها. (پاسخ Q3 مالک پروژه، 2026-11-09)
 - [ ] **دسته‌های تازه:** «خانه‌ی سنتی»، «کنار دریا»، «کویر» و مانند آن‌ها. جدول دسته، انتخاب در فرم میزبان، داده‌ی دمو و فیلتر جستجو می‌خواهد. (پاسخ Q2)
 - [ ] **فیلتر نوع اقامتگاه در جستجو:** پارامتر `property_type` در `GET /search/listings`. با آن، دسته‌های «کل خانه»، «اتاق خصوصی» و «اتاق مشترک» شدنی می‌شوند. (research R5 کار ۰۰۷)
 - [ ] **آگهی‌های «محبوب» در همه‌ی شهرها:** یک endpoint، به‌جای شش ردیف شهر. (گزینه‌ی B پرسش Q1، اگر روزی خواسته شود)

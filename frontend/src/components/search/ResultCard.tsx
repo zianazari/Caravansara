@@ -4,6 +4,7 @@ import { StarIcon } from "lucide-react";
 import { useLocale, useTranslations } from "next-intl";
 import type { components } from "@/api/schema";
 import { ArchFrame } from "@/components/brand/ArchFrame";
+import { HeartButton } from "@/components/wishlist/HeartButton";
 import { useMoney } from "@/hooks/useMoney";
 import { Link } from "@/i18n/navigation";
 import { badgeOf } from "@/lib/badge";
@@ -19,8 +20,9 @@ type Result = components["schemas"]["SearchResult"];
  * Caravansara theme (specs/007-caravansara-theme, FR-006, contracts/ui.md): the photo sits in the lower arch,
  * with a "guest favourite" or "new" badge on it; then the city and country with the rating, the title, the
  * place type and, for a search with dates, the dates; the price per night and the total last, as on the
- * booking sites people know. The whole card is one link. No wishlist heart: that comes with its own feature
- * (answer Q3), and the arch's top corner stays free for it.
+ * booking sites people know. The whole card is one link; the wishlist heart (feature 012) is a separate button
+ * laid over the photo's lower corner, not inside the link, because a button inside a link is not allowed and
+ * the arch hides the top corners.
  */
 export function ResultCard({ result, nights, stay }: { result: Result; nights?: number; stay: string }) {
   const t = useTranslations();
@@ -37,7 +39,7 @@ export function ResultCard({ result, nights, stay }: { result: Result; nights?: 
   const checkIn = query.get("check_in");
   const checkOut = query.get("check_out");
   return (
-    <article className="grid gap-2">
+    <article className="relative grid gap-2">
       <Link
         href={`/listings/${result.id}${stay ? `?${stay}` : ""}`}
         className="group grid gap-1 rounded-xl focus-visible:outline-2"
@@ -93,6 +95,14 @@ export function ResultCard({ result, nights, stay }: { result: Result; nights?: 
           </p>
         ) : null}
       </Link>
+      {/* The same shape as the photo, laid over it, so the heart sits on the photo's lower corner. */}
+      <div className="pointer-events-none absolute inset-x-0 top-0 aspect-[1/0.95] md:aspect-[1/1.04]">
+        <HeartButton
+          listingId={result.id}
+          title={result.title}
+          className="pointer-events-auto absolute end-3 bottom-3"
+        />
+      </div>
     </article>
   );
 }

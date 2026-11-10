@@ -217,6 +217,12 @@ async def read_limited(stream: AsyncIterator[bytes], max_bytes: int) -> bytes:
     return bytes(body)
 
 
+async def lock_user(session: AsyncSession, user_id: int) -> None:
+    """For other modules: holds the user's row until their commit, so their per-user limits are counted one
+    request at a time (the wishlist's 500, feature 012)."""
+    await _locked_user(session, user_id)
+
+
 async def _locked_user(session: AsyncSession, user_id: int) -> User:
     user = await repo.get_user_for_update(session, user_id)
     if user is None:
