@@ -208,3 +208,25 @@ export async function approve(request: APIRequestContext, listingId: number) {
   });
   expect(res.status(), await res.text()).toBe(200);
 }
+
+type SearchItem = { id: number; distance_km: number | null; total_price: string | null; cover_url: string | null };
+
+/**
+ * One listing in a search, looked for on every page, not only the first. The tests add listings around the
+ * same point in Amsterdam on every run, so after many runs the main database holds hundreds there, and a new
+ * listing (whose public pin is up to 500 m from its real point) is not always among the first 100.
+ */
+export async function findInSearch(
+  request: APIRequestContext,
+  params: Record<string, string | number>,
+  listingId: number,
+): Promise<SearchItem | undefined> {
+  const limit = Number(params.limit ?? 100);
+  for (let offset = 0; ; offset += limit) {
+    const res = await request.get(`${API}/search/listings`, { params: { ...params, limit, offset } });
+    expect(res.status(), await res.text()).toBe(200);
+    const page = (await res.json()) as { items: SearchItem[]; total: number };
+    const hit = page.items.find((i) => i.id === listingId);
+    if (hit || page.items.length === 0 || offset + page.items.length >= page.total) return hit;
+  }
+}

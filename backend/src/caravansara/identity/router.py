@@ -1,14 +1,12 @@
-from fastapi import APIRouter, status
+from fastapi import APIRouter, Request, status
+from starlette.requests import ClientDisconnect
 
 from caravansara.core.db import SessionDep
 from caravansara.core.deps import ClientIp, StorageDep
-from caravansara.core.errors import error_responses
+from caravansara.core.errors import AppError, error_responses
 from caravansara.core.security import CurrentUserId, SettingsDep
 from caravansara.identity import service
 from caravansara.identity.schemas import (
-    AvatarSetIn,
-    AvatarUploadUrlIn,
-    AvatarUploadUrlOut,
     LoginIn,
     ProfileUpdate,
     RefreshIn,
@@ -78,9 +76,9 @@ async def get_me(user_id: CurrentUserId, session: SessionDep) -> UserOut:
     "/me",
     summary="Update my profile",
     description=(
-        "Change your name, or your picture. A picture must be one you uploaded here for this account "
-        "(`POST /me/avatar/upload-url`); any other address is refused with `invalid_avatar_url`, and nothing "
-        "in the request is saved. `null` removes the picture."
+        "Change your name, or your picture. A picture must be one set for this account with "
+        "`PUT /me/avatar`; any other address is refused with `invalid_avatar_url`, and nothing in the request "
+        "is saved. `null` removes the picture."
     ),
     responses=error_responses(401, 422),
 )
@@ -90,38 +88,66 @@ async def update_me(
     return UserOut.model_validate(await service.update_me(session, storage, settings, user_id, body))
 
 
-@router.post(
-    "/me/avatar/upload-url",
-    tags=["Profile picture"],
-    summary="1. Get an upload URL for a profile picture",
-    description=(
-        "Returns a presigned POST for a PNG or JPEG of at most 5 MB. Upload the file straight to storage as "
-        "multipart/form-data with the returned `fields` and then a `file` field; storage refuses a bigger "
-        "file. Then call `PUT /me/avatar` with `storage_key`."
-    ),
-    responses=error_responses(401, 422),
+# The picture's own body, for Swagger and the generated site client: PUT /me/avatar reads the raw body itself
+# (research R1), so FastAPI does not see a body parameter to describe.
+_PICTURE_BODY = {
+    "requestBody": {
+        "required": True,
+        "description": "The picture's bytes: a PNG or JPEG of at most 5 MB (5,242,880 bytes).",
+        "content": {t: {"schema": {"type": "string", "format": "binary"}} for t in service.AVATAR_TYPES},
+    }
+}
+
+
+def _example(code: str, message: str, details: object = None) -> dict[str, object]:
+    error: dict[str, object] = {"code": code, "message": message}
+    if details is not None:
+        error["details"] = details
+    return {"content": {"application/json": {"example": {"error": error}}}}
+
+
+# Each refusal of PUT /me/avatar with its own example in Swagger (constitution III).
+_PICTURE_ERRORS = error_responses(400, 401, 413, 415, 422, 503)
+_PICTURE_ERRORS[413].update(
+    _example("image_too_large", "The picture is larger than allowed.", {"max_bytes": 5 * 1024 * 1024})
 )
-async def avatar_upload_url(
-    body: AvatarUploadUrlIn, user_id: CurrentUserId, storage: StorageDep, settings: SettingsDep
-) -> AvatarUploadUrlOut:
-    return service.avatar_upload_url(storage, settings, user_id, body.content_type)
+_PICTURE_ERRORS[415].update(
+    _example(
+        "unsupported_image_type", "Only PNG or JPEG pictures are accepted.", {"allowed": list(service.AVATAR_TYPES)}
+    )
+)
+_PICTURE_ERRORS[422].update(_example("invalid_image", "The file is not a PNG or JPEG picture."))
+_PICTURE_ERRORS[503].update(_example("service_unavailable", "File storage is not reachable right now."))
 
 
 @router.put(
     "/me/avatar",
     tags=["Profile picture"],
-    summary="2. Use an uploaded picture",
+    summary="Set my picture",
     description=(
-        "Checks the uploaded file itself: it must be yours (`invalid_storage_key`), exist (`upload_missing`), "
-        "be at most 5 MB (`image_too_large`) and really be a PNG or JPEG (`invalid_image`). A refused file is "
-        "deleted. The previous picture's file is deleted after the change."
+        "Send the picture itself as the request body, with `Content-Type: image/png` or `image/jpeg`. It is "
+        "checked before anything is stored: at most 5 MB (`413 image_too_large`, read no further than the "
+        "limit), a PNG or JPEG type (`415 unsupported_image_type`), and content that really is a PNG or JPEG "
+        "(`422 invalid_image`). A refused picture is never written to storage. The format stored is the one "
+        "the content shows. The previous picture's file is deleted after the change. `503 service_unavailable` "
+        "means storage could not be reached and nothing changed."
     ),
-    responses=error_responses(401, 422),
+    openapi_extra=_PICTURE_BODY,
+    responses=_PICTURE_ERRORS,
 )
 async def set_avatar(
-    body: AvatarSetIn, user_id: CurrentUserId, session: SessionDep, storage: StorageDep, settings: SettingsDep
+    request: Request, user_id: CurrentUserId, session: SessionDep, storage: StorageDep, settings: SettingsDep
 ) -> UserOut:
-    return UserOut.model_validate(await service.set_avatar(session, storage, settings, user_id, body.storage_key))
+    limit = settings.max_avatar_bytes
+    declared = request.headers.get("content-length", "")
+    if declared.isdigit() and int(declared) > limit:
+        raise service.ImageTooLarge(limit)  # refused before a single byte is read (FR-003)
+    try:
+        body = await service.read_limited(request.stream(), limit)
+    except ClientDisconnect as exc:  # the client went away midway; nothing was stored
+        raise AppError(400, "bad_request", "The upload was cut off.") from exc
+    user = await service.set_avatar(session, storage, user_id, request.headers.get("content-type"), body)
+    return UserOut.model_validate(user)
 
 
 @router.delete(

@@ -46,6 +46,7 @@
   },
   "errors": {
     "unknown": "Something went wrong. Please try again.",
+    "unsupported_image_type": "Only PNG or JPEG pictures are accepted.",
     "service_unavailable": "We can't reach the server right now. Please try again in a moment.",
     "bad_origin": "This request did not come from this site. Please reload the page.",
     "bad_request": "The request was not valid.",

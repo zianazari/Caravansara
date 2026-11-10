@@ -63,16 +63,14 @@ export function AvatarUploader({ user }: { user: User }) {
     setBusy(true);
     setProblem(null);
     try {
-      const signed = await api.POST("/api/v1/me/avatar/upload-url", {
-        body: { content_type: file.type as "image/png" },
+      // One request with the file itself: the API checks its size, type and content before anything is stored,
+      // so a file that breaks the rules never reaches storage (specs/006-avatar-upload-via-api). The check above
+      // still runs first, so the message comes at once and a bad file is not sent at all (FR-008).
+      const result = await api.PUT("/api/v1/me/avatar", {
+        body: file as unknown as string,
+        bodySerializer: (body: unknown) => body as BodyInit,
+        headers: { "content-type": file.type },
       });
-      if (!signed.data) throw signed.error;
-      const form = new FormData();
-      for (const [key, value] of Object.entries(signed.data.fields)) form.append(key, value);
-      form.append("file", file);
-      const stored = await fetch(signed.data.url, { method: "POST", body: form });
-      if (!stored.ok) throw { error: { code: stored.status === 400 ? "image_too_large" : "upload_missing" } };
-      const result = await api.PUT("/api/v1/me/avatar", { body: { storage_key: signed.data.storage_key } });
       if (!result.data) throw result.error;
       done(result.data, t("account.pictureSaved"));
     } catch (error) {

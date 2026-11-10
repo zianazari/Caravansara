@@ -68,6 +68,9 @@ src/
   refresh token is used twice, so two tabs refreshing at once would log the user out everywhere.
 - **Pages without a token:** search and listing pages render on the server without a token; account, booking,
   trips and review pages render in the browser.
+- **Profile picture:** checked in the browser first (size, type, first bytes), then sent in one `PUT /me/avatar`
+  with the file as the body; the API checks it again before storing anything (`specs/006-avatar-upload-via-api`).
+  The `/api/v1` proxy streams bodies to the API and refuses one over 5 MB + 64 KB with the API's own 413.
 - **Errors:** every API error code has a message in both languages. A test reads the codes from the backend
   source.
 - **Time:** dates that decide cancelling and reviewing are counted in the listing city's time zone, as the API

@@ -42,8 +42,9 @@ class Storage:
         return f"{self._settings.media_base_url.rstrip('/')}/{key}"
 
     def presigned_upload(self, key: str, content_type: str, max_bytes: int) -> dict[str, Any]:
-        """A presigned POST: the policy caps the size and pins the content type. Storage itself refuses a
-        bigger file, so it is never stored (listing photos and profile pictures have their own limits)."""
+        """A presigned POST for a listing photo: the policy caps the size and pins the content type, and storage
+        itself refuses a bigger file. Profile pictures do not use it: they go through the API, which checks the
+        content before anything is stored (constitution 1.4.0, specs/006-avatar-upload-via-api)."""
         return self._signer.generate_presigned_post(
             Bucket=self.bucket,
             Key=key,
@@ -96,7 +97,9 @@ class Storage:
         return url[len(prefix) :] if url.startswith(prefix) and len(url) > len(prefix) else None
 
     async def put_bytes(self, key: str, data: bytes, content_type: str) -> None:
-        """Store a small object from the server (demo photos); browsers upload through presigned POST."""
+        """Store a small object from the server: demo photos, and profile pictures after the API has checked
+        their size, type and content (specs/006-avatar-upload-via-api). Listing photos upload through presigned
+        POST instead."""
         await asyncio.to_thread(
             self._client.put_object, Bucket=self.bucket, Key=key, Body=data, ContentType=content_type
         )

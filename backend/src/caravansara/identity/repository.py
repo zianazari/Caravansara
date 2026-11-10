@@ -10,6 +10,15 @@ async def get_user(session: AsyncSession, user_id: int) -> User | None:
     return await session.get(User, user_id)
 
 
+async def get_user_for_update(session: AsyncSession, user_id: int) -> User | None:
+    """The user's row, locked until the commit. Changing a profile picture reads the old picture and sets the
+    new one under this lock, so two changes at once run one after the other: the second sees the first's
+    picture as "old" and deletes its file, and no file is left without an owner (specs/006-avatar-upload-via-api,
+    research R6). The lock is taken only for that short commit, never while a file is being sent."""
+    query = select(User).where(User.id == user_id).with_for_update().execution_options(populate_existing=True)
+    return (await session.execute(query)).scalar_one_or_none()
+
+
 async def get_user_by_email(session: AsyncSession, email: str, kind: AccountKind | None = None) -> User | None:
     query = select(User).where(func.lower(User.email) == email.lower())
     if kind is not None:

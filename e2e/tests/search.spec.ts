@@ -1,5 +1,16 @@
 import { expect, test } from "@playwright/test";
-import { API, addPhoto, amenityIds, auth, createListing, day, expectError, register, reserve } from "./helpers";
+import {
+  API,
+  addPhoto,
+  amenityIds,
+  auth,
+  createListing,
+  day,
+  expectError,
+  findInSearch,
+  register,
+  reserve,
+} from "./helpers";
 
 type Item = { id: number; distance_km: number | null; total_price: string | null; cover_url: string | null };
 
@@ -21,19 +32,29 @@ async function search(request: Parameters<typeof register>[0], params: Record<st
   return (await res.json()) as { items: Item[]; total: number; limit: number; offset: number };
 }
 
+/** A listing around its own point, on whichever page it is (helpers.findInSearch). */
+function findAround(
+  request: Parameters<typeof register>[0],
+  listing: { id: number; private_location: { latitude: number; longitude: number } },
+  extra: Record<string, string | number> = {},
+) {
+  return findInSearch(request, around(listing, extra), listing.id);
+}
+
 test.describe("Search", () => {
   test("radial search finds a new listing with distance, total price and cover", async ({ request }) => {
     const host = await register(request, "host");
     const listing = await createListing(request, host);
     await addPhoto(request, host, listing.id);
 
-    const page = await search(request, around(listing, { check_in: day(30), check_out: day(33), adults: 2 }));
-    const hit = page.items.find((i) => i.id === listing.id);
+    const stay = { check_in: day(30), check_out: day(33), adults: 2 };
+    const hit = await findAround(request, listing, stay);
     expect(hit).toBeTruthy();
     expect(hit!.distance_km).toBeLessThanOrEqual(0.5);
     expect(hit!.total_price).toBe("390.00"); // 3 × 120 + 30
     expect(hit!.cover_url).toContain("/caravansara-media/");
 
+    const page = await search(request, around(listing, stay));
     const distances = page.items.map((i) => i.distance_km!);
     expect(distances).toEqual([...distances].sort((a, b) => a - b));
   });
@@ -51,8 +72,7 @@ test.describe("Search", () => {
     const host = await register(request, "host");
     const guest = await register(request, "guest");
     const listing = await createListing(request, host, { max_guests: 2, pets_allowed: false, max_pets: 0 });
-    const found = async (extra: Record<string, string | number>) =>
-      (await search(request, around(listing, extra))).items.some((i) => i.id === listing.id);
+    const found = async (extra: Record<string, string | number>) => (await findAround(request, listing, extra)) !== undefined;
 
     expect(await found({ check_in: day(50), check_out: day(52), adults: 2 })).toBe(true);
     expect(await found({ adults: 3 })).toBe(false);

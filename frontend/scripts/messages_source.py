@@ -51,6 +51,7 @@ M = {
  },
  "errors": {
   "unknown": ("مشکلی پیش آمد. لطفاً دوباره امتحان کنید.", "Something went wrong. Please try again."),
+  "unsupported_image_type": ("فقط عکس PNG یا JPEG پذیرفته می‌شود.", "Only PNG or JPEG pictures are accepted."),
   "service_unavailable": ("الان به سرور دسترسی نداریم. چند لحظه بعد دوباره امتحان کنید.", "We can't reach the server right now. Please try again in a moment."),
   "bad_origin": ("این درخواست از همین سایت نیامده است. صفحه را دوباره باز کنید.", "This request did not come from this site. Please reload the page."),
   "bad_request": ("درخواست درست نبود.", "The request was not valid."),

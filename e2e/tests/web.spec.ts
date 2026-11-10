@@ -5,8 +5,9 @@ import { API, PASSWORD, WEB, sql } from "./helpers";
 /**
  * The web site on the running stack (specs/005-frontend-guest): what only the deployed wiring shows. The site
  * forwards /api/v1 to the API, keeps the refresh token in its own cookie, sends the visitor's address for the
- * rate limits, puts a content security policy on every page, and lets a browser upload a profile picture
- * straight to storage. Pages themselves are tested with Vitest; browser tests of pages are later work.
+ * rate limits, puts a content security policy on every page, and passes a profile picture to the API, which
+ * checks it before storing it (specs/006-avatar-upload-via-api). Pages are tested with Vitest, and in a real
+ * browser by theme.spec.ts (specs/007-caravansara-theme).
  */
 const ORIGIN = { origin: WEB };
 
@@ -93,7 +94,9 @@ test.describe("Web site", () => {
     expect(html.match(/<script/g)?.length ?? 0).toBeLessThanOrEqual(html.match(new RegExp(`nonce="${nonce!.replace(/[+/=]/g, "\\$&")}"`, "g"))?.length ?? 0);
   });
 
-  test("uploads a profile picture straight to storage and uses it (FR-038)", async ({ request }) => {
+  // specs/006-avatar-upload-via-api: the picture goes through the site to the API, which checks it before
+  // anything is stored; the old presigned route is gone, and the site caps a body before it reaches the API.
+  test("uploads a profile picture through the API and refuses bad files (006)", async ({ request }) => {
     const email = `e2e.avatar.${randomUUID().slice(0, 8)}@caravansara.example.com`;
     const reg = await request.post(`${WEB}/session/register`, {
       headers: ORIGIN,
@@ -101,22 +104,47 @@ test.describe("Web site", () => {
     });
     const token = (await reg.json()).access_token as string;
     const authHeader = { authorization: `Bearer ${token}` };
-
-    const signed = await (
-      await request.post(`${WEB}${API}/me/avatar/upload-url`, { headers: authHeader, data: { content_type: "image/png" } })
-    ).json();
     const png = Buffer.concat([Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]), Buffer.alloc(200)]);
-    const stored = await request.post(signed.url, {
-      multipart: { ...signed.fields, file: { name: "me.png", mimeType: "image/png", buffer: png } },
-    });
-    expect(stored.status(), await stored.text()).toBe(204);
 
-    const set = await request.put(`${WEB}${API}/me/avatar`, { headers: authHeader, data: { storage_key: signed.storage_key } });
+    const set = await request.put(`${WEB}${API}/me/avatar`, {
+      headers: { ...authHeader, "content-type": "image/png" },
+      data: png,
+    });
     expect(set.status(), await set.text()).toBe(200);
     const url = (await set.json()).avatar_url as string;
-    expect(url).toContain(`/avatars/`);
+    expect(url).toContain("/avatars/");
     const picture = await request.get(url);
     expect(picture.status()).toBe(200);
     expect(picture.headers()["content-type"]).toBe("image/png");
+
+    const fake = await request.put(`${WEB}${API}/me/avatar`, {
+      headers: { ...authHeader, "content-type": "image/png" },
+      data: Buffer.from("just some text, not a picture"),
+    });
+    expect(fake.status()).toBe(422);
+    expect((await fake.json()).error.code).toBe("invalid_image");
+
+    const gif = await request.put(`${WEB}${API}/me/avatar`, {
+      headers: { ...authHeader, "content-type": "image/gif" },
+      data: Buffer.from("GIF89a"),
+    });
+    expect(gif.status()).toBe(415);
+    expect((await gif.json()).error.code).toBe("unsupported_image_type");
+
+    const big = await request.put(`${WEB}${API}/me/avatar`, {
+      headers: { ...authHeader, "content-type": "image/png" },
+      data: Buffer.concat([png, Buffer.alloc(6 * 1024 * 1024)]),
+    });
+    expect(big.status()).toBe(413);
+    expect((await big.json()).error).toMatchObject({ code: "image_too_large", details: { max_bytes: 5242880 } });
+
+    const me = await request.get(`${WEB}${API}/me`, { headers: authHeader });
+    expect((await me.json()).avatar_url).toBe(url); // every refusal kept the picture
+
+    const old = await request.post(`${WEB}${API}/me/avatar/upload-url`, {
+      headers: authHeader,
+      data: { content_type: "image/png" },
+    });
+    expect([404, 405]).toContain(old.status());
   });
 });

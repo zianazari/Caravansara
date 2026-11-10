@@ -1,5 +1,5 @@
 import { expect, test } from "@playwright/test";
-import { API, addPhoto, amenityIds, auth, createListing, day, register, reserve } from "./helpers";
+import { API, addPhoto, amenityIds, auth, createListing, day, findInSearch, register, reserve } from "./helpers";
 
 /** The whole reservation story in one test, as a host and a guest would live it. */
 test("host lists a place, guest finds it, books, pays, and both see the booking", async ({ request }) => {
@@ -17,19 +17,17 @@ test("host lists a place, guest finds it, books, pays, and both see the booking"
   const guest = await register(request, "scenario-guest");
   const checkIn = day(35);
   const checkOut = day(38);
-  const search = await request.get(`${API}/search/listings`, {
-    params: {
-      lat: listing.private_location.latitude,
-      lng: listing.private_location.longitude,
-      radius_km: 1,
-      sort: "distance",
-      check_in: checkIn,
-      check_out: checkOut,
-      adults: 2,
-      limit: 100,
-    },
-  });
-  const hit = (await search.json()).items.find((i: { id: number }) => i.id === listing.id);
+  const params = {
+    lat: listing.private_location.latitude,
+    lng: listing.private_location.longitude,
+    radius_km: 1,
+    sort: "distance",
+    check_in: checkIn,
+    check_out: checkOut,
+    adults: 2,
+    limit: 100,
+  };
+  const hit = await findInSearch(request, params, listing.id);
   expect(hit).toMatchObject({ total_price: "390.00" });
   const detail = await (await request.get(`${API}/listings/${listing.id}`, { headers: auth(guest) })).json();
   expect(detail.private_location).toBeNull();
@@ -46,8 +44,5 @@ test("host lists a place, guest finds it, books, pays, and both see the booking"
   const hostSide = await (await request.get(`${API}/listings/${listing.id}/bookings`, { headers: auth(host) })).json();
   expect(hostSide.items.map((b: { id: number }) => b.id)).toEqual([booking.id]);
 
-  const again = await request.get(`${API}/search/listings`, {
-    params: { ...Object.fromEntries(new URL(search.url()).searchParams) },
-  });
-  expect((await again.json()).items.some((i: { id: number }) => i.id === listing.id)).toBe(false);
+  expect(await findInSearch(request, params, listing.id)).toBeUndefined();
 });

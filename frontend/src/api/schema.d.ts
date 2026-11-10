@@ -100,29 +100,9 @@ export interface paths {
     head?: never;
     /**
      * Update my profile
-     * @description Change your name, or your picture. A picture must be one you uploaded here for this account (`POST /me/avatar/upload-url`); any other address is refused with `invalid_avatar_url`, and nothing in the request is saved. `null` removes the picture.
+     * @description Change your name, or your picture. A picture must be one set for this account with `PUT /me/avatar`; any other address is refused with `invalid_avatar_url`, and nothing in the request is saved. `null` removes the picture.
      */
     patch: operations["update_me_api_v1_me_patch"];
-    trace?: never;
-  };
-  "/api/v1/me/avatar/upload-url": {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    get?: never;
-    put?: never;
-    /**
-     * 1. Get an upload URL for a profile picture
-     * @description Returns a presigned POST for a PNG or JPEG of at most 5 MB. Upload the file straight to storage as multipart/form-data with the returned `fields` and then a `file` field; storage refuses a bigger file. Then call `PUT /me/avatar` with `storage_key`.
-     */
-    post: operations["avatar_upload_url_api_v1_me_avatar_upload_url_post"];
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
     trace?: never;
   };
   "/api/v1/me/avatar": {
@@ -134,8 +114,8 @@ export interface paths {
     };
     get?: never;
     /**
-     * 2. Use an uploaded picture
-     * @description Checks the uploaded file itself: it must be yours (`invalid_storage_key`), exist (`upload_missing`), be at most 5 MB (`image_too_large`) and really be a PNG or JPEG (`invalid_image`). A refused file is deleted. The previous picture's file is deleted after the change.
+     * Set my picture
+     * @description Send the picture itself as the request body, with `Content-Type: image/png` or `image/jpeg`. It is checked before anything is stored: at most 5 MB (`413 image_too_large`, read no further than the limit), a PNG or JPEG type (`415 unsupported_image_type`), and content that really is a PNG or JPEG (`422 invalid_image`). A refused picture is never written to storage. The format stored is the one the content shows. The previous picture's file is deleted after the change. `503 service_unavailable` means storage could not be reached and nothing changed.
      */
     put: operations["set_avatar_api_v1_me_avatar_put"];
     post?: never;
@@ -879,66 +859,6 @@ export interface components {
       /** Icon */
       icon: string | null;
     };
-    /** AvatarSetIn */
-    AvatarSetIn: {
-      /**
-       * Storage Key
-       * @example avatars/42/9b1d0c.png
-       */
-      storage_key: string;
-    };
-    /**
-     * AvatarUploadUrlIn
-     * @example {
-     *       "content_type": "image/png"
-     *     }
-     */
-    AvatarUploadUrlIn: {
-      /**
-       * Content Type
-       * @enum {string}
-       */
-      content_type: "image/png" | "image/jpeg";
-    };
-    /**
-     * AvatarUploadUrlOut
-     * @description The same shape as a listing photo's upload URL, defined here because modules may not import each other.
-     * @example {
-     *       "expires_in": 600,
-     *       "fields": {
-     *         "Content-Type": "image/png",
-     *         "key": "avatars/42/9b1d0c4e5f6a7b8c9d0e1f2a3b4c5d6e.png",
-     *         "policy": "eyJleHBpcmF0aW9uIjogIjIwMjYtMTEtMDhUMTI6MTA6MDBaIn0=",
-     *         "x-amz-algorithm": "AWS4-HMAC-SHA256",
-     *         "x-amz-credential": "caravansara/20261108/us-east-1/s3/aws4_request",
-     *         "x-amz-date": "20261108T120000Z",
-     *         "x-amz-signature": "3f1c…"
-     *       },
-     *       "storage_key": "avatars/42/9b1d0c4e5f6a7b8c9d0e1f2a3b4c5d6e.png",
-     *       "url": "http://localhost:9000/caravansara-media"
-     *     }
-     */
-    AvatarUploadUrlOut: {
-      /**
-       * Storage Key
-       * @description Send this to `PUT /me/avatar` after the upload.
-       */
-      storage_key: string;
-      /**
-       * Url
-       * @description POST the file here as multipart/form-data.
-       */
-      url: string;
-      /**
-       * Fields
-       * @description Form fields to send before the `file` field.
-       */
-      fields: {
-        [key: string]: string;
-      };
-      /** Expires In */
-      expires_in: number;
-    };
     /**
      * BookingAddress
      * @description Only on a confirmed or completed booking.
@@ -1511,7 +1431,7 @@ export interface components {
       full_name?: string | null;
       /**
        * Avatar Url
-       * @description Only the address of a picture you uploaded with `POST /me/avatar/upload-url`, or null to go back to the default avatar. An address on another server is refused (`invalid_avatar_url`): it would tell that server who views your reviews. `PUT /me/avatar` and `DELETE /me/avatar` do the same.
+       * @description Only the address of a picture you set with `PUT /me/avatar`, or null to go back to the default avatar. An address on another server is refused (`invalid_avatar_url`): it would tell that server who views your reviews. `PUT /me/avatar` and `DELETE /me/avatar` do the same.
        */
       avatar_url?: string | null;
     };
@@ -2040,48 +1960,6 @@ export interface operations {
       };
     };
   };
-  avatar_upload_url_api_v1_me_avatar_upload_url_post: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    requestBody: {
-      content: {
-        "application/json": components["schemas"]["AvatarUploadUrlIn"];
-      };
-    };
-    responses: {
-      /** @description Successful Response */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["AvatarUploadUrlOut"];
-        };
-      };
-      /** @description Missing, invalid or expired access token */
-      401: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["ErrorResponse"];
-        };
-      };
-      /** @description Invalid input or a broken business rule */
-      422: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["ErrorResponse"];
-        };
-      };
-    };
-  };
   set_avatar_api_v1_me_avatar_put: {
     parameters: {
       query?: never;
@@ -2089,9 +1967,11 @@ export interface operations {
       path?: never;
       cookie?: never;
     };
+    /** @description The picture's bytes: a PNG or JPEG of at most 5 MB (5,242,880 bytes). */
     requestBody: {
       content: {
-        "application/json": components["schemas"]["AvatarSetIn"];
+        "image/png": string;
+        "image/jpeg": string;
       };
     };
     responses: {
@@ -2104,6 +1984,15 @@ export interface operations {
           "application/json": components["schemas"]["UserOut"];
         };
       };
+      /** @description Bad request */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
       /** @description Missing, invalid or expired access token */
       401: {
         headers: {
@@ -2113,12 +2002,80 @@ export interface operations {
           "application/json": components["schemas"]["ErrorResponse"];
         };
       };
+      /** @description The request body is larger than allowed */
+      413: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          /**
+           * @example {
+           *       "error": {
+           *         "code": "image_too_large",
+           *         "message": "The picture is larger than allowed.",
+           *         "details": {
+           *           "max_bytes": 5242880
+           *         }
+           *       }
+           *     }
+           */
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description The declared content type is not accepted */
+      415: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          /**
+           * @example {
+           *       "error": {
+           *         "code": "unsupported_image_type",
+           *         "message": "Only PNG or JPEG pictures are accepted.",
+           *         "details": {
+           *           "allowed": [
+           *             "image/png",
+           *             "image/jpeg"
+           *           ]
+           *         }
+           *       }
+           *     }
+           */
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
       /** @description Invalid input or a broken business rule */
       422: {
         headers: {
           [name: string]: unknown;
         };
         content: {
+          /**
+           * @example {
+           *       "error": {
+           *         "code": "invalid_image",
+           *         "message": "The file is not a PNG or JPEG picture."
+           *       }
+           *     }
+           */
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description A service the request needs is not reachable; nothing was changed */
+      503: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          /**
+           * @example {
+           *       "error": {
+           *         "code": "service_unavailable",
+           *         "message": "File storage is not reachable right now."
+           *       }
+           *     }
+           */
           "application/json": components["schemas"]["ErrorResponse"];
         };
       };

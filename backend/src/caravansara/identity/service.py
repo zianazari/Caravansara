@@ -2,14 +2,16 @@
 
 import logging
 import uuid
+from collections.abc import AsyncIterator
 from dataclasses import dataclass
 from datetime import timedelta
 
+from botocore.exceptions import BotoCoreError, ClientError
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from caravansara.core.config import Settings
-from caravansara.core.errors import AppError, Conflict, NotFound, Unauthorized, Unprocessable
+from caravansara.core.errors import AppError, Conflict, NotFound, ServiceUnavailable, Unauthorized, Unprocessable
 from caravansara.core.metrics import RATE_LIMITED
 from caravansara.core.security import (
     create_access_token,
@@ -22,7 +24,7 @@ from caravansara.core.storage import Storage
 from caravansara.core.timeutil import utcnow
 from caravansara.identity import repository as repo
 from caravansara.identity.models import AccountKind, User
-from caravansara.identity.schemas import AdminTokenOut, AvatarUploadUrlOut, ProfileUpdate, TokensOut
+from caravansara.identity.schemas import AdminTokenOut, ProfileUpdate, TokensOut
 
 __all__ = ["AdminRefused", "PublicUser", "TooManyAttempts"]
 
@@ -142,7 +144,7 @@ async def update_me(
 ) -> User:
     """Name and picture. A picture address goes through the same checks as PUT /me/avatar (FR-041), and all
     checks run before anything changes, so a refused request changes nothing, the name included."""
-    user = await get_me(session, user_id)
+    user = await _locked_user(session, user_id)
     data = changes.model_dump(exclude_unset=True)
     new_key: str | None = None
     if data.get("avatar_url") is not None:
@@ -158,33 +160,70 @@ async def update_me(
     return user
 
 
-# ---- profile pictures (specs/005-frontend-guest, FR-037 to FR-041, research R20) --------------------------
+# ---- profile pictures (specs/006-avatar-upload-via-api; 005 FR-037 to FR-041) -------------------------------
+#
+# The file comes in the body of PUT /me/avatar and is checked here before anything is written to storage:
+# size, declared type and real content. A file that breaks a rule is never stored, whatever client sends it
+# (constitution 1.4.0). Listing photos still upload straight to storage with a presigned POST.
 
-_AVATAR_EXTENSIONS = {"image/png": "png", "image/jpeg": "jpg"}
+AVATAR_TYPES = ("image/png", "image/jpeg")
+_EXTENSIONS = {"image/png": "png", "image/jpeg": "jpg"}
 _PNG = b"\x89PNG\r\n\x1a\n"
 _JPEG = b"\xff\xd8\xff"
+
+
+class ImageTooLarge(AppError):
+    """413: the body is over max_avatar_bytes. The same code as for a stored file that is too large (005)."""
+
+    def __init__(self, max_bytes: int) -> None:
+        super().__init__(413, "image_too_large", "The picture is larger than allowed.", {"max_bytes": max_bytes})
+
+
+class UnsupportedImageType(AppError):
+    """415: the declared type is missing or is not PNG or JPEG (research R4)."""
+
+    def __init__(self) -> None:
+        super().__init__(
+            415, "unsupported_image_type", "Only PNG or JPEG pictures are accepted.", {"allowed": list(AVATAR_TYPES)}
+        )
 
 
 def _avatar_prefix(user_id: int) -> str:
     return f"avatars/{user_id}/"
 
 
-def avatar_upload_url(storage: Storage, settings: Settings, user_id: int, content_type: str) -> AvatarUploadUrlOut:
-    """A presigned POST for a new picture. The policy pins the type and refuses more than max_avatar_bytes,
-    so storage itself never keeps a bigger file."""
-    key = f"{_avatar_prefix(user_id)}{uuid.uuid4().hex}.{_AVATAR_EXTENSIONS[content_type]}"
-    signed = storage.presigned_upload(key, content_type, settings.max_avatar_bytes)
-    return AvatarUploadUrlOut(
-        storage_key=key,
-        url=signed["url"],
-        fields={k: str(v) for k, v in signed["fields"].items()},
-        expires_in=settings.upload_url_seconds,
-    )
+def _image_type(head: bytes) -> str | None:
+    """What the file really is, from its first bytes; the declared type proves nothing."""
+    if head.startswith(_PNG):
+        return "image/png"
+    if head.startswith(_JPEG):
+        return "image/jpeg"
+    return None
+
+
+async def read_limited(stream: AsyncIterator[bytes], max_bytes: int) -> bytes:
+    """The body, read piece by piece and given up as soon as it passes max_bytes, so the server never reads
+    more than the limit and one piece, however large the upload (FR-003, research R3). A client that goes away
+    midway ends the read with Starlette's ClientDisconnect, before anything is written."""
+    body = bytearray()
+    async for piece in stream:
+        body.extend(piece)
+        if len(body) > max_bytes:
+            raise ImageTooLarge(max_bytes)
+    return bytes(body)
+
+
+async def _locked_user(session: AsyncSession, user_id: int) -> User:
+    user = await repo.get_user_for_update(session, user_id)
+    if user is None:
+        raise Unauthorized("The account no longer exists.", code="invalid_token")
+    return user
 
 
 async def _check_avatar_file(storage: Storage, settings: Settings, key: str) -> None:
-    """The stored file's real size and first bytes, not what the browser declared (FR-038). A refused file
-    is deleted, so nothing unchecked stays in storage."""
+    """For PATCH /me with an address in this user's folder: the stored file's real size and first bytes. Since
+    006 only PUT /me/avatar writes there, after these same checks, so this is a second line of defence. A
+    refused file is deleted. Errors here stay 422, as in 005: the request body is small, the file is stored."""
     size = await storage.size(key)
     if size is None:
         raise Unprocessable("upload_missing", "No uploaded file was found for this key.")
@@ -193,16 +232,16 @@ async def _check_avatar_file(storage: Storage, settings: Settings, key: str) -> 
         raise Unprocessable(
             "image_too_large", "The picture is larger than allowed.", details={"max_bytes": settings.max_avatar_bytes}
         )
-    head = await storage.read_head(key, 8)
-    if not (head.startswith(_PNG) or head.startswith(_JPEG)):
+    if _image_type(await storage.read_head(key, 8)) is None:
         await storage.delete(key)
         raise Unprocessable("invalid_image", "The file is not a PNG or JPEG picture.")
 
 
 async def _replace_avatar(session: AsyncSession, storage: Storage, user: User, new_key: str | None) -> User:
-    """Points the account at the new picture (or none) and then deletes the old file (FR-039). The old file
-    goes only after the commit: if the commit fails, the account still points at a file that exists. A failed
-    delete is only logged; the picture is already replaced."""
+    """Points the account at the new picture (or none) and then deletes the old file (FR-006). `user` must be
+    locked (_locked_user), so the "old" picture is the one really in place when two changes race (R6). The old
+    file goes only after the commit: if the commit fails, the account still points at a file that exists. A
+    failed delete is only logged; the picture is already replaced."""
     old_url = user.avatar_url
     user.avatar_url = f"{storage.public_url(new_key)}" if new_key else None
     await session.commit()
@@ -216,17 +255,35 @@ async def _replace_avatar(session: AsyncSession, storage: Storage, user: User, n
 
 
 async def set_avatar(
-    session: AsyncSession, storage: Storage, settings: Settings, user_id: int, storage_key: str
+    session: AsyncSession, storage: Storage, user_id: int, content_type: str | None, body: bytes
 ) -> User:
-    user = await get_me(session, user_id)
-    if not storage_key.startswith(_avatar_prefix(user_id)) or ".." in storage_key:
-        raise Unprocessable("invalid_storage_key", "This key does not belong to your account.")
-    await _check_avatar_file(storage, settings, storage_key)
-    return await _replace_avatar(session, storage, user, storage_key)
+    """PUT /me/avatar: check, store, then set (FR-001, FR-002). The size was already capped while reading."""
+    declared = (content_type or "").split(";")[0].strip().lower()
+    if declared not in AVATAR_TYPES:
+        raise UnsupportedImageType()
+    real = _image_type(body[:8])
+    if not body or real is None:
+        raise Unprocessable("invalid_image", "The file is not a PNG or JPEG picture.")
+    # The format comes from the content, so a PNG labelled JPEG is stored and served as PNG (research R5).
+    key = f"{_avatar_prefix(user_id)}{uuid.uuid4().hex}.{_EXTENSIONS[real]}"
+    try:
+        await storage.put_bytes(key, body, real)
+    except (BotoCoreError, ClientError) as exc:
+        raise ServiceUnavailable("File storage is not reachable right now.") from exc
+    try:
+        user = await _locked_user(session, user_id)
+        return await _replace_avatar(session, storage, user, key)
+    except BaseException:
+        # The file was stored but not set: delete it, so no file is left without an owner (FR-007).
+        try:
+            await storage.delete(key)
+        except Exception:
+            log.warning("avatar_cleanup_failed", extra={"user_id": user_id})
+        raise
 
 
 async def remove_avatar(session: AsyncSession, storage: Storage, user_id: int) -> User:
-    user = await get_me(session, user_id)
+    user = await _locked_user(session, user_id)
     return await _replace_avatar(session, storage, user, None)
 
 

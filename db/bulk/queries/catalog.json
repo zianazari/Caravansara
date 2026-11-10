@@ -652,6 +652,10 @@
       "reason": "one user by primary key"
     },
     {
+      "source": "caravansara.identity.repository:get_user_for_update",
+      "reason": "one user by primary key, locked FOR UPDATE for a profile picture change (specs/006-avatar-upload-via-api, research R6)"
+    },
+    {
       "source": "caravansara.identity.repository:add_refresh_token",
       "reason": "one-row INSERT"
     },
