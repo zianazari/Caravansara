@@ -551,6 +551,7 @@ async def _decide(
         host_id=decided.host_id,
         listing_id=listing_id,
         title=decided.title,
+        currency=decided.currency,
         approved=status == ReviewStatus.approved,
         reason=reason,
     )

@@ -20,10 +20,12 @@ def sample(result: str, kind: str = "listing_approved") -> float:
     return REGISTRY.get_sample_value("caravansara_emails_total", {"kind": kind, "result": result}) or 0.0
 
 
-async def _decide(client: AsyncClient, factory: Factory, approve: bool) -> tuple[dict[str, Any], Any]:
+async def _decide(
+    client: AsyncClient, factory: Factory, approve: bool, currency: str = "EUR"
+) -> tuple[dict[str, Any], Any]:
     admin = await factory.admin()
     host = await factory.user("host")
-    listing = await factory.listing(host, approved=False, title="Courtyard house")
+    listing = await factory.listing(host, approved=False, title="Courtyard house", currency=currency)
     detail = (await client.get(f"/admin/listings/{listing['id']}", headers=admin.auth)).json()
     path = f"/admin/listings/{listing['id']}/{'approve' if approve else 'reject'}"
     body: dict[str, Any] = {"review_version": detail["review_version"]}
@@ -42,12 +44,24 @@ async def test_a_decision_writes_the_hosts_email_in_the_same_transaction(
     assert len(rows) == 1
     kind, user_id, subject, body, sent_at = rows[0]
     assert (kind, user_id, sent_at) == ("listing_rejected", host.id, None)
-    assert "رد شد" in subject
-    assert "not approved" in subject
+    assert subject == "Your listing was not approved"  # a euro listing: English only
     assert "The photos are blurry." in body
     assert "Courtyard house" in body
-    assert f"/fa/host/listings/{listing['id']}" in body
+    assert f"/en/host/listings/{listing['id']}" in body
+    assert "آگهی" not in body
     assert host.email not in body  # the address is read at sending time, never copied
+
+
+async def test_a_rial_listing_gets_its_email_in_persian_only(
+    client: AsyncClient, db: AsyncEngine, factory: Factory
+) -> None:
+    listing, _ = await _decide(client, factory, approve=False, currency="IRR")
+    subject, body = (await sql(db, "SELECT subject, body FROM email_outbox"))[0]
+    assert subject == "آگهی شما رد شد"
+    assert "دلیل: The photos are blurry." in body
+    assert f"/fa/host/listings/{listing['id']}" in body
+    assert "Reason" not in body
+    assert "approved" not in body
 
 
 async def test_a_refused_decision_writes_no_email(client: AsyncClient, db: AsyncEngine, factory: Factory) -> None:
@@ -73,7 +87,7 @@ async def test_the_worker_sends_it_to_the_host(
     assert result.emails_sent == 1
     (email,) = sender.sent
     assert email.to == host.email
-    assert "تأیید شد" in email.subject
+    assert email.subject == "Your listing is approved"
     assert sample("sent") == before + 1
     assert (await sql(db, "SELECT attempts, sent_at IS NOT NULL FROM email_outbox"))[0] == (1, True)
     assert (await run_once(app.state.sessionmaker, sender, prepared)).emails_sent == 0  # sent once only
@@ -120,8 +134,11 @@ async def test_without_an_smtp_host_emails_wait_and_the_gauges_say_so(
     assert REGISTRY.get_sample_value("caravansara_email_outbox_queue") == 1
 
 
-def test_the_review_email_has_persian_then_english() -> None:
-    subject, body = service.review_result_email(title="Bagh", approved=False, reason="No", link="http://x/l")
-    assert subject.index("رد شد") < subject.index("not approved")
-    assert body.index("دلیل: No") < body.index("Reason: No")
-    assert body.count("http://x/l") == 2
+def test_rial_means_persian_and_every_other_currency_english() -> None:
+    assert service.language_for("IRR") == "fa"
+    assert {service.language_for(c) for c in ("EUR", "GBP", "SEK", "DKK", "USD")} == {"en"}
+    subject, body = service.review_result_email(
+        title="Bagh", approved=True, reason=None, link="http://x/fa/l", language="fa"
+    )
+    assert subject == "آگهی شما تأیید شد"
+    assert body.count("http://x/fa/l") == 1

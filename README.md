@@ -4,7 +4,7 @@
 
 <p align="center">
   <a href="https://github.com/zianazari/Caravansara/actions/workflows/ci.yml"><img src="https://github.com/zianazari/Caravansara/actions/workflows/ci.yml/badge.svg" alt="CI"></a>
-  <img src="https://img.shields.io/badge/tests-383%20%C2%B7%2097.1%25%20coverage-b5651d" alt="383 backend tests, 97.1% coverage">
+  <img src="https://img.shields.io/badge/tests-384%20%C2%B7%2097.1%25%20coverage-b5651d" alt="384 backend tests, 97.1% coverage">
   <img src="https://img.shields.io/badge/web-390%20Vitest%20tests-6E9F18" alt="390 Vitest tests for the web site">
   <img src="https://img.shields.io/badge/e2e-111%20Playwright%20tests-2EAD33" alt="111 Playwright tests">
 </p>
@@ -219,7 +219,7 @@ Two layers, because each one catches what the other can't:
 | --- | --- | --- |
 | **Runs against** | PostgreSQL + PostGIS and MinIO that testcontainers starts for each run | The real `docker compose` stack, from outside, over HTTP |
 | **Proves** | Every rule in each module, exact race moments, DST, migrations, the API contract | The built image, real settings and wiring: all 44 endpoints, listing photo upload to MinIO, profile pictures through the API (bad files refused), an admin made with `create-admin` reviewing listings, the whole host and guest story, and the web site's proxy, session cookie, rate limit by visitor address and CSP |
-| **Size** | 383 tests, 97.1% coverage | 111 tests, under a minute |
+| **Size** | 384 tests, 97.1% coverage | 111 tests, under a minute |
 
 The web site has its own Vitest suite in `frontend/` (390 tests): every rule (Jalali calendar for every day of 1400–1410, city time zones on clock-change days, toman with exact decimals, the session lock across tabs), every acceptance scenario in Persian and English, and axe accessibility checks.
 

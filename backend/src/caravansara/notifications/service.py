@@ -4,8 +4,9 @@ A module that wants to tell a user something calls ``queue_*`` inside its own tr
 commits or rolls back with the event. The worker calls ``send_due``: one email per transaction, so a failure
 only touches that email, which waits longer each time and is given up after ``email_max_attempts``.
 
-Language: the users table has no language, so each email has Persian first and English under it. Asking every
-user for a language, or guessing it, would add a column and a question for two short emails.
+Language (owner decision, 2026-11-10): one language per email, from the currency the user deals in. Rial means
+Persian; any other currency means English. For a review result that is the listing's currency, since the host
+is paid in it. The users table has no language, and the currency already says which market a user is in.
 """
 
 import logging
@@ -26,18 +27,28 @@ log = logging.getLogger("caravansara.notifications")
 MAX_WAIT = timedelta(hours=1)
 
 
-def review_result_email(*, title: str, approved: bool, reason: str | None, link: str) -> tuple[str, str]:
-    """Subject and body of the email that tells a host the result of a review."""
+def language_for(currency: str) -> str:
+    """Persian for rial, English for every other currency."""
+    return "fa" if currency == "IRR" else "en"
+
+
+def review_result_email(*, title: str, approved: bool, reason: str | None, link: str, language: str) -> tuple[str, str]:
+    """Subject and body of the email that tells a host the result of a review, in one language."""
+    if language == "fa":
+        if approved:
+            subject = "آگهی شما تأیید شد"
+            text = f"آگهی «{title}» تأیید شد و اگر فعال باشد، مهمان‌ها آن را در جستجو می‌بینند."
+        else:
+            subject = "آگهی شما رد شد"
+            text = f"آگهی «{title}» رد شد.\nدلیل: {reason}\nآن را اصلاح کنید و دوباره برای بازبینی بفرستید."
+        return subject, f"{text}\n{link}\n\nکاروانسرا\n"
     if approved:
-        subject = "آگهی شما تأیید شد · Your listing is approved"
-        fa = f"آگهی «{title}» تأیید شد و اگر فعال باشد، مهمان‌ها آن را در جستجو می‌بینند."
-        en = f'Your listing "{title}" is approved. If it is active, guests now find it in search.'
+        subject = "Your listing is approved"
+        text = f'Your listing "{title}" is approved. If it is active, guests now find it in search.'
     else:
-        subject = "آگهی شما رد شد · Your listing was not approved"
-        fa = f"آگهی «{title}» رد شد.\nدلیل: {reason}\nآن را اصلاح کنید و دوباره برای بازبینی بفرستید."
-        en = f'Your listing "{title}" was not approved.\nReason: {reason}\nFix it and send it for review again.'
-    body = f"{fa}\n{link}\n\n---\n\n{en}\n{link}\n\nکاروانسرا · Caravansara\n"
-    return subject, body
+        subject = "Your listing was not approved"
+        text = f'Your listing "{title}" was not approved.\nReason: {reason}\nFix it and send it for review again.'
+    return subject, f"{text}\n{link}\n\nCaravansara\n"
 
 
 async def queue_review_result(
@@ -47,12 +58,14 @@ async def queue_review_result(
     host_id: int,
     listing_id: int,
     title: str,
+    currency: str,
     approved: bool,
     reason: str | None,
 ) -> None:
     """Called inside the decision's transaction; the caller commits."""
-    link = f"{settings.site_url.rstrip('/')}/fa/host/listings/{listing_id}"
-    subject, body = review_result_email(title=title, approved=approved, reason=reason, link=link)
+    language = language_for(currency)
+    link = f"{settings.site_url.rstrip('/')}/{language}/host/listings/{listing_id}"
+    subject, body = review_result_email(title=title, approved=approved, reason=reason, link=link, language=language)
     kind = "listing_approved" if approved else "listing_rejected"
     await repo.add(session, OutboxEmail(kind=kind, user_id=host_id, subject=subject, body=body, attempts=0))
 

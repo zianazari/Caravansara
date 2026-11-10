@@ -18,21 +18,26 @@ async function messageTo(request: Parameters<typeof register>[0], address: strin
 test.describe("Review-result emails", () => {
   test.describe.configure({ timeout: 60_000 });
 
-  test("an approved listing's host gets an email, in Persian and English", async ({ request }) => {
+  test("a euro listing's host gets the approval in English only", async ({ request }) => {
     const host = await register(request, "mailhost");
-    await createListing(request, host, { title: "E2E email courtyard" }); // approves it
+    await createListing(request, host, { title: "E2E email courtyard" }); // EUR, and approves it
     await expect.poll(() => messageTo(request, host.email), { timeout: 30_000 }).toBeTruthy();
     const message = (await messageTo(request, host.email))!;
-    expect(message.Subject).toContain("تأیید شد");
-    expect(message.Subject).toContain("approved");
+    expect(message.Subject).toBe("Your listing is approved");
     const body = await (await request.get(`${MAILPIT}/api/v1/message/${message.ID}`)).json();
     expect(body.Text).toContain("E2E email courtyard");
-    expect(body.Text).toMatch(/\/fa\/host\/listings\/\d+/);
+    expect(body.Text).toMatch(/\/en\/host\/listings\/\d+/);
+    expect(body.Text).not.toContain("آگهی");
   });
 
-  test("a rejected listing's host gets the reason as written", async ({ request }) => {
+  test("a rial listing's host gets the rejection and its reason in Persian only", async ({ request }) => {
     const host = await register(request, "mailrejected");
-    const listing = await createListing(request, host, { title: "E2E email rejected" }, { approved: false });
+    const listing = await createListing(
+      request,
+      host,
+      { title: "E2E email rejected", currency: "IRR", price_per_night: 12000000, cleaning_fee: 0 },
+      { approved: false },
+    );
     for (const caption of ["A", "B", "C"]) await addPhoto(request, host, listing.id, caption, { approved: false });
     const admin = await adminLogin(request, createAdmin("mailer").email);
     const detail = await (await request.get(`${API}/admin/listings/${listing.id}`, { headers: admin })).json();
@@ -44,6 +49,9 @@ test.describe("Review-result emails", () => {
     await expect.poll(() => messageTo(request, host.email), { timeout: 30_000 }).toBeTruthy();
     const message = (await messageTo(request, host.email))!;
     const body = await (await request.get(`${MAILPIT}/api/v1/message/${message.ID}`)).json();
-    expect(body.Text).toContain("Please add a photo of the bathroom.");
+    expect(message.Subject).toBe("آگهی شما رد شد");
+    expect(body.Text).toContain("دلیل: Please add a photo of the bathroom.");
+    expect(body.Text).toMatch(/\/fa\/host\/listings\/\d+/);
+    expect(body.Text).not.toContain("Reason");
   });
 });
