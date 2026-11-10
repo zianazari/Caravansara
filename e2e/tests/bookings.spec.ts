@@ -23,9 +23,11 @@ test.describe("Bookings", () => {
       address: null, // the address is shown only after payment
       listing: { id: listing.id, city: "Amsterdam" },
     });
-    const holdMinutes = (Date.parse(booking.hold_expires_at) - Date.now()) / 60_000;
-    expect(holdMinutes).toBeGreaterThan(13);
-    expect(holdMinutes).toBeLessThanOrEqual(15);
+    // Both times from the server: the test machine's clock may differ from the containers' by seconds
+    // (Docker on macOS drifts), which made this check fail now and then (docs/future-work.md, 2026-11-10).
+    const holdMinutes = (Date.parse(booking.hold_expires_at) - Date.parse(booking.created_at)) / 60_000;
+    expect(holdMinutes).toBeGreaterThan(14.9);
+    expect(holdMinutes).toBeLessThanOrEqual(15.01);
   });
 
   test("the same Idempotency-Key replays the booking (200) instead of booking twice", async ({ request }) => {
