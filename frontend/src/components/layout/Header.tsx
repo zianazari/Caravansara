@@ -7,6 +7,7 @@ import { Suspense } from "react";
 import { api } from "@/api/client";
 import { UserAvatar } from "@/components/account/UserAvatar";
 import { Logo } from "@/components/brand/Logo";
+import { AdminHeader } from "@/components/admin/AdminHeader";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { useAuthState, useMe } from "@/hooks/useAuth";
 import { Link, usePathname } from "@/i18n/navigation";
@@ -39,7 +40,13 @@ export function useHostLink(): { href: string; label: "becomeHost" | "myListings
     : { href: "/host/new", label: "becomeHost" };
 }
 
+/** The admin panel's pages (feature 009, only on the admin host) have their own header and no host link. */
 export function Header() {
+  const pathname = usePathname();
+  return pathname.startsWith("/admin") ? <AdminHeader /> : <SiteHeader />;
+}
+
+function SiteHeader() {
   const t = useTranslations();
   const state = useAuthState();
   const me = useMe();

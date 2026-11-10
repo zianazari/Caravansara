@@ -5,7 +5,7 @@ or on the map, open a listing, sign up and log in, upload a profile picture, boo
 see their trips, cancel, and review. Hosts make a listing in eight steps with at least three photos, then keep it:
 status and rejection reason, edits with a warning when an approved listing goes back to review, photos (order,
 cover, labels), off and on, bookings and reviews. The site is in Persian, right-to-left with Vazirmatn, at `/fa`
-(the default), and in English at `/en`. The admin panel (feature 009) comes later.
+(the default), and in English at `/en`. The admin panel (feature 009) is in the same app but answers only on the admin host (`ADMIN_HOST`, `admin.localhost:3001` in compose): the review queue, each listing with its exact address, approve, and reject with a reason.
 
 Why each piece is built the way it is: [`docs/backend-design.md`](../docs/backend-design.md), section «فرانت‌اند وب».
 
@@ -43,7 +43,9 @@ src/
   app/
     [locale]/          pages: home, search, listings/[id], login, register, account, book/[listingId],
                        trips, trips/[bookingId], trips/[bookingId]/review,
-                       host (my listings), host/new?step=1..8, host/listings/[id]?tab=details|photos|bookings|reviews
+                       host (my listings), host/new?step=1..8, host/listings/[id]?tab=details|photos|bookings|reviews,
+                       admin, admin/login, admin/listings/[id] (admin host only)
+    admin-api/         admin log-in/out (token in the HttpOnly cv_admin cookie) and the forwarder to /api/v1/admin/*
     api/v1/[...path]/  forwards /api/v1 to the API (one origin, no CORS)
     session/           login, register, refresh, logout: the refresh token in the HttpOnly cv_refresh cookie
   proxy.ts             language prefix, the CSP with a fresh nonce, and 404 for /api/v1/auth/*
@@ -75,6 +77,9 @@ src/
 - **Profile picture:** checked in the browser first (size, type, first bytes), then sent in one `PUT /me/avatar`
   with the file as the body; the API checks it again before storing anything (`specs/006-avatar-upload-via-api`).
   The `/api/v1` proxy streams bodies to the API and refuses one over 5 MB + 64 KB with the API's own 413.
+- **Admin panel:** `proxy.ts` serves `/{locale}/admin…` and `/admin-api/…` only when the Host is `ADMIN_HOST`, and
+  nothing else there; unset, there is no panel. The admin token never reaches page scripts. Every decision is
+  sent with the `review_version` seen, so a host's change in the meantime gets 409 and the new version is shown.
 - **Host pages:** a listing is created only at the last step, then its photos upload two at a time and are put
   in order; the draft (answers only, not files) is in `sessionStorage` as `cv-listing-draft`. At least three
   photos is a rule of the site only (`MIN_PHOTOS`). Rial prices are typed in toman and sent ×10. The fields that

@@ -54,6 +54,14 @@ const RESPONSE_HEADERS = ["content-type", "date", "cache-control", "retry-after"
 
 async function forward(request: Request, { params }: { params: Promise<{ path: string[] }> }) {
   const { path } = await params;
+  return forwardTo(request, path);
+}
+
+/**
+ * Sends one request on to `/api/v1/{path}` of the API. `authorization` replaces the browser's header: the admin
+ * panel's forwarder (app/admin-api) puts the admin token from its HttpOnly cookie there (feature 009).
+ */
+export async function forwardTo(request: Request, path: string[], authorization?: string): Promise<Response> {
   const url = new URL(request.url);
   const target = `${apiInternalUrl()}/api/v1/${path.map(encodeURIComponent).join("/")}${url.search}`;
 
@@ -62,6 +70,7 @@ async function forward(request: Request, { params }: { params: Promise<{ path: s
     const value = request.headers.get(name);
     if (value) headers.set(name, value);
   }
+  if (authorization !== undefined) headers.set("authorization", authorization);
   const address = clientAddress(request.headers);
   if (address) headers.set("x-forwarded-for", address);
 
