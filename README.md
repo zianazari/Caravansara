@@ -4,8 +4,8 @@
 
 <p align="center">
   <a href="https://github.com/zianazari/Caravansara/actions/workflows/ci.yml"><img src="https://github.com/zianazari/Caravansara/actions/workflows/ci.yml/badge.svg" alt="CI"></a>
-  <img src="https://img.shields.io/badge/tests-351%20%C2%B7%2097.6%25%20coverage-b5651d" alt="351 backend tests, 97.6% coverage">
-  <img src="https://img.shields.io/badge/web-258%20Vitest%20tests-6E9F18" alt="258 Vitest tests for the web site">
+  <img src="https://img.shields.io/badge/tests-362%20%C2%B7%2097.4%25%20coverage-b5651d" alt="362 backend tests, 97.4% coverage">
+  <img src="https://img.shields.io/badge/web-266%20Vitest%20tests-6E9F18" alt="266 Vitest tests for the web site">
   <img src="https://img.shields.io/badge/e2e-85%20Playwright%20tests-2EAD33" alt="85 Playwright tests">
 </p>
 
@@ -66,7 +66,7 @@ This repository holds the **backend**, the **database design** and the **web sit
 
 ## Architecture
 
-Caravansara is a **modular monolith**: one FastAPI codebase and one PostgreSQL database, split into modules with strict borders. It runs as two processes, and photos never pass through the API.
+Caravansara is a **modular monolith**: one FastAPI codebase and one PostgreSQL database, split into modules with strict borders. It runs as two processes. Listing photos never pass through the API; profile pictures do, so the API can check them before anything is stored.
 
 <p align="center">
   <img src="docs/images/readme/architecture.svg" alt="Architecture: client, API modules, worker, PostgreSQL + PostGIS and MinIO" width="100%">
@@ -80,7 +80,7 @@ Caravansara is a **modular monolith**: one FastAPI codebase and one PostgreSQL d
 | **API** (FastAPI, uvicorn) | All endpoints under `/api/v1`, Swagger at `/docs` | Stateless, so any number of copies can run behind a load balancer |
 | **Worker** (`caravansara worker`) | Every minute: expire unpaid holds, complete finished stays | Scheduled jobs would run once per API copy if they lived in the API |
 | **PostgreSQL 16 + PostGIS** | The single source of truth; enforces the critical rules | The only place every API copy shares, so the only safe place for race-proof rules |
-| **MinIO / S3** | Photo files | Browsers upload directly with presigned URLs, so large files don't load the API |
+| **MinIO / S3** | Photo files | Browsers upload listing photos directly with presigned URLs, so large files don't load the API. A profile picture (at most 5 MB) goes through the API, which checks its size, type and content first, so a bad file is never stored |
 | **Monitoring** (optional profile) | Alloy, Loki, Tempo, Prometheus, Grafana | Watches all of the above; off by default so daily development stays light |
 
 ### Modules
@@ -215,10 +215,10 @@ Two layers, because each one catches what the other can't:
 | | pytest (`backend/tests`) | Playwright (`e2e/`) |
 | --- | --- | --- |
 | **Runs against** | PostgreSQL + PostGIS and MinIO that testcontainers starts for each run | The real `docker compose` stack, from outside, over HTTP |
-| **Proves** | Every rule in each module, exact race moments, DST, migrations, the API contract | The built image, real settings and wiring: all 39 endpoints, photo and profile picture upload to MinIO, an admin made with `create-admin` reviewing listings, the whole host and guest story, and the web site's proxy, session cookie, rate limit by visitor address and CSP |
-| **Size** | 351 tests, 97.6% coverage | 85 tests, under a minute |
+| **Proves** | Every rule in each module, exact race moments, DST, migrations, the API contract | The built image, real settings and wiring: all 38 endpoints, listing photo upload to MinIO, profile pictures through the API (bad files refused), an admin made with `create-admin` reviewing listings, the whole host and guest story, and the web site's proxy, session cookie, rate limit by visitor address and CSP |
+| **Size** | 362 tests, 97.4% coverage | 85 tests, under a minute |
 
-The web site has its own Vitest suite in `frontend/` (258 tests): every rule (Jalali calendar for every day of 1400–1410, city time zones on clock-change days, toman with exact decimals, the session lock across tabs), every acceptance scenario in Persian and English, and axe accessibility checks.
+The web site has its own Vitest suite in `frontend/` (266 tests): every rule (Jalali calendar for every day of 1400–1410, city time zones on clock-change days, toman with exact decimals, the session lock across tabs), every acceptance scenario in Persian and English, and axe accessibility checks.
 
 Most Playwright tests use its `request` fixture and need no browser. `theme.spec.ts` opens every guest page in a real Chrome, at five widths from 320 px and in both languages, and checks for sideways scroll and for accessibility problems with axe, colour contrast included. Some highlights:
 

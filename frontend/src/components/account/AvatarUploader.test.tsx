@@ -48,36 +48,30 @@ describe("AvatarUploader", () => {
     expect(screen.queryByRole("button", { name: "حذف عکس" })).toBeNull();
   });
 
-  it("uploads in three steps and shows the preview first (US2/AC10)", async () => {
-    POST.mockResolvedValue({
-      data: {
-        storage_key: "avatars/7/a.png",
-        url: `${MEDIA}`,
-        fields: { key: "avatars/7/a.png", policy: "p" },
-        expires_in: 600,
-      },
-    });
-    storage.mockResolvedValue(new Response(null, { status: 204 }));
+  // specs/006-avatar-upload-via-api: one request, the file itself; the API checks it before storing anything.
+  it("sends the picture in one PUT and shows the preview first (US2/AC10)", async () => {
     PUT.mockResolvedValue({ data: { ...user, avatar_url: `${MEDIA}/avatars/7/a.png` } });
     renderIn("fa", <AvatarUploader user={user} />);
 
-    await userEvent.upload(screen.getByLabelText("انتخاب عکس"), png());
+    const file = png();
+    await userEvent.upload(screen.getByLabelText("انتخاب عکس"), file);
     expect(await screen.findByRole("img", { name: "پیش‌نمایش عکس تازه" })).toHaveAttribute(
       "src",
       "blob:preview",
     );
     await userEvent.click(screen.getByRole("button", { name: "ذخیره‌ی عکس" }));
 
-    await waitFor(() =>
-      expect(PUT).toHaveBeenCalledWith("/api/v1/me/avatar", { body: { storage_key: "avatars/7/a.png" } }),
-    );
-    expect(POST).toHaveBeenCalledWith("/api/v1/me/avatar/upload-url", {
-      body: { content_type: "image/png" },
-    });
-    const [url, init] = storage.mock.calls[0]! as [string, RequestInit];
-    expect(url).toBe(MEDIA);
-    const form = init.body as FormData;
-    expect([...form.keys()]).toEqual(["key", "policy", "file"]); // fields first, the file last
+    await waitFor(() => expect(PUT).toHaveBeenCalledTimes(1));
+    const [path, options] = PUT.mock.calls[0]! as [
+      string,
+      { body: File; headers: Record<string, string>; bodySerializer: (b: unknown) => unknown },
+    ];
+    expect(path).toBe("/api/v1/me/avatar");
+    expect(options.body).toBe(file);
+    expect(options.headers["content-type"]).toBe("image/png");
+    expect(options.bodySerializer(file)).toBe(file); // sent as it is, not as JSON
+    expect(POST).not.toHaveBeenCalled(); // no upload address any more
+    expect(storage).not.toHaveBeenCalled(); // nothing goes straight to storage
   });
 
   it("refuses a wrong file before sending anything (US2/AC11)", async () => {
@@ -88,33 +82,24 @@ describe("AvatarUploader", () => {
     const big = new File([new Uint8Array(5 * 1024 * 1024 + 1)], "big.png", { type: "image/png" });
     await userEvent.upload(input, big);
     expect(await screen.findByRole("alert")).toHaveTextContent("The picture can be at most 5 MB.");
-    expect(POST).not.toHaveBeenCalled();
+    expect(PUT).not.toHaveBeenCalled();
     expect(storage).not.toHaveBeenCalled();
   });
 
-  it("keeps the current picture when a step fails, with a translated message", async () => {
-    POST.mockResolvedValue({
-      data: { storage_key: "avatars/7/a.png", url: MEDIA, fields: {}, expires_in: 600 },
-    });
-    storage.mockResolvedValue(new Response(null, { status: 204 }));
-    PUT.mockResolvedValue({ error: { error: { code: "invalid_image", message: "English" } } });
-    renderIn("fa", <AvatarUploader user={user} />);
-    await userEvent.upload(screen.getByLabelText("انتخاب عکس"), png());
-    await userEvent.click(await screen.findByRole("button", { name: "ذخیره‌ی عکس" }));
-    expect(await screen.findByRole("alert")).toHaveTextContent("این فایل عکس PNG یا JPEG نیست.");
-  });
-
-  it("reports a file storage refused as too large", async () => {
-    POST.mockResolvedValue({
-      data: { storage_key: "avatars/7/a.png", url: MEDIA, fields: {}, expires_in: 600 },
-    });
-    storage.mockResolvedValue(new Response("<Error>EntityTooLarge</Error>", { status: 400 }));
-    renderIn("en", <AvatarUploader user={user} />);
-    await userEvent.upload(screen.getByLabelText("Choose a picture"), png());
-    await userEvent.click(await screen.findByRole("button", { name: "Save picture" }));
-    expect(await screen.findByRole("alert")).toHaveTextContent("The picture can be at most 5 MB.");
-    expect(PUT).not.toHaveBeenCalled();
-  });
+  it.each([
+    ["image_too_large", "عکس حداکثر می‌تواند ۵ مگابایت باشد."],
+    ["unsupported_image_type", "فقط عکس PNG یا JPEG پذیرفته می‌شود."],
+    ["invalid_image", "این فایل عکس PNG یا JPEG نیست."],
+  ])(
+    "keeps the current picture when the API refuses it with %s, in the visitor's language",
+    async (code, text) => {
+      PUT.mockResolvedValue({ error: { error: { code, message: "English" } } });
+      renderIn("fa", <AvatarUploader user={user} />);
+      await userEvent.upload(screen.getByLabelText("انتخاب عکس"), png());
+      await userEvent.click(await screen.findByRole("button", { name: "ذخیره‌ی عکس" }));
+      expect(await screen.findByRole("alert")).toHaveTextContent(text);
+    },
+  );
 
   it("removes the picture (US2/AC12)", async () => {
     DELETE.mockResolvedValue({ data: user });

@@ -8,20 +8,20 @@ import {
   createListing,
   day,
   expectError,
+  findInSearch,
   register,
   reserve,
 } from "./helpers";
 
 /** Listing review (specs/backend (004)) on the real stack, with an admin from create-admin. */
 
-// Few listings take 47 guests, so the new one is on the first page however full the database is.
+// Few listings take 47 guests, which keeps the search short; every page is still looked at, because each run
+// adds such listings and the database keeps them (helpers.findInSearch).
 const GUESTS = 47;
 const near = { lat: AMSTERDAM.lat, lng: AMSTERDAM.lng, radius_km: 5, adults: GUESTS, limit: 100 };
 
-async function foundIds(request: Parameters<typeof register>[0]) {
-  const res = await request.get(`${API}/search/listings`, { params: near });
-  expect(res.status()).toBe(200);
-  return (await res.json()).items.map((i: { id: number }) => i.id);
+async function isPublic(request: Parameters<typeof register>[0], listingId: number) {
+  return (await findInSearch(request, near, listingId)) !== undefined;
 }
 
 test.describe("Listing review", () => {
@@ -31,15 +31,22 @@ test.describe("Listing review", () => {
     const listing = await createListing(request, host, { max_guests: GUESTS }, { approved: false });
     expect(listing.review.status).toBe("pending");
 
-    expect(await foundIds(request)).not.toContain(listing.id);
+    expect(await isPublic(request, listing.id)).toBe(false);
     await expectError(await request.get(`${API}/listings/${listing.id}`), 404, "not_found");
     await expectError(await reserve(request, guest, listing.id), 404, "not_found");
 
     const { email } = createAdmin("approver");
     const admin = await adminLogin(request, email);
-    const queue = await request.get(`${API}/admin/listings/pending`, { headers: admin, params: { limit: 100 } });
-    expect(queue.status()).toBe(200);
-    expect((await queue.json()).items.map((i: { id: number }) => i.id)).toContain(listing.id);
+    // Oldest first, and earlier runs leave pending listings behind, so the new one may be on a later page.
+    let inQueue = false;
+    for (let offset = 0; !inQueue; offset += 100) {
+      const queue = await request.get(`${API}/admin/listings/pending`, { headers: admin, params: { limit: 100, offset } });
+      expect(queue.status()).toBe(200);
+      const page = (await queue.json()) as { items: { id: number }[]; total: number };
+      inQueue = page.items.some((i) => i.id === listing.id);
+      if (page.items.length === 0 || offset + page.items.length >= page.total) break;
+    }
+    expect(inQueue).toBe(true);
 
     const detail = await (await request.get(`${API}/admin/listings/${listing.id}`, { headers: admin })).json();
     expect(detail.private_location).toMatchObject({ address: "Herengracht 1, Amsterdam" });
@@ -49,7 +56,7 @@ test.describe("Listing review", () => {
     });
     expect(approved.status(), await approved.text()).toBe(200);
 
-    expect(await foundIds(request)).toContain(listing.id);
+    expect(await isPublic(request, listing.id)).toBe(true);
     const booking = await reserve(request, guest, listing.id, day(50), day(52));
     expect(booking.status(), await booking.text()).toBe(201);
   });

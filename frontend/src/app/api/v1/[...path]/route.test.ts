@@ -1,7 +1,7 @@
 import { afterEach, beforeEach, vi } from "vitest";
 
 vi.mock("server-only", () => ({}));
-import { GET, POST } from "./route";
+import { GET, MAX_FORWARD_BYTES, POST, PUT } from "./route";
 
 const params = (...path: string[]) => ({ params: Promise.resolve({ path }) });
 
@@ -53,8 +53,67 @@ describe("/api/v1 forwarder", () => {
     const response = await POST(request, params("bookings"));
     const init = fetchMock.mock.calls[0]![1] as RequestInit;
     expect(new Headers(init.headers).get("idempotency-key")).toBe("k-1");
-    expect(new TextDecoder().decode(init.body as ArrayBuffer)).toBe('{"listing_id":1}');
+    // 006: the body is streamed to the API, not read whole into memory first (research R7).
+    expect((init as RequestInit & { duplex?: string }).duplex).toBe("half");
+    expect(await new Response(init.body as ReadableStream).text()).toBe('{"listing_id":1}');
     expect(response.status).toBe(201);
+  });
+
+  // specs/006-avatar-upload-via-api, research R7: the site caps every body at the profile picture limit
+  // plus a little, so a huge body never fills the site's memory; the answer matches the API's own (G1).
+  const tooLarge = {
+    error: { code: "image_too_large", message: expect.any(String), details: { max_bytes: 5242880 } },
+  };
+
+  it("refuses a declared body over the cap with 413, without calling the API", async () => {
+    const request = new Request("http://localhost:3001/api/v1/me/avatar", {
+      method: "PUT",
+      headers: { "content-type": "image/png", "content-length": String(MAX_FORWARD_BYTES + 1) },
+      body: "x",
+    });
+    const response = await PUT(request, params("me", "avatar"));
+    expect(response.status).toBe(413);
+    expect(await response.json()).toEqual(tooLarge);
+    expect(fetchMock).not.toHaveBeenCalled();
+  });
+
+  it("cuts off a streamed body without a length once it passes the cap", async () => {
+    fetchMock.mockImplementation(async (_url: string, init: RequestInit) => {
+      await new Response(init.body as ReadableStream).arrayBuffer(); // the API reads the stream
+      return Response.json({}, { status: 200 });
+    });
+    const chunk = new Uint8Array(64 * 1024);
+    let left = Math.ceil(MAX_FORWARD_BYTES / chunk.length) + 4;
+    const body = new ReadableStream<Uint8Array>({
+      pull(controller) {
+        if (left-- > 0) controller.enqueue(chunk);
+        else controller.close();
+      },
+    });
+    const request = new Request("http://localhost:3001/api/v1/me/avatar", {
+      method: "PUT",
+      headers: { "content-type": "image/png" },
+      body,
+      duplex: "half",
+    } as RequestInit);
+    const response = await PUT(request, params("me", "avatar"));
+    expect(response.status).toBe(413);
+    expect(await response.json()).toEqual(tooLarge);
+  });
+
+  it("passes a picture under the cap on to the API with its content type", async () => {
+    fetchMock.mockImplementation(async (_url: string, init: RequestInit) => {
+      const bytes = new Uint8Array(await new Response(init.body as ReadableStream).arrayBuffer());
+      return Response.json({ size: bytes.length, type: new Headers(init.headers).get("content-type") });
+    });
+    const picture = new Uint8Array(300_000);
+    const request = new Request("http://localhost:3001/api/v1/me/avatar", {
+      method: "PUT",
+      headers: { "content-type": "image/jpeg" },
+      body: picture,
+    });
+    const response = await PUT(request, params("me", "avatar"));
+    expect(await response.json()).toEqual({ size: 300_000, type: "image/jpeg" });
   });
 
   it("answers 503 when the API cannot be reached", async () => {

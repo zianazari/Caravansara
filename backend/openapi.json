@@ -257,7 +257,7 @@
           "Auth and profile"
         ],
         "summary": "Update my profile",
-        "description": "Change your name, or your picture. A picture must be one you uploaded here for this account (`POST /me/avatar/upload-url`); any other address is refused with `invalid_avatar_url`, and nothing in the request is saved. `null` removes the picture.",
+        "description": "Change your name, or your picture. A picture must be one set for this account with `PUT /me/avatar`; any other address is refused with `invalid_avatar_url`, and nothing in the request is saved. `null` removes the picture.",
         "operationId": "update_me_api_v1_me_patch",
         "requestBody": {
           "content": {
@@ -308,78 +308,28 @@
         ]
       }
     },
-    "/api/v1/me/avatar/upload-url": {
-      "post": {
-        "tags": [
-          "Auth and profile",
-          "Profile picture"
-        ],
-        "summary": "1. Get an upload URL for a profile picture",
-        "description": "Returns a presigned POST for a PNG or JPEG of at most 5 MB. Upload the file straight to storage as multipart/form-data with the returned `fields` and then a `file` field; storage refuses a bigger file. Then call `PUT /me/avatar` with `storage_key`.",
-        "operationId": "avatar_upload_url_api_v1_me_avatar_upload_url_post",
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/AvatarUploadUrlIn"
-              }
-            }
-          },
-          "required": true
-        },
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/AvatarUploadUrlOut"
-                }
-              }
-            }
-          },
-          "401": {
-            "description": "Missing, invalid or expired access token",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
-          },
-          "422": {
-            "description": "Invalid input or a broken business rule",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
-          }
-        },
-        "security": [
-          {
-            "HTTPBearer": []
-          }
-        ]
-      }
-    },
     "/api/v1/me/avatar": {
       "put": {
         "tags": [
           "Auth and profile",
           "Profile picture"
         ],
-        "summary": "2. Use an uploaded picture",
-        "description": "Checks the uploaded file itself: it must be yours (`invalid_storage_key`), exist (`upload_missing`), be at most 5 MB (`image_too_large`) and really be a PNG or JPEG (`invalid_image`). A refused file is deleted. The previous picture's file is deleted after the change.",
+        "summary": "Set my picture",
+        "description": "Send the picture itself as the request body, with `Content-Type: image/png` or `image/jpeg`. It is checked before anything is stored: at most 5 MB (`413 image_too_large`, read no further than the limit), a PNG or JPEG type (`415 unsupported_image_type`), and content that really is a PNG or JPEG (`422 invalid_image`). A refused picture is never written to storage. The format stored is the one the content shows. The previous picture's file is deleted after the change. `503 service_unavailable` means storage could not be reached and nothing changed.",
         "operationId": "set_avatar_api_v1_me_avatar_put",
         "requestBody": {
+          "description": "The picture's bytes: a PNG or JPEG of at most 5 MB (5,242,880 bytes).",
           "content": {
-            "application/json": {
+            "image/png": {
               "schema": {
-                "$ref": "#/components/schemas/AvatarSetIn"
+                "type": "string",
+                "format": "binary"
+              }
+            },
+            "image/jpeg": {
+              "schema": {
+                "type": "string",
+                "format": "binary"
               }
             }
           },
@@ -396,6 +346,16 @@
               }
             }
           },
+          "400": {
+            "description": "Bad request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
           "401": {
             "description": "Missing, invalid or expired access token",
             "content": {
@@ -406,12 +366,75 @@
               }
             }
           },
+          "413": {
+            "description": "The request body is larger than allowed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                },
+                "example": {
+                  "error": {
+                    "code": "image_too_large",
+                    "message": "The picture is larger than allowed.",
+                    "details": {
+                      "max_bytes": 5242880
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "415": {
+            "description": "The declared content type is not accepted",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                },
+                "example": {
+                  "error": {
+                    "code": "unsupported_image_type",
+                    "message": "Only PNG or JPEG pictures are accepted.",
+                    "details": {
+                      "allowed": [
+                        "image/png",
+                        "image/jpeg"
+                      ]
+                    }
+                  }
+                }
+              }
+            }
+          },
           "422": {
             "description": "Invalid input or a broken business rule",
             "content": {
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/ErrorResponse"
+                },
+                "example": {
+                  "error": {
+                    "code": "invalid_image",
+                    "message": "The file is not a PNG or JPEG picture."
+                  }
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "A service the request needs is not reachable; nothing was changed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                },
+                "example": {
+                  "error": {
+                    "code": "service_unavailable",
+                    "message": "File storage is not reachable right now."
+                  }
                 }
               }
             }
@@ -3556,93 +3579,6 @@
         ],
         "title": "AmenityOut"
       },
-      "AvatarSetIn": {
-        "properties": {
-          "storage_key": {
-            "type": "string",
-            "maxLength": 300,
-            "minLength": 1,
-            "title": "Storage Key",
-            "examples": [
-              "avatars/42/9b1d0c.png"
-            ]
-          }
-        },
-        "type": "object",
-        "required": [
-          "storage_key"
-        ],
-        "title": "AvatarSetIn"
-      },
-      "AvatarUploadUrlIn": {
-        "properties": {
-          "content_type": {
-            "type": "string",
-            "enum": [
-              "image/png",
-              "image/jpeg"
-            ],
-            "title": "Content Type"
-          }
-        },
-        "type": "object",
-        "required": [
-          "content_type"
-        ],
-        "title": "AvatarUploadUrlIn",
-        "example": {
-          "content_type": "image/png"
-        }
-      },
-      "AvatarUploadUrlOut": {
-        "properties": {
-          "storage_key": {
-            "type": "string",
-            "title": "Storage Key",
-            "description": "Send this to `PUT /me/avatar` after the upload."
-          },
-          "url": {
-            "type": "string",
-            "title": "Url",
-            "description": "POST the file here as multipart/form-data."
-          },
-          "fields": {
-            "additionalProperties": {
-              "type": "string"
-            },
-            "type": "object",
-            "title": "Fields",
-            "description": "Form fields to send before the `file` field."
-          },
-          "expires_in": {
-            "type": "integer",
-            "title": "Expires In"
-          }
-        },
-        "type": "object",
-        "required": [
-          "storage_key",
-          "url",
-          "fields",
-          "expires_in"
-        ],
-        "title": "AvatarUploadUrlOut",
-        "description": "The same shape as a listing photo's upload URL, defined here because modules may not import each other.",
-        "example": {
-          "expires_in": 600,
-          "fields": {
-            "Content-Type": "image/png",
-            "key": "avatars/42/9b1d0c4e5f6a7b8c9d0e1f2a3b4c5d6e.png",
-            "policy": "eyJleHBpcmF0aW9uIjogIjIwMjYtMTEtMDhUMTI6MTA6MDBaIn0=",
-            "x-amz-algorithm": "AWS4-HMAC-SHA256",
-            "x-amz-credential": "caravansara/20261108/us-east-1/s3/aws4_request",
-            "x-amz-date": "20261108T120000Z",
-            "x-amz-signature": "3f1c…"
-          },
-          "storage_key": "avatars/42/9b1d0c4e5f6a7b8c9d0e1f2a3b4c5d6e.png",
-          "url": "http://localhost:9000/caravansara-media"
-        }
-      },
       "BookingAddress": {
         "properties": {
           "address": {
@@ -5160,7 +5096,7 @@
               }
             ],
             "title": "Avatar Url",
-            "description": "Only the address of a picture you uploaded with `POST /me/avatar/upload-url`, or null to go back to the default avatar. An address on another server is refused (`invalid_avatar_url`): it would tell that server who views your reviews. `PUT /me/avatar` and `DELETE /me/avatar` do the same."
+            "description": "Only the address of a picture you set with `PUT /me/avatar`, or null to go back to the default avatar. An address on another server is refused (`invalid_avatar_url`): it would tell that server who views your reviews. `PUT /me/avatar` and `DELETE /me/avatar` do the same."
           }
         },
         "type": "object",

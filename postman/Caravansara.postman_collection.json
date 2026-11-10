@@ -104,10 +104,6 @@
       "value": ""
     },
     {
-      "key": "avatarKey",
-      "value": ""
-    },
-    {
       "key": "adminEmail",
       "value": "admin@example.com"
     },
@@ -435,115 +431,16 @@
     },
     {
       "name": "Profile picture",
-      "description": "PNG or JPEG up to 5 MB, uploaded straight to storage; without one, the site shows a default avatar (specs/005-frontend-guest).",
+      "description": "PNG or JPEG up to 5 MB, sent to the API, which checks it before storing it (specs/006-avatar-upload-via-api); without one, the site shows a default avatar (specs/005-frontend-guest).",
       "item": [
         {
-          "name": "1. Get an upload URL for a profile picture",
-          "request": {
-            "method": "POST",
-            "header": [
-              {
-                "key": "Accept",
-                "value": "application/json"
-              },
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              }
-            ],
-            "url": {
-              "raw": "{{baseUrl}}/api/v1/me/avatar/upload-url",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "api",
-                "v1",
-                "me",
-                "avatar",
-                "upload-url"
-              ]
-            },
-            "description": "Returns a presigned POST for a PNG or JPEG of at most 5 MB. Upload the file straight to storage as multipart/form-data with the returned `fields` and then a `file` field; storage refuses a bigger file. Then call `PUT /me/avatar` with `storage_key`.",
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"content_type\": \"image/jpeg\"\n}",
-              "options": {
-                "raw": {
-                  "language": "json"
-                }
-              }
-            }
-          },
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "type": "text/javascript",
-                "exec": [
-                  "const body = pm.response.json();",
-                  "pm.collectionVariables.set(\"avatarKey\", body.storage_key);",
-                  "pm.collectionVariables.set(\"uploadUrl\", body.url);",
-                  "pm.collectionVariables.set(\"uploadFields\", JSON.stringify(body.fields));"
-                ]
-              }
-            }
-          ]
-        },
-        {
-          "name": "Upload the file to storage (presigned POST)",
-          "request": {
-            "method": "POST",
-            "auth": {
-              "type": "noauth"
-            },
-            "header": [],
-            "url": {
-              "raw": "{{uploadUrl}}",
-              "host": [
-                "{{uploadUrl}}"
-              ]
-            },
-            "body": {
-              "mode": "formdata",
-              "formdata": [
-                {
-                  "key": "file",
-                  "type": "file",
-                  "src": "sample-photo.jpg"
-                }
-              ]
-            },
-            "description": "Run **1. Get an upload URL for a profile picture** first. The pre-request script adds the signed policy fields; the `file` field points to `sample-photo.jpg` (a JPEG under 5 MB) next to the collection file. Storage itself refuses a file over 5 MB. Then run **2. Use an uploaded picture**."
-          },
-          "event": [
-            {
-              "listen": "prerequest",
-              "script": {
-                "type": "text/javascript",
-                "exec": [
-                  "const fields = JSON.parse(pm.collectionVariables.get(\"uploadFields\") || \"{}\");",
-                  "const file = pm.request.body.formdata.find(f => f.key === \"file\");",
-                  "pm.request.body.formdata.clear();",
-                  "Object.entries(fields).forEach(([key, value]) => pm.request.body.formdata.add({ key, value, type: \"text\" }));",
-                  "if (file) pm.request.body.formdata.add(file);  // the file must be the last field"
-                ]
-              }
-            }
-          ]
-        },
-        {
-          "name": "2. Use an uploaded picture",
+          "name": "Set my picture",
           "request": {
             "method": "PUT",
             "header": [
               {
-                "key": "Accept",
-                "value": "application/json"
-              },
-              {
                 "key": "Content-Type",
-                "value": "application/json"
+                "value": "image/jpeg"
               }
             ],
             "url": {
@@ -558,17 +455,118 @@
                 "avatar"
               ]
             },
-            "description": "Checks the uploaded file itself: it must be yours (`invalid_storage_key`), exist (`upload_missing`), be at most 5 MB (`image_too_large`) and really be a PNG or JPEG (`invalid_image`). A refused file is deleted. The previous picture's file is deleted after the change.",
             "body": {
-              "mode": "raw",
-              "raw": "{\n  \"storage_key\": \"{{avatarKey}}\"\n}",
-              "options": {
-                "raw": {
-                  "language": "json"
-                }
+              "mode": "file",
+              "file": {
+                "src": "sample-photo.jpg"
               }
+            },
+            "description": "Send the picture itself as the body, with `Content-Type: image/png` or `image/jpeg` (here `sample-photo.jpg`, a JPEG under 5 MB, next to the collection file). The API checks size, type and content before anything is stored, so a refused picture never reaches storage (specs/006-avatar-upload-via-api): `413 image_too_large` over 5 MB, `415 unsupported_image_type` for any other type, `422 invalid_image` when the content is not a PNG or JPEG, `503 service_unavailable` when storage cannot be reached. The previous picture's file is deleted."
+          },
+          "response": [
+            {
+              "name": "413 Payload Too Large",
+              "originalRequest": {
+                "method": "PUT",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "image/png"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/api/v1/me/avatar",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "v1",
+                    "me",
+                    "avatar"
+                  ]
+                }
+              },
+              "status": "413 Payload Too Large",
+              "code": 413,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"error\": {\n    \"code\": \"image_too_large\",\n    \"message\": \"The picture is larger than allowed.\",\n    \"details\": {\n      \"max_bytes\": 5242880\n    }\n  }\n}"
+            },
+            {
+              "name": "415 Unsupported Media Type",
+              "originalRequest": {
+                "method": "PUT",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "image/png"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/api/v1/me/avatar",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "v1",
+                    "me",
+                    "avatar"
+                  ]
+                }
+              },
+              "status": "415 Unsupported Media Type",
+              "code": 415,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"error\": {\n    \"code\": \"unsupported_image_type\",\n    \"message\": \"Only PNG or JPEG pictures are accepted.\",\n    \"details\": {\n      \"allowed\": [\n        \"image/png\",\n        \"image/jpeg\"\n      ]\n    }\n  }\n}"
+            },
+            {
+              "name": "422 Unprocessable Entity",
+              "originalRequest": {
+                "method": "PUT",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "image/png"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/api/v1/me/avatar",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "v1",
+                    "me",
+                    "avatar"
+                  ]
+                }
+              },
+              "status": "422 Unprocessable Entity",
+              "code": 422,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"error\": {\n    \"code\": \"invalid_image\",\n    \"message\": \"The file is not a PNG or JPEG picture.\"\n  }\n}"
             }
-          }
+          ]
         },
         {
           "name": "Remove my picture",

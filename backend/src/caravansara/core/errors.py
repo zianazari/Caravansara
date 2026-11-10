@@ -46,6 +46,14 @@ class Unprocessable(AppError):
         super().__init__(422, code, message, details)
 
 
+class ServiceUnavailable(AppError):
+    """A service the request needs (such as file storage) cannot be reached right now. Nothing was changed, so
+    the client may try again (specs/006-avatar-upload-via-api, research R4)."""
+
+    def __init__(self, message: str = "The service is not reachable right now.") -> None:
+        super().__init__(503, "service_unavailable", message)
+
+
 # ---- OpenAPI models, so Swagger shows the error shape -------------------------------
 
 
@@ -67,8 +75,11 @@ def error_responses(*statuses: int) -> dict[int | str, dict[str, Any]]:
         403: "Not allowed",
         404: "Not found",
         409: "Conflict with the current state",
+        413: "The request body is larger than allowed",
+        415: "The declared content type is not accepted",
         422: "Invalid input or a broken business rule",
         429: "Too many attempts",
+        503: "A service the request needs is not reachable; nothing was changed",
     }
     return {s: {"model": ErrorResponse, "description": descriptions.get(s, "Error")} for s in statuses}
 
