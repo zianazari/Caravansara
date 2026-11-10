@@ -43,6 +43,18 @@ async def host_listings(session: AsyncSession, host_id: int, limit: int, offset:
     return list(rows.scalars()), int(total)
 
 
+async def public_by_ids(session: AsyncSession, listing_ids: list[int]) -> list[Listing]:
+    """The public ones among these listings (active and approved), for cards in another module's list."""
+    if not listing_ids:
+        return []
+    rows = await session.execute(
+        select(Listing).where(
+            Listing.id.in_(listing_ids), Listing.is_active.is_(True), Listing.review_status == ReviewStatus.approved
+        )
+    )
+    return list(rows.scalars())
+
+
 async def photos(session: AsyncSession, listing_id: int) -> list[ListingPhoto]:
     rows = await session.execute(
         select(ListingPhoto).where(ListingPhoto.listing_id == listing_id).order_by(ListingPhoto.sort_order)

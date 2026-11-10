@@ -4,12 +4,12 @@
 
 <p align="center">
   <a href="https://github.com/zianazari/Caravansara/actions/workflows/ci.yml"><img src="https://github.com/zianazari/Caravansara/actions/workflows/ci.yml/badge.svg" alt="CI"></a>
-  <img src="https://img.shields.io/badge/tests-371%20%C2%B7%2097.4%25%20coverage-b5651d" alt="371 backend tests, 97.4% coverage">
-  <img src="https://img.shields.io/badge/web-384%20Vitest%20tests-6E9F18" alt="384 Vitest tests for the web site">
-  <img src="https://img.shields.io/badge/e2e-104%20Playwright%20tests-2EAD33" alt="104 Playwright tests">
+  <img src="https://img.shields.io/badge/tests-377%20%C2%B7%2097.5%25%20coverage-b5651d" alt="377 backend tests, 97.5% coverage">
+  <img src="https://img.shields.io/badge/web-390%20Vitest%20tests-6E9F18" alt="390 Vitest tests for the web site">
+  <img src="https://img.shields.io/badge/e2e-109%20Playwright%20tests-2EAD33" alt="109 Playwright tests">
 </p>
 
-A *caravansara* (کاروانسرا) was a roadside inn on the Silk Road: travellers arrived at dusk, took a room for the night and moved on at dawn. **Caravansara** is the same idea for today: an Airbnb-like site where guests find a place, hold it, pay and leave a review, and hosts list their homes.
+A *caravansara* (کاروانسرا) was a roadside inn on the Silk Road: travellers arrived at dusk, took a room for the night and moved on at dawn. **Caravansara** is the same idea for today: an Airbnb-like site where guests find a place, hold it, pay, save favourites and leave a review, and hosts list their homes.
 
 This repository holds the **backend**, the **database design** and the **web site for guests and hosts**, with an **admin panel** on its own subdomain. The site wears a caravansara theme: the warm colours of the diagrams below and the pointed arch of a caravansara's gateway, laid out the way people know from Airbnb (search pill, photo cards, a bottom bar on phones). Hosts make and keep their listings on the site, and the system admin reviews them in the panel.
 
@@ -215,10 +215,10 @@ Two layers, because each one catches what the other can't:
 | | pytest (`backend/tests`) | Playwright (`e2e/`) |
 | --- | --- | --- |
 | **Runs against** | PostgreSQL + PostGIS and MinIO that testcontainers starts for each run | The real `docker compose` stack, from outside, over HTTP |
-| **Proves** | Every rule in each module, exact race moments, DST, migrations, the API contract | The built image, real settings and wiring: all 40 endpoints, listing photo upload to MinIO, profile pictures through the API (bad files refused), an admin made with `create-admin` reviewing listings, the whole host and guest story, and the web site's proxy, session cookie, rate limit by visitor address and CSP |
-| **Size** | 371 tests, 97.4% coverage | 104 tests, under a minute |
+| **Proves** | Every rule in each module, exact race moments, DST, migrations, the API contract | The built image, real settings and wiring: all 44 endpoints, listing photo upload to MinIO, profile pictures through the API (bad files refused), an admin made with `create-admin` reviewing listings, the whole host and guest story, and the web site's proxy, session cookie, rate limit by visitor address and CSP |
+| **Size** | 377 tests, 97.5% coverage | 109 tests, under a minute |
 
-The web site has its own Vitest suite in `frontend/` (384 tests): every rule (Jalali calendar for every day of 1400–1410, city time zones on clock-change days, toman with exact decimals, the session lock across tabs), every acceptance scenario in Persian and English, and axe accessibility checks.
+The web site has its own Vitest suite in `frontend/` (390 tests): every rule (Jalali calendar for every day of 1400–1410, city time zones on clock-change days, toman with exact decimals, the session lock across tabs), every acceptance scenario in Persian and English, and axe accessibility checks.
 
 Most Playwright tests use its `request` fixture and need no browser. `theme.spec.ts` opens every guest page and the host pages in a real Chrome, at five widths from 320 px and in both languages, and checks for sideways scroll and for accessibility problems with axe, colour contrast included. Some highlights:
 
@@ -257,6 +257,7 @@ All paths start with `/api/v1`. Every error has the same shape, with a stable co
 | **Photos** | `POST`<br>`POST`<br>`PATCH`<br>`DELETE`<br>`PUT` | `/listings/{id}/photos/upload-url`<br>`/listings/{id}/photos`<br>`/listings/{id}/photos/{photo_id}`<br>`/listings/{id}/photos/{photo_id}`<br>`/listings/{id}/photos/order` | Host<br>Host<br>Host<br>Host<br>Host |
 | **Bookings** | `POST`<br>`GET`<br>`GET`<br>`POST`<br>`POST` | `/bookings`<br>`/me/bookings`<br>`/bookings/{id}`<br>`/bookings/{id}/pay`<br>`/bookings/{id}/cancel` | User<br>User<br>Guest or host<br>Guest<br>Guest or host |
 | **Reviews** | `POST`<br>`GET` | `/bookings/{id}/review`<br>`/listings/{id}/reviews` | Guest<br>Public |
+| **Wishlist** | `GET`<br>`GET`<br>`PUT`<br>`DELETE` | `/me/wishlist`<br>`/me/wishlist/ids`<br>`/me/wishlist/{listing_id}`<br>`/me/wishlist/{listing_id}` | User<br>User<br>User (public listings, at most 500)<br>User |
 | **Listing review** | `POST`<br>`POST`<br>`POST`<br>`POST`<br>`GET`<br>`GET`<br>`POST`<br>`POST` | `/listings/{id}/resubmit`<br>`/admin/auth/login`<br>`/admin/auth/refresh`<br>`/admin/auth/logout`<br>`/admin/listings/pending`<br>`/admin/listings/{id}`<br>`/admin/listings/{id}/approve`<br>`/admin/listings/{id}/reject` | Host<br>Admin account<br>Admin refresh token (session ends 8 h after log-in)<br>Admin refresh token<br>Admin<br>Admin (each view recorded)<br>Admin<br>Admin |
 
 Every endpoint, with its parameters, examples and errors, is described and can be tried in Swagger UI at `/docs`.
@@ -268,7 +269,7 @@ The same description is committed as [`backend/openapi.json`](backend/openapi.js
 ```
 frontend/    Next.js web site for guests and hosts, Persian and English, Vitest tests  → frontend/README.md
 backend/     FastAPI app, Alembic migrations, tests  → backend/README.md
-e2e/         Playwright tests against the running stack (104 tests)  → e2e/README.md
+e2e/         Playwright tests against the running stack (109 tests)  → e2e/README.md
 postman/     Postman collection of all endpoints, with saved ids and tokens
 observability/  Alloy, Loki, Tempo, Prometheus (alerts + rule tests), Grafana dashboard  → observability/README.md
 .specify/    GitHub Spec Kit: constitution, templates, scripts (commands in .claude/skills/)

@@ -201,6 +201,19 @@ class ListingSummary(BaseModel):
     review: ListingReview | None = None
 
 
+class ListingCard(BaseModel):
+    """A public listing as a card, for another module's list (the wishlist, feature 012): no host-only field."""
+
+    id: int
+    title: str
+    city: CityOut
+    price_per_night: Decimal
+    currency: str
+    avg_rating: Decimal | None
+    review_count: int
+    cover_url: str | None
+
+
 class ListingPage(BaseModel):
     items: list[ListingSummary]
     total: int

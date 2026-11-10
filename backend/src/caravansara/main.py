@@ -26,6 +26,7 @@ from caravansara.listings.router import router as listings_router
 from caravansara.moderation.router import router as moderation_router
 from caravansara.reviews.router import router as reviews_router
 from caravansara.search.router import router as search_router
+from caravansara.wishlists.router import router as wishlists_router
 
 API_PREFIX = "/api/v1"
 
@@ -118,6 +119,7 @@ def create_app(settings: Settings | None = None, span_exporter: SpanExporter | N
         bookings_router,
         reviews_router,
         moderation_router,
+        wishlists_router,
     ):
         api.include_router(router)
     app.include_router(api)

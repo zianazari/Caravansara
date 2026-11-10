@@ -45,11 +45,11 @@ async def test_downgrade_and_upgrade_again(prepared: Settings) -> None:
 
     try:
         await asyncio.to_thread(migrate, settings)
-        assert await table_count() == 14  # 12 from 0001, two from 0006
+        assert await table_count() == 15  # 12 from 0001, two from 0006, one from 0007
         await asyncio.to_thread(downgrade)
         assert await table_count() == 0
         await asyncio.to_thread(migrate, settings)  # and back up, as on a fresh deploy
-        assert await table_count() == 14
+        assert await table_count() == 15
     finally:
         conn = await asyncpg.connect(admin)
         await conn.execute("DROP DATABASE IF EXISTS migration_check WITH (FORCE)")

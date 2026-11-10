@@ -6,6 +6,10 @@ const GET = vi.fn();
 const notFound = vi.fn(() => {
   throw new Error("NEXT_NOT_FOUND");
 });
+// The heart's own behaviour is tested in components/wishlist (feature 012).
+vi.mock("@/hooks/useWishlist", () => ({
+  useWishlist: () => ({ saved: new Set<number>(), toggle: () => {}, ready: true }),
+}));
 vi.mock("@/api/server", () => ({ serverApi: () => ({ GET }) }));
 vi.mock("@/api/client", () => ({ api: { GET: vi.fn() } }));
 vi.mock("next/navigation", async (importOriginal) => ({

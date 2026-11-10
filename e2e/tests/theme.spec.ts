@@ -70,6 +70,7 @@ const PAGES: PageCase[] = [
   { name: "trip", path: () => `/trips/${world.tripId}`, signedIn: true },
   { name: "review", path: () => `/trips/${world.reviewId}/review`, signedIn: true },
   { name: "account", path: () => "/account", signedIn: true },
+  { name: "wishlists", path: () => "/wishlists", signedIn: true }, // feature 012
   { name: "not-found", path: () => "/no-such-page" },
   // The host pages (specs/008-host-pages, SC-004), as the listing's host.
   { name: "host", path: () => "/host", signedIn: true, asHost: true },

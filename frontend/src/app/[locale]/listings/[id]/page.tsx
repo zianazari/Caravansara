@@ -1,3 +1,4 @@
+import { HeartButton } from "@/components/wishlist/HeartButton";
 import type { Metadata } from "next";
 import { getTranslations, setRequestLocale } from "next-intl/server";
 import { notFound } from "next/navigation";
@@ -64,7 +65,10 @@ export default async function ListingPage({ params }: Props) {
   return (
     <article className="grid gap-8">
       <header className="grid gap-1">
-        <h1 className="text-2xl font-bold md:text-3xl">{listing.title}</h1>
+        <div className="flex items-start justify-between gap-3">
+          <h1 className="text-2xl font-bold md:text-3xl">{listing.title}</h1>
+          <HeartButton listingId={listing.id} title={listing.title} className="shrink-0" />
+        </div>
         <p className="text-muted-foreground">
           {t(`propertyTypes.${listing.property_type}`)} · {city}
           {locale === "fa" ? "، " : ", "}

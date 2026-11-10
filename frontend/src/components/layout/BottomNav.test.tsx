@@ -23,7 +23,12 @@ describe("BottomNav (specs/007-caravansara-theme, FR-008)", () => {
     renderIn("fa", <BottomNav />);
     const nav = screen.getByRole("navigation", { name: "ناوبری پایین" });
     expect(nav).toHaveClass("md:hidden");
-    expect(screen.getAllByRole("link").map((l) => l.textContent)).toEqual(["جستجو", "سفرهای من", "ورود"]);
+    expect(screen.getAllByRole("link").map((l) => l.textContent)).toEqual([
+      "جستجو",
+      "علاقه‌مندی‌ها",
+      "سفرهای من",
+      "ورود",
+    ]);
     expect(screen.getByRole("link", { name: "جستجو" })).toHaveAttribute("aria-current", "page");
     expect(screen.getByRole("link", { name: "ورود" })).toHaveAttribute("href", "/login");
   });
@@ -37,10 +42,11 @@ describe("BottomNav (specs/007-caravansara-theme, FR-008)", () => {
     expect(screen.getByRole("link", { name: "جستجو" })).not.toHaveAttribute("aria-current");
   });
 
-  it("has no wishlists: they come with their own feature (Q3)", () => {
-    path = "/";
+  it("has wishlists as the fourth item since feature 012, marked on its page", () => {
+    path = "/wishlists";
     renderIn("fa", <BottomNav />);
-    expect(screen.getAllByRole("link")).toHaveLength(3);
+    expect(screen.getAllByRole("link")).toHaveLength(4);
+    expect(screen.getByRole("link", { name: "علاقه‌مندی‌ها" })).toHaveAttribute("aria-current", "page");
   });
 
   it.each(["/listings/5", "/book/5", "/host/new"])(
