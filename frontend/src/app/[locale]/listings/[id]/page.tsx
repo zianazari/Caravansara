@@ -6,6 +6,15 @@ import { Suspense } from "react";
 import type { components } from "@/api/schema";
 import { serverApi } from "@/api/server";
 import { UserAvatar } from "@/components/account/UserAvatar";
+import {
+  BathIcon,
+  BedDoubleIcon,
+  DoorOpenIcon,
+  LogInIcon,
+  LogOutIcon,
+  PawPrintIcon,
+  UsersIcon,
+} from "lucide-react";
 import { AmenityList } from "@/components/listing/AmenityList";
 import { BookingBox } from "@/components/listing/BookingBox";
 import { MobileBookingBar } from "@/components/listing/MobileBookingBar";
@@ -91,16 +100,25 @@ export default async function ListingPage({ params }: Props) {
             <h2 id="capacity" className="text-xl font-semibold">
               {t("listing.capacity")}
             </h2>
-            <ul className="flex flex-wrap gap-x-4 gap-y-1 text-muted-foreground">
-              <li>{t("listing.maxGuests", { count: listing.max_guests })}</li>
-              <li>{t("listing.bedrooms", { count: listing.bedrooms })}</li>
-              <li>{t("listing.beds", { count: listing.beds })}</li>
-              <li>{t("listing.bathrooms", { count: Number(listing.bathrooms) })}</li>
-              <li>
-                {listing.pets_allowed
-                  ? t("listing.petsAllowed", { count: listing.max_pets })
-                  : t("listing.noPets")}
-              </li>
+            {/* Each fact with its line icon (feature 018); the icons are decoration, the words say it. */}
+            <ul className="grid grid-cols-2 gap-x-6 gap-y-3 sm:grid-cols-3">
+              {[
+                { Icon: UsersIcon, text: t("listing.maxGuests", { count: listing.max_guests }) },
+                { Icon: DoorOpenIcon, text: t("listing.bedrooms", { count: listing.bedrooms }) },
+                { Icon: BedDoubleIcon, text: t("listing.beds", { count: listing.beds }) },
+                { Icon: BathIcon, text: t("listing.bathrooms", { count: Number(listing.bathrooms) }) },
+                {
+                  Icon: PawPrintIcon,
+                  text: listing.pets_allowed
+                    ? t("listing.petsAllowed", { count: listing.max_pets })
+                    : t("listing.noPets"),
+                },
+              ].map(({ Icon, text }) => (
+                <li key={text} className="flex items-center gap-3">
+                  <Icon className="size-6 shrink-0 stroke-[1.5]" aria-hidden />
+                  <span>{text}</span>
+                </li>
+              ))}
             </ul>
           </section>
 
@@ -121,11 +139,17 @@ export default async function ListingPage({ params }: Props) {
           </section>
 
           <section aria-labelledby="times" className="grid gap-1">
-            <h2 id="times" className="text-xl font-semibold">
+            <h2 id="times" className="mb-2 text-xl font-semibold">
               {t("listing.checkTimes")}
             </h2>
-            <p>{t("listing.checkIn", { time: formatClock(listing.check_in_time, locale), city })}</p>
-            <p>{t("listing.checkOut", { time: formatClock(listing.check_out_time, locale), city })}</p>
+            <p className="flex items-center gap-3">
+              <LogInIcon className="size-6 shrink-0 stroke-[1.5] rtl:-scale-x-100" aria-hidden />
+              {t("listing.checkIn", { time: formatClock(listing.check_in_time, locale), city })}
+            </p>
+            <p className="flex items-center gap-3">
+              <LogOutIcon className="size-6 shrink-0 stroke-[1.5] rtl:-scale-x-100" aria-hidden />
+              {t("listing.checkOut", { time: formatClock(listing.check_out_time, locale), city })}
+            </p>
             <p className="text-sm text-muted-foreground">{t("listing.approximate")}</p>
           </section>
 
