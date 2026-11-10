@@ -376,12 +376,21 @@ async def update_photo(
     return _photo_out(storage, photo)
 
 
+# A listing needs at least this many photos (owner decision Q1 of feature 008, 2026-11-10; in the API since
+# feature 010): an admin cannot approve one with fewer, and a host cannot remove a photo that would leave
+# fewer. Guests decide from the photos, and a listing with one picture says little about the place.
+MIN_PHOTOS = 3
+
+
 async def delete_photo(session: AsyncSession, storage: Storage, listing_id: int, photo_id: int, user_id: int) -> None:
     # Removing a photo or reordering them shows nothing new, so neither needs a review (FR-010).
+    # _get_owned locks the listing row, so two removals at once cannot both pass the count below.
     await _get_owned(session, listing_id, user_id)
     photo = await repo.get_photo(session, listing_id, photo_id)
     if photo is None:
         raise NotFound("Photo not found.")
+    if len(await repo.photos(session, listing_id)) <= MIN_PHOTOS:
+        raise Conflict("too_few_photos", f"A listing keeps at least {MIN_PHOTOS} photos. Add another one first.")
     key = photo.storage_key
     await session.delete(photo)
     await session.flush()
@@ -496,6 +505,12 @@ async def _decide(
 ) -> AdminListingOut:
     """One conditional UPDATE, not read-then-write: of two admins deciding at once exactly one wins,
     and a decision on a version the admin did not see (the host edited since) changes nothing (R6)."""
+    if status == ReviewStatus.approved:
+        # Photos cannot drop below the limit meanwhile: removal is refused at MIN_PHOTOS (delete_photo).
+        count = len(await repo.photos(session, listing_id))
+        if count < MIN_PHOTOS:
+            await _get(session, listing_id)  # 404 first for an unknown listing
+            raise Conflict("too_few_photos", f"A listing needs at least {MIN_PHOTOS} photos to be approved.")
     if not await repo.decide(session, listing_id, version, status, reason):
         current = (await _get(session, listing_id)).review_status  # 404 for an unknown listing
         await session.rollback()

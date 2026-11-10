@@ -4,8 +4,8 @@
 
 <p align="center">
   <a href="https://github.com/zianazari/Caravansara/actions/workflows/ci.yml"><img src="https://github.com/zianazari/Caravansara/actions/workflows/ci.yml/badge.svg" alt="CI"></a>
-  <img src="https://img.shields.io/badge/tests-362%20%C2%B7%2097.4%25%20coverage-b5651d" alt="362 backend tests, 97.4% coverage">
-  <img src="https://img.shields.io/badge/web-381%20Vitest%20tests-6E9F18" alt="381 Vitest tests for the web site">
+  <img src="https://img.shields.io/badge/tests-365%20%C2%B7%2097.4%25%20coverage-b5651d" alt="365 backend tests, 97.4% coverage">
+  <img src="https://img.shields.io/badge/web-382%20Vitest%20tests-6E9F18" alt="382 Vitest tests for the web site">
   <img src="https://img.shields.io/badge/e2e-103%20Playwright%20tests-2EAD33" alt="103 Playwright tests">
 </p>
 
@@ -216,9 +216,9 @@ Two layers, because each one catches what the other can't:
 | --- | --- | --- |
 | **Runs against** | PostgreSQL + PostGIS and MinIO that testcontainers starts for each run | The real `docker compose` stack, from outside, over HTTP |
 | **Proves** | Every rule in each module, exact race moments, DST, migrations, the API contract | The built image, real settings and wiring: all 38 endpoints, listing photo upload to MinIO, profile pictures through the API (bad files refused), an admin made with `create-admin` reviewing listings, the whole host and guest story, and the web site's proxy, session cookie, rate limit by visitor address and CSP |
-| **Size** | 362 tests, 97.4% coverage | 85 tests, under a minute |
+| **Size** | 365 tests, 97.4% coverage | 103 tests, under a minute |
 
-The web site has its own Vitest suite in `frontend/` (381 tests): every rule (Jalali calendar for every day of 1400–1410, city time zones on clock-change days, toman with exact decimals, the session lock across tabs), every acceptance scenario in Persian and English, and axe accessibility checks.
+The web site has its own Vitest suite in `frontend/` (382 tests): every rule (Jalali calendar for every day of 1400–1410, city time zones on clock-change days, toman with exact decimals, the session lock across tabs), every acceptance scenario in Persian and English, and axe accessibility checks.
 
 Most Playwright tests use its `request` fixture and need no browser. `theme.spec.ts` opens every guest page and the host pages in a real Chrome, at five widths from 320 px and in both languages, and checks for sideways scroll and for accessibility problems with axe, colour contrast included. Some highlights:
 

@@ -92,6 +92,7 @@ M = {
   "listing_changed": ("این آگهی تغییر کرده است. صفحه را دوباره باز کنید.", "This listing has changed. Please reload the page."),
   "listing_not_pending": ("این آگهی دیگر در انتظار بررسی نیست.", "This listing is no longer waiting for review."),
   "listing_not_rejected": ("این آگهی رد نشده است.", "This listing has not been rejected."),
+  "too_few_photos": ("آگهی دست‌کم ۳ عکس لازم دارد.", "A listing needs at least 3 photos."),
  },
  "validation": {
   "invalid": ("این مقدار درست نیست.", "This value is not valid."),
@@ -352,6 +353,7 @@ M = {
   "rejected": ("آگهی رد شد و دلیل به میزبان رسید.", "The listing is rejected; the host sees the reason."),
   "changed": ("میزبان همین حالا آگهی را تغییر داد. نسخه‌ی تازه را ببینید و دوباره تصمیم بگیرید.", "The host has just changed this listing. Look at the new version and decide again."),
   "notPending": ("این آگهی دیگر در انتظار بررسی نیست.", "This listing is no longer waiting for review."),
+  "fewPhotos": ("این آگهی کمتر از ۳ عکس دارد و تأیید نمی‌شود. می‌توانید آن را با دلیل رد کنید.", "This listing has fewer than 3 photos and cannot be approved. You can reject it with a reason."),
  },
  "badge": {
   "guestFavourite": ("انتخاب مهمان‌ها", "Guest favourite"),

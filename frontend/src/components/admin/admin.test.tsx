@@ -75,18 +75,16 @@ const listing = () => ({
   review_count: 0,
   is_active: true,
   host,
-  photos: [
-    {
-      id: 1,
-      url: "http://m/1.jpg",
-      storage_key: "k",
-      width: 8,
-      height: 6,
-      caption: "Yard",
-      room_tag: null,
-      sort_order: 0,
-    },
-  ],
+  photos: [1, 2, 3].map((id) => ({
+    id,
+    url: `http://m/${id}.jpg`,
+    storage_key: "k",
+    width: 8,
+    height: 6,
+    caption: id === 1 ? "Yard" : null,
+    room_tag: null,
+    sort_order: id - 1,
+  })),
   amenities: [{ id: 1, name: "Essentials", amenities: [{ id: 4, name: "Wifi", icon: null }] }],
   private_location: { address: "Kooche 5, Niavaran, Tehran", latitude: 35.81, longitude: 51.41 },
   review: { status: "pending", rejection_reason: null, submitted_at: "2026-11-09T08:00:00Z" },
@@ -182,6 +180,14 @@ describe("admin panel (feature 009)", () => {
     await userEvent.click(screen.getByRole("button", { name: "تأیید و انتشار" }));
     expect(POST.mock.lastCall![1].body).toEqual({ review_version: 3 });
     expect(push).toHaveBeenCalledTimes(1);
+  });
+
+  it("cannot approve a listing with fewer than 3 photos, and says why (feature 010)", async () => {
+    GET.mockResolvedValue(ok({ ...listing(), photos: listing().photos.slice(0, 2) }));
+    renderIn("fa", <AdminReview id={4} loadMap={noMap} />);
+    expect(await screen.findByRole("button", { name: "تأیید و انتشار" })).toBeDisabled();
+    expect(screen.getByText(/کمتر از ۳ عکس دارد/)).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "رد" })).toBeEnabled();
   });
 
   it("logs in through the panel's handler and says why a log-in failed", async () => {
