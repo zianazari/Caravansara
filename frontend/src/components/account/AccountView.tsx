@@ -67,14 +67,14 @@ export function AccountView() {
   }
 
   return (
-    <div className="grid max-w-xl gap-8">
+    <div className="mx-auto grid w-full max-w-2xl min-w-0 gap-8 rounded-3xl border bg-card p-5 shadow-sm md:p-8">
       <h1 className="text-2xl font-bold">{t("account.title")}</h1>
       <AvatarUploader user={user} />
       <section aria-labelledby="profile" className="grid gap-3">
         <h2 id="profile" className="text-lg font-semibold">
           {t("account.profile")}
         </h2>
-        <p className="text-sm text-muted-foreground">{t("account.email", { email: user.email })}</p>
+        <p className="text-sm break-all text-muted-foreground">{t("account.email", { email: user.email })}</p>
         <form onSubmit={saveName} className="flex flex-wrap items-end gap-2">
           <div className="min-w-60 flex-1">
             <Field label={t("auth.fullName")} error={error}>

@@ -5,13 +5,17 @@
 <p align="center">
   <a href="https://github.com/zianazari/Caravansara/actions/workflows/ci.yml"><img src="https://github.com/zianazari/Caravansara/actions/workflows/ci.yml/badge.svg" alt="CI"></a>
   <img src="https://img.shields.io/badge/tests-351%20%C2%B7%2097.6%25%20coverage-b5651d" alt="351 backend tests, 97.6% coverage">
-  <img src="https://img.shields.io/badge/web-185%20Vitest%20tests-6E9F18" alt="185 Vitest tests for the web site">
-  <img src="https://img.shields.io/badge/e2e-57%20Playwright%20tests-2EAD33" alt="57 Playwright tests">
+  <img src="https://img.shields.io/badge/web-258%20Vitest%20tests-6E9F18" alt="258 Vitest tests for the web site">
+  <img src="https://img.shields.io/badge/e2e-85%20Playwright%20tests-2EAD33" alt="85 Playwright tests">
 </p>
 
 A *caravansara* (کاروانسرا) was a roadside inn on the Silk Road: travellers arrived at dusk, took a room for the night and moved on at dawn. **Caravansara** is the same idea for today: an Airbnb-like site where guests find a place, hold it, pay and leave a review, and hosts list their homes.
 
-This repository holds the **backend and the database design**. There is no frontend yet; everything below is reachable through the API and tried out in **Swagger UI**.
+This repository holds the **backend**, the **database design** and the **web site for guests**. The site wears a caravansara theme: the warm colours of the diagrams below and the pointed arch of a caravansara's gateway, laid out the way people know from Airbnb (search pill, photo cards, a bottom bar on phones). Hosts and admins still use the API through **Swagger UI** until their pages are built.
+
+<p align="center">
+  <img src="docs/images/readme/site-home.jpg" alt="The home page on a desktop and on a phone: a night-blue hero with a lit caravansara doorway, the search pill, categories and rows of places in arch-shaped frames" width="100%">
+</p>
 
 ## Technology
 
@@ -212,11 +216,11 @@ Two layers, because each one catches what the other can't:
 | --- | --- | --- |
 | **Runs against** | PostgreSQL + PostGIS and MinIO that testcontainers starts for each run | The real `docker compose` stack, from outside, over HTTP |
 | **Proves** | Every rule in each module, exact race moments, DST, migrations, the API contract | The built image, real settings and wiring: all 39 endpoints, photo and profile picture upload to MinIO, an admin made with `create-admin` reviewing listings, the whole host and guest story, and the web site's proxy, session cookie, rate limit by visitor address and CSP |
-| **Size** | 351 tests, 97.6% coverage | 57 tests, a few seconds |
+| **Size** | 351 tests, 97.6% coverage | 85 tests, under a minute |
 
-The web site has its own Vitest suite in `frontend/` (185 tests): every rule (Jalali calendar for every day of 1400–1410, city time zones on clock-change days, toman with exact decimals, the session lock across tabs), every acceptance scenario in Persian and English, and axe accessibility checks.
+The web site has its own Vitest suite in `frontend/` (258 tests): every rule (Jalali calendar for every day of 1400–1410, city time zones on clock-change days, toman with exact decimals, the session lock across tabs), every acceptance scenario in Persian and English, and axe accessibility checks.
 
-The Playwright tests use its `request` fixture, so they need no browser yet; browser tests for the pages will join the same project. Some highlights:
+Most Playwright tests use its `request` fixture and need no browser. `theme.spec.ts` opens every guest page in a real Chrome, at five widths from 320 px and in both languages, and checks for sideways scroll and for accessibility problems with axe, colour contrast included. Some highlights:
 
 - 🏁 **Booking race:** six guests reserve the same nights at the same moment, and exactly one wins (the others get `409 dates_unavailable`).
 - 🔁 **Idempotency:** a retried reservation with the same `Idempotency-Key` returns the same booking.
@@ -262,7 +266,7 @@ The same description is committed as [`backend/openapi.json`](backend/openapi.js
 ```
 frontend/    Next.js web site for guests, Persian and English, Vitest tests  → frontend/README.md
 backend/     FastAPI app, Alembic migrations, tests  → backend/README.md
-e2e/         Playwright tests against the running stack (57 tests)  → e2e/README.md
+e2e/         Playwright tests against the running stack (85 tests)  → e2e/README.md
 postman/     Postman collection of all endpoints, with saved ids and tokens
 observability/  Alloy, Loki, Tempo, Prometheus (alerts + rule tests), Grafana dashboard  → observability/README.md
 .specify/    GitHub Spec Kit: constitution, templates, scripts (commands in .claude/skills/)

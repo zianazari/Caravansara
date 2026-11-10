@@ -16,7 +16,8 @@ docker compose -f docker-compose.yml -f e2e/compose.e2e.yml up -d --build
 
 cd e2e
 npm ci
-npx playwright test          # 57 tests, a few seconds
+npx playwright install chromium   # once: tests/theme.spec.ts opens the pages in a real Chrome
+npx playwright test          # API tests take a few seconds; the theme pages take longer
 npx playwright show-report   # HTML report; failed tests keep a trace
 ```
 

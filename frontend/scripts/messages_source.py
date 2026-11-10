@@ -26,9 +26,13 @@ M = {
   "siteName": ("کاروانسرا", "Caravansara"),
   "title": ("کاروانسرا: اقامتگاه برای سفر بعدی شما", "Caravansara: a place for your next trip"),
   "description": ("اقامتگاه پیدا کنید، تاریخ‌ها را نگه دارید و رزرو کنید.", "Find a place to stay, hold the dates and book."),
-  "heading": ("سفر بعدی‌تان کجاست؟", "Where are you going next?"),
-  "lead": ("شهر و تاریخ سفر را انتخاب کنید و اقامتگاه‌های آزاد را ببینید.", "Choose a city and your dates to see the places that are free."),
-  "popular": ("شهرهای پیشنهادی", "Suggested cities"),
+  # 007, caravansara theme: hero, one-line mobile search and one row per suggested city
+  "heroTitle": ("جایی برای ماندن، در هر شهر سر راه", "A place to stay, in every city on the way"),
+  "heroSubtitle": ("اقامتگاه‌هایی که میزبان‌ها با دقت آماده کرده‌اند، از تهران تا آمستردام.", "Places that hosts have made ready with care, from Tehran to Amsterdam."),
+  "whereTo": ("کجا می‌روید؟", "Where to?"),
+  "anyWhereAnyWhen": ("هر شهر · هر زمان · مهمان‌ها", "Any city · Any week · Guests"),
+  "popularIn": ("محبوب در {city}", "Popular in {city}"),
+  "showAll": ("نمایش همه", "Show all"),
  },
  "nav": {
   "skipToContent": ("رفتن به محتوای اصلی", "Skip to main content"),
@@ -42,6 +46,8 @@ M = {
   "language": ("زبان", "Language"),
   "switchTo": ("English", "فارسی"),
   "mainMenu": ("منوی اصلی", "Main menu"),
+  "profile": ("پروفایل", "Profile"),
+  "bottomNav": ("ناوبری پایین", "Bottom navigation"),
  },
  "errors": {
   "unknown": ("مشکلی پیش آمد. لطفاً دوباره امتحان کنید.", "Something went wrong. Please try again."),
@@ -146,7 +152,6 @@ M = {
   "rating": ("امتیاز {rating} از ۵، {count, number} نظر", "Rated {rating} out of 5, {count, number} reviews"),
   "noPhoto": ("بدون عکس", "No photo"),
   "distance": ("{km} کیلومتر فاصله", "{km} km away"),
-  "suggested": ("شهرهای پیشنهادی", "Suggested cities"),
  },
  "listing": {
   "photos": ("عکس‌ها", "Photos"),
@@ -184,6 +189,22 @@ M = {
   "cleaningFee": ("هزینه‌ی نظافت: {price}", "Cleaning fee: {price}"),
   "chooseDates": ("برای دیدن قیمت کل، تاریخ‌ها را انتخاب کنید.", "Choose dates to see the total price."),
   "neighborhood": ("محله‌ی {name}", "{name} neighborhood"),
+ },
+ "badge": {
+  "guestFavourite": ("انتخاب مهمان‌ها", "Guest favourite"),
+  "new": ("تازه", "New"),
+ },
+ "category": {
+  "label": ("دسته‌ها", "Categories"),
+  "all": ("همه", "All"),
+  "pets": ("حیوان خانگی مجاز", "Pets allowed"),
+  "hot_tub": ("جکوزی", "Hot tub"),
+  "sauna": ("سونا", "Sauna"),
+  "lake_access": ("کنار دریاچه", "Lake access"),
+  "balcony": ("بالکن", "Balcony"),
+  "free_parking": ("پارکینگ رایگان", "Free parking"),
+  "workspace": ("فضای کار", "Workspace"),
+  "kitchen": ("آشپزخانه", "Kitchen"),
  },
  "auth": {
   "loginTitle": ("ورود به حساب", "Log in"),

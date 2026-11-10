@@ -6,6 +6,8 @@ const GET = vi.fn();
 vi.mock("@/api/server", () => ({ serverApi: () => ({ GET }) }));
 vi.mock("next-intl/server", async () => (await import("@/test/serverIntl")).serverIntlMock());
 vi.mock("@/components/search/SearchForm", () => ({ SearchForm: () => <form aria-label="search form" /> }));
+// The category row (007) has its own tests; here it only has to be on the page.
+vi.mock("@/components/home/CategoryBar", () => ({ CategoryBar: () => <nav aria-label="categories" /> }));
 vi.mock("@/components/search/SearchControls", () => ({
   SearchControls: ({ pins }: { pins: { id: number }[] }) => (
     <div data-testid="pins">{pins.map((p) => p.id).join(",")}</div>

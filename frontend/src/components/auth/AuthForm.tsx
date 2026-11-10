@@ -91,8 +91,12 @@ export function AuthForm({ mode }: { mode: Mode }) {
   const other = mode === "login" ? "register" : "login";
 
   return (
-    <section className="mx-auto grid w-full max-w-sm gap-6 py-6">
-      <h1 className="text-2xl font-bold">{t(mode === "login" ? "auth.loginTitle" : "auth.registerTitle")}</h1>
+    <section className="mx-auto mt-4 grid w-full max-w-md gap-6 rounded-3xl border bg-card p-6 shadow-xl shadow-foreground/5 md:mt-8 md:p-8">
+      {/* 007: a small caravansara arch above the form, as on every page of the theme. */}
+      <span aria-hidden className="arch mx-auto -mb-2 block h-10 w-9 bg-linear-to-b from-amber to-copper" />
+      <h1 className="text-center text-2xl font-bold">
+        {t(mode === "login" ? "auth.loginTitle" : "auth.registerTitle")}
+      </h1>
       <form onSubmit={submit} noValidate className="grid gap-4">
         {problem ? (
           <p role="alert" className="rounded-lg border border-destructive p-3 text-sm text-destructive">

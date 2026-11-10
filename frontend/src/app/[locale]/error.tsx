@@ -7,10 +7,12 @@ import { Button } from "@/components/ui/button";
 export default function ErrorPage({ reset }: { error: Error; reset: () => void }) {
   const t = useTranslations("common");
   return (
-    <section role="alert" className="mx-auto grid max-w-md gap-4 py-16 text-center">
+    <section role="alert" className="mx-auto grid max-w-md justify-items-center gap-4 py-16 text-center">
+      {/* 007: an empty caravansara doorway. */}
+      <span aria-hidden className="arch block h-28 w-24 bg-muted" />
       <h1 className="text-2xl font-bold">{t("errorTitle")}</h1>
       <p className="text-muted-foreground">{t("errorText")}</p>
-      <Button onClick={reset} className="justify-self-center">
+      <Button onClick={reset} className="rounded-full">
         {t("retry")}
       </Button>
     </section>

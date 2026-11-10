@@ -68,8 +68,16 @@ export function ResultsMap({
         link.href = pin.href;
         link.textContent = pin.label;
         link.className =
-          "rounded-full bg-card px-2 py-1 text-xs font-semibold shadow ring-1 ring-black/10 hover:bg-primary hover:text-primary-foreground";
-        return new maplibre.Marker({ element: link }).setLngLat([pin.lng, pin.lat]).addTo(instance);
+          "rounded-full bg-card px-2.5 py-1 text-xs font-bold text-foreground shadow-md ring-1 ring-copper hover:bg-primary hover:text-primary-foreground focus-visible:bg-primary focus-visible:text-primary-foreground";
+        // Visual only: every pin's link is also a result card beside the map, so the pins stay out of the tab
+        // order and away from screen readers. Dense pins overlap, below the 24 px target size, which WCAG
+        // 2.5.8 allows when the same link is available elsewhere; MapLibre also names each pin "Map marker",
+        // which does not match its price (both found by the browser check, specs/007-caravansara-theme T041).
+        link.tabIndex = -1;
+        link.setAttribute("aria-hidden", "true");
+        const marker = new maplibre.Marker({ element: link }).setLngLat([pin.lng, pin.lat]).addTo(instance);
+        link.removeAttribute("aria-label");
+        return marker;
       });
       if (pins.length > 0) {
         const bounds = new maplibre.LngLatBounds();

@@ -1,9 +1,11 @@
+import { Suspense } from "react";
 import type { Metadata } from "next";
 import { getLocale, getTranslations, setRequestLocale } from "next-intl/server";
 import type { components } from "@/api/schema";
 import { serverApi } from "@/api/server";
 import { ResultCard } from "@/components/search/ResultCard";
 import { SearchControls } from "@/components/search/SearchControls";
+import { CategoryBar } from "@/components/home/CategoryBar";
 import { SearchForm } from "@/components/search/SearchForm";
 import { Button } from "@/components/ui/button";
 import { Link } from "@/i18n/navigation";
@@ -67,7 +69,16 @@ export default async function SearchPage({ params, searchParams }: Props) {
 
   return (
     <div className="grid gap-6">
-      <SearchForm today={today} initial={state} initialCity={initialCity} />
+      <SearchForm
+        today={today}
+        initial={state}
+        initialCity={initialCity}
+        className="mx-auto w-full max-w-4xl"
+      />
+      {/* specs/007-caravansara-theme, US3: a category sets this search's own filters (research R6). */}
+      <Suspense>
+        <CategoryBar mode="search" />
+      </Suspense>
       {problem ? (
         <p role="alert" className="rounded-lg border border-destructive p-4 text-destructive">
           {t.has(`errors.${problem}`) ? t(`errors.${problem}`) : t("errors.unknown")}
@@ -80,12 +91,12 @@ export default async function SearchPage({ params, searchParams }: Props) {
               {t("search.results", { count: page.total })}
             </h1>
             {page.items.length === 0 ? (
-              <div className="rounded-xl border bg-muted p-6">
+              <div className="rounded-xl border bg-surface p-6">
                 <h2 className="font-semibold">{t("search.emptyTitle")}</h2>
                 <p className="text-muted-foreground">{t("search.emptyHint")}</p>
               </div>
             ) : (
-              <ul className="grid gap-6 sm:grid-cols-2">
+              <ul className="grid gap-x-6 gap-y-8 sm:grid-cols-2 2xl:grid-cols-3">
                 {page.items.map((result) => (
                   <li key={result.id}>
                     <ResultCard result={result} nights={nights} stay={stay} />
@@ -119,7 +130,7 @@ export default async function SearchPage({ params, searchParams }: Props) {
               </nav>
             ) : null}
           </section>
-          <div className="lg:sticky lg:top-4 lg:self-start">
+          <div className="lg:sticky lg:top-20 lg:self-start">
             <SearchControls state={state} pins={pins} />
           </div>
         </div>

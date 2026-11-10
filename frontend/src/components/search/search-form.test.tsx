@@ -1,4 +1,4 @@
-import { fireEvent, screen, waitFor } from "@testing-library/react";
+import { fireEvent, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { vi } from "vitest";
 import { expectAccessible, renderIn } from "@/test/render";
@@ -119,5 +119,26 @@ describe("SearchForm", () => {
   it("is accessible", async () => {
     const { container } = renderIn("fa", <SearchForm today="2026-11-08" />);
     await expectAccessible(container);
+  });
+
+  // specs/007-caravansara-theme, FR-005: a pill with a round button from md up, one line on a phone.
+  it("is a pill with a round search button named for screen readers", () => {
+    renderIn("fa", <SearchForm today="2026-11-08" />);
+    const form = screen.getByRole("search");
+    expect(form).toHaveClass("rounded-full", "md:grid");
+    const button = screen.getByRole("button", { name: "جستجو" });
+    expect(button).toHaveClass("rounded-full");
+    expect(form).toContainElement(screen.getByRole("combobox", { name: "کجا" }));
+  });
+
+  it("opens the same fields from one line on a phone", async () => {
+    renderIn("fa", <SearchForm today="2026-11-08" initialCity={{ id: 7, label: "تهران" }} />);
+    const line = screen.getByRole("button", { name: /تهران/ });
+    expect(line).toHaveClass("md:hidden");
+    await userEvent.click(line);
+    const dialog = await screen.findByRole("dialog", { name: "کجا می‌روید؟" });
+    await userEvent.click(within(dialog).getByRole("button", { name: "جستجو" }));
+    expect(push).toHaveBeenCalledWith("/search?city_id=7&adults=1");
+    await waitFor(() => expect(screen.queryByRole("dialog")).toBeNull());
   });
 });
