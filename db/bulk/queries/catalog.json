@@ -730,6 +730,18 @@
     {
       "source": "caravansara.listings.repository:public_by_ids",
       "reason": "at most one page of ids (100) by primary key"
+    },
+    {
+      "source": "caravansara.notifications.repository:add",
+      "reason": "one INSERT"
+    },
+    {
+      "source": "caravansara.notifications.repository:next_due",
+      "reason": "one row on the partial index email_outbox_due_idx, which holds only unsent emails"
+    },
+    {
+      "source": "caravansara.notifications.repository:queue_stats",
+      "reason": "count and min over the partial index of unsent emails, once a minute by the worker"
     }
   ]
 }

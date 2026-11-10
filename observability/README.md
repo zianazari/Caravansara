@@ -53,6 +53,8 @@ Prometheus format, so a different backend means changing this folder, not the co
 | `SlowSearch` | search p95 above 1 s for 10 min | search is the busiest page |
 | `DatabaseDown` | PostgreSQL unreachable for 1 min | |
 | `DatabaseConnectionsHigh` | more than 80% of connections in use for 5 min | new requests start to wait |
+| `EmailQueueStuck` | the oldest unsent email has waited more than 30 min, for 5 min | the mail server is down or refuses the worker, or no SMTP host is set; the emails are kept and go out once it is fixed (feature 013) |
+| `EmailsGivenUp` | an email was given up after its last attempt, in the last hour | a host did not hear the result of their review |
 
 The thresholds are first guesses; tune them after a few weeks of real data. Alerts show in
 Prometheus and Grafana; sending them to email or chat needs Alertmanager or Grafana contact points.

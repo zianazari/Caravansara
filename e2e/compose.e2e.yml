@@ -6,3 +6,8 @@ services:
     environment:
       CARAVANSARA_REGISTER_MAX_PER_IP: "100000"
       CARAVANSARA_LOGIN_MAX_PER_IP: "100000"
+  # The review-result email (feature 013) is sent by the worker; every 5 s instead of every minute, so the
+  # test does not wait a minute for it.
+  worker:
+    environment:
+      CARAVANSARA_WORKER_INTERVAL_SECONDS: "5"

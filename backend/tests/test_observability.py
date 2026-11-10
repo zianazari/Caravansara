@@ -260,7 +260,12 @@ async def test_a_worker_run_is_measured_and_traced(
     assert time.time() - sample("caravansara_worker_last_success_timestamp_seconds") < 5
     (span,) = exporter.get_finished_spans()
     assert span.name == "worker.run"
-    assert span.attributes == {"caravansara.expired": 1, "caravansara.completed": 0, "caravansara.review_queue": 0}
+    assert span.attributes == {
+        "caravansara.expired": 1,
+        "caravansara.completed": 0,
+        "caravansara.review_queue": 0,
+        "caravansara.emails_sent": 0,
+    }
 
 
 async def test_a_failed_worker_run_is_counted_not_raised(

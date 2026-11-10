@@ -36,7 +36,7 @@ uv run caravansara serve --reload        # API on :8000
 uv run caravansara worker                # booking jobs every minute
 ```
 
-Settings come from `CARAVANSARA_*` environment variables; see `src/caravansara/core/config.py` and `.env.example`. Never commit real secrets.
+Settings come from `CARAVANSARA_*` environment variables; see `src/caravansara/core/config.py` and `.env.example`. Never commit real secrets. Email (feature 013): `CARAVANSARA_SMTP_HOST`, `_SMTP_PORT`, `_SMTP_FROM`, `_SMTP_USERNAME`, `_SMTP_PASSWORD`, `_SMTP_STARTTLS` and `CARAVANSARA_SITE_URL` for the links; without a host, emails wait in the outbox.
 
 | Command | What it does |
 | --- | --- |
@@ -57,7 +57,7 @@ Settings come from `CARAVANSARA_*` environment variables; see `src/caravansara/c
 | --- | --- | --- |
 | JSON logs, one line per request | `core/logs.py`, `core/observability.py` | Each line has `request_id`, `trace_id`, route, status and duration. Emails, tokens and secret fields are masked. `CARAVANSARA_LOG_FORMAT=text` for a terminal |
 | `X-Request-ID` | `core/observability.py` | Returned on every response; a safe incoming id (from a proxy) is kept |
-| Metrics | `core/metrics.py` | Requests, errors and duration per route template; booking events, double bookings stopped (`23P01`), rate limits, reviews; worker runs and last success |
+| Metrics | `core/metrics.py` | Requests, errors and duration per route template; booking events, double bookings stopped (`23P01`), rate limits, reviews; worker runs and last success; emails sent, retried and given up, and the outbox's size and oldest wait |
 | Traces | `core/telemetry.py` | OpenTelemetry for FastAPI, SQLAlchemy and S3, sent over OTLP/HTTP when `CARAVANSARA_OTEL_ENDPOINT` is set |
 
 The collector, dashboards and alerts live in [`observability/`](../observability/README.md).

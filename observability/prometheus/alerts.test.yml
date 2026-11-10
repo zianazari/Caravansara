@@ -68,3 +68,35 @@ tests:
           - exp_labels: { severity: warning }
             exp_annotations:
               summary: "5.025% of API requests fail with 5xx."
+
+  - name: an email waiting over half an hour fires EmailQueueStuck, a short wait does not
+    interval: 1m
+    input_series:
+      - series: 'caravansara_email_outbox_oldest_wait_seconds{job="worker", instance="worker:9100"}'
+        values: "600 1200 1800 1860 1920 1980 2040 2100 2160 2220 2280"
+    alert_rule_test:
+      - eval_time: 2m
+        alertname: EmailQueueStuck
+        exp_alerts: []
+      - eval_time: 9m
+        alertname: EmailQueueStuck
+        exp_alerts:
+          - exp_labels: { severity: warning }
+            exp_annotations:
+              summary: "The oldest unsent email has waited 37m 0s."
+
+  - name: an email given up fires EmailsGivenUp
+    interval: 1m
+    input_series:
+      - series: 'caravansara_emails_total{job="worker", instance="worker:9100", kind="listing_approved", result="failed"}'
+        values: "0 0 1 1 1"
+    alert_rule_test:
+      - eval_time: 1m
+        alertname: EmailsGivenUp
+        exp_alerts: []
+      - eval_time: 3m
+        alertname: EmailsGivenUp
+        exp_alerts:
+          - exp_labels: { severity: warning }
+            exp_annotations:
+              summary: An email was given up after its last attempt; see the worker's log.

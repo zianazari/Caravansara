@@ -68,6 +68,18 @@ class Settings(BaseSettings):
 
     # Worker
     worker_interval_seconds: int = 60
+    # Email (feature 013). Empty host: emails wait in the outbox and nothing is sent. In compose: Mailpit.
+    smtp_host: str = ""
+    smtp_port: int = 25
+    smtp_from: str = "Caravansara <no-reply@caravansara.example.com>"
+    smtp_username: str = ""
+    smtp_password: str = ""
+    smtp_starttls: bool = False
+    smtp_timeout_seconds: float = 10
+    email_max_attempts: int = 8
+    email_batch: int = 20
+    # The site's address, for links in emails.
+    site_url: str = "http://localhost:3001"
 
     # Observability
     log_level: str = "INFO"

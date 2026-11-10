@@ -46,6 +46,18 @@ LISTING_REVIEW_EVENTS = Counter(
 )
 # Only the worker sets these two, once a run (research R10). Each API copy would otherwise report
 # its own stale number, and Prometheus would add them up.
+EMAIL_KINDS = ("listing_approved", "listing_rejected")
+EMAIL_RESULTS = ("sent", "retry", "failed")
+EMAILS = Counter(
+    "caravansara_emails_total",
+    "Outbox emails by kind and result: sent, retry (will try again) or failed (given up) (feature 013).",
+    ["kind", "result"],
+)
+EMAIL_OUTBOX_QUEUE = Gauge("caravansara_email_outbox_queue", "Emails waiting in the outbox to be sent.")
+EMAIL_OUTBOX_OLDEST_WAIT = Gauge(
+    "caravansara_email_outbox_oldest_wait_seconds",
+    "How long the oldest unsent email has waited; 0 when the outbox is empty.",
+)
 LISTING_REVIEW_QUEUE = Gauge("caravansara_listing_review_queue", "Listings waiting for an admin's review.")
 LISTING_REVIEW_OLDEST_WAIT = Gauge(
     "caravansara_listing_review_oldest_wait_seconds",
@@ -66,6 +78,9 @@ WORKER_DURATION = Histogram(
 # Series exist from the start at 0, so rate() and alerts work before the first event.
 for _event in BOOKING_EVENTS_LIST:
     BOOKING_EVENTS.labels(_event)
+for _kind in EMAIL_KINDS:
+    for _email_result in EMAIL_RESULTS:
+        EMAILS.labels(_kind, _email_result)
 for _event in LISTING_REVIEW_EVENTS_LIST:
     LISTING_REVIEW_EVENTS.labels(_event)
 for _action in ("login", "register", "admin_login"):
