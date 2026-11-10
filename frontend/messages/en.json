@@ -16,7 +16,8 @@
     "errorTitle": "Something went wrong",
     "errorText": "Please try again.",
     "footerNote": "Payment in this version is simulated.",
-    "mapAttribution": "© OpenStreetMap contributors"
+    "mapAttribution": "© OpenStreetMap contributors",
+    "samplePhoto": "Sample picture"
   },
   "home": {
     "siteName": "Caravansara",

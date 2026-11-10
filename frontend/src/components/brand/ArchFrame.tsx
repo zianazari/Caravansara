@@ -1,6 +1,8 @@
 "use client";
 
 import Image from "next/image";
+import { useTranslations } from "next-intl";
+import defaultPhoto from "@/assets/listing-default.jpg";
 import { useState } from "react";
 import { cn } from "@/lib/cn";
 
@@ -10,7 +12,7 @@ import { cn } from "@/lib/cn";
  * caravansara doorway, kept for decoration (an empty page).
  *
  * Without a photo, or when the photo's file cannot be loaded (a missing file in storage), it shows the default
- * listing picture instead of an empty box or a broken image (feature 020, owner's request).
+ * listing picture, labelled as a sample, instead of an empty box or a broken image (feature 020, owner's request).
  */
 export function ArchFrame({
   src,
@@ -62,47 +64,27 @@ export function ArchFrame({
 }
 
 /**
- * The default listing picture (feature 020): a caravansara's pointed gateway in its courtyard under a sun,
- * drawn here in the theme's colours. No request, no text (it reads the same in both languages), sharp at any
- * size, and never mistaken for a real photo of a place.
+ * The default listing picture (feature 020): a living room photo from the project owner, who owns its rights
+ * (confirmed 2026-11-10). A small "sample picture" label sits on it, so a guest never takes it for a photo of
+ * the listing itself. The file is bundled with the site (src/assets), so it needs no storage and no request to
+ * another service.
  */
 export function DefaultListingPhoto({ label, className }: { label?: string; className?: string }) {
+  const t = useTranslations("common");
   return (
-    <svg
-      viewBox="0 0 400 300"
-      preserveAspectRatio="xMidYMid slice"
-      className={cn("size-full", className)}
-      role={label ? "img" : undefined}
-      aria-label={label || undefined}
-      aria-hidden={label ? undefined : true}
-      data-default-photo
-    >
-      <rect width="400" height="300" fill="var(--muted)" />
-      {/* the sun sits low and inside, clear of the badge and the heart in the top corners */}
-      <circle cx="292" cy="100" r="20" fill="var(--gold)" />
-      {/* the caravansara's wall with its battlements */}
-      <path
-        d="M0,150 h30 v-12 h20 v12 h40 v-12 h20 v12 h180 v-12 h20 v12 h40 v-12 h20 v12 h30 V300 H0 Z"
-        fill="var(--sand-strong)"
+    <span className={cn("absolute inset-0 block", className)} data-default-photo>
+      <Image
+        src={defaultPhoto}
+        alt={label ?? ""}
+        fill
+        sizes="(min-width: 1024px) 25vw, 50vw"
+        placeholder="empty"
+        draggable={false}
+        className="object-cover"
       />
-      {/* two small arched windows */}
-      <path
-        d="M58,240 V205 C58,192 66,185 75,178 C84,185 92,192 92,205 V240 Z"
-        fill="var(--copper)"
-        opacity="0.55"
-      />
-      <path
-        d="M308,240 V205 C308,192 316,185 325,178 C334,185 342,192 342,205 V240 Z"
-        fill="var(--copper)"
-        opacity="0.55"
-      />
-      {/* the pointed gateway: frame, then the doorway in shade */}
-      <path d="M128,300 V176 C128,138 166,118 200,88 C234,118 272,138 272,176 V300 Z" fill="var(--copper)" />
-      <path
-        d="M152,300 V186 C152,160 178,144 200,124 C222,144 248,160 248,186 V300 Z"
-        fill="var(--primary)"
-      />
-      <rect y="276" width="400" height="24" fill="var(--border)" />
-    </svg>
+      <span className="absolute start-2.5 bottom-2.5 rounded-full bg-background/90 px-2 py-0.5 text-[11px] font-semibold text-foreground shadow-sm">
+        {t("samplePhoto")}
+      </span>
+    </span>
   );
 }

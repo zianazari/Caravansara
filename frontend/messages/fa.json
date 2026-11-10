@@ -16,7 +16,8 @@
     "errorTitle": "مشکلی پیش آمد",
     "errorText": "لطفاً دوباره امتحان کنید.",
     "footerNote": "پرداخت در این نسخه شبیه‌سازی است.",
-    "mapAttribution": "© مشارکت‌کنندگان OpenStreetMap"
+    "mapAttribution": "© مشارکت‌کنندگان OpenStreetMap",
+    "samplePhoto": "تصویر نمونه"
   },
   "home": {
     "siteName": "کاروانسرا",

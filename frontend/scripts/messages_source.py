@@ -21,6 +21,7 @@ M = {
   "errorText": ("لطفاً دوباره امتحان کنید.", "Please try again."),
   "footerNote": ("پرداخت در این نسخه شبیه‌سازی است.", "Payment in this version is simulated."),
   "mapAttribution": ("© مشارکت‌کنندگان OpenStreetMap", "© OpenStreetMap contributors"),
+  "samplePhoto": ("تصویر نمونه", "Sample picture"),
  },
  "home": {
   "siteName": ("کاروانسرا", "Caravansara"),
