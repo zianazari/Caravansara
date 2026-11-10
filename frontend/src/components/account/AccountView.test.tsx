@@ -1,4 +1,4 @@
-import { screen, waitFor } from "@testing-library/react";
+import { screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { vi } from "vitest";
 import { expectAccessible, renderIn } from "@/test/render";
@@ -44,12 +44,9 @@ describe("AccountView", () => {
     expect(PATCH).not.toHaveBeenCalled();
   });
 
-  it("logs out on the server and goes home (US2/AC6)", async () => {
-    logout.mockResolvedValue(undefined);
+  it("has no log-out button: it is in the header's account menu (feature 024)", () => {
     renderIn("en", <AccountView />);
-    await userEvent.click(screen.getByRole("button", { name: "Log out" }));
-    await waitFor(() => expect(replace).toHaveBeenCalledWith("/"));
-    expect(logout).toHaveBeenCalled();
+    expect(screen.queryByRole("button", { name: "Log out" })).toBeNull();
   });
 
   it("is accessible", async () => {

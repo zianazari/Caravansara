@@ -419,8 +419,7 @@
     "too_large": "عکس حداکثر می‌تواند ۵ مگابایت باشد.",
     "wrong_type": "فقط عکس PNG یا JPEG پذیرفته می‌شود.",
     "not_image": "این فایل عکس PNG یا JPEG نیست.",
-    "email": "ایمیل: {email}",
-    "logout": "خروج از حساب"
+    "email": "ایمیل: {email}"
   },
   "booking": {
     "title": "رزرو",

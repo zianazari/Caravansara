@@ -431,7 +431,6 @@ M = {
   "wrong_type": ("فقط عکس PNG یا JPEG پذیرفته می‌شود.", "Only PNG or JPEG pictures are accepted."),
   "not_image": ("این فایل عکس PNG یا JPEG نیست.", "This file is not a PNG or JPEG picture."),
   "email": ("ایمیل: {email}", "Email: {email}"),
-  "logout": ("خروج از حساب", "Log out"),
  },
  "booking": {
   "title": ("رزرو", "Booking"),
