@@ -105,11 +105,23 @@ function TripRow({ booking: b }: { booking: Booking }) {
           <span className="font-medium">{t(`booking.status_${b.status}`)}</span> ·{" "}
           {money(b.total_price, b.currency)}
         </p>
-        {canReview(b) && !reviewed ? (
-          <Link href={`/trips/${b.id}/review`} className="text-sm font-medium text-primary underline">
-            {t("trips.review")}
+        {/* Side by side with room between them: each link is a touch target of at least 24 px (WCAG 2.5.8). */}
+        <div className="flex flex-wrap gap-x-4 gap-y-1">
+          <Link
+            href={`/listings/${b.listing.id}`}
+            className="inline-block py-1 text-sm font-medium text-primary underline"
+          >
+            {t("trips.viewListing")}
           </Link>
-        ) : null}
+          {canReview(b) && !reviewed ? (
+            <Link
+              href={`/trips/${b.id}/review`}
+              className="inline-block py-1 text-sm font-medium text-primary underline"
+            >
+              {t("trips.review")}
+            </Link>
+          ) : null}
+        </div>
       </div>
     </article>
   );

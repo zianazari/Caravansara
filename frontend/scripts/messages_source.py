@@ -473,6 +473,10 @@ M = {
   "viewTrip": ("دیدن رزرو", "View booking"),
  },
  "trips": {
+  # 022: the booked place on a trip
+  "viewListing": ("مشاهده‌ی آگهی", "View the listing"),
+  "thePlace": ("اقامتگاه این سفر", "The place of this trip"),
+  "listingGone": ("این آگهی دیگر نمایش داده نمی‌شود.", "This listing is no longer shown."),
   "title": ("سفرهای من", "My trips"),
   "upcoming": ("سفرهای پیش رو", "Upcoming"),
   "past": ("سفرهای گذشته", "Past"),

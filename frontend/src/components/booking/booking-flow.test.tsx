@@ -22,6 +22,8 @@ vi.mock("@/i18n/navigation", () => ({
 let search = new URLSearchParams();
 vi.mock("next/navigation", () => ({ useSearchParams: () => search }));
 vi.mock("sonner", () => ({ toast: { success: vi.fn() } }));
+// The booked place's photos are tested in TripListing.test.tsx; here only the booking itself.
+vi.mock("./TripListing", () => ({ TripListing: () => null }));
 
 import { BookingBox } from "@/components/listing/BookingBox";
 import { StayDatesProvider } from "@/components/listing/StayDates";
