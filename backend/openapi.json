@@ -6264,7 +6264,8 @@
             "enum": [
               "image/jpeg",
               "image/png",
-              "image/webp"
+              "image/webp",
+              "image/avif"
             ],
             "title": "Content Type"
           }

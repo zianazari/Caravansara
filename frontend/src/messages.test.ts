@@ -116,7 +116,7 @@ describe("messages", () => {
 
   it("have no English in the Persian site, except a few names (SC-002)", () => {
     // Names that stay as they are: the map's data source, the image formats, and the other language's own name.
-    const allowed = new Set(["OpenStreetMap", "PNG", "JPEG", "WebP", "English"]); // image formats keep their names
+    const allowed = new Set(["OpenStreetMap", "PNG", "JPEG", "WebP", "AVIF", "English"]); // image formats keep their names
     const latin = values(fa as Tree)
       .map((text) =>
         text.replace(/\{[a-z]+, (plural|number)[^{}]*(\{[^{}]*\}[^{}]*)*\}/g, "").replace(/\{[a-z]+\}/g, ""),

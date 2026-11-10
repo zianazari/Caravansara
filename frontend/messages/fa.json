@@ -297,7 +297,7 @@
   },
   "photos": {
     "choose": "انتخاب عکس‌ها",
-    "hint": "JPEG، PNG یا WebP، هر کدام تا ۱۰ مگابایت. دست‌کم ۵ عکس.",
+    "hint": "JPEG، PNG، WebP یا AVIF، هر کدام تا ۱۰ مگابایت. دست‌کم ۵ عکس.",
     "count": "{count, plural, =0 {هنوز عکسی نیست} other {# عکس}}",
     "photo": "عکس {index, number}",
     "cover": "کاور",
@@ -316,7 +316,7 @@
     "minNeeded": "دست‌کم ۵ عکس لازم است.",
     "cannotRemove": "حذف ممکن نیست: آگهی دست‌کم ۵ عکس لازم دارد. اول عکس تازه بگذارید.",
     "too_large": "هر عکس حداکثر ۱۰ مگابایت می‌تواند باشد.",
-    "wrong_type": "فقط عکس JPEG، PNG یا WebP پذیرفته می‌شود.",
+    "wrong_type": "فقط عکس JPEG، PNG، WebP یا AVIF پذیرفته می‌شود.",
     "not_image": "این فایل عکس نیست.",
     "rejectedFile": "{name}: {reason}",
     "reorderHint": "عکس‌ها را بکشید، یا با دکمه‌ها جابه‌جا کنید. نخستین عکس کاور است."
