@@ -113,9 +113,14 @@ async def review_detail(
     responses=error_responses(401, 404, 409, 422),
 )
 async def approve(
-    listing_id: int, body: DecisionIn, admin_id: AdminId, session: SessionDep, storage: StorageDep
+    listing_id: int,
+    body: DecisionIn,
+    admin_id: AdminId,
+    session: SessionDep,
+    storage: StorageDep,
+    settings: SettingsDep,
 ) -> AdminListingOut:
-    return await service.approve(session, storage, listing_id, admin_id, body.review_version)
+    return await service.approve(session, storage, settings, listing_id, admin_id, body.review_version)
 
 
 @router.post(
@@ -125,6 +130,11 @@ async def approve(
     responses=error_responses(401, 404, 409, 422),
 )
 async def reject(
-    listing_id: int, body: RejectIn, admin_id: AdminId, session: SessionDep, storage: StorageDep
+    listing_id: int,
+    body: RejectIn,
+    admin_id: AdminId,
+    session: SessionDep,
+    storage: StorageDep,
+    settings: SettingsDep,
 ) -> AdminListingOut:
-    return await service.reject(session, storage, listing_id, admin_id, body.review_version, body.reason)
+    return await service.reject(session, storage, settings, listing_id, admin_id, body.review_version, body.reason)

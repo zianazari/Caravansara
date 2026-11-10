@@ -59,3 +59,19 @@ groups:
         labels: { severity: warning }
         annotations:
           summary: "{{ $value | humanizePercentage }} of PostgreSQL connections are in use."
+
+      - alert: EmailQueueStuck
+        # Feature 013: an email waits in the outbox for more than half an hour. The mail server is down,
+        # refuses the worker, or no SMTP host is set; the emails are kept and go out once it is fixed.
+        expr: max(caravansara_email_outbox_oldest_wait_seconds{job="worker"}) > 1800
+        for: 5m
+        labels: { severity: warning }
+        annotations:
+          summary: "The oldest unsent email has waited {{ $value | humanizeDuration }}."
+
+      - alert: EmailsGivenUp
+        # An email was given up after its last attempt: a host did not hear about their listing.
+        expr: sum(increase(caravansara_emails_total{job="worker", result="failed"}[1h])) > 0
+        labels: { severity: warning }
+        annotations:
+          summary: An email was given up after its last attempt; see the worker's log.

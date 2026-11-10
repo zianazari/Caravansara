@@ -4,9 +4,9 @@
 
 <p align="center">
   <a href="https://github.com/zianazari/Caravansara/actions/workflows/ci.yml"><img src="https://github.com/zianazari/Caravansara/actions/workflows/ci.yml/badge.svg" alt="CI"></a>
-  <img src="https://img.shields.io/badge/tests-377%20%C2%B7%2097.5%25%20coverage-b5651d" alt="377 backend tests, 97.5% coverage">
+  <img src="https://img.shields.io/badge/tests-383%20%C2%B7%2097.1%25%20coverage-b5651d" alt="383 backend tests, 97.1% coverage">
   <img src="https://img.shields.io/badge/web-390%20Vitest%20tests-6E9F18" alt="390 Vitest tests for the web site">
-  <img src="https://img.shields.io/badge/e2e-109%20Playwright%20tests-2EAD33" alt="109 Playwright tests">
+  <img src="https://img.shields.io/badge/e2e-111%20Playwright%20tests-2EAD33" alt="111 Playwright tests">
 </p>
 
 A *caravansara* (کاروانسرا) was a roadside inn on the Silk Road: travellers arrived at dusk, took a room for the night and moved on at dawn. **Caravansara** is the same idea for today: an Airbnb-like site where guests find a place, hold it, pay, save favourites and leave a review, and hosts list their homes.
@@ -78,7 +78,8 @@ Caravansara is a **modular monolith**: one FastAPI codebase and one PostgreSQL d
 | --- | --- | --- |
 | **Web site** (Next.js, port 3001) | Pages for guests and hosts in Persian and English; forwards `/api/v1` to the API; keeps the refresh token in an HttpOnly cookie | The browser talks to one origin only, and no token the page can read outlives a reload |
 | **API** (FastAPI, uvicorn) | All endpoints under `/api/v1`, Swagger at `/docs` | Stateless, so any number of copies can run behind a load balancer |
-| **Worker** (`caravansara worker`) | Every minute: expire unpaid holds, complete finished stays | Scheduled jobs would run once per API copy if they lived in the API |
+| **Worker** (`caravansara worker`) | Every minute: expire unpaid holds, complete finished stays, send the emails waiting in the outbox | Scheduled jobs would run once per API copy if they lived in the API; a slow mail server never slows a request |
+| **Mailpit** (development only, port 8025) | Catches every email the worker sends, so none leaves the machine | Shows the review-result emails while developing |
 | **PostgreSQL 16 + PostGIS** | The single source of truth; enforces the critical rules | The only place every API copy shares, so the only safe place for race-proof rules |
 | **MinIO / S3** | Photo files | Browsers upload listing photos directly with presigned URLs, so large files don't load the API. A profile picture (at most 5 MB) goes through the API, which checks its size, type and content first, so a bad file is never stored |
 | **Monitoring** (optional profile) | Alloy, Loki, Tempo, Prometheus, Grafana | Watches all of the above; off by default so daily development stays light |
@@ -90,12 +91,14 @@ Caravansara is a **modular monolith**: one FastAPI codebase and one PostgreSQL d
 | `core` | settings, DB sessions, error shape, JWT, storage client | nothing; the base layer |
 | `identity` | `users` (members and admins), `refresh_tokens`, `auth_attempts` | `core` |
 | `catalog` | `countries`, `cities`, `amenities` (read-only) | `core` |
-| `listings` | `listings` with their review state, photos, amenities per listing, fuzzed pin, `listing_review_events` | `catalog`, `identity` |
+| `listings` | `listings` with their review state, photos, amenities per listing, fuzzed pin, `listing_review_events` | `catalog`, `identity`, `notifications` |
 | `bookings` | `bookings`: hold, pay, cancel, worker queries | `listings` |
 | `reviews` | `reviews`, rating cache | `bookings`, `listings`, `identity` |
 | `search` | read-only search queries | `listings` (types only) |
-| `jobs` | the worker loop, the review-queue gauges | `bookings`, `listings` |
+| `jobs` | the worker loop, the review-queue and outbox gauges | `bookings`, `listings`, `notifications` |
 | `moderation` | admin endpoints for listing review, `admin_address_views` | `identity`, `listings` |
+| `wishlists` | `wishlist_items`: the listings a member saved | `identity`, `listings` |
+| `notifications` | `email_outbox`: emails written with their event, sent by the worker | `identity` |
 
 Every module has the same layers:
 
@@ -177,7 +180,7 @@ docker compose exec -e CARAVANSARA_ADMIN_PASSWORD=… api caravansara create-adm
 docker compose run --rm migrate caravansara seed-bulk   # optional: 100,000 listings in their own database, for measuring
 ```
 
-Open **http://localhost:3001** for the site (Persian at `/fa`, English at `/en`): search, open a listing, sign up, book and pay (payment is simulated), see your trips, cancel and review. Hosts choose «Become a host», make a listing in eight steps with at least three photos, and manage it under «My listings». Or open **http://localhost:8000/docs**, log in with `POST /auth/login` as `guest@example.com` / `caravansara-demo`, press **Authorize**, paste the `access_token`, and every endpoint is ready to try. To review listings, open **http://admin.localhost:3001** (the admin panel, only on that host) and log in as `admin@example.com` (demo) or the admin you created. Through Swagger: log in with `POST /admin/auth/login` as `admin@example.com` (demo) or the admin you created, and paste that token under **AdminBearer**. Admin accounts exist only through `caravansara create-admin`; `seed-demo` refuses to run in production, because its passwords are public.
+Emails the system sends (a host hears the result of a review) land in Mailpit at **http://localhost:8025**. Open **http://localhost:3001** for the site (Persian at `/fa`, English at `/en`): search, open a listing, sign up, book and pay (payment is simulated), see your trips, cancel and review. Hosts choose «Become a host», make a listing in eight steps with at least three photos, and manage it under «My listings». Or open **http://localhost:8000/docs**, log in with `POST /auth/login` as `guest@example.com` / `caravansara-demo`, press **Authorize**, paste the `access_token`, and every endpoint is ready to try. To review listings, open **http://admin.localhost:3001** (the admin panel, only on that host) and log in as `admin@example.com` (demo) or the admin you created. Through Swagger: log in with `POST /admin/auth/login` as `admin@example.com` (demo) or the admin you created, and paste that token under **AdminBearer**. Admin accounts exist only through `caravansara create-admin`; `seed-demo` refuses to run in production, because its passwords are public.
 
 The demo data comes from [Inside Airbnb](https://insideairbnb.com/) (CC BY 4.0): real titles, prices, amenities and review text from Amsterdam, Lisbon, Copenhagen, Stockholm, London and New York City, plus 40 hand-written Persian listings in Tehran, Isfahan and Shiraz priced in rials. People, addresses, bookings and photos are synthetic. It also holds nine edge cases, such as a listing waiting for review, a rejected one, a hold that expires four minutes after loading and a 365-night stay, each listed with its id. See [`db/demo/README.md`](db/demo/README.md).
 
@@ -216,7 +219,7 @@ Two layers, because each one catches what the other can't:
 | --- | --- | --- |
 | **Runs against** | PostgreSQL + PostGIS and MinIO that testcontainers starts for each run | The real `docker compose` stack, from outside, over HTTP |
 | **Proves** | Every rule in each module, exact race moments, DST, migrations, the API contract | The built image, real settings and wiring: all 44 endpoints, listing photo upload to MinIO, profile pictures through the API (bad files refused), an admin made with `create-admin` reviewing listings, the whole host and guest story, and the web site's proxy, session cookie, rate limit by visitor address and CSP |
-| **Size** | 377 tests, 97.5% coverage | 109 tests, under a minute |
+| **Size** | 383 tests, 97.1% coverage | 111 tests, under a minute |
 
 The web site has its own Vitest suite in `frontend/` (390 tests): every rule (Jalali calendar for every day of 1400–1410, city time zones on clock-change days, toman with exact decimals, the session lock across tabs), every acceptance scenario in Persian and English, and axe accessibility checks.
 
@@ -269,7 +272,7 @@ The same description is committed as [`backend/openapi.json`](backend/openapi.js
 ```
 frontend/    Next.js web site for guests and hosts, Persian and English, Vitest tests  → frontend/README.md
 backend/     FastAPI app, Alembic migrations, tests  → backend/README.md
-e2e/         Playwright tests against the running stack (109 tests)  → e2e/README.md
+e2e/         Playwright tests against the running stack (111 tests)  → e2e/README.md
 postman/     Postman collection of all endpoints, with saved ids and tokens
 observability/  Alloy, Loki, Tempo, Prometheus (alerts + rule tests), Grafana dashboard  → observability/README.md
 .specify/    GitHub Spec Kit: constitution, templates, scripts (commands in .claude/skills/)

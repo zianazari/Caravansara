@@ -40,12 +40,18 @@ async def detail(session: AsyncSession, storage: Storage, listing_id: int, admin
 
 
 async def approve(
-    session: AsyncSession, storage: Storage, listing_id: int, admin_id: int, version: int
+    session: AsyncSession, storage: Storage, settings: Settings, listing_id: int, admin_id: int, version: int
 ) -> AdminListingOut:
-    return await listings.approve(session, storage, listing_id, admin_id, version)
+    return await listings.approve(session, storage, settings, listing_id, admin_id, version)
 
 
 async def reject(
-    session: AsyncSession, storage: Storage, listing_id: int, admin_id: int, version: int, reason: str
+    session: AsyncSession,
+    storage: Storage,
+    settings: Settings,
+    listing_id: int,
+    admin_id: int,
+    version: int,
+    reason: str,
 ) -> AdminListingOut:
-    return await listings.reject(session, storage, listing_id, admin_id, version, reason)
+    return await listings.reject(session, storage, settings, listing_id, admin_id, version, reason)

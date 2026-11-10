@@ -217,6 +217,12 @@ async def read_limited(stream: AsyncIterator[bytes], max_bytes: int) -> bytes:
     return bytes(body)
 
 
+async def email_of(session: AsyncSession, user_id: int) -> str | None:
+    """For the outbox (feature 013): the address is read when an email is sent, never copied into it."""
+    user = await repo.get_user(session, user_id)
+    return user.email if user else None
+
+
 async def lock_user(session: AsyncSession, user_id: int) -> None:
     """For other modules: holds the user's row until their commit, so their per-user limits are counted one
     request at a time (the wishlist's 500, feature 012)."""

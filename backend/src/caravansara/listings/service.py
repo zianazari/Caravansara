@@ -37,6 +37,7 @@ from caravansara.listings.schemas import (
     PrivateLocation,
     UploadUrlOut,
 )
+from caravansara.notifications import service as notifications
 
 __all__ = ["ListingInfo", "PropertyType", "ReviewStatus"]
 
@@ -518,6 +519,7 @@ async def review_detail(session: AsyncSession, storage: Storage, listing_id: int
 async def _decide(
     session: AsyncSession,
     storage: Storage,
+    settings: Settings,
     listing_id: int,
     admin_id: int,
     version: int,
@@ -540,6 +542,18 @@ async def _decide(
         raise Conflict("listing_changed", "The host changed this listing after you opened it. Open it again.")
     action = ReviewAction.approved if status == ReviewStatus.approved else ReviewAction.rejected
     await repo.add_review_event(session, listing_id, action, admin_id, version, reason)
+    decided = await _get(session, listing_id)
+    # The host's email is written in this same transaction (feature 013): it exists exactly when the
+    # decision does, and the worker sends it later, so a mail server problem never touches the decision.
+    await notifications.queue_review_result(
+        session,
+        settings,
+        host_id=decided.host_id,
+        listing_id=listing_id,
+        title=decided.title,
+        approved=status == ReviewStatus.approved,
+        reason=reason,
+    )
     await session.commit()
     LISTING_REVIEW_EVENTS.labels(action.value).inc()
     listing = await _get(session, listing_id)
@@ -548,15 +562,21 @@ async def _decide(
 
 
 async def approve(
-    session: AsyncSession, storage: Storage, listing_id: int, admin_id: int, version: int
+    session: AsyncSession, storage: Storage, settings: Settings, listing_id: int, admin_id: int, version: int
 ) -> AdminListingOut:
-    return await _decide(session, storage, listing_id, admin_id, version, ReviewStatus.approved, None)
+    return await _decide(session, storage, settings, listing_id, admin_id, version, ReviewStatus.approved, None)
 
 
 async def reject(
-    session: AsyncSession, storage: Storage, listing_id: int, admin_id: int, version: int, reason: str
+    session: AsyncSession,
+    storage: Storage,
+    settings: Settings,
+    listing_id: int,
+    admin_id: int,
+    version: int,
+    reason: str,
 ) -> AdminListingOut:
-    return await _decide(session, storage, listing_id, admin_id, version, ReviewStatus.rejected, reason)
+    return await _decide(session, storage, settings, listing_id, admin_id, version, ReviewStatus.rejected, reason)
 
 
 async def review_queue_stats(session: AsyncSession) -> tuple[int, datetime | None]:

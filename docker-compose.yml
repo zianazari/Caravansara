@@ -1,5 +1,6 @@
 # Whole system with one command: docker compose up --build
 # Web site: http://localhost:3001 (/fa, /en)   API + Swagger: http://localhost:8000/docs   MinIO console: http://localhost:9001
+# Emails (Mailpit): http://localhost:8025
 # With monitoring (Grafana http://localhost:3000, Prometheus http://localhost:9090):
 #   docker compose --profile observability up --build
 # Demo data with photos (optional, empty database only): docker compose run --rm migrate caravansara seed-demo
@@ -64,6 +65,11 @@ services:
       timeout: 3s
       retries: 30
 
+  # A mail catcher for development (feature 013): takes SMTP on 1025 and shows every email at :8025.
+  mailpit:
+    image: axllent/mailpit:v1.27.0
+    ports: ["8025:8025"]
+
   # Applies migrations, loads the catalog and creates the photo bucket, then exits.
   migrate:
     <<: *app
@@ -95,9 +101,17 @@ services:
   worker:
     <<: *app
     command: ["caravansara", "worker"]
+    environment:
+      <<: *app-env
+      # Emails from the outbox (feature 013) go to Mailpit in development: nothing leaves this machine, and
+      # every email shows at http://localhost:8025. Production sets a real SMTP server here.
+      CARAVANSARA_SMTP_HOST: ${CARAVANSARA_SMTP_HOST:-mailpit}
+      CARAVANSARA_SMTP_PORT: ${CARAVANSARA_SMTP_PORT:-1025}
     depends_on:
       migrate:
         condition: service_completed_successfully
+      mailpit:
+        condition: service_started
     healthcheck:  # the worker has no API; its metrics port shows it is alive
       test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:9100/metrics')"]
       interval: 10s

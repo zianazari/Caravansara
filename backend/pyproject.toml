@@ -100,63 +100,63 @@ root_package = "caravansara"
 name = "core does not depend on feature modules"
 type = "forbidden"
 source_modules = ["caravansara.core"]
-forbidden_modules = ["caravansara.identity", "caravansara.catalog", "caravansara.listings", "caravansara.bookings", "caravansara.reviews", "caravansara.search", "caravansara.jobs", "caravansara.moderation", "caravansara.wishlists", "caravansara.devdata"]
+forbidden_modules = ["caravansara.identity", "caravansara.catalog", "caravansara.listings", "caravansara.bookings", "caravansara.reviews", "caravansara.search", "caravansara.jobs", "caravansara.moderation", "caravansara.wishlists", "caravansara.notifications", "caravansara.devdata"]
 
 [[tool.importlinter.contracts]]
 name = "identity uses other modules only through their service"
 type = "forbidden"
 allow_indirect_imports = true
 source_modules = ["caravansara.identity"]
-forbidden_modules = ["caravansara.catalog.models", "caravansara.catalog.repository", "caravansara.catalog.router", "caravansara.listings.models", "caravansara.listings.repository", "caravansara.listings.router", "caravansara.bookings.models", "caravansara.bookings.repository", "caravansara.bookings.router", "caravansara.reviews.models", "caravansara.reviews.repository", "caravansara.reviews.router", "caravansara.search.models", "caravansara.search.repository", "caravansara.search.router", "caravansara.jobs.models", "caravansara.jobs.repository", "caravansara.jobs.router", "caravansara.moderation.models", "caravansara.moderation.repository", "caravansara.moderation.router", "caravansara.wishlists.models", "caravansara.wishlists.repository", "caravansara.wishlists.router"]
+forbidden_modules = ["caravansara.catalog.models", "caravansara.catalog.repository", "caravansara.catalog.router", "caravansara.listings.models", "caravansara.listings.repository", "caravansara.listings.router", "caravansara.bookings.models", "caravansara.bookings.repository", "caravansara.bookings.router", "caravansara.reviews.models", "caravansara.reviews.repository", "caravansara.reviews.router", "caravansara.search.models", "caravansara.search.repository", "caravansara.search.router", "caravansara.jobs.models", "caravansara.jobs.repository", "caravansara.jobs.router", "caravansara.moderation.models", "caravansara.moderation.repository", "caravansara.moderation.router", "caravansara.wishlists.models", "caravansara.wishlists.repository", "caravansara.wishlists.router", "caravansara.notifications.models", "caravansara.notifications.repository"]
 
 [[tool.importlinter.contracts]]
 name = "catalog uses other modules only through their service"
 type = "forbidden"
 allow_indirect_imports = true
 source_modules = ["caravansara.catalog"]
-forbidden_modules = ["caravansara.identity.models", "caravansara.identity.repository", "caravansara.identity.router", "caravansara.listings.models", "caravansara.listings.repository", "caravansara.listings.router", "caravansara.bookings.models", "caravansara.bookings.repository", "caravansara.bookings.router", "caravansara.reviews.models", "caravansara.reviews.repository", "caravansara.reviews.router", "caravansara.search.models", "caravansara.search.repository", "caravansara.search.router", "caravansara.jobs.models", "caravansara.jobs.repository", "caravansara.jobs.router", "caravansara.moderation.models", "caravansara.moderation.repository", "caravansara.moderation.router", "caravansara.wishlists.models", "caravansara.wishlists.repository", "caravansara.wishlists.router"]
+forbidden_modules = ["caravansara.identity.models", "caravansara.identity.repository", "caravansara.identity.router", "caravansara.listings.models", "caravansara.listings.repository", "caravansara.listings.router", "caravansara.bookings.models", "caravansara.bookings.repository", "caravansara.bookings.router", "caravansara.reviews.models", "caravansara.reviews.repository", "caravansara.reviews.router", "caravansara.search.models", "caravansara.search.repository", "caravansara.search.router", "caravansara.jobs.models", "caravansara.jobs.repository", "caravansara.jobs.router", "caravansara.moderation.models", "caravansara.moderation.repository", "caravansara.moderation.router", "caravansara.wishlists.models", "caravansara.wishlists.repository", "caravansara.wishlists.router", "caravansara.notifications.models", "caravansara.notifications.repository"]
 
 [[tool.importlinter.contracts]]
 name = "listings uses other modules only through their service"
 type = "forbidden"
 allow_indirect_imports = true
 source_modules = ["caravansara.listings"]
-forbidden_modules = ["caravansara.identity.models", "caravansara.identity.repository", "caravansara.identity.router", "caravansara.catalog.models", "caravansara.catalog.repository", "caravansara.catalog.router", "caravansara.bookings.models", "caravansara.bookings.repository", "caravansara.bookings.router", "caravansara.reviews.models", "caravansara.reviews.repository", "caravansara.reviews.router", "caravansara.search.models", "caravansara.search.repository", "caravansara.search.router", "caravansara.jobs.models", "caravansara.jobs.repository", "caravansara.jobs.router", "caravansara.moderation.models", "caravansara.moderation.repository", "caravansara.moderation.router", "caravansara.wishlists.models", "caravansara.wishlists.repository", "caravansara.wishlists.router"]
+forbidden_modules = ["caravansara.identity.models", "caravansara.identity.repository", "caravansara.identity.router", "caravansara.catalog.models", "caravansara.catalog.repository", "caravansara.catalog.router", "caravansara.bookings.models", "caravansara.bookings.repository", "caravansara.bookings.router", "caravansara.reviews.models", "caravansara.reviews.repository", "caravansara.reviews.router", "caravansara.search.models", "caravansara.search.repository", "caravansara.search.router", "caravansara.jobs.models", "caravansara.jobs.repository", "caravansara.jobs.router", "caravansara.moderation.models", "caravansara.moderation.repository", "caravansara.moderation.router", "caravansara.wishlists.models", "caravansara.wishlists.repository", "caravansara.wishlists.router", "caravansara.notifications.models", "caravansara.notifications.repository"]
 
 [[tool.importlinter.contracts]]
 name = "bookings uses other modules only through their service"
 type = "forbidden"
 allow_indirect_imports = true
 source_modules = ["caravansara.bookings"]
-forbidden_modules = ["caravansara.identity.models", "caravansara.identity.repository", "caravansara.identity.router", "caravansara.catalog.models", "caravansara.catalog.repository", "caravansara.catalog.router", "caravansara.listings.models", "caravansara.listings.repository", "caravansara.listings.router", "caravansara.reviews.models", "caravansara.reviews.repository", "caravansara.reviews.router", "caravansara.search.models", "caravansara.search.repository", "caravansara.search.router", "caravansara.jobs.models", "caravansara.jobs.repository", "caravansara.jobs.router", "caravansara.moderation.models", "caravansara.moderation.repository", "caravansara.moderation.router", "caravansara.wishlists.models", "caravansara.wishlists.repository", "caravansara.wishlists.router"]
+forbidden_modules = ["caravansara.identity.models", "caravansara.identity.repository", "caravansara.identity.router", "caravansara.catalog.models", "caravansara.catalog.repository", "caravansara.catalog.router", "caravansara.listings.models", "caravansara.listings.repository", "caravansara.listings.router", "caravansara.reviews.models", "caravansara.reviews.repository", "caravansara.reviews.router", "caravansara.search.models", "caravansara.search.repository", "caravansara.search.router", "caravansara.jobs.models", "caravansara.jobs.repository", "caravansara.jobs.router", "caravansara.moderation.models", "caravansara.moderation.repository", "caravansara.moderation.router", "caravansara.wishlists.models", "caravansara.wishlists.repository", "caravansara.wishlists.router", "caravansara.notifications.models", "caravansara.notifications.repository"]
 
 [[tool.importlinter.contracts]]
 name = "reviews uses other modules only through their service"
 type = "forbidden"
 allow_indirect_imports = true
 source_modules = ["caravansara.reviews"]
-forbidden_modules = ["caravansara.identity.models", "caravansara.identity.repository", "caravansara.identity.router", "caravansara.catalog.models", "caravansara.catalog.repository", "caravansara.catalog.router", "caravansara.listings.models", "caravansara.listings.repository", "caravansara.listings.router", "caravansara.bookings.models", "caravansara.bookings.repository", "caravansara.bookings.router", "caravansara.search.models", "caravansara.search.repository", "caravansara.search.router", "caravansara.jobs.models", "caravansara.jobs.repository", "caravansara.jobs.router", "caravansara.moderation.models", "caravansara.moderation.repository", "caravansara.moderation.router", "caravansara.wishlists.models", "caravansara.wishlists.repository", "caravansara.wishlists.router"]
+forbidden_modules = ["caravansara.identity.models", "caravansara.identity.repository", "caravansara.identity.router", "caravansara.catalog.models", "caravansara.catalog.repository", "caravansara.catalog.router", "caravansara.listings.models", "caravansara.listings.repository", "caravansara.listings.router", "caravansara.bookings.models", "caravansara.bookings.repository", "caravansara.bookings.router", "caravansara.search.models", "caravansara.search.repository", "caravansara.search.router", "caravansara.jobs.models", "caravansara.jobs.repository", "caravansara.jobs.router", "caravansara.moderation.models", "caravansara.moderation.repository", "caravansara.moderation.router", "caravansara.wishlists.models", "caravansara.wishlists.repository", "caravansara.wishlists.router", "caravansara.notifications.models", "caravansara.notifications.repository"]
 
 [[tool.importlinter.contracts]]
 name = "search uses other modules only through their service"
 type = "forbidden"
 allow_indirect_imports = true
 source_modules = ["caravansara.search"]
-forbidden_modules = ["caravansara.identity.models", "caravansara.identity.repository", "caravansara.identity.router", "caravansara.catalog.models", "caravansara.catalog.repository", "caravansara.catalog.router", "caravansara.listings.models", "caravansara.listings.repository", "caravansara.listings.router", "caravansara.bookings.models", "caravansara.bookings.repository", "caravansara.bookings.router", "caravansara.reviews.models", "caravansara.reviews.repository", "caravansara.reviews.router", "caravansara.jobs.models", "caravansara.jobs.repository", "caravansara.jobs.router", "caravansara.moderation.models", "caravansara.moderation.repository", "caravansara.moderation.router", "caravansara.wishlists.models", "caravansara.wishlists.repository", "caravansara.wishlists.router"]
+forbidden_modules = ["caravansara.identity.models", "caravansara.identity.repository", "caravansara.identity.router", "caravansara.catalog.models", "caravansara.catalog.repository", "caravansara.catalog.router", "caravansara.listings.models", "caravansara.listings.repository", "caravansara.listings.router", "caravansara.bookings.models", "caravansara.bookings.repository", "caravansara.bookings.router", "caravansara.reviews.models", "caravansara.reviews.repository", "caravansara.reviews.router", "caravansara.jobs.models", "caravansara.jobs.repository", "caravansara.jobs.router", "caravansara.moderation.models", "caravansara.moderation.repository", "caravansara.moderation.router", "caravansara.wishlists.models", "caravansara.wishlists.repository", "caravansara.wishlists.router", "caravansara.notifications.models", "caravansara.notifications.repository"]
 
 [[tool.importlinter.contracts]]
 name = "jobs uses other modules only through their service"
 type = "forbidden"
 allow_indirect_imports = true
 source_modules = ["caravansara.jobs"]
-forbidden_modules = ["caravansara.identity.models", "caravansara.identity.repository", "caravansara.identity.router", "caravansara.catalog.models", "caravansara.catalog.repository", "caravansara.catalog.router", "caravansara.listings.models", "caravansara.listings.repository", "caravansara.listings.router", "caravansara.bookings.models", "caravansara.bookings.repository", "caravansara.bookings.router", "caravansara.reviews.models", "caravansara.reviews.repository", "caravansara.reviews.router", "caravansara.search.models", "caravansara.search.repository", "caravansara.search.router", "caravansara.moderation.models", "caravansara.moderation.repository", "caravansara.moderation.router", "caravansara.wishlists.models", "caravansara.wishlists.repository", "caravansara.wishlists.router"]
+forbidden_modules = ["caravansara.identity.models", "caravansara.identity.repository", "caravansara.identity.router", "caravansara.catalog.models", "caravansara.catalog.repository", "caravansara.catalog.router", "caravansara.listings.models", "caravansara.listings.repository", "caravansara.listings.router", "caravansara.bookings.models", "caravansara.bookings.repository", "caravansara.bookings.router", "caravansara.reviews.models", "caravansara.reviews.repository", "caravansara.reviews.router", "caravansara.search.models", "caravansara.search.repository", "caravansara.search.router", "caravansara.moderation.models", "caravansara.moderation.repository", "caravansara.moderation.router", "caravansara.wishlists.models", "caravansara.wishlists.repository", "caravansara.wishlists.router", "caravansara.notifications.models", "caravansara.notifications.repository"]
 
 [[tool.importlinter.contracts]]
 name = "moderation uses other modules only through their service"
 type = "forbidden"
 allow_indirect_imports = true
 source_modules = ["caravansara.moderation"]
-forbidden_modules = ["caravansara.identity.models", "caravansara.identity.repository", "caravansara.identity.router", "caravansara.catalog.models", "caravansara.catalog.repository", "caravansara.catalog.router", "caravansara.listings.models", "caravansara.listings.repository", "caravansara.listings.router", "caravansara.bookings.models", "caravansara.bookings.repository", "caravansara.bookings.router", "caravansara.reviews.models", "caravansara.reviews.repository", "caravansara.reviews.router", "caravansara.search.models", "caravansara.search.repository", "caravansara.search.router", "caravansara.jobs.models", "caravansara.jobs.repository", "caravansara.jobs.router", "caravansara.wishlists.models", "caravansara.wishlists.repository", "caravansara.wishlists.router"]
+forbidden_modules = ["caravansara.identity.models", "caravansara.identity.repository", "caravansara.identity.router", "caravansara.catalog.models", "caravansara.catalog.repository", "caravansara.catalog.router", "caravansara.listings.models", "caravansara.listings.repository", "caravansara.listings.router", "caravansara.bookings.models", "caravansara.bookings.repository", "caravansara.bookings.router", "caravansara.reviews.models", "caravansara.reviews.repository", "caravansara.reviews.router", "caravansara.search.models", "caravansara.search.repository", "caravansara.search.router", "caravansara.jobs.models", "caravansara.jobs.repository", "caravansara.jobs.router", "caravansara.wishlists.models", "caravansara.wishlists.repository", "caravansara.wishlists.router", "caravansara.notifications.models", "caravansara.notifications.repository"]
 
 # Development data tools fill tables directly (like seed_demo.sql), so they stay outside the app.
 [[tool.importlinter.contracts]]
@@ -164,13 +164,20 @@ name = "wishlists uses other modules only through their service"
 type = "forbidden"
 allow_indirect_imports = true
 source_modules = ["caravansara.wishlists"]
-forbidden_modules = ["caravansara.identity.models", "caravansara.identity.repository", "caravansara.identity.router", "caravansara.catalog.models", "caravansara.catalog.repository", "caravansara.catalog.router", "caravansara.listings.models", "caravansara.listings.repository", "caravansara.listings.router", "caravansara.bookings.models", "caravansara.bookings.repository", "caravansara.bookings.router", "caravansara.reviews.models", "caravansara.reviews.repository", "caravansara.reviews.router", "caravansara.search.models", "caravansara.search.repository", "caravansara.search.router", "caravansara.jobs.models", "caravansara.jobs.repository", "caravansara.jobs.router", "caravansara.moderation.models", "caravansara.moderation.repository", "caravansara.moderation.router"]
+forbidden_modules = ["caravansara.identity.models", "caravansara.identity.repository", "caravansara.identity.router", "caravansara.catalog.models", "caravansara.catalog.repository", "caravansara.catalog.router", "caravansara.listings.models", "caravansara.listings.repository", "caravansara.listings.router", "caravansara.bookings.models", "caravansara.bookings.repository", "caravansara.bookings.router", "caravansara.reviews.models", "caravansara.reviews.repository", "caravansara.reviews.router", "caravansara.search.models", "caravansara.search.repository", "caravansara.search.router", "caravansara.jobs.models", "caravansara.jobs.repository", "caravansara.jobs.router", "caravansara.moderation.models", "caravansara.moderation.repository", "caravansara.moderation.router", "caravansara.notifications.models", "caravansara.notifications.repository"]
+
+[[tool.importlinter.contracts]]
+name = "notifications uses other modules only through their service"
+type = "forbidden"
+allow_indirect_imports = true
+source_modules = ["caravansara.notifications"]
+forbidden_modules = ["caravansara.identity.models", "caravansara.identity.repository", "caravansara.identity.router", "caravansara.catalog.models", "caravansara.catalog.repository", "caravansara.catalog.router", "caravansara.listings.models", "caravansara.listings.repository", "caravansara.listings.router", "caravansara.bookings.models", "caravansara.bookings.repository", "caravansara.bookings.router", "caravansara.reviews.models", "caravansara.reviews.repository", "caravansara.reviews.router", "caravansara.search.models", "caravansara.search.repository", "caravansara.search.router", "caravansara.jobs.models", "caravansara.jobs.repository", "caravansara.jobs.router", "caravansara.moderation.models", "caravansara.moderation.repository", "caravansara.moderation.router", "caravansara.wishlists.models", "caravansara.wishlists.repository", "caravansara.wishlists.router"]
 
 [[tool.importlinter.contracts]]
 name = "devdata uses only core"
 type = "forbidden"
 source_modules = ["caravansara.devdata"]
-forbidden_modules = ["caravansara.identity", "caravansara.catalog", "caravansara.listings", "caravansara.bookings", "caravansara.reviews", "caravansara.search", "caravansara.jobs", "caravansara.moderation", "caravansara.wishlists"]
+forbidden_modules = ["caravansara.identity", "caravansara.catalog", "caravansara.listings", "caravansara.bookings", "caravansara.reviews", "caravansara.search", "caravansara.jobs", "caravansara.moderation", "caravansara.wishlists", "caravansara.notifications"]
 
 [[tool.importlinter.contracts]]
 name = "feature modules do not use devdata"
