@@ -115,6 +115,9 @@ services:
         NEXT_PUBLIC_MAP_TILE_URL: https://tile.openstreetmap.org/{z}/{x}/{y}.png
     environment:
       API_INTERNAL_URL: http://api:8000
+      # The admin panel (feature 009) answers only on this host; browsers send *.localhost to this machine.
+      # In production: the admin subdomain, never linked from the site. Empty: no admin panel at all.
+      ADMIN_HOST: ${CARAVANSARA_ADMIN_HOST:-admin.localhost:3001}
     ports: ["3001:3001"]
     networks:
       default:

@@ -10,7 +10,7 @@ import { cn } from "@/lib/cn";
  * Pages that have their own fixed bar at the bottom instead: booking (research R7 of 007), and the new-listing
  * form, whose back and next buttons sit there (specs/008-host-pages, T025).
  */
-const OWN_BAR = ["/listings/", "/book/", "/host/new"];
+const OWN_BAR = ["/listings/", "/book/", "/host/new", "/admin"]; // the admin panel (009) has no bottom bar
 
 /**
  * The phone's bottom bar (specs/007-caravansara-theme, FR-008): search, trips and profile (or log in), each an

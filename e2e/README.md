@@ -16,7 +16,7 @@ docker compose -f docker-compose.yml -f e2e/compose.e2e.yml up -d --build
 
 cd e2e
 npm ci
-npx playwright install chromium   # once: tests/theme.spec.ts opens the pages in a real Chrome
+npx playwright install chromium   # once: theme, host and admin specs open the pages in a real Chrome
 npx playwright test          # API tests take a few seconds; the theme pages take longer
 npx playwright show-report   # HTML report; failed tests keep a trace
 ```
@@ -53,3 +53,5 @@ the API container (`docker compose exec`, from the repo root), which also checks
 in the image. `createListing` and `addPhoto` then approve as that admin, because the other files
 search and book public listings; pass `{ approved: false }` to keep a listing pending. The tests
 therefore need the `docker` CLI and the compose stack on the same machine.
+
+`tests/admin.spec.ts` opens the admin panel at `http://admin.localhost:3001` (the `ADMIN_HOST` of the `web` service; set `ADMIN_WEB_URL` for another address). Browsers send `*.localhost` to this machine, so no DNS entry is needed.
