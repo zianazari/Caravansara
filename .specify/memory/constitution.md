@@ -112,7 +112,10 @@ Rationale: every component adds setup, monitoring and tests; it must pay for its
   PostgreSQL 16 with PostGIS, object storage through the S3 API (MinIO in development).
 - Alembic migrations are the source of truth for the schema; `db/schema.sql`, DBML and the ERD
   follow them. Every migration MUST also downgrade (tested).
-- Photos upload directly from the browser with presigned POST; files never pass through the API.
+- Listing photos upload directly from the browser with presigned POST and never pass through
+  the API. Profile pictures go through the API, which checks size, type and content before
+  anything is written to storage, so a file that breaks the rules is never stored, whatever
+  client sends it (specs/006-avatar-upload-via-api).
 - Dates that decide cancellation and the end of a stay are evaluated in the listing city's time
   zone, never the server's or the browser's.
 - Front-end: Next.js (App Router), TypeScript (strict), shadcn/ui, Tailwind CSS with logical
@@ -166,4 +169,4 @@ Rationale: every component adds setup, monitoring and tests; it must pay for its
   against it before implementation.
 - Day-to-day guidance for agents lives in `CONTEXT.md`.
 
-**Version**: 1.3.0 | **Ratified**: 2026-11-05 | **Last Amended**: 2026-11-06
+**Version**: 1.4.0 | **Ratified**: 2026-11-05 | **Last Amended**: 2026-11-10
