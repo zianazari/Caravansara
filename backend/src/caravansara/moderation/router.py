@@ -6,9 +6,9 @@ database. Only after all three does a route look at a listing, so without an adm
 about any listing comes back, not even whether it exists (FR-020, research R13).
 """
 
-from typing import Annotated
+from typing import Annotated, Literal
 
-from fastapi import APIRouter, Depends, Request, status
+from fastapi import APIRouter, Depends, Query, Request, status
 
 from caravansara.core.db import SessionDep
 from caravansara.core.deps import ClientIp, StorageDep
@@ -81,11 +81,23 @@ async def admin_logout(body: RefreshIn, session: SessionDep) -> None:
 @router.get(
     "/listings/pending",
     summary="Review queue",
-    description="Listings waiting for review, oldest first. Each has the `review_version` to decide on.",
-    responses=error_responses(401),
+    description=(
+        "Listings waiting for review, oldest first (`sort=oldest`, the default) or newest first "
+        "(`sort=newest`). Each has the `review_version` to decide on."
+    ),
+    responses=error_responses(401, 422),
 )
-async def review_queue(admin_id: AdminId, session: SessionDep, storage: StorageDep, page: PageDep) -> AdminQueuePage:
-    return await service.queue(session, storage, page.limit, page.offset)
+async def review_queue(
+    admin_id: AdminId,
+    session: SessionDep,
+    storage: StorageDep,
+    page: PageDep,
+    sort: Annotated[
+        Literal["oldest", "newest"],
+        Query(description="By the time the listing was sent for review: oldest or newest first."),
+    ] = "oldest",
+) -> AdminQueuePage:
+    return await service.queue(session, storage, page.limit, page.offset, newest_first=sort == "newest")
 
 
 @router.get(

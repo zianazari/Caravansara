@@ -94,3 +94,8 @@ export function tomanToRial(toman: string): string | null {
     .replace(/^(\d+)$/, "$1.00")
     .replace(/^(\d+\.\d)$/, "$10");
 }
+
+/** A whole number in the page's digits (Persian digits in fa), e.g. a page number (feature 025). */
+export function formatInteger(value: number, locale: string): string {
+  return new Intl.NumberFormat(TAG[locale] ?? locale, { useGrouping: false }).format(value);
+}

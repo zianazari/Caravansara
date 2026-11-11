@@ -99,12 +99,14 @@ describe("admin panel (feature 009)", () => {
     version = 2;
   });
 
-  it("lists the queue with city, host and date, and pages", async () => {
-    GET.mockImplementation((_p: string, o: { params: { query: { offset: number } } }) =>
-      Promise.resolve(
-        ok(o.params.query.offset ? { items: [item(9)], total: 2 } : { items: [item(1)], total: 2 }),
-      ),
+  type QueueQuery = { params: { query: { offset: number; limit: number; sort: string } } };
+  const queueOf = (total: number) =>
+    GET.mockImplementation((_p: string, o: QueueQuery) =>
+      Promise.resolve(ok({ items: [item(o.params.query.offset + 1)], total })),
     );
+
+  it("lists the queue with city, host and date", async () => {
+    queueOf(2);
     renderIn("fa", <AdminQueue />);
     expect(await screen.findByText("Listing 1")).toBeInTheDocument();
     expect(screen.getByText("۲ آگهی در انتظار")).toBeInTheDocument();
@@ -114,9 +116,65 @@ describe("admin panel (feature 009)", () => {
       "href",
       "/admin/listings/1",
     );
-    await userEvent.click(screen.getByRole("button", { name: "آگهی‌های بیشتر" }));
-    expect(await screen.findByText("Listing 9")).toBeInTheDocument();
+    expect(GET).toHaveBeenCalledWith("/api/v1/admin/listings/pending", {
+      params: { query: { limit: 20, offset: 0, sort: "oldest" } },
+    });
+    expect(screen.queryByRole("navigation", { name: "صفحه‌ها" })).toBeNull(); // one page: no pager
     await expectAccessible(document.body);
+  });
+
+  it("pages with numbers: page 1, the last page and up to 10 between (feature 025)", async () => {
+    query = "page=25";
+    queueOf(1000); // 50 pages
+    renderIn("fa", <AdminQueue />);
+    expect(await screen.findByText("Listing 481")).toBeInTheDocument();
+    const pager = screen.getByRole("navigation", { name: "صفحه‌ها" });
+    const current = within(pager).getByLabelText("صفحه‌ی ۲۵");
+    expect(current).toHaveAttribute("aria-current", "page");
+    const numbers = within(pager)
+      .getAllByRole("link")
+      .map((a) => a.textContent)
+      .filter((text) => text !== "قبلی" && text !== "بعدی");
+    expect(numbers).toEqual(["۱", "۲۱", "۲۲", "۲۳", "۲۴", "۲۶", "۲۷", "۲۸", "۲۹", "۳۰", "۵۰"]);
+    expect(within(pager).getByRole("link", { name: "صفحه‌ی ۱" })).toHaveAttribute("href", "/admin");
+    expect(within(pager).getByRole("link", { name: "صفحه‌ی ۵۰" })).toHaveAttribute("href", "/admin?page=50");
+    expect(within(pager).getByRole("link", { name: "قبلی" })).toHaveAttribute("href", "/admin?page=24");
+    expect(within(pager).getByRole("link", { name: "بعدی" })).toHaveAttribute("href", "/admin?page=26");
+    await expectAccessible(document.body);
+  });
+
+  it("sorts newest first on request and keeps the order in the page links (feature 025)", async () => {
+    queueOf(45);
+    const { unmount } = renderIn("en", <AdminQueue />);
+    await screen.findByText("Listing 1");
+    await userEvent.selectOptions(screen.getByLabelText("Order"), "Newest first");
+    expect(push).toHaveBeenCalledWith("/admin?sort=newest");
+    unmount();
+
+    query = "sort=newest&page=2";
+    renderIn("en", <AdminQueue />);
+    expect(await screen.findByText("Listing 21")).toBeInTheDocument();
+    expect(GET).toHaveBeenLastCalledWith("/api/v1/admin/listings/pending", {
+      params: { query: { limit: 20, offset: 20, sort: "newest" } },
+    });
+    expect(screen.getByLabelText("Order")).toHaveValue("newest");
+    const pager = screen.getByRole("navigation", { name: "Pages" });
+    expect(within(pager).getByRole("link", { name: "Page 3" })).toHaveAttribute(
+      "href",
+      "/admin?sort=newest&page=3",
+    );
+    expect(within(pager).getByRole("link", { name: "Page 1" })).toHaveAttribute("href", "/admin?sort=newest");
+    expect(within(pager).getByRole("link", { name: "Next" })).toHaveAttribute(
+      "href",
+      "/admin?sort=newest&page=3",
+    );
+  });
+
+  it("moves to the new last page when the queue has shrunk past the page (feature 025)", async () => {
+    query = "page=5";
+    queueOf(21);
+    renderIn("fa", <AdminQueue />);
+    await waitFor(() => expect(replace).toHaveBeenCalledWith("/admin?page=2"));
   });
 
   it("sends the admin to log in when the 15-minute session has ended", async () => {

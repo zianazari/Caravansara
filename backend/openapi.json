@@ -3072,7 +3072,7 @@
           "Admin"
         ],
         "summary": "Review queue",
-        "description": "Listings waiting for review, oldest first. Each has the `review_version` to decide on.",
+        "description": "Listings waiting for review, oldest first (`sort=oldest`, the default) or newest first (`sort=newest`). Each has the `review_version` to decide on.",
         "operationId": "review_queue_api_v1_admin_listings_pending_get",
         "security": [
           {
@@ -3080,6 +3080,22 @@
           }
         ],
         "parameters": [
+          {
+            "name": "sort",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "enum": [
+                "oldest",
+                "newest"
+              ],
+              "type": "string",
+              "description": "By the time the listing was sent for review: oldest or newest first.",
+              "default": "oldest",
+              "title": "Sort"
+            },
+            "description": "By the time the listing was sent for review: oldest or newest first."
+          },
           {
             "name": "limit",
             "in": "query",
@@ -3130,11 +3146,11 @@
             }
           },
           "422": {
-            "description": "Validation Error",
+            "description": "Invalid input or a broken business rule",
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
+                  "$ref": "#/components/schemas/ErrorResponse"
                 }
               }
             }

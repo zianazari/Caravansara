@@ -397,6 +397,18 @@
       "target_ms": 50
     },
     {
+      "name": "review_queue_page_newest",
+      "source": "caravansara.listings.repository:review_queue",
+      "endpoint": "GET /admin/listings/pending?sort=newest",
+      "kind": "read",
+      "params": {
+        "limit": 20,
+        "offset": 0
+      },
+      "target_ms": 50,
+      "note": "the same index read backwards (feature 025)"
+    },
+    {
       "name": "review_queue_count",
       "source": "caravansara.listings.repository:review_queue",
       "endpoint": "GET /admin/listings/pending",

@@ -27,8 +27,10 @@ async def logout(session: AsyncSession, refresh_token: str) -> None:
     await identity.logout(session, refresh_token)
 
 
-async def queue(session: AsyncSession, storage: Storage, limit: int, offset: int) -> AdminQueuePage:
-    return await listings.review_queue(session, storage, limit, offset)
+async def queue(
+    session: AsyncSession, storage: Storage, limit: int, offset: int, *, newest_first: bool = False
+) -> AdminQueuePage:
+    return await listings.review_queue(session, storage, limit, offset, newest_first=newest_first)
 
 
 async def detail(session: AsyncSession, storage: Storage, listing_id: int, admin_id: int) -> AdminListingOut:

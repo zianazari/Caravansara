@@ -665,7 +665,7 @@ export interface paths {
     };
     /**
      * Review queue
-     * @description Listings waiting for review, oldest first. Each has the `review_version` to decide on.
+     * @description Listings waiting for review, oldest first (`sort=oldest`, the default) or newest first (`sort=newest`). Each has the `review_version` to decide on.
      */
     get: operations["review_queue_api_v1_admin_listings_pending_get"];
     put?: never;
@@ -3816,6 +3816,8 @@ export interface operations {
   review_queue_api_v1_admin_listings_pending_get: {
     parameters: {
       query?: {
+        /** @description By the time the listing was sent for review: oldest or newest first. */
+        sort?: "oldest" | "newest";
         /** @description Items per page. */
         limit?: number;
         /** @description Items to skip. */
@@ -3845,13 +3847,13 @@ export interface operations {
           "application/json": components["schemas"]["ErrorResponse"];
         };
       };
-      /** @description Validation Error */
+      /** @description Invalid input or a broken business rule */
       422: {
         headers: {
           [name: string]: unknown;
         };
         content: {
-          "application/json": components["schemas"]["HTTPValidationError"];
+          "application/json": components["schemas"]["ErrorResponse"];
         };
       };
     };
