@@ -33,7 +33,6 @@ M = {
   "description": ("اقامتگاه پیدا کنید، تاریخ‌ها را نگه دارید و رزرو کنید.", "Find a place to stay, hold the dates and book."),
   # 007, caravansara theme: hero, one-line mobile search and one row per suggested city
   "heroTitle": ("جایی برای ماندن، در هر شهر سر راه", "A place to stay, in every city on the way"),
-  "heroSubtitle": ("اقامتگاه‌هایی که میزبان‌ها با دقت آماده کرده‌اند، از تهران تا آمستردام.", "Places that hosts have made ready with care, from Tehran to Amsterdam."),
   "whereTo": ("کجا می‌روید؟", "Where to?"),
   "anyWhereAnyWhen": ("هر شهر · هر زمان · مهمان‌ها", "Any city · Any week · Guests"),
   "popularIn": ("محبوب در {city}", "Popular in {city}"),

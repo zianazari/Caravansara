@@ -194,32 +194,36 @@ test.describe("Caravansara theme in a real browser", () => {
     expect(footer).toBe("none");
   });
 
-  test("the hero's text sits on night blue, away from the lit doorway (U1)", async ({ page }) => {
-    // axe cannot measure text on a gradient, so the layout is checked instead: the text stays in the upper
-    // part of the hero, where the background is night blue, and never overlaps the doorway's glow.
+  test("the hero is a short strip with no visible text, always at the top while the page scrolls (041)", async ({ page }) => {
     for (const width of WIDTHS) {
       await page.setViewportSize({ width, height: 900 });
-      await page.goto(`${WEB}/fa`);
-      // The title rises into place (feature 031): measure where it ends, not on the way. Only the timed
-      // animations are waited for: the photo's slow drift never ends, and the scroll-driven ones end only by scrolling.
-      await page.evaluate(() =>
-        Promise.all(
-          document
-            .getAnimations()
-            .filter((a) => a.timeline === document.timeline && a.effect?.getTiming().iterations !== Infinity)
-            .map((a) => a.finished),
-        ),
-      );
-      const hero = (await page.locator("section[aria-labelledby='hero-title']").boundingBox())!;
-      const door = (await page.locator("[data-hero='doorway']").boundingBox())!;
-      for (const text of [page.getByRole("heading", { level: 1 }), page.locator("#hero-title + p")]) {
-        const box = (await text.boundingBox())!;
-        const overlaps =
-          box.x < door.x + door.width && box.x + box.width > door.x && box.y < door.y + door.height && box.y + box.height > door.y;
-        expect(overlaps, `hero text over the doorway at ${width}px`).toBe(false);
-        expect(box.y + box.height, `hero text low at ${width}px`).toBeLessThan(hero.y + hero.height * 0.7);
-      }
+      await page.goto(`${WEB}/fa`, { waitUntil: "networkidle" });
+      const hero = page.locator("section[aria-labelledby='hero-title']");
+      // The page keeps its main heading for screen readers only; nothing in the strip is visible text.
+      await expect(page.getByRole("heading", { level: 1 })).toHaveClass(/sr-only/);
+      expect(await hero.locator("svg text").count()).toBe(0);
+      expect((await hero.boundingBox())!.height, `strip height at ${width}px`).toBeLessThanOrEqual(180);
+      await page.evaluate(() => window.scrollTo(0, document.documentElement.scrollHeight / 2));
+      const scrolled = (await hero.boundingBox())!;
+      expect(scrolled.y, `strip stays under the header at ${width}px`).toBeGreaterThanOrEqual(0);
+      expect(scrolled.y, `strip stays under the header at ${width}px`).toBeLessThan(80);
     }
+  });
+
+  test("the hero's car stops at six places as the whole page scrolls, and drives back (041)", async ({ page }) => {
+    await page.setViewportSize({ width: 1280, height: 900 });
+    await page.goto(`${WEB}/fa`, { waitUntil: "networkidle" });
+    const scene = page.locator("svg[data-hero='scene']");
+    await expect(scene.locator("[data-stop]")).toHaveCount(6);
+    // The trip follows the scroll of the whole page; let the rows load so the page has its full length.
+    await page.waitForTimeout(1500);
+    const room = await page.evaluate(() => document.documentElement.scrollHeight - window.innerHeight);
+    for (const [index, kind] of [[2, "caravansara"], [5, "ecolodge"]] as const) {
+      await page.evaluate((y) => window.scrollTo(0, y), ((index + 0.75) / 6) * room);
+      await expect.poll(() => scene.locator(`[data-stop='${kind}']`).getAttribute("data-active")).toBe("true");
+    }
+    await page.evaluate(() => window.scrollTo(0, 0));
+    await expect.poll(() => scene.locator("[data-active='true']").count()).toBe(0);
   });
 
   test("screenshots for the owner (SC-001)", async ({ page }) => {
