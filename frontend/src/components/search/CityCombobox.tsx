@@ -6,6 +6,7 @@ import { useLocale, useTranslations } from "next-intl";
 import { useEffect, useId, useState, type KeyboardEvent } from "react";
 import { api } from "@/api/client";
 import { cityName, countryName } from "@/lib/names";
+import { hasPersian, persianCityMatches } from "@/lib/persianCitySearch";
 import { cn } from "@/lib/cn";
 
 /** A chosen city; `country` is its ISO code, which the host's form uses to start the currency (008, R7). */
@@ -14,6 +15,9 @@ export type CityChoice = { id: number; label: string; country?: string };
 /**
  * City with suggestions from GET /cities?q= (US1/AC1). A combobox in the ARIA pattern: type, move with the
  * arrow keys, choose with Enter. Names are shown in the page's language.
+ *
+ * Persian typing (feature 028): the API matches English names only, so «تهر» is first matched against the
+ * Persian names here (lib/persianCitySearch) and each match is fetched by its English name.
  */
 export function CityCombobox({
   value,
@@ -52,8 +56,18 @@ export function CityCombobox({
     queryKey: ["cities", query],
     enabled: open && query.length > 0,
     queryFn: async () => {
-      const { data } = await api.GET("/api/v1/cities", { params: { query: { q: query, limit: 8 } } });
-      return data ?? [];
+      if (!hasPersian(query)) {
+        const { data } = await api.GET("/api/v1/cities", { params: { query: { q: query, limit: 8 } } });
+        return data ?? [];
+      }
+      // One request per matching city; the API's prefix search may also return longer names, so keep the exact one.
+      const found = await Promise.all(
+        persianCityMatches(query).map(async (name) => {
+          const { data } = await api.GET("/api/v1/cities", { params: { query: { q: name, limit: 8 } } });
+          return (data ?? []).filter((city) => city.name === name);
+        }),
+      );
+      return found.flat();
     },
   });
   const options = (cities.data ?? []).map((c) => ({
