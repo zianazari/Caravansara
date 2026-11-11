@@ -85,8 +85,11 @@ describe("home page (US1/AC1)", () => {
       const page = await HomePage({ params: Promise.resolve({ locale }) });
       const { container } = renderIn(locale, page);
       expect(screen.getByRole("heading", { level: 1, name: title })).toBeInTheDocument();
-      // The doorway holds the courtyard photo from the README banner (feature 027), as decoration.
-      expect(container.querySelector("[data-hero='doorway'] img[alt='']")).not.toBeNull();
+      // Feature 041: the hero's scroll story, hidden from screen readers; the caravansara gate frames the
+      // owner's courtyard photo (027).
+      const scene = container.querySelector("svg[data-hero='scene']")!;
+      expect(scene).toHaveAttribute("aria-hidden");
+      expect(scene.querySelector("image")).not.toBeNull();
       expect(screen.getByRole("search")).toContainElement(screen.getByRole("button", { name: search }));
       expect(screen.getByRole("navigation", { name: categories })).toBeInTheDocument();
       expect(await screen.findByRole("heading", { name: new RegExp(firstRow) })).toBeInTheDocument();

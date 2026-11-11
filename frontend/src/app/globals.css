@@ -262,6 +262,62 @@
   }
 }
 
+/*
+ * The hero's car story (feature 041). The car bobs a little while it idles; its wheels turn and it moves with
+ * the scroll from HeroJourney's script. The caravansara's arch glows and the city's windows light up while
+ * the car is parked there (data-parked on the scene). Stars twinkle. All of it stops under reduced motion.
+ */
+.hero-car-idle {
+  animation: car-idle 1.6s ease-in-out infinite alternate;
+  transform-box: fill-box;
+}
+@keyframes car-idle {
+  from {
+    transform: translateY(0) rotate(0deg);
+  }
+  to {
+    transform: translateY(-1.5px) rotate(-0.4deg);
+  }
+}
+.hero-scene[data-moving="true"] .hero-car-idle {
+  animation-duration: 0.35s;
+}
+.hero-gate-glow {
+  opacity: 0;
+  transition: opacity 0.6s var(--ease-soft);
+}
+.hero-scene[data-parked="0"] .hero-gate-glow {
+  opacity: 1;
+}
+.hero-window {
+  transition: fill 0.6s var(--ease-soft);
+}
+.hero-scene[data-parked="1"] .hero-window {
+  fill: var(--gold);
+}
+.hero-pin {
+  transform-box: fill-box;
+  transform-origin: bottom;
+  transition: transform 0.5s var(--ease-soft);
+}
+.hero-scene[data-parked="1"] .hero-pin {
+  transform: translateY(-6px);
+}
+.hero-star {
+  animation: twinkle 3s ease-in-out infinite alternate;
+}
+.hero-star:nth-child(2n) {
+  animation-delay: 1.2s;
+}
+@keyframes twinkle {
+  from {
+    opacity: 0.25;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,

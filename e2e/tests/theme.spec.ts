@@ -194,7 +194,7 @@ test.describe("Caravansara theme in a real browser", () => {
     expect(footer).toBe("none");
   });
 
-  test("the hero's text sits on night blue, away from the lit doorway (U1)", async ({ page }) => {
+  test("the hero's text sits on the dark sky, away from the road scene (U1, 041)", async ({ page }) => {
     // axe cannot measure text on a gradient, so the layout is checked instead: the text stays in the upper
     // part of the hero, where the background is night blue, and never overlaps the doorway's glow.
     for (const width of WIDTHS) {
@@ -211,7 +211,8 @@ test.describe("Caravansara theme in a real browser", () => {
         ),
       );
       const hero = (await page.locator("section[aria-labelledby='hero-title']").boundingBox())!;
-      const door = (await page.locator("[data-hero='doorway']").boundingBox())!;
+      // Feature 041: the road scene at the hero's foot took the doorway's place; the text must stay above it.
+      const door = (await page.locator("[data-hero='scene']").boundingBox())!;
       for (const text of [page.getByRole("heading", { level: 1 }), page.locator("#hero-title + p")]) {
         const box = (await text.boundingBox())!;
         const overlaps =
@@ -220,6 +221,24 @@ test.describe("Caravansara theme in a real browser", () => {
         expect(box.y + box.height, `hero text low at ${width}px`).toBeLessThan(hero.y + hero.height * 0.7);
       }
     }
+  });
+
+  test("the hero's car drives as the page scrolls, and parks at the caravansara and the city (041)", async ({ page }) => {
+    await page.setViewportSize({ width: 1280, height: 900 });
+    await page.goto(`${WEB}/fa`, { waitUntil: "networkidle" });
+    await page.evaluate(() => document.fonts.ready); // the hero's height, and so the trip, depends on the font
+    const scene = page.locator("svg[data-hero='scene']");
+    const car = scene.locator("> g").last();
+    const start = await car.getAttribute("transform");
+    // The trip plays over 80% of the hero's height (HeroJourney); scroll to the middle of each stop.
+    const trip = ((await page.locator("section[aria-labelledby='hero-title']").boundingBox())!.height * 0.8);
+    await page.evaluate((y) => window.scrollTo(0, y), trip * 0.42);
+    await expect.poll(() => scene.getAttribute("data-parked")).toBe("0");
+    expect(await car.getAttribute("transform")).not.toBe(start);
+    await page.evaluate((y) => window.scrollTo(0, y), trip * 0.92);
+    await expect.poll(() => scene.getAttribute("data-parked")).toBe("1");
+    await page.evaluate(() => window.scrollTo(0, 0)); // and back to the start when scrolling up
+    await expect.poll(() => car.getAttribute("transform")).toBe(start);
   });
 
   test("screenshots for the owner (SC-001)", async ({ page }) => {
