@@ -1,6 +1,6 @@
 "use client";
 
-import { SearchIcon } from "lucide-react";
+import { CalendarDaysIcon, SearchIcon } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { useState, type FormEvent } from "react";
 import { DateRangePicker } from "@/components/date/DateRangePicker";
@@ -114,7 +114,7 @@ function SearchFields({
           : // The pill: one rounded white bar; the fields lose their own borders and hover colours, and the
             // sections are split by sand lines and light up under the pointer (.search-pill in globals.css, 033).
             // Feature 039 (owner's reference): larger titles (17 px, semibold) and values (16 px) in the pill.
-            "search-pill grid grid-cols-[2fr_2fr_1.5fr_auto] items-center gap-0 rounded-full border p-2 shadow-lg shadow-foreground/10 [&_.field-label]:text-[1.0625rem] [&_.field-label]:font-semibold [&_button[aria-haspopup]]:text-base [&_input]:text-base [&_input]:border-0 [&_input]:bg-transparent [&_button[aria-haspopup]]:border-0 [&_button[aria-haspopup]]:bg-transparent [&_button[aria-haspopup]]:shadow-none [&_button[aria-haspopup]]:hover:bg-transparent [&_button[aria-haspopup]]:hover:shadow-none",
+            "search-pill grid grid-cols-[2fr_2fr_1.5fr_auto] items-center gap-0 rounded-full border p-2 shadow-lg shadow-foreground/10 [&_.field-label]:text-[1.0625rem] [&_.field-label]:font-semibold [&_button[aria-haspopup]]:text-base [&_input]:text-base [&_input]:ps-3 [&_input]:border-0 [&_input]:bg-transparent [&_button[aria-haspopup]]:border-0 [&_button[aria-haspopup]]:bg-transparent [&_button[aria-haspopup]]:shadow-none [&_button[aria-haspopup]]:hover:bg-transparent [&_button[aria-haspopup]]:hover:shadow-none",
         className,
       )}
     >
@@ -127,7 +127,10 @@ function SearchFields({
         ) : null}
       </div>
       <div className="grid gap-1.5">
-        <span className="field-label text-sm font-medium">{t("when")}</span>
+        <span className="field-label inline-flex items-center gap-2 text-sm font-medium">
+          <CalendarDaysIcon aria-hidden className="field-icon" />
+          {t("when")}
+        </span>
         <DateRangePicker value={dates} onChange={setDates} min={today} />
       </div>
       <GuestPicker value={guests} onChange={setGuests} />

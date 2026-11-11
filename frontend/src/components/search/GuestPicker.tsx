@@ -23,7 +23,10 @@ export function GuestPicker({ value, onChange }: { value: Guests; onChange: (gue
   const count = value.adults + value.children;
   return (
     <div className="grid gap-1.5">
-      <span className="field-label text-sm font-medium">{t("guests")}</span>
+      <span className="field-label inline-flex items-center gap-2 text-sm font-medium">
+        <UsersIcon aria-hidden className="field-icon" />
+        {t("guests")}
+      </span>
       <Popover>
         <PopoverTrigger asChild>
           <Button

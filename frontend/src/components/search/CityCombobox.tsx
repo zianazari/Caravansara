@@ -138,11 +138,16 @@ export function CityCombobox({
       loop={false}
       className="relative grid gap-1.5 overflow-visible"
     >
-      <span aria-hidden className="field-label text-sm font-medium" onClick={() => input.current?.focus()}>
+      <span
+        aria-hidden
+        className="field-label inline-flex items-center gap-2 text-sm font-medium"
+        onClick={() => input.current?.focus()}
+      >
+        <MapPinIcon className="field-icon" />
         {name}
       </span>
       <div className="relative">
-        <MapPinIcon className="pointer-events-none absolute start-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
+        <MapPinIcon className="field-inner-icon pointer-events-none absolute start-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
         <CommandInput
           ref={input}
           aria-invalid={invalid || undefined}
