@@ -194,61 +194,35 @@ test.describe("Caravansara theme in a real browser", () => {
     expect(footer).toBe("none");
   });
 
-  test("the hero's text sits on the dark sky, away from the road scene (U1, 041)", async ({ page }) => {
-    // axe cannot measure text on a gradient, so the layout is checked instead: the text stays in the upper
-    // part of the hero, where the background is night blue, and never overlaps the doorway's glow.
+  test("the hero is a short strip with no visible text, always at the top while the page scrolls (041)", async ({ page }) => {
     for (const width of WIDTHS) {
       await page.setViewportSize({ width, height: 900 });
-      await page.goto(`${WEB}/fa`);
-      // The title rises into place (feature 031): measure where it ends, not on the way. Only the timed
-      // animations are waited for: the photo's slow drift never ends, and the scroll-driven ones end only by scrolling.
-      await page.evaluate(() =>
-        Promise.all(
-          document
-            .getAnimations()
-            .filter((a) => a.timeline === document.timeline && a.effect?.getTiming().iterations !== Infinity)
-            .map((a) => a.finished),
-        ),
-      );
-      const hero = (await page.locator("section[aria-labelledby='hero-title']").boundingBox())!;
-      // Feature 041: the road scene at the hero's foot took the doorway's place; the text must stay above it.
-      const door = (await page.locator("[data-hero='scene']").boundingBox())!;
-      for (const text of [page.getByRole("heading", { level: 1 }), page.locator("#hero-title + p")]) {
-        const box = (await text.boundingBox())!;
-        const overlaps =
-          box.x < door.x + door.width && box.x + box.width > door.x && box.y < door.y + door.height && box.y + box.height > door.y;
-        expect(overlaps, `hero text over the doorway at ${width}px`).toBe(false);
-        expect(box.y + box.height, `hero text low at ${width}px`).toBeLessThan(hero.y + hero.height * 0.7);
-      }
+      await page.goto(`${WEB}/fa`, { waitUntil: "networkidle" });
+      const hero = page.locator("section[aria-labelledby='hero-title']");
+      // The page keeps its main heading for screen readers only; nothing in the strip is visible text.
+      await expect(page.getByRole("heading", { level: 1 })).toHaveClass(/sr-only/);
+      expect(await hero.locator("svg text").count()).toBe(0);
+      expect((await hero.boundingBox())!.height, `strip height at ${width}px`).toBeLessThanOrEqual(180);
+      await page.evaluate(() => window.scrollTo(0, document.documentElement.scrollHeight / 2));
+      const scrolled = (await hero.boundingBox())!;
+      expect(scrolled.y, `strip stays under the header at ${width}px`).toBeGreaterThanOrEqual(0);
+      expect(scrolled.y, `strip stays under the header at ${width}px`).toBeLessThan(80);
     }
   });
 
-  test("the hero stays pinned while its car stops at six places, and drives back when scrolling up (041)", async ({ page }) => {
+  test("the hero's car stops at six places as the whole page scrolls, and drives back (041)", async ({ page }) => {
     await page.setViewportSize({ width: 1280, height: 900 });
     await page.goto(`${WEB}/fa`, { waitUntil: "networkidle" });
-    await page.evaluate(() => document.fonts.ready);
     const scene = page.locator("svg[data-hero='scene']");
-    const hero = page.locator("section[aria-labelledby='hero-title']");
-    const stops = scene.locator("[data-stop]");
-    await expect(stops).toHaveCount(6);
-    // Progress is how far the pinned part has scrolled within its stage, over the stage's extra height.
-    const { trip, offset } = await page.evaluate(() => {
-      const stage = document.querySelector<HTMLElement>("[data-hero-stage]")!;
-      const pinned = stage.firstElementChild as HTMLElement;
-      return {
-        trip: stage.offsetHeight - pinned.offsetHeight,
-        offset: stage.getBoundingClientRect().top - parseFloat(getComputedStyle(pinned).top),
-      };
-    });
-    const heroTop = (await hero.boundingBox())!.y;
+    await expect(scene.locator("[data-stop]")).toHaveCount(6);
+    // The trip follows the scroll of the whole page; let the rows load so the page has its full length.
+    await page.waitForTimeout(1500);
+    const room = await page.evaluate(() => document.documentElement.scrollHeight - window.innerHeight);
     for (const [index, kind] of [[2, "caravansara"], [5, "ecolodge"]] as const) {
-      await page.evaluate((y) => window.scrollTo(0, y), offset + ((index + 0.75) / 6) * trip);
+      await page.evaluate((y) => window.scrollTo(0, y), ((index + 0.75) / 6) * room);
       await expect.poll(() => scene.locator(`[data-stop='${kind}']`).getAttribute("data-active")).toBe("true");
-      // The hero has not scrolled away: the whole story is seen.
-      expect(Math.abs((await hero.boundingBox())!.y - (heroTop - offset))).toBeLessThan(2);
     }
     await page.evaluate(() => window.scrollTo(0, 0));
-    await expect.poll(() => scene.locator("[data-stop='garden']").getAttribute("data-active")).toBe("false");
     await expect.poll(() => scene.locator("[data-active='true']").count()).toBe(0);
   });
 

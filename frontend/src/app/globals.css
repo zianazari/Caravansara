@@ -268,7 +268,7 @@
 
 /*
  * The hero's car story (features 041, 041b). The car bobs a little while it idles; its wheels turn and it moves
- * with the scroll from HeroJourney's script. A place's gate glows, its windows light up and its sign rises while
+ * with the scroll from HeroJourney's script. A place's gate glows and its windows light up while
  * the car is parked there (data-active on the place, 041b). Stars twinkle. All of it stops under reduced motion.
  */
 .hero-car-idle {
@@ -293,23 +293,11 @@
 .hero-lit {
   transition: fill 0.6s var(--ease-soft);
 }
-.hero-sign {
-  transition: transform 0.5s var(--ease-soft);
-}
-.hero-sign-pill {
-  transition: fill 0.5s var(--ease-soft);
-}
-/* The place the car is parked at: its gate glows, its windows light up and its sign rises in gold. */
+/* The place the car is parked at: its gate glows and its windows light up. */
 .hero-stop[data-active="true"] .hero-glow {
   opacity: 1;
 }
 .hero-stop[data-active="true"] .hero-lit {
-  fill: var(--gold);
-}
-.hero-stop[data-active="true"] .hero-sign {
-  transform: translateY(-6px);
-}
-.hero-stop[data-active="true"] .hero-sign-pill {
   fill: var(--gold);
 }
 .hero-star {

@@ -1,6 +1,6 @@
 "use client";
 
-import { useLocale, useTranslations } from "next-intl";
+import { useLocale } from "next-intl";
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import courtyard from "@/assets/hero-courtyard.jpg";
 import { PARK_X, PLACE_AHEAD, START, STOPS, VIEW, WORLD, journeyAt, type StopKind } from "@/lib/heroJourney";
@@ -12,39 +12,21 @@ const FAR_SPEED = 0.35;
 /** Progress at which the car is shown under reduced motion: parked at the caravansara. */
 const STILL = (STOPS.indexOf("caravansara") + 0.75) / STOPS.length;
 
-const LABEL: Record<StopKind, string> = {
-  garden: "stopGarden",
-  villa: "stopVilla",
-  caravansara: "stopCaravansara",
-  apartment: "stopApartment",
-  cabin: "stopCabin",
-  ecolodge: "stopEcolodge",
-};
-/** Height of each place, so its sign sits just above it. */
-const HEIGHT: Record<StopKind, number> = {
-  garden: 70,
-  villa: 92,
-  caravansara: 118,
-  apartment: 132,
-  cabin: 96,
-  ecolodge: 104,
-};
-
 /**
  * The home page hero's story (features 041, 041b; owner's requests): a car with three passengers drives along
  * a road and stops at a garden, a villa, a caravansara (its gate frames the owner's courtyard photo, 027), an
- * apartment block, a forest cabin and an eco-lodge. The hero is pinned while the story plays (data-hero-stage
- * on the home page), so the whole trip is seen while scrolling; scrolling up drives the car back. The road is
+ * apartment block, a forest cabin and an eco-lodge. The hero is a strip pinned under the header for the whole
+ * page (041c), and the trip follows the scroll of the whole page; scrolling up drives the car back. The strip
+ * has no text (041c): the places are known by their shapes, and the one being visited lights up. The road is
  * longer than the view, so the view follows the car like a camera, and the far hills move slower for depth.
  * While nobody scrolls, the car idles with a slight bob (CSS). On the Persian site the road runs right to left.
  *
  * Plain SVG in the theme's colours, sharp at any size. Scroll is read once per frame with
  * requestAnimationFrame and the car, the world and the hills are moved by setting SVG attributes directly, so
  * React does not re-render each frame. Decoration only: hidden from screen readers. Under
- * prefers-reduced-motion nothing is pinned or moves, and the car is parked at the caravansara.
+ * prefers-reduced-motion nothing moves, and the car is parked at the caravansara.
  */
 export function HeroJourney() {
-  const t = useTranslations("home");
   const rtl = useLocale() === "fa";
   const svg = useRef<SVGSVGElement>(null);
   const world = useRef<SVGGElement>(null);
@@ -72,8 +54,6 @@ export function HeroJourney() {
     if (!scene || !road || !hills || !body) return;
     // Without matchMedia (an old browser, or the test DOM) the visitor has not asked for less motion.
     const reduced = window.matchMedia?.("(prefers-reduced-motion: reduce)").matches ?? false;
-    const stage = scene.closest<HTMLElement>("[data-hero-stage]");
-    const pinned = stage?.firstElementChild as HTMLElement | null;
     let shown = reduced ? STILL : 0;
     let target = shown;
     let frame = 0;
@@ -93,14 +73,10 @@ export function HeroJourney() {
       place(shown);
       frame = shown === target ? 0 : requestAnimationFrame(step);
     };
-    /** Progress is how far the pinned stage has scrolled, over the extra height it has for the trip. */
+    /** Progress is how far the whole page has scrolled (041c): the strip is always in view, so is the trip. */
     const onScroll = () => {
-      if (stage && pinned) {
-        const trip = Math.max(1, stage.offsetHeight - pinned.offsetHeight);
-        target = (pinned.getBoundingClientRect().top - stage.getBoundingClientRect().top) / trip;
-      } else {
-        target = window.scrollY / Math.max(1, scene.getBoundingClientRect().height * 3);
-      }
+      const room = document.documentElement.scrollHeight - window.innerHeight;
+      target = window.scrollY / Math.max(1, room);
       if (!frame) frame = requestAnimationFrame(step);
     };
 
@@ -127,7 +103,7 @@ export function HeroJourney() {
       viewBox={`0 0 ${VIEW} 220`}
       preserveAspectRatio={narrow ? "xMidYMax slice" : "xMidYMax meet"}
       overflow="visible"
-      className="hero-scene absolute inset-x-0 bottom-9 h-[190px] w-full md:bottom-12 md:h-[46%]"
+      className="hero-scene absolute inset-0 h-full w-full"
     >
       <defs>
         <clipPath id="hero-gate-arch">
@@ -172,30 +148,6 @@ export function HeroJourney() {
               transform={`translate(${PARK_X[i]! + PLACE_AHEAD} 186)`}
             >
               {PLACES[kind](unmirror)}
-              {/* The sign's lift is on an inner group: a CSS transform would replace the position attribute. */}
-              <g transform={`translate(0 ${-HEIGHT[kind] - 22})`}>
-                <g className="hero-sign">
-                  <rect
-                    x={-56}
-                    y={-15}
-                    width={112}
-                    height={28}
-                    rx={14}
-                    className="hero-sign-pill fill-card"
-                  />
-                  <g transform={unmirror}>
-                    <text
-                      textAnchor="middle"
-                      dominantBaseline="middle"
-                      y={1}
-                      className="fill-foreground"
-                      style={{ fontSize: 15, fontWeight: 700 }}
-                    >
-                      {t(LABEL[kind])}
-                    </text>
-                  </g>
-                </g>
-              </g>
             </g>
           ))}
 
