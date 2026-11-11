@@ -150,7 +150,7 @@ M = {
   "sort": ("مرتب‌سازی", "Sort"),
   "sortRating": ("بیشترین امتیاز", "Top rated"),
   "sortDistance": ("نزدیک‌ترین", "Closest"),
-  "filters": ("امکانات", "Amenities"),
+  "filters": ("فیلترها", "Filters"),
   "filtersTitle": ("فیلتر امکانات", "Filter by amenities"),
   "filtersHint": ("اقامتگاه باید همه‌ی امکانات انتخاب‌شده را داشته باشد.", "A place must have every amenity you choose."),
   "filtersCount": ("{count} اقامتگاه", "{count} places"),

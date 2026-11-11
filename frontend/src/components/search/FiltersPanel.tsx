@@ -8,6 +8,7 @@ import { api } from "@/api/client";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Dialog, DialogContent, DialogDescription, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { useAmenityGroups } from "@/components/home/CategoryBar";
 import { amenityCategoryName, amenityName } from "@/lib/names";
 import { type SearchState, toApiQuery } from "@/lib/searchParams";
 
@@ -15,6 +16,9 @@ import { type SearchState, toApiQuery } from "@/lib/searchParams";
  * Amenity filters (FR-019, US1/AC3): grouped and translated, each with the number of places that remain if
  * it is added (GET /search/filters). A place must have every chosen amenity. Choices apply together, so the
  * results are not reloaded on every tick.
+ *
+ * Feature 033: it also sits at the end of the category row, on the home page too. The home page has no city, and
+ * the counts need one, so there it lists the amenities without counts (GET /amenities, already cached for the row).
  */
 export function FiltersPanel({
   state,
@@ -29,9 +33,11 @@ export function FiltersPanel({
   const [chosen, setChosen] = useState<number[]>(state.amenity_ids);
 
   const draft = { ...state, amenity_ids: chosen };
+  const hasArea = state.city_id !== undefined || state.lat !== undefined;
+  const plain = useAmenityGroups();
   const counts = useQuery({
     queryKey: ["filters", toApiQuery(draft)],
-    enabled: open,
+    enabled: open && hasArea,
     queryFn: async () => {
       // The filter counts take the same search without paging or sorting.
       const {
@@ -66,8 +72,15 @@ export function FiltersPanel({
   });
 
   const number = (n: number) => new Intl.NumberFormat(locale === "fa" ? "fa-IR" : "en").format(n);
-  const groups = new Map<string, NonNullable<typeof counts.data>["amenities"]>();
-  for (const amenity of counts.data?.amenities ?? []) {
+  type Amenity = { id: number; name: string; category: string; listings?: number };
+  const amenities: Amenity[] = hasArea
+    ? (counts.data?.amenities ?? [])
+    : (plain.data ?? []).flatMap((g) =>
+        g.amenities.map((a) => ({ id: a.id, name: a.name, category: g.name })),
+      );
+  const loading = hasArea ? counts.isPending : plain.isPending;
+  const groups = new Map<string, Amenity[]>();
+  for (const amenity of amenities) {
     groups.set(amenity.category, [...(groups.get(amenity.category) ?? []), amenity]);
   }
   const toggle = (id: number, on: boolean) =>
@@ -82,7 +95,7 @@ export function FiltersPanel({
       }}
     >
       <DialogTrigger asChild>
-        <Button variant="outline">
+        <Button variant="outline" className="rounded-full">
           <SlidersHorizontalIcon />
           {t("search.filters")}
           {state.amenity_ids.length ? ` (${number(state.amenity_ids.length)})` : ""}
@@ -91,7 +104,7 @@ export function FiltersPanel({
       <DialogContent closeLabel={t("common.close")} side="end" className="content-start bg-surface">
         <DialogTitle>{t("search.filtersTitle")}</DialogTitle>
         <DialogDescription>{t("search.filtersHint")}</DialogDescription>
-        {counts.isPending ? <p>{t("common.loading")}</p> : null}
+        {loading ? <p>{t("common.loading")}</p> : null}
         {[...groups.entries()].map(([category, amenities]) => (
           <fieldset key={category} className="grid gap-2">
             <legend className="mb-1 font-semibold">{amenityCategoryName(t, category)}</legend>
@@ -102,9 +115,11 @@ export function FiltersPanel({
                   onCheckedChange={(on) => toggle(amenity.id, on === true)}
                 />
                 <span className="flex-1">{amenityName(t, amenity.name)}</span>
-                <span className="text-sm text-muted-foreground">
-                  {t("search.filtersCount", { count: number(amenity.listings) })}
-                </span>
+                {amenity.listings !== undefined ? (
+                  <span className="text-sm text-muted-foreground">
+                    {t("search.filtersCount", { count: number(amenity.listings) })}
+                  </span>
+                ) : null}
               </label>
             ))}
           </fieldset>

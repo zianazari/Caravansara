@@ -171,6 +171,60 @@
 }
 
 /*
+ * The search pill's sections, "where", "when" and "who" (feature 033). Why: the pill looked like one flat bar,
+ * so it was not clear which part a click would open. Effect: the section under the pointer turns light sand;
+ * the section being used (its field has focus or its picker is open) turns white and raised while the rest of
+ * the pill turns sand, so it stands apart from the other two. The short sand lines between sections hide next to
+ * a highlighted section, because a line through a rounded highlight looks broken.
+ */
+@layer components {
+  .search-pill {
+    background-color: var(--card);
+    transition: background-color 0.3s var(--ease-soft);
+  }
+  .search-pill > div {
+    position: relative;
+    border-radius: 9999px;
+    padding: 0.5rem 1.25rem;
+    transition:
+      background-color 0.3s var(--ease-soft),
+      box-shadow 0.3s var(--ease-soft);
+  }
+  /* A short straight divider; a border on a rounded section would bend with its corners. */
+  .search-pill > div:not(:nth-last-child(2))::after {
+    content: "";
+    position: absolute;
+    inset-inline-end: 0;
+    top: 22%;
+    height: 56%;
+    width: 1px;
+    background-color: var(--border);
+    transition: opacity 0.3s var(--ease-soft);
+  }
+  .search-pill > div:hover {
+    background-color: var(--muted);
+  }
+  .search-pill:has(> div:focus-within, > div [data-state="open"]) {
+    background-color: var(--muted);
+  }
+  .search-pill:has(> div:focus-within, > div [data-state="open"]) > div:hover {
+    background-color: color-mix(in srgb, var(--sand-strong) 35%, transparent);
+  }
+  .search-pill > div:is(:focus-within, :has([data-state="open"])) {
+    background-color: var(--card);
+    box-shadow: 0 6px 18px rgb(59 31 8 / 0.14);
+  }
+  /* The white raised section already shows where typing goes, so the city box drops its own outline. */
+  .search-pill input:focus-visible {
+    outline: none;
+  }
+  .search-pill > div:is(:hover, :focus-within, :has([data-state="open"]))::after,
+  .search-pill > div:has(+ div:is(:hover, :focus-within, :has([data-state="open"])))::after {
+    opacity: 0;
+  }
+}
+
+/*
  * Motion helpers (feature 031).
  * .lift: a card or tile rises a little and casts a soft shadow under the pointer, so it is clearly clickable.
  * .reveal: a section rises and settles into place as it scrolls into view. It is driven by the scroll itself
