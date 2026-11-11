@@ -150,8 +150,8 @@ async def test_the_host_sees_the_review_state_and_others_do_not(
     assert seen["private_location"] is None
 
 
-async def test_the_queue_is_oldest_first(client: AsyncClient, db: AsyncEngine, factory: Factory) -> None:
-    """US1/AC4."""
+async def test_the_queue_is_oldest_or_newest_first(client: AsyncClient, db: AsyncEngine, factory: Factory) -> None:
+    """US1/AC4; `sort=newest` since feature 025."""
     admin = await factory.admin()
     host = await factory.user("host")
     ids = [int((await factory.listing(host, approved=False, title=t))["id"]) for t in ("A", "B", "C")]
@@ -176,6 +176,16 @@ async def test_the_queue_is_oldest_first(client: AsyncClient, db: AsyncEngine, f
 
     page = await client.get("/admin/listings/pending", params={"limit": 1, "offset": 1}, headers=admin.auth)
     assert [i["title"] for i in page.json()["items"]] == ["C"]
+
+    newest = await client.get("/admin/listings/pending", params={"sort": "newest"}, headers=admin.auth)
+    assert [i["title"] for i in newest.json()["items"]] == ["A", "C", "B"]
+    assert newest.json()["total"] == 3
+    page = await client.get(
+        "/admin/listings/pending", params={"sort": "newest", "limit": 1, "offset": 2}, headers=admin.auth
+    )
+    assert [i["title"] for i in page.json()["items"]] == ["B"]
+    wrong = await client.get("/admin/listings/pending", params={"sort": "random"}, headers=admin.auth)
+    assert wrong.status_code == 422
 
 
 async def test_admin_details_show_the_address_and_record_each_view(

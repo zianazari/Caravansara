@@ -176,13 +176,18 @@ async def resubmit(session: AsyncSession, listing_id: int, host_id: int, now: da
     return int(row[0]) if row else None
 
 
-async def review_queue(session: AsyncSession, limit: int, offset: int) -> tuple[list[Listing], int]:
-    """Oldest first, on listings_review_queue_idx (FR-004)."""
+async def review_queue(
+    session: AsyncSession, limit: int, offset: int, *, newest_first: bool = False
+) -> tuple[list[Listing], int]:
+    """Oldest first (FR-004), or newest first (feature 025), both on listings_review_queue_idx.
+
+    Newest first reverses both keys, so Postgres reads the same (submitted_at, id) index backwards
+    and no second index is needed.
+    """
     pending = Listing.review_status == ReviewStatus.pending
     total = (await session.execute(select(func.count()).select_from(Listing).where(pending))).scalar_one()
-    rows = await session.execute(
-        select(Listing).where(pending).order_by(Listing.submitted_at, Listing.id).limit(limit).offset(offset)
-    )
+    order = (Listing.submitted_at.desc(), Listing.id.desc()) if newest_first else (Listing.submitted_at, Listing.id)
+    rows = await session.execute(select(Listing).where(pending).order_by(*order).limit(limit).offset(offset))
     return list(rows.scalars()), int(total)
 
 

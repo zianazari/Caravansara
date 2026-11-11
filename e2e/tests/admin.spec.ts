@@ -120,6 +120,31 @@ test("a host's change while the admin looks is caught, not approved unseen (409)
   expect((await reviewOf(request, listing.id)).status).toBe("approved");
 });
 
+test("the queue sorts oldest or newest first, and the order is kept in the address (025)", async ({ page, request }) => {
+  const old = await pendingListing(request, "E2E queue oldest");
+  const recent = await pendingListing(request, "E2E queue newest");
+  // Only this test's own listing is moved back in time, so it is the oldest in the queue.
+  await sql("UPDATE listings SET submitted_at = '2000-01-01' WHERE id = $1", [old.id]);
+  await logIn(page);
+  const titles = () => page.locator("main article h2").allTextContents();
+  await expect.poll(async () => (await titles())[0]).toBe("E2E queue oldest");
+
+  await page.getByLabel("ترتیب").selectOption("newest");
+  await page.waitForURL(/\/admin\?sort=newest$/);
+  // The previous order stays on screen until the new page arrives, so wait for the order itself.
+  await expect
+    .poll(async () => {
+      const newest = await titles();
+      const at = newest.indexOf("E2E queue oldest");
+      return newest.includes("E2E queue newest") && (at === -1 || at > newest.indexOf("E2E queue newest"));
+    })
+    .toBe(true);
+
+  await page.reload();
+  await expect(page.getByLabel("ترتیب")).toHaveValue("newest");
+  expect(recent.id).toBeGreaterThan(0);
+});
+
 test("the panel's pages have no sideways scroll and no axe violation, in both languages", async ({ page, request }) => {
   const listing = await pendingListing(request, "E2E panel look");
   await logIn(page);

@@ -487,8 +487,10 @@ async def require_host(session: AsyncSession, listing_id: int, user_id: int) -> 
 # ---- admin review (specs/backend (004)); called by the moderation module ----------
 
 
-async def review_queue(session: AsyncSession, storage: Storage, limit: int, offset: int) -> AdminQueuePage:
-    listings, total = await repo.review_queue(session, limit, offset)
+async def review_queue(
+    session: AsyncSession, storage: Storage, limit: int, offset: int, *, newest_first: bool = False
+) -> AdminQueuePage:
+    listings, total = await repo.review_queue(session, limit, offset, newest_first=newest_first)
     covers = await repo.cover_keys(session, [listing.id for listing in listings])
     hosts = await identity.get_public_users(session, {listing.host_id for listing in listings})
     items = []
