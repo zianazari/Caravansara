@@ -85,7 +85,8 @@ describe("home page (US1/AC1)", () => {
       const page = await HomePage({ params: Promise.resolve({ locale }) });
       const { container } = renderIn(locale, page);
       expect(screen.getByRole("heading", { level: 1, name: title })).toBeInTheDocument();
-      expect(container.querySelector("[data-hero='doorway']")).not.toBeNull();
+      // The doorway holds the courtyard photo from the README banner (feature 027), as decoration.
+      expect(container.querySelector("[data-hero='doorway'] img[alt='']")).not.toBeNull();
       expect(screen.getByRole("search")).toContainElement(screen.getByRole("button", { name: search }));
       expect(screen.getByRole("navigation", { name: categories })).toBeInTheDocument();
       expect(await screen.findByRole("heading", { name: new RegExp(firstRow) })).toBeInTheDocument();

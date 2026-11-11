@@ -27,7 +27,7 @@ export function AdminHeader() {
         className="mx-auto flex max-w-7xl items-center gap-3 px-4 py-3 md:px-6"
       >
         <Link href="/admin" className="me-auto flex min-w-0 items-center gap-3 rounded-lg">
-          <Logo />
+          <Logo onDark />
           {/* Words only from 640 px: at 320 px the logo, the language and log-out fill the bar. The nav keeps the name. */}
           <span className="hidden text-sm font-semibold text-on-dark-muted sm:inline">
             {t("admin.title")}
