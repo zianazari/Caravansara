@@ -244,7 +244,8 @@ M = {
   "whereSleep": ("جای خواب", "Where you will sleep"),
   "sleepCard": ("{bedrooms, plural, =0 {استودیو} one {# اتاق خواب} other {# اتاق خواب}}، {beds, plural, one {# تخت} other {# تخت}}", "{bedrooms, plural, =0 {Studio} one {# bedroom} other {# bedrooms}} · {beds, plural, one {# bed} other {# beds}}"),
   "offers": ("امکانات این اقامتگاه", "What this place offers"),
-  "showAllAmenities": ("نمایش همه‌ی {count, plural, one {# امکان} other {# امکان}}", "Show all {count, plural, one {# amenity} other {# amenities}}"),
+  # 040 (owner's request): a plain "other amenities" instead of "show all N amenities"
+  "otherAmenities": ("سایر امکانات", "Other amenities"),
   "reviewsTitle": ("{rating}، {count, plural, one {# نظر} other {# نظر}}", "{rating} · {count, plural, one {# review} other {# reviews}}"),
   "starsRow": ("{stars, plural, one {# ستاره} other {# ستاره}}", "{stars, plural, one {# star} other {# stars}}"),
   "starsShare": ("{share} از نظرها", "{share} of reviews"),

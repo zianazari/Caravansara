@@ -233,7 +233,7 @@
     "whereSleep": "جای خواب",
     "sleepCard": "{bedrooms, plural, =0 {استودیو} one {# اتاق خواب} other {# اتاق خواب}}، {beds, plural, one {# تخت} other {# تخت}}",
     "offers": "امکانات این اقامتگاه",
-    "showAllAmenities": "نمایش همه‌ی {count, plural, one {# امکان} other {# امکان}}",
+    "otherAmenities": "سایر امکانات",
     "reviewsTitle": "{rating}، {count, plural, one {# نظر} other {# نظر}}",
     "starsRow": "{stars, plural, one {# ستاره} other {# ستاره}}",
     "starsShare": "{share} از نظرها",
