@@ -36,7 +36,7 @@ export function Hero() {
             fill
             priority
             sizes="(min-width: 768px) 384px, 128px"
-            className="object-cover"
+            className="animate-drift object-cover"
           />
         </div>
       </div>
@@ -50,10 +50,15 @@ export function Hero() {
         ))}
       </div>
       <div className="relative max-w-xl px-6 pt-10 pb-44 md:max-w-[52%] md:px-14 md:pt-16 md:pb-40">
-        <h1 id="hero-title" className="text-3xl leading-snug font-extrabold md:text-5xl md:leading-tight">
+        <h1
+          id="hero-title"
+          className="animate-rise text-3xl leading-snug font-extrabold md:text-5xl md:leading-tight"
+        >
           {t("heroTitle")}
         </h1>
-        <p className="mt-3 text-base text-gold md:text-lg">{t("heroSubtitle")}</p>
+        <p className="mt-3 animate-rise text-base text-gold [animation-delay:150ms] md:text-lg">
+          {t("heroSubtitle")}
+        </p>
       </div>
     </section>
   );

@@ -65,6 +65,66 @@
   --font-sans: var(--font-vazirmatn), ui-sans-serif, system-ui, sans-serif;
 }
 
+/*
+ * Text sizes and motion (feature 031, owner's request: the site looked dry, text was small and left gaps).
+ * Persian at 14 px reads small, so the two small steps grow (sm 15 px, xs 13 px) with a taller line for the
+ * dots and descenders of Persian letters; every text-sm and text-xs on the site follows from here.
+ * Motion is short and soft (--ease-soft); prefers-reduced-motion turns all of it off (rule further down).
+ */
+@theme {
+  --text-xs: 0.8125rem;
+  --text-xs--line-height: 1.6;
+  --text-sm: 0.9375rem;
+  --text-sm--line-height: 1.7;
+  --text-base: 1rem;
+  --text-base--line-height: 1.8;
+  --ease-soft: cubic-bezier(0.22, 0.8, 0.24, 1);
+  --animate-rise: rise 0.7s var(--ease-soft) both;
+  --animate-pop: pop 0.45s var(--ease-soft);
+  --animate-shimmer: shimmer 1.6s linear infinite;
+  --animate-drift: drift 22s ease-in-out infinite alternate;
+
+  /* Comes in from a little below: the hero's title and lines. Moves only; text never fades (see .reveal). */
+  @keyframes rise {
+    from {
+      transform: translateY(18px);
+    }
+    to {
+      transform: none;
+    }
+  }
+  /* A quick swell, then back: a heart that has just been saved. */
+  @keyframes pop {
+    0% {
+      transform: scale(1);
+    }
+    45% {
+      transform: scale(1.3);
+    }
+    100% {
+      transform: scale(1);
+    }
+  }
+  /* A light band across a placeholder while it loads. */
+  @keyframes shimmer {
+    from {
+      background-position: 100% 0;
+    }
+    to {
+      background-position: -100% 0;
+    }
+  }
+  /* A slow, small zoom of the hero photo, as in the README banner. */
+  @keyframes drift {
+    from {
+      transform: scale(1);
+    }
+    to {
+      transform: scale(1.08) translateY(-2%);
+    }
+  }
+}
+
 @layer base {
   * {
     @apply border-border;
@@ -107,6 +167,43 @@
   .arch {
     -webkit-mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1 1' preserveAspectRatio='none'%3E%3Cpath d='M0,1 V0.36 C0,0.17 0.28,0.07 0.5,0 C0.72,0.07 1,0.17 1,0.36 V1 Z'/%3E%3C/svg%3E");
     mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1 1' preserveAspectRatio='none'%3E%3Cpath d='M0,1 V0.36 C0,0.17 0.28,0.07 0.5,0 C0.72,0.07 1,0.17 1,0.36 V1 Z'/%3E%3C/svg%3E");
+  }
+}
+
+/*
+ * Motion helpers (feature 031).
+ * .lift: a card or tile rises a little and casts a soft shadow under the pointer, so it is clearly clickable.
+ * .reveal: a section rises and settles into place as it scrolls into view. It is driven by the scroll itself
+ * (animation-timeline: view()), so it needs no JavaScript and costs nothing off screen; a browser without it
+ * simply shows the section, as before. It moves only and never fades: half-transparent text would fall below
+ * the contrast the theme guarantees (axe checks it), so text stays fully readable at every moment.
+ */
+@layer components {
+  .lift {
+    transition:
+      transform 0.35s var(--ease-soft),
+      box-shadow 0.35s var(--ease-soft);
+  }
+  .lift:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 18px 32px -18px color-mix(in srgb, var(--foreground) 45%, transparent);
+  }
+}
+
+@supports (animation-timeline: view()) {
+  .reveal {
+    animation: reveal linear both;
+    animation-timeline: view();
+    animation-range: entry 0% entry 30%;
+  }
+}
+
+@keyframes reveal {
+  from {
+    transform: translateY(36px) scale(0.97);
+  }
+  to {
+    transform: none;
   }
 }
 

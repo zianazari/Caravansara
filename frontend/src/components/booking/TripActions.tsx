@@ -2,6 +2,7 @@
 
 import { useQueryClient } from "@tanstack/react-query";
 import { useTranslations } from "next-intl";
+import { Button } from "@/components/ui/button";
 import { Link } from "@/i18n/navigation";
 import { canReview } from "@/lib/bookingView";
 import { CancelDialog } from "./CancelDialog";
@@ -18,9 +19,9 @@ export function TripActions({ bookingId }: { bookingId: number }) {
         <>
           <CancelDialog booking={booking} />
           {canReview(booking) && !queryClient.getQueryData(reviewedKey(booking.id)) ? (
-            <Link href={`/trips/${booking.id}/review`} className="font-medium text-primary underline">
-              {t("review")}
-            </Link>
+            <Button asChild variant="soft" size="sm" className="justify-self-start">
+              <Link href={`/trips/${booking.id}/review`}>{t("review")}</Link>
+            </Button>
           ) : null}
         </>
       )}

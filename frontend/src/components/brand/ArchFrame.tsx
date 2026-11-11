@@ -52,7 +52,8 @@ export function ArchFrame({
           priority={priority}
           unoptimized
           draggable={false}
-          className="object-cover"
+          // Feature 031: the photo zooms in a little when its card (a .group) is under the pointer.
+          className="object-cover transition-transform duration-700 ease-(--ease-soft) group-hover:scale-[1.06]"
           onError={() => setFailed(src!)}
         />
       ) : (

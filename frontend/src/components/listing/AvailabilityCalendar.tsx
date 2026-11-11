@@ -77,9 +77,9 @@ export function AvailabilityCalendar({ city }: { city: string }) {
   const Next = rtl ? ChevronLeftIcon : ChevronRightIcon;
 
   return (
-    <section aria-labelledby="calendar-title" className="grid gap-4">
+    <section aria-labelledby="calendar-title" className="reveal grid gap-4 border-t pt-8">
       <div>
-        <h2 id="calendar-title" className="text-xl font-semibold">
+        <h2 id="calendar-title" className="text-2xl font-bold">
           {nights
             ? t("listing.nightsIn", { count: nights, city })
             : choosingOut
@@ -168,7 +168,7 @@ export function AvailabilityCalendar({ city }: { city: string }) {
                               pick(iso);
                             }}
                             className={cn(
-                              "mx-auto grid size-10 place-content-center rounded-full text-sm hover:ring-1 hover:ring-foreground disabled:text-muted-foreground/50 disabled:hover:ring-0",
+                              "mx-auto grid size-10 place-content-center rounded-full text-sm transition-[transform,background-color,box-shadow] duration-200 hover:scale-110 hover:bg-muted hover:ring-1 hover:ring-foreground disabled:text-muted-foreground/50 disabled:hover:scale-100 disabled:hover:bg-transparent disabled:hover:ring-0",
                               taken && "line-through",
                               ends && "bg-foreground text-background hover:ring-0",
                             )}

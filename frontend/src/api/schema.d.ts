@@ -596,6 +596,26 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  "/api/v1/listings/{listing_id}/reviews/summary": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Review summary of a listing
+     * @description All of the listing's reviews in numbers: how many gave each star (5 down to 1) and the average of each category over the reviews that rated it; a category nobody rated is null. The same access rule as the reviews themselves.
+     */
+    get: operations["review_summary_api_v1_listings__listing_id__reviews_summary_get"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   "/api/v1/admin/auth/login": {
     parameters: {
       query?: never;
@@ -1765,6 +1785,32 @@ export interface components {
      * @enum {string}
      */
     ReviewStatus: "pending" | "approved" | "rejected";
+    /**
+     * ReviewSummary
+     * @description All of a listing's reviews in numbers (feature 032): how many gave each star, and the average of
+     *     each category over the reviews that rated it (a category nobody rated is null).
+     */
+    ReviewSummary: {
+      /** Total */
+      total: number;
+      /**
+       * Stars
+       * @description Five entries, from 5 stars down to 1.
+       */
+      stars: components["schemas"]["StarCount"][];
+      /** Cleanliness */
+      cleanliness: string | null;
+      /** Accuracy */
+      accuracy: string | null;
+      /** Check In */
+      check_in: string | null;
+      /** Communication */
+      communication: string | null;
+      /** Location */
+      location: string | null;
+      /** Value */
+      value: string | null;
+    };
     /** SearchPage */
     SearchPage: {
       /** Items */
@@ -1822,6 +1868,13 @@ export interface components {
       total_price: string | null;
       /** Cover Url */
       cover_url: string | null;
+    };
+    /** StarCount */
+    StarCount: {
+      /** Stars */
+      stars: number;
+      /** Count */
+      count: number;
     };
     /** TokensOut */
     TokensOut: {
@@ -3660,6 +3713,55 @@ export interface operations {
         };
         content: {
           "application/json": components["schemas"]["ReviewPage"];
+        };
+      };
+      /** @description Missing, invalid or expired access token */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Not found */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  review_summary_api_v1_listings__listing_id__reviews_summary_get: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        listing_id: number;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ReviewSummary"];
         };
       };
       /** @description Missing, invalid or expired access token */

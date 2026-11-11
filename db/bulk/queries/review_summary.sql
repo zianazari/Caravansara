@@ -1,0 +1,3 @@
+SELECT count(*) AS count_1, count(*) FILTER (WHERE reviews.rating = 5::SMALLINT) AS anon_1, count(*) FILTER (WHERE reviews.rating = 4::SMALLINT) AS anon_2, count(*) FILTER (WHERE reviews.rating = 3::SMALLINT) AS anon_3, count(*) FILTER (WHERE reviews.rating = 2::SMALLINT) AS anon_4, count(*) FILTER (WHERE reviews.rating = 1::SMALLINT) AS anon_5, round(avg(reviews.cleanliness_rating), 2::INTEGER) AS round_1, round(avg(reviews.accuracy_rating), 2::INTEGER) AS round_3, round(avg(reviews.check_in_rating), 2::INTEGER) AS round_5, round(avg(reviews.communication_rating), 2::INTEGER) AS round_7, round(avg(reviews.location_rating), 2::INTEGER) AS round_9, round(avg(reviews.value_rating), 2::INTEGER) AS round_11
+FROM reviews
+WHERE reviews.listing_id = :listing_id::BIGINT

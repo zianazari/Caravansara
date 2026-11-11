@@ -91,11 +91,11 @@ function TripRow({ booking: b }: { booking: Booking }) {
   const locale = useLocale();
   const money = useMoney();
   return (
-    <article className="flex gap-4 rounded-2xl border bg-card p-3 shadow-sm">
+    <article className="lift flex gap-4 rounded-2xl border bg-card p-3 shadow-sm">
       {/* 007: the trip's photo in the lower caravansara arch, or the warm placeholder. */}
       <ArchFrame src={b.listing.cover_url} alt="" sizes="96px" className="h-24 w-20 shrink-0" />
       <div className="grid min-w-0 flex-1 gap-0.5">
-        <Link href={`/trips/${b.id}`} className="truncate font-semibold hover:underline">
+        <Link href={`/trips/${b.id}`} className="truncate font-semibold transition-colors hover:text-primary">
           {b.listing.title}
         </Link>
         <p className="text-sm text-muted-foreground">
@@ -105,21 +105,15 @@ function TripRow({ booking: b }: { booking: Booking }) {
           <span className="font-medium">{t(`booking.status_${b.status}`)}</span> ·{" "}
           {money(b.total_price, b.currency)}
         </p>
-        {/* Side by side with room between them: each link is a touch target of at least 24 px (WCAG 2.5.8). */}
-        <div className="flex flex-wrap gap-x-4 gap-y-1">
-          <Link
-            href={`/listings/${b.listing.id}`}
-            className="inline-block py-1 text-sm font-medium text-primary underline"
-          >
-            {t("trips.viewListing")}
-          </Link>
+        {/* Side by side with room between them; buttons since feature 031, each well over 24 px (WCAG 2.5.8). */}
+        <div className="mt-1 flex flex-wrap gap-2">
+          <Button asChild variant="soft" size="sm">
+            <Link href={`/listings/${b.listing.id}`}>{t("trips.viewListing")}</Link>
+          </Button>
           {canReview(b) && !reviewed ? (
-            <Link
-              href={`/trips/${b.id}/review`}
-              className="inline-block py-1 text-sm font-medium text-primary underline"
-            >
-              {t("trips.review")}
-            </Link>
+            <Button asChild variant="soft" size="sm">
+              <Link href={`/trips/${b.id}/review`}>{t("trips.review")}</Link>
+            </Button>
           ) : null}
         </div>
       </div>

@@ -47,7 +47,7 @@ export function ResultCard({ result, nights, stay }: { result: Result; nights?: 
           src={result.cover_url}
           alt={result.cover_url ? "" : t("search.noPhoto")}
           sizes="(min-width: 1280px) 25vw, (min-width: 1024px) 33vw, (min-width: 640px) 50vw, 100vw"
-          className="mb-1 aspect-[1/0.96]"
+          className="mb-1 aspect-[1/0.96] transition-[transform,box-shadow] duration-300 ease-(--ease-soft) group-hover:-translate-y-1 group-hover:shadow-[0_18px_32px_-18px_color-mix(in_srgb,var(--foreground)_45%,transparent)]"
         >
           {badge ? (
             <span className="absolute start-2.5 top-2.5 max-w-[calc(100%-3.75rem)] truncate rounded-full bg-background px-2 py-0.5 text-[11px] font-bold text-foreground shadow-sm sm:start-3 sm:top-3 sm:px-2.5 sm:py-1 sm:text-xs">
@@ -72,7 +72,9 @@ export function ResultCard({ result, nights, stay }: { result: Result; nights?: 
             </span>
           ) : null}
         </div>
-        <h3 className="truncate text-sm text-muted-foreground group-hover:underline">{result.title}</h3>
+        <h3 className="truncate text-sm text-muted-foreground transition-colors group-hover:text-primary">
+          {result.title}
+        </h3>
         <p className="text-sm text-muted-foreground">
           {t(`propertyTypes.${result.property_type}`)}
           {result.distance_km !== null && result.distance_km !== undefined

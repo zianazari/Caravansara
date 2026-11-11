@@ -1,3 +1,5 @@
+from decimal import Decimal
+
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -27,3 +29,17 @@ async def listing_reviews(session: AsyncSession, listing_id: int, limit: int, of
         .offset(offset)
     )
     return list(rows.scalars()), int(total)
+
+
+CATEGORIES = ("cleanliness", "accuracy", "check_in", "communication", "location", "value")
+
+
+async def review_summary(session: AsyncSession, listing_id: int) -> tuple[int, list[int], dict[str, Decimal | None]]:
+    """Feature 032: every review of a listing in one pass. Returns the total, how many gave 5, 4, 3, 2 and
+    1 stars, and each category's average over the reviews that rated it (avg skips nulls), rounded like
+    listings.avg_rating."""
+    stars = [func.count().filter(Review.rating == n) for n in range(5, 0, -1)]
+    averages = [func.round(func.avg(getattr(Review, f"{name}_rating")), 2) for name in CATEGORIES]
+    row = (await session.execute(select(func.count(), *stars, *averages).where(Review.listing_id == listing_id))).one()
+    total, counts, means = int(row[0]), [int(c) for c in row[1:6]], row[6:]
+    return total, counts, dict(zip(CATEGORIES, means, strict=True))

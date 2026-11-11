@@ -15,7 +15,14 @@ from caravansara.identity.service import PublicUser
 from caravansara.listings import service as listings
 from caravansara.reviews import repository as repo
 from caravansara.reviews.models import Review
-from caravansara.reviews.schemas import ReviewAuthor, ReviewCreate, ReviewOut, ReviewPage
+from caravansara.reviews.schemas import (
+    ReviewAuthor,
+    ReviewCreate,
+    ReviewOut,
+    ReviewPage,
+    ReviewSummary,
+    StarCount,
+)
 
 
 def _out(review: Review, author: PublicUser) -> ReviewOut:
@@ -76,3 +83,11 @@ async def listing_reviews(
     reviews, total = await repo.listing_reviews(session, listing_id, limit, offset)
     authors = await identity.get_public_users(session, {r.guest_id for r in reviews})
     return ReviewPage(items=[_out(r, authors[r.guest_id]) for r in reviews], total=total)
+
+
+async def review_summary(session: AsyncSession, listing_id: int, viewer_id: int | None) -> ReviewSummary:
+    """Who can read the reviews can read their summary: the same rule as listing_reviews (FR-019)."""
+    await listings.require_visible_listing(session, listing_id, viewer_id)
+    total, counts, means = await repo.review_summary(session, listing_id)
+    stars = [StarCount(stars=n, count=c) for n, c in zip(range(5, 0, -1), counts, strict=True)]
+    return ReviewSummary(total=total, stars=stars, **means)
