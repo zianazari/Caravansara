@@ -333,4 +333,10 @@
   .no-print {
     display: none !important;
   }
+  /* The payment receipt (047) prints as a plain bordered sheet, without the screen's shadow. */
+  .receipt {
+    box-shadow: none !important;
+    border-radius: 0 !important;
+    break-inside: avoid;
+  }
 }

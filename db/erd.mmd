@@ -140,6 +140,7 @@ erDiagram
         char currency
         booking_status status "pending | confirmed | cancelled | expired | completed"
         timestamptz hold_expires_at
+        timestamptz paid_at
         uuid idempotency_key UK
         timestamptz created_at
     }

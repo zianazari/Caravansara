@@ -73,7 +73,7 @@ function SiteHeader() {
     router.replace("/");
   }
   return (
-    <header className="sticky top-0 z-40 border-b bg-background/95 backdrop-blur">
+    <header className="no-print sticky top-0 z-40 border-b bg-background/95 backdrop-blur">
       <a
         href="#main"
         className="sr-only focus:not-sr-only focus:absolute focus:start-2 focus:top-2 focus:rounded focus:bg-card focus:p-2"

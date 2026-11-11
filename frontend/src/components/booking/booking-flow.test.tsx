@@ -8,7 +8,7 @@ const GET = vi.fn();
 const POST = vi.fn();
 const push = vi.fn();
 const replace = vi.fn();
-let me: { id: number } | undefined;
+let me: { id: number; full_name?: string } | undefined;
 let skew = 0;
 vi.mock("@/api/client", () => ({
   api: { GET: (...a: unknown[]) => GET(...a), POST: (...a: unknown[]) => POST(...a) },
@@ -28,6 +28,7 @@ vi.mock("./TripListing", () => ({ TripListing: () => null }));
 import { BookingBox } from "@/components/listing/BookingBox";
 import { StayDatesProvider } from "@/components/listing/StayDates";
 import { ConfirmBooking } from "./ConfirmBooking";
+import { Receipt, receiptNumber } from "./Receipt";
 import { TripDetail } from "./TripDetail";
 
 const listing = {
@@ -229,6 +230,12 @@ describe("TripDetail (US3/AC2, AC3, AC7)", () => {
     });
     expect(await screen.findByText("Prinsengracht 7")).toBeInTheDocument();
     expect(screen.getByText("Check-in from 15:00, Amsterdam time")).toBeInTheDocument();
+    // Feature 047: paying opens the success page with the receipt, and the trip keeps a link to it.
+    expect(push).toHaveBeenCalledWith("/trips/77/receipt");
+    expect(screen.getByRole("link", { name: "Payment receipt" })).toHaveAttribute(
+      "href",
+      "/trips/77/receipt",
+    );
   });
 
   it("ends the hold at zero and offers to book again (US3/AC3)", async () => {
@@ -263,5 +270,54 @@ describe("TripDetail (US3/AC2, AC3, AC7)", () => {
     const { container } = renderIn("fa", <TripDetail bookingId={77} />);
     await screen.findByRole("button", { name: /پرداخت/ });
     await expectAccessible(container);
+  });
+});
+
+describe("Receipt (feature 047)", () => {
+  const paid = booking({
+    status: "confirmed",
+    hold_expires_at: null,
+    paid_at: "2026-11-11T18:30:00Z",
+    address: {
+      address: "Prinsengracht 7",
+      latitude: 1,
+      longitude: 2,
+      check_in_time: "15:00:00",
+      check_out_time: "11:00:00",
+    },
+  });
+
+  it("shows the payment's success and a receipt with its number, time, guest, place and amounts", async () => {
+    me = { id: 9, full_name: "Sara Guest" };
+    GET.mockResolvedValue({ data: paid });
+    renderIn("en", <Receipt bookingId={77} />);
+    expect(await screen.findByRole("heading", { name: "Payment successful" })).toBeInTheDocument();
+    const receipt = screen.getByRole("article", { name: "Payment receipt" });
+    expect(receipt).toHaveTextContent("CRV-000077");
+    expect(receipt).toHaveTextContent("Sara Guest");
+    expect(receipt).toHaveTextContent("Canal flat · Amsterdam");
+    expect(receipt).toHaveTextContent("Prinsengracht 7");
+    expect(receipt).toHaveTextContent("Check-in from 15:00, check-out by 11:00 (local time)");
+    expect(receipt).toHaveTextContent("€390.00");
+    expect(receipt).toHaveTextContent("11 November 2026");
+    expect(receipt).toHaveTextContent("this receipt is not a financial document");
+    expect(receiptNumber(5)).toBe("CRV-000005");
+    await expectAccessible(document.body);
+  });
+
+  it("prints with the browser's print dialog", async () => {
+    GET.mockResolvedValue({ data: paid });
+    const print = vi.spyOn(window, "print").mockImplementation(() => {});
+    renderIn("fa", <Receipt bookingId={77} />);
+    await userEvent.click(await screen.findByRole("button", { name: "چاپ رسید" }));
+    expect(print).toHaveBeenCalled();
+    print.mockRestore();
+  });
+
+  it("has no receipt before payment", async () => {
+    GET.mockResolvedValue({ data: booking() });
+    renderIn("en", <Receipt bookingId={77} />);
+    expect(await screen.findByRole("status")).toHaveTextContent("This booking is not paid yet");
+    expect(screen.queryByRole("button", { name: "Print receipt" })).toBeNull();
   });
 });
