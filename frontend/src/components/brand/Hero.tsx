@@ -1,13 +1,15 @@
+import Image from "next/image";
 import { useTranslations } from "next-intl";
+import courtyard from "@/assets/hero-courtyard.jpg";
 
 /**
- * The home page's welcome (specs/007-caravansara-theme, FR-009, research R8): a caravansara at night seen
- * through its lit doorway, drawn here in SVG and CSS rather than a photo. That keeps it to a few kilobytes,
- * sharp at any size and without a request, so the largest thing on the page is the title text and the load
- * stays as fast as in 005 (SC-005). The lamps glow only for visitors who have not asked for less motion.
+ * The home page's welcome (specs/007-caravansara-theme, FR-009): a caravansara at night seen through its
+ * doorway. Since feature 027 the doorway holds the owner's photo from the README banner, a lit courtyard at
+ * dusk, in place of the drawn glow and lamps. The photo is small (450x300), so like the README it sits in the
+ * tall arch, about its own size, and is never stretched across the hero, where it would blur.
  *
- * The title and subtitle sit on the night-blue part only, never on the brick glow, because a contrast check
- * cannot measure text on a gradient (data-model: hero). On a phone the doorway shrinks to a corner.
+ * The title and subtitle sit on the night-blue part only, never on the photo, because a contrast check
+ * cannot measure text on an image (data-model: hero). On a phone the doorway shrinks to a corner.
  */
 export function Hero() {
   const t = useTranslations("home");
@@ -20,22 +22,22 @@ export function Hero() {
         aria-hidden
         className="absolute inset-0 -z-10 bg-[radial-gradient(120%_90%_at_20%_115%,var(--amber)_0%,var(--brick)_30%,var(--foreground)_58%,var(--night)_85%)]"
       />
-      {/* The doorway: a sand frame, a dark brown inside and a warm glow, all in the tall arch. */}
+      {/* The doorway: a sand frame around the courtyard photo, both in the tall arch. */}
       <div
         aria-hidden
         data-hero="doorway"
         className="absolute bottom-0 start-auto end-6 h-40 w-32 sm:end-10 md:end-14 md:h-[85%] md:w-[30%] md:max-w-sm"
       >
         <div className="arch absolute inset-0 bg-linear-to-b from-sand-strong to-copper" />
-        <div className="arch absolute inset-x-[5%] top-[4%] bottom-0 bg-linear-to-b from-foreground to-copper" />
-        <div className="arch absolute inset-x-[5%] top-[4%] bottom-0 bg-[radial-gradient(60%_50%_at_50%_88%,var(--gold)_0%,var(--amber)_40%,transparent_75%)]" />
-        <div className="absolute inset-x-[18%] bottom-[30%] flex justify-between">
-          {[0, 1, 2].map((lamp) => (
-            <span
-              key={lamp}
-              className="hero-glow size-2 rounded-full bg-on-dark shadow-[0_0_14px_5px_var(--amber)] md:size-2.5"
-            />
-          ))}
+        <div className="arch absolute inset-x-[5%] top-[4%] bottom-0 overflow-hidden bg-foreground">
+          <Image
+            src={courtyard}
+            alt=""
+            fill
+            priority
+            sizes="(min-width: 768px) 384px, 128px"
+            className="object-cover"
+          />
         </div>
       </div>
       {/* A row of arches along the courtyard, desktop only. */}
