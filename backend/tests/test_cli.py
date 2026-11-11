@@ -63,7 +63,7 @@ async def test_demo_data_loads_and_logs_in(
             db, "SELECT (SELECT count(*) FROM users), (SELECT count(*) FROM listings), (SELECT count(*) FROM reviews)"
         )
     )[0]
-    assert tuple(counts) == (2044, 790, 9523)  # 2044: the demo admin (specs/backend (004))
+    assert tuple(counts) == (2054, 800, 9546)  # 2054: the demo admin (specs/backend (004))
 
     login = await client.post("/auth/login", json={"email": "guest@example.com", "password": "caravansara-demo"})
     assert login.status_code == 200
@@ -75,7 +75,7 @@ async def test_demo_data_loads_and_logs_in(
         "/auth/register", json={"email": "new@example.com", "password": "long-enough", "full_name": "N"}
     )
     assert r.status_code == 201
-    assert r.json()["user"]["id"] == 2045
+    assert r.json()["user"]["id"] == 2055
 
     await asyncio.to_thread(cli.main, ["run-jobs"])
     assert "expired" in capsys.readouterr().out

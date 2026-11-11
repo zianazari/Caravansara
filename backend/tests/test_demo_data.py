@@ -120,9 +120,9 @@ async def test_every_demo_listing_is_approved_except_the_two_review_cases(
         [(EDGE["pending_listing"]["listing_id"], "pending"), (EDGE["rejected_listing"]["listing_id"], "rejected")]
     )
     assert [tuple(r) for r in rows] == expected
-    # SC-002: 789 public before 004 (790 listings, one inactive); the two review edge cases are new.
+    # SC-002: 799 public before 004 (800 listings, one inactive); the two review edge cases are new.
     public = await sql(db, "SELECT count(*) FROM listings WHERE is_active AND review_status = 'approved'")
-    assert public[0][0] == 789 - 2
+    assert public[0][0] == 799 - 2
 
 
 async def test_the_rejected_demo_listing_has_its_reason_and_history(
