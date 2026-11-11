@@ -1,6 +1,7 @@
 import { screen } from "@testing-library/react";
 import { renderIn } from "@/test/render";
-import { Logo } from "./Logo";
+import { Footer } from "@/components/layout/Footer";
+import { Logo, LogoMark } from "./Logo";
 
 describe("Logo (feature 027)", () => {
   it("draws two nested arches on a base line, hidden from screen readers, next to the name", () => {
@@ -16,6 +17,22 @@ describe("Logo (feature 027)", () => {
     const { container } = renderIn("en", <Logo onDark />);
     expect(screen.getByText("Caravansara").closest("span")).toHaveClass("text-gold");
     const paths = [...container.querySelectorAll("svg path")].map((p) => p.getAttribute("class"));
+    expect(paths).toEqual(["stroke-gold", "stroke-amber", "stroke-gold"]);
+  });
+
+  it("draws the same mark alone, in sand for an empty page (feature 036)", () => {
+    const { container } = renderIn("fa", <LogoMark tone="muted" />);
+    const paths = [...container.querySelectorAll("svg[data-logo='arches'] path")].map((p) =>
+      p.getAttribute("class"),
+    );
+    expect(paths).toEqual(["stroke-sand-strong", "stroke-sand-strong", "stroke-sand-strong"]);
+  });
+
+  it("puts the mark in gold next to the name in the footer (feature 036)", () => {
+    const { container } = renderIn("fa", <Footer />);
+    const paths = [...container.querySelectorAll("footer svg[data-logo='arches'] path")].map((p) =>
+      p.getAttribute("class"),
+    );
     expect(paths).toEqual(["stroke-gold", "stroke-amber", "stroke-gold"]);
   });
 });
