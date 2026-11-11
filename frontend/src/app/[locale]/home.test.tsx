@@ -4,7 +4,7 @@ import { expectAccessible, renderIn } from "@/test/render";
 
 /**
  * The home page as a whole (specs/007-caravansara-theme, US1/AC1): the night hero, the search pill, the
- * categories, one row for each suggested city and the arcade band. Each part has its own tests; this one checks
+ * categories and one row for each suggested city (the arcade band is gone since 035). Each part has its own tests; this one checks
  * they are all on the page, in Persian and English.
  */
 const GET = vi.fn();
@@ -80,7 +80,7 @@ describe("home page (US1/AC1)", () => {
     ["fa", "جایی برای ماندن، در هر شهر سر راه", "جستجو", "دسته‌ها", "محبوب در تهران"],
     ["en", "A place to stay, in every city on the way", "Search", "Categories", "Popular in Tehran"],
   ] as const)(
-    "in %s: hero, search pill, categories, a row per city and the arcade",
+    "in %s: hero, search pill, categories and a row per city",
     async (locale, title, search, categories, firstRow) => {
       const page = await HomePage({ params: Promise.resolve({ locale }) });
       const { container } = renderIn(locale, page);
@@ -91,8 +91,8 @@ describe("home page (US1/AC1)", () => {
       expect(screen.getByRole("navigation", { name: categories })).toBeInTheDocument();
       expect(await screen.findByRole("heading", { name: new RegExp(firstRow) })).toBeInTheDocument();
       expect(await screen.findAllByRole("heading", { level: 2 })).toHaveLength(SUGGESTED.length);
-      // The arcade band: a row of small decorative arches.
-      expect(container.querySelectorAll("[aria-hidden] > .arch.bg-muted")).toHaveLength(12);
+      // The arcade band of decorative arches is gone (feature 035, owner's request: it served no purpose).
+      expect(container.querySelectorAll("[aria-hidden] > .arch.bg-muted")).toHaveLength(0);
     },
   );
 
