@@ -34,7 +34,8 @@ export function AdminHeader() {
           </span>
         </Link>
         <Suspense>
-          <LocaleSwitch />
+          {/* On the night-blue header the pill is outlined in light colours, not white (feature 031). */}
+          <LocaleSwitch className="border-on-dark/40 bg-transparent text-on-dark hover:bg-on-dark/10" />
         </Suspense>
         {onLogin ? null : (
           <Button

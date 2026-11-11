@@ -41,12 +41,12 @@ export function ConfirmBooking({ listingId }: { listingId: number }) {
 
   if (!usable) {
     return (
-      <p role="status" className="rounded-lg border p-4">
-        {t("booking.noDraft")}{" "}
-        <Link href={`/listings/${listingId}`} className="text-primary underline">
-          {t("common.back")}
-        </Link>
-      </p>
+      <div role="status" className="grid justify-items-start gap-3 rounded-lg border p-4">
+        <p>{t("booking.noDraft")}</p>
+        <Button asChild variant="soft" size="sm">
+          <Link href={`/listings/${listingId}`}>{t("common.back")}</Link>
+        </Button>
+      </div>
     );
   }
   if (!listing.data) return <Skeleton className="h-48 w-full" />;
@@ -108,12 +108,9 @@ export function ConfirmBooking({ listingId }: { listingId: number }) {
         >
           <p>{problem.text}</p>
           {problem.code === "dates_unavailable" ? (
-            <Link
-              href={`/listings/${listingId}?${stayQuery(usable).toString()}`}
-              className="font-medium underline"
-            >
-              {t("common.back")}
-            </Link>
+            <Button asChild variant="soft" size="sm" className="justify-self-start">
+              <Link href={`/listings/${listingId}?${stayQuery(usable).toString()}`}>{t("common.back")}</Link>
+            </Button>
           ) : null}
         </div>
       ) : null}

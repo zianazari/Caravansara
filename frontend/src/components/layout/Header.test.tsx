@@ -56,7 +56,7 @@ describe("Header host link (specs/008-host-pages, FR-001, R11)", () => {
     renderIn("fa", <Header />);
     const wide = await screen.findByRole("link", { name: "آگهی‌های من" });
     expect(wide).toHaveAttribute("href", "/host");
-    expect(wide).toHaveClass("hidden", "md:block");
+    expect(wide).toHaveClass("hidden", "md:inline-flex");
 
     await userEvent.click(screen.getByRole("button", { name: "حساب من" }));
     const menu = await screen.findByRole("menu");

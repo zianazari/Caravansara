@@ -14,7 +14,7 @@ export function AmenityList({ categories }: { categories: Category[] }) {
   const shown = categories.filter((c) => c.amenities.length > 0);
   if (shown.length === 0) return <p className="text-muted-foreground">{t("listing.noAmenities")}</p>;
   return (
-    <div className="grid gap-6 sm:grid-cols-2">
+    <div className="grid gap-6 sm:grid-cols-2 xl:grid-cols-3">
       {shown.map((category) => (
         <div key={category.id}>
           <h3 className="mb-2 font-semibold">{amenityCategoryName(t, category.name)}</h3>

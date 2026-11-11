@@ -184,7 +184,7 @@ export function DateRangePicker({
                         pick(iso);
                       }}
                       className={cn(
-                        "grid size-10 w-full place-content-center rounded-md text-sm hover:bg-muted disabled:text-muted-foreground/40 disabled:hover:bg-transparent",
+                        "grid size-10 w-full place-content-center rounded-md text-sm transition-[transform,background-color] duration-200 hover:scale-105 hover:bg-muted disabled:text-muted-foreground/40 disabled:hover:scale-100 disabled:hover:bg-transparent",
                         taken.has(iso) && "line-through",
                         value.checkIn &&
                           value.checkOut &&

@@ -96,7 +96,7 @@ function SiteHeader() {
         {host ? (
           <Link
             href={host.href}
-            className="hidden rounded-full px-3 py-2 text-sm font-semibold hover:bg-muted md:block"
+            className="hidden h-9 items-center rounded-full border bg-card px-4 text-sm font-semibold transition-[transform,background-color,box-shadow] duration-200 hover:-translate-y-0.5 hover:bg-muted hover:shadow-sm md:inline-flex"
           >
             {t(`nav.${host.label}`)}
           </Link>
@@ -104,7 +104,7 @@ function SiteHeader() {
         {state === "signedOut" ? (
           <Link
             href={{ pathname: "/login", query: { returnTo: pathname } }}
-            className="rounded-full bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground hover:opacity-90"
+            className="inline-flex h-9 items-center rounded-full bg-primary px-4 text-sm font-semibold text-primary-foreground shadow-sm transition-[transform,background-color,box-shadow] duration-200 hover:-translate-y-0.5 hover:bg-primary/90 hover:shadow-md"
           >
             {t("nav.login")}
           </Link>

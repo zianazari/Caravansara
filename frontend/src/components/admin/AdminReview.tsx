@@ -76,9 +76,9 @@ export function AdminReview({
     return (
       <div className="grid justify-items-start gap-3">
         <h1 className="text-xl font-semibold">{t("common.notFoundTitle")}</h1>
-        <Link href="/admin" className="text-primary underline">
-          {t("admin.backToQueue")}
-        </Link>
+        <Button asChild variant="soft" size="sm">
+          <Link href="/admin">{t("admin.backToQueue")}</Link>
+        </Button>
       </div>
     );
   }
@@ -132,9 +132,9 @@ export function AdminReview({
   const amenities = l.amenities.flatMap((group) => group.amenities);
   return (
     <div className="grid gap-6">
-      <Link href="/admin" className="text-sm text-primary underline">
-        {t("admin.backToQueue")}
-      </Link>
+      <Button asChild variant="soft" size="sm" className="justify-self-start">
+        <Link href="/admin">{t("admin.backToQueue")}</Link>
+      </Button>
       <header className="grid gap-1">
         <h1 className="text-2xl font-bold">{l.title}</h1>
         <p className="text-muted-foreground">

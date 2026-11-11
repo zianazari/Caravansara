@@ -40,7 +40,7 @@ export function HomeCard({ result }: { result: Result }) {
           src={result.cover_url}
           alt={result.cover_url ? "" : t("search.noPhoto")}
           sizes="(min-width: 1536px) 14vw, (min-width: 1280px) 16vw, (min-width: 1024px) 19vw, (min-width: 768px) 24vw, 45vw"
-          className="aspect-[1/0.96] transition-transform"
+          className="aspect-[1/0.96] transition-[transform,box-shadow] duration-300 ease-(--ease-soft) group-hover:-translate-y-1 group-hover:shadow-[0_18px_32px_-18px_color-mix(in_srgb,var(--foreground)_45%,transparent)]"
         >
           {badge ? (
             <span className="absolute start-2.5 top-2.5 max-w-[calc(100%-3.75rem)] truncate rounded-full bg-background px-2 py-0.5 text-[11px] font-bold text-foreground shadow-sm sm:start-3 sm:top-3 sm:px-2.5 sm:py-1 sm:text-xs">
@@ -54,7 +54,9 @@ export function HomeCard({ result }: { result: Result }) {
             city: cityName(t, result.city),
           })}
         </h3>
-        <p className="truncate text-sm text-muted-foreground group-hover:underline">{result.title}</p>
+        <p className="truncate text-sm text-muted-foreground transition-colors group-hover:text-primary">
+          {result.title}
+        </p>
         <p className="flex flex-wrap items-center gap-x-1.5 text-sm text-muted-foreground">
           <span>
             <span className="font-semibold text-foreground">

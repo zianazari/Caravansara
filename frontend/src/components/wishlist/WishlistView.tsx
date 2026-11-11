@@ -94,7 +94,7 @@ function SavedCard({ item }: { item: Item }) {
           src={l.cover_url}
           alt={l.cover_url ? "" : t("search.noPhoto")}
           sizes="(min-width: 1024px) 25vw, (min-width: 640px) 50vw, 100vw"
-          className="mb-1 aspect-[1/0.96]"
+          className="mb-1 aspect-[1/0.96] transition-[transform,box-shadow] duration-300 ease-(--ease-soft) group-hover:-translate-y-1 group-hover:shadow-[0_18px_32px_-18px_color-mix(in_srgb,var(--foreground)_45%,transparent)]"
         />
         <div className="flex items-start justify-between gap-2">
           <p className="font-bold">{cityName(t, l.city.name)}</p>
@@ -109,7 +109,9 @@ function SavedCard({ item }: { item: Item }) {
             </span>
           ) : null}
         </div>
-        <h3 className="line-clamp-1 text-sm text-muted-foreground group-hover:underline">{l.title}</h3>
+        <h3 className="line-clamp-1 text-sm text-muted-foreground transition-colors group-hover:text-primary">
+          {l.title}
+        </h3>
         <p className="mt-1 break-words">
           <span className="font-extrabold">{money(l.price_per_night, l.currency)}</span>{" "}
           <span className="text-sm text-muted-foreground">{t("search.perNight")}</span>

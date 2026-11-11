@@ -3,6 +3,7 @@
 import { useTranslations } from "next-intl";
 import type { components } from "@/api/schema";
 import { ArchFrame } from "@/components/brand/ArchFrame";
+import { Button } from "@/components/ui/button";
 import { useMoney } from "@/hooks/useMoney";
 import { Link } from "@/i18n/navigation";
 import { MIN_PHOTOS, statusOf } from "@/lib/listingStatus";
@@ -23,12 +24,12 @@ export function HostListingCard({ listing }: { listing: Summary }) {
   const href = `/host/listings/${listing.id}`;
   return (
     <article className="grid min-w-0 grid-cols-1 gap-3">
-      <Link href={href} className="rounded-2xl" aria-label={listing.title}>
+      <Link href={href} className="group rounded-2xl" aria-label={listing.title}>
         <ArchFrame
           src={listing.cover_url}
           alt=""
           sizes="(min-width: 1024px) 25vw, (min-width: 640px) 50vw, 100vw"
-          className="aspect-[1/0.96] w-full"
+          className="aspect-[1/0.96] w-full transition-[transform,box-shadow] duration-300 ease-(--ease-soft) group-hover:-translate-y-1 group-hover:shadow-[0_18px_32px_-18px_color-mix(in_srgb,var(--foreground)_45%,transparent)]"
         />
       </Link>
       <div className="grid min-w-0 gap-1">
@@ -36,15 +37,15 @@ export function HostListingCard({ listing }: { listing: Summary }) {
           <StatusBadge status={statusOf({ ...listing, photos: [] })} />
           {few ? <FewPhotosBadge /> : null}
         </div>
-        <Link href={href} className="truncate font-semibold hover:underline">
+        <Link href={href} className="truncate font-semibold transition-colors hover:text-primary">
           {listing.title}
         </Link>
         <p className="text-sm text-muted-foreground">{cityName(t, listing.city.name)}</p>
         <p className="text-sm">{money(listing.price_per_night, listing.currency)}</p>
         {few ? (
-          <Link href={`${href}?tab=photos`} className="text-sm font-medium text-primary underline">
-            {t("host.completePhotos")}
-          </Link>
+          <Button asChild variant="soft" size="sm" className="justify-self-start">
+            <Link href={`${href}?tab=photos`}>{t("host.completePhotos")}</Link>
+          </Button>
         ) : null}
       </div>
     </article>

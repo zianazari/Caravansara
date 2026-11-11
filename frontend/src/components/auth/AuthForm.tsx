@@ -140,14 +140,13 @@ export function AuthForm({ mode }: { mode: Mode }) {
           {busy ? t("auth.working") : t(mode === "login" ? "auth.login" : "auth.register")}
         </Button>
       </form>
-      <p className="text-sm">
-        {t(mode === "login" ? "auth.noAccount" : "auth.haveAccount")}{" "}
-        <Link
-          href={{ pathname: `/${other}`, query: returnTo ? { returnTo } : {} }}
-          className="font-medium text-primary underline"
-        >
-          {t(mode === "login" ? "nav.register" : "nav.login")}
-        </Link>
+      <p className="flex flex-wrap items-center gap-2 text-sm">
+        {t(mode === "login" ? "auth.noAccount" : "auth.haveAccount")}
+        <Button asChild variant="soft" size="sm">
+          <Link href={{ pathname: `/${other}`, query: returnTo ? { returnTo } : {} }}>
+            {t(mode === "login" ? "nav.register" : "nav.login")}
+          </Link>
+        </Button>
       </p>
     </section>
   );

@@ -37,11 +37,16 @@ export function HeartButton({
         toggle(listingId);
       }}
       className={cn(
-        "size-10 rounded-full bg-card/90 shadow-md ring-1 ring-border hover:bg-card disabled:opacity-60 [&_svg]:size-5",
+        "size-10 rounded-full bg-card/90 shadow-md ring-1 ring-border hover:scale-110 hover:bg-card disabled:opacity-60 [&_svg]:size-5",
         className,
       )}
     >
-      <HeartIcon className={on ? "fill-primary text-primary" : "text-foreground"} aria-hidden />
+      {/* Feature 031: the heart swells once when it is saved (key restarts the animation). */}
+      <HeartIcon
+        key={on ? "on" : "off"}
+        className={on ? "animate-pop fill-primary text-primary" : "text-foreground"}
+        aria-hidden
+      />
     </Button>
   );
 }

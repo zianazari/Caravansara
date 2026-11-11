@@ -103,16 +103,19 @@ export function CityRow({
   const Next = locale === "fa" ? ChevronLeftIcon : ChevronRightIcon;
 
   return (
-    <section ref={ref} aria-labelledby={`row-${city}`} className="grid min-w-0 gap-4 pb-10 last:pb-0">
+    <section ref={ref} aria-labelledby={`row-${city}`} className="reveal grid min-w-0 gap-4 pb-10 last:pb-0">
       <div className="flex items-center justify-between gap-4">
         <h2 id={`row-${city}`} className="flex items-center gap-2 text-xl font-bold">
           <Link
             href={`/search?${all.toString()}`}
-            className="flex items-center gap-2 rounded-lg hover:underline"
+            className="group flex items-center gap-2 rounded-lg transition-colors hover:text-primary"
           >
             {t("home.popularIn", { city: name })}
             <span className="sr-only">{` (${t("home.showAll")})`}</span>
-            <span className="grid size-8 place-items-center rounded-full bg-muted" aria-hidden>
+            <span
+              className="grid size-8 place-items-center rounded-full bg-muted transition-[transform,background-color] duration-300 ease-(--ease-soft) group-hover:-translate-x-1 group-hover:bg-sand-strong/50 ltr:group-hover:translate-x-1"
+              aria-hidden
+            >
               <ArrowLeftIcon className="size-4 ltr:rotate-180" />
             </span>
           </Link>

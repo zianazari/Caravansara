@@ -75,7 +75,7 @@ export default async function ListingPage({ params }: Props) {
 
   return (
     // data-wide: up to 1920 px with small margins, like the home page (owner's request, feature 019).
-    <article className="grid gap-8" data-wide>
+    <article className="grid gap-10" data-wide>
       <header className="grid gap-1">
         <div className="flex items-start justify-between gap-3">
           <h1 className="text-2xl font-bold md:text-3xl">{listing.title}</h1>
@@ -97,17 +97,19 @@ export default async function ListingPage({ params }: Props) {
         <StayDatesProvider listingId={listing.id} timezone={listing.city.timezone}>
           <div className="grid gap-8 lg:grid-cols-[minmax(0,2fr)_minmax(0,1fr)] xl:grid-cols-[minmax(0,5fr)_minmax(0,2fr)]">
             <div className="grid content-start gap-8">
-              <section className="flex items-center gap-3">
+              <section className="flex items-center gap-3 rounded-2xl border bg-card p-4">
                 <UserAvatar user={listing.host} />
-                <p className="font-medium">{t("listing.hostedBy", { name: listing.host.full_name })}</p>
+                <p className="text-lg font-semibold">
+                  {t("listing.hostedBy", { name: listing.host.full_name })}
+                </p>
               </section>
 
-              <section aria-labelledby="capacity" className="grid gap-2">
-                <h2 id="capacity" className="text-xl font-semibold">
+              <section aria-labelledby="capacity" className="reveal grid border-t pt-8 gap-4">
+                <h2 id="capacity" className="text-2xl font-bold">
                   {t("listing.capacity")}
                 </h2>
                 {/* Each fact with its line icon (feature 018); the icons are decoration, the words say it. */}
-                <ul className="grid grid-cols-2 gap-x-6 gap-y-3 sm:grid-cols-3">
+                <ul className="grid grid-cols-2 gap-3 sm:grid-cols-3 xl:grid-cols-5">
                   {[
                     { Icon: UsersIcon, text: t("listing.maxGuests", { count: listing.max_guests }) },
                     { Icon: DoorOpenIcon, text: t("listing.bedrooms", { count: listing.bedrooms }) },
@@ -120,7 +122,10 @@ export default async function ListingPage({ params }: Props) {
                         : t("listing.noPets"),
                     },
                   ].map(({ Icon, text }) => (
-                    <li key={text} className="flex items-center gap-3">
+                    <li
+                      key={text}
+                      className="lift flex items-center gap-3 rounded-xl border bg-card p-3 hover:border-sand-strong"
+                    >
                       <Icon className="size-6 shrink-0 stroke-[1.5]" aria-hidden />
                       <span>{text}</span>
                     </li>
@@ -129,23 +134,23 @@ export default async function ListingPage({ params }: Props) {
               </section>
 
               {listing.description ? (
-                <section aria-labelledby="about" className="grid gap-2">
-                  <h2 id="about" className="text-xl font-semibold">
+                <section aria-labelledby="about" className="reveal grid border-t pt-8 gap-4">
+                  <h2 id="about" className="text-2xl font-bold">
                     {t("listing.description")}
                   </h2>
                   <p className="whitespace-pre-line">{listing.description}</p>
                 </section>
               ) : null}
 
-              <section aria-labelledby="amenities" className="grid gap-3">
-                <h2 id="amenities" className="text-xl font-semibold">
+              <section aria-labelledby="amenities" className="reveal grid border-t pt-8 gap-4">
+                <h2 id="amenities" className="text-2xl font-bold">
                   {t("listing.amenities")}
                 </h2>
                 <AmenityList categories={listing.amenities} />
               </section>
 
-              <section aria-labelledby="times" className="grid gap-1">
-                <h2 id="times" className="mb-2 text-xl font-semibold">
+              <section aria-labelledby="times" className="reveal grid border-t pt-8 gap-1">
+                <h2 id="times" className="mb-2 text-2xl font-bold">
                   {t("listing.checkTimes")}
                 </h2>
                 <p className="flex items-center gap-3">
@@ -161,8 +166,8 @@ export default async function ListingPage({ params }: Props) {
 
               <AvailabilityCalendar city={city} />
 
-              <section aria-labelledby="reviews" className="grid gap-3">
-                <h2 id="reviews" className="text-xl font-semibold">
+              <section aria-labelledby="reviews" className="reveal grid border-t pt-8 gap-4">
+                <h2 id="reviews" className="text-2xl font-bold">
                   {t("listing.reviews")}
                 </h2>
                 <ReviewList listingId={listing.id} first={reviews} />

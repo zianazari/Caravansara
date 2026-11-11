@@ -200,6 +200,16 @@ test.describe("Caravansara theme in a real browser", () => {
     for (const width of WIDTHS) {
       await page.setViewportSize({ width, height: 900 });
       await page.goto(`${WEB}/fa`);
+      // The title rises into place (feature 031): measure where it ends, not on the way. Only the timed
+      // animations are waited for: the photo's slow drift never ends, and the scroll-driven ones end only by scrolling.
+      await page.evaluate(() =>
+        Promise.all(
+          document
+            .getAnimations()
+            .filter((a) => a.timeline === document.timeline && a.effect?.getTiming().iterations !== Infinity)
+            .map((a) => a.finished),
+        ),
+      );
       const hero = (await page.locator("section[aria-labelledby='hero-title']").boundingBox())!;
       const door = (await page.locator("[data-hero='doorway']").boundingBox())!;
       for (const text of [page.getByRole("heading", { level: 1 }), page.locator("#hero-title + p")]) {

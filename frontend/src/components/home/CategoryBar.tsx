@@ -130,7 +130,7 @@ export function CategoryBar({ mode }: { mode: "home" | "search" }) {
                   href={hrefFor(category.key)}
                   aria-current={on ? "true" : undefined}
                   className={cn(
-                    "flex flex-col items-center gap-1.5 border-b-2 pt-1 pb-2.5 text-xs whitespace-nowrap",
+                    "group flex flex-col items-center gap-1.5 border-b-2 pt-1 pb-2.5 text-sm whitespace-nowrap transition-colors",
                     on
                       ? "border-primary font-bold text-foreground"
                       : "border-transparent text-muted-foreground hover:border-border hover:text-foreground",
@@ -139,8 +139,8 @@ export function CategoryBar({ mode }: { mode: "home" | "search" }) {
                   <span
                     aria-hidden
                     className={cn(
-                      "arch grid h-9 w-8 place-items-center",
-                      on ? "bg-copper" : "bg-sand-strong",
+                      "arch grid h-10 w-9 place-items-center transition-[transform,background-color] duration-300 ease-(--ease-soft) group-hover:-translate-y-1",
+                      on ? "bg-copper" : "bg-sand-strong group-hover:bg-copper",
                     )}
                   >
                     <Icon className="mt-2 size-4 text-on-dark" />

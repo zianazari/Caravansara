@@ -24,7 +24,11 @@ export function LocaleSwitch({ className, ...props }: Omit<ComponentProps<"a">, 
       hrefLang={other}
       title={t("language")}
       {...props}
-      className={cn("rounded-md px-2 py-1 text-sm hover:bg-muted", className)}
+      className={cn(
+        // A pill button since feature 031: everything clickable looks like a button.
+        "inline-flex h-9 items-center rounded-full border bg-card px-3 text-sm font-semibold transition-[transform,background-color,box-shadow] duration-200 hover:-translate-y-0.5 hover:bg-muted hover:shadow-sm",
+        className,
+      )}
     >
       {t("switchTo")}
     </Link>

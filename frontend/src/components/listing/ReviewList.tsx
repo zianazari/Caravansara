@@ -68,7 +68,7 @@ function ReviewItem({ review }: { review: Review }) {
     ([, v]) => v !== null && v !== undefined,
   );
   return (
-    <article className="grid gap-2">
+    <article className="lift grid h-full content-start gap-3 rounded-2xl border bg-card p-5">
       <header className="flex items-center gap-3">
         <UserAvatar user={review.author} size="sm" />
         <div>

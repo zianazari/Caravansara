@@ -235,9 +235,9 @@ function ListingHeader({ listing, onSaved }: { listing: Listing; onSaved: () => 
           <p className="text-sm text-muted-foreground">{t("host.inactiveNote")}</p>
         ) : null}
         {status === "active" ? (
-          <Link href={`/listings/${listing.id}`} className="text-sm font-medium text-primary underline">
-            {t("host.viewPublic")}
-          </Link>
+          <Button asChild variant="soft" size="sm" className="justify-self-start">
+            <Link href={`/listings/${listing.id}`}>{t("host.viewPublic")}</Link>
+          </Button>
         ) : null}
         {problem ? (
           <p role="alert" className="text-sm text-destructive">
