@@ -78,4 +78,21 @@ describe("Header host link (specs/008-host-pages, FR-001, R11)", () => {
     expect(logout).toHaveBeenCalled();
     expect(replace).toHaveBeenCalledWith("/");
   });
+
+  it("gives wishlists, trips and my account an icon each, and a larger log-in button (feature 046)", async () => {
+    state = "signedIn";
+    GET.mockResolvedValue({ data: { items: [], total: 0 } });
+    const { unmount } = renderIn("fa", <Header />);
+    await userEvent.click(screen.getByRole("button", { name: "حساب من" }));
+    const menu = await screen.findByRole("menu");
+    for (const name of ["علاقه‌مندی‌ها", "سفرهای من", "حساب من"]) {
+      const item = within(menu).getByRole("menuitem", { name });
+      expect(item.querySelector("svg[aria-hidden='true']")).not.toBeNull();
+    }
+    unmount();
+
+    state = "signedOut";
+    renderIn("fa", <Header />);
+    expect(screen.getByRole("link", { name: "ورود" })).toHaveClass("h-11", "px-8");
+  });
 });
