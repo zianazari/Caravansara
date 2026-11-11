@@ -36,6 +36,22 @@ describe("DateRangePicker", () => {
     expect(onChange).toHaveBeenLastCalledWith({ checkIn: "2026-03-21", checkOut: "2026-03-25" });
   });
 
+  it("shows the weekly day off in red: Friday in Persian, Sunday in English (feature 038)", async () => {
+    const { unmount } = renderIn("fa", <Harness onChange={vi.fn()} />);
+    await userEvent.click(screen.getByRole("button", { name: /تاریخ سفر/ }));
+    expect(screen.getByRole("button", { name: "۷ فروردین ۱۴۰۵" })).toHaveClass("text-destructive"); // Friday
+    expect(screen.getByRole("button", { name: "۸ فروردین ۱۴۰۵" })).not.toHaveClass("text-destructive");
+    const fa = screen.getAllByRole("columnheader");
+    expect(fa.at(-1)).toHaveClass("text-destructive"); // the week ends on Friday
+    unmount();
+
+    renderIn("en", <Harness onChange={vi.fn()} />);
+    await userEvent.click(screen.getByRole("button", { name: /Dates/ }));
+    expect(screen.getByRole("button", { name: "22 March 2026" })).toHaveClass("text-destructive"); // Sunday
+    expect(screen.getByRole("button", { name: "27 March 2026" })).not.toHaveClass("text-destructive");
+    expect(screen.getAllByRole("columnheader").at(-1)).toHaveClass("text-destructive"); // Monday to Sunday
+  });
+
   it("uses the Gregorian calendar on English pages", async () => {
     const onChange = vi.fn();
     renderIn("en", <Harness onChange={onChange} />);

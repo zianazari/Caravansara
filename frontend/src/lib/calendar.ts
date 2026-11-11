@@ -51,6 +51,14 @@ function weekday(iso: string): number {
 }
 
 /**
+ * The weekly day off, shown in red in the calendars (feature 038, owner's request): Friday on the Jalali
+ * calendar of the Persian site, as in Iran; Sunday on the Gregorian calendar of the English site.
+ */
+export function isWeeklyHoliday(calendar: Calendar, iso: string): boolean {
+  return weekday(iso) === (calendar === "jalali" ? 5 : 0);
+}
+
+/**
  * Weeks of one month as Gregorian ISO dates, with null for blank cells. Jalali weeks start on Saturday, as
  * Iranian calendars do; Gregorian weeks start on Monday, the ISO 8601 and European custom of the English site.
  */
