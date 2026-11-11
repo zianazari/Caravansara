@@ -6,14 +6,49 @@ import { useLocale, useTranslations } from "next-intl";
 import { useEffect, useRef, useState } from "react";
 import { api } from "@/api/client";
 import { cityName, countryName } from "@/lib/names";
-import { Command, CommandEmpty, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
+import { hasPersian, persianCityMatches } from "@/lib/persianCitySearch";
+import {
+  Command,
+  CommandEmpty,
+  CommandGroup,
+  CommandInput,
+  CommandItem,
+  CommandList,
+} from "@/components/ui/command";
 
 /** A chosen city; `country` is its ISO code, which the host's form uses to start the currency (008, R7). */
 export type CityChoice = { id: number; label: string; country?: string };
 
+type City = { id: number; name: string; country: { code: string } };
+
+/** How many popular cities an empty field suggests (feature 030). */
+const POPULAR_COUNT = 6;
+/** The country whose cities come first among the popular ones, by the page's language (feature 030). */
+const HOME_COUNTRY: Record<string, string> = { fa: "IR" };
+
+/**
+ * The most booked cities (GET /cities?sort=popular), with the language's own country first: on the Persian site,
+ * Tehran, Isfahan and Shiraz come before the rest, which is what a visitor from Iran looks for first.
+ */
+async function popularCities(home?: string): Promise<City[]> {
+  const get = async (country?: string) => {
+    const query = { sort: "popular" as const, limit: POPULAR_COUNT, ...(country ? { country } : {}) };
+    const { data } = await api.GET("/api/v1/cities", { params: { query } });
+    return data ?? [];
+  };
+  const [first, all] = await Promise.all([home ? get(home) : Promise.resolve([]), get()]);
+  const seen = new Set(first.map((city) => city.id));
+  return [...first, ...all.filter((city) => !seen.has(city.id))].slice(0, POPULAR_COUNT);
+}
+
 /**
  * City with suggestions from GET /cities?q= (US1/AC1). A combobox in the ARIA pattern: type, move with the
  * arrow keys, choose with Enter. Names are shown in the page's language.
+ *
+ * Persian typing (feature 028): the API matches English names only, so «تهر» is first matched against the
+ * Persian names here (lib/persianCitySearch) and each match is fetched by its English name.
+ *
+ * An empty field (feature 030) suggests the popular cities, so a visitor can choose without typing.
  *
  * Built on shadcn/ui Command (cmdk, feature 026), which runs the keyboard and the active item. The server
  * filters, so cmdk's own filter is off (shouldFilter={false}). cmdk names the box from its `label`, so the
@@ -51,15 +86,33 @@ export function CityCombobox({
     return () => clearTimeout(timer);
   }, [text]);
 
+  const empty = text.trim().length === 0;
+  const home = HOME_COUNTRY[locale];
+  const popular = useQuery({
+    queryKey: ["cities", "popular", home ?? null],
+    enabled: open && empty,
+    staleTime: 10 * 60 * 1000, // the API counts them again every 10 minutes
+    queryFn: () => popularCities(home),
+  });
   const cities = useQuery({
     queryKey: ["cities", query],
-    enabled: open && query.length > 0,
+    enabled: open && !empty && query.length > 0,
     queryFn: async () => {
-      const { data } = await api.GET("/api/v1/cities", { params: { query: { q: query, limit: 8 } } });
-      return data ?? [];
+      if (!hasPersian(query)) {
+        const { data } = await api.GET("/api/v1/cities", { params: { query: { q: query, limit: 8 } } });
+        return data ?? [];
+      }
+      // One request per matching city; the API's prefix search may also return longer names, so keep the exact one.
+      const found = await Promise.all(
+        persianCityMatches(query).map(async (name) => {
+          const { data } = await api.GET("/api/v1/cities", { params: { query: { q: name, limit: 8 } } });
+          return (data ?? []).filter((city) => city.name === name);
+        }),
+      );
+      return found.flat();
     },
   });
-  const options = (cities.data ?? []).map((c) => ({
+  const options = ((empty ? popular.data : cities.data) ?? []).map((c) => ({
     id: c.id,
     label: cityName(t, c.name),
     code: c.country.code,
@@ -73,7 +126,7 @@ export function CityCombobox({
   }
 
   const name = label ?? t("search.where");
-  const showList = open && query.length > 0;
+  const showList = open && (empty ? options.length > 0 : query.length > 0);
   return (
     <Command
       shouldFilter={false}
@@ -107,13 +160,28 @@ export function CityCombobox({
         />
       </div>
       <CommandList
-        aria-label={name}
+        label={empty ? t("search.popularCities") : name}
         hidden={!showList}
         // Keep the focus in the box while an item is clicked, so the list does not close first.
         onMouseDown={(event) => event.preventDefault()}
         className="absolute top-full z-40 mt-1 w-full rounded-lg border bg-card shadow-lg"
       >
-        {showList
+        {showList && empty ? (
+          <CommandGroup heading={t("search.popularCities")}>
+            {options.map((option) => (
+              <CommandItem
+                key={option.id}
+                value={String(option.id)}
+                onSelect={() => choose(option)}
+                className="justify-between"
+              >
+                <span>{option.label}</span>
+                <span className="text-sm text-muted-foreground">{option.country}</span>
+              </CommandItem>
+            ))}
+          </CommandGroup>
+        ) : null}
+        {showList && !empty
           ? options.map((option) => (
               <CommandItem
                 key={option.id}
@@ -126,7 +194,7 @@ export function CityCombobox({
               </CommandItem>
             ))
           : null}
-        {showList && cities.isSuccess && options.length === 0 ? (
+        {showList && !empty && cities.isSuccess && options.length === 0 ? (
           <CommandEmpty>{t("search.noCities")}</CommandEmpty>
         ) : null}
       </CommandList>

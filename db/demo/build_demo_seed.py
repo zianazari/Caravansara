@@ -696,7 +696,9 @@ SELECT setval(pg_get_serial_sequence('bookings', 'id'), (SELECT max(id) FROM boo
 
 COMMIT;
 """]
-    OUT_SQL.write_text("\n".join(parts), encoding="utf-8")
+    # Some Inside Airbnb reviews end lines with \r\n; write plain \n so the file does not depend on that
+    # and stays byte-identical between builds.
+    OUT_SQL.write_text("\n".join(parts).replace("\r\n", "\n").replace("\r", "\n"), encoding="utf-8")
     write_edge_cases(edge_cases)
     print(f"wrote {OUT_SQL.relative_to(ROOT)}: {len(users)} users, {len(listings)} listings "
           f"({persian['listings']} Persian from id {persian['first_listing_id']}), {len(photos)} photos, "

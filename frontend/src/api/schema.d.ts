@@ -155,7 +155,7 @@ export interface paths {
     };
     /**
      * Cities (autocomplete)
-     * @description Cities whose name starts with `q`, optionally within one country.
+     * @description Cities whose name starts with `q`, optionally within one country. `sort=popular` puts the cities with the most bookings in the last 90 days first (counts refreshed every 10 minutes).
      */
     get: operations["list_cities_api_v1_cities_get"];
     put?: never;
@@ -2364,6 +2364,8 @@ export interface operations {
         /** @description ISO country code. */
         country?: string | null;
         limit?: number;
+        /** @description `name` (A to Z) or `popular` (most booked first). */
+        sort?: "name" | "popular";
       };
       header?: never;
       path?: never;

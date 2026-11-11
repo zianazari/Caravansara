@@ -4,6 +4,9 @@ from httpx import ASGITransport, AsyncClient
 
 from caravansara.core.config import Settings
 from caravansara.main import create_app
+from caravansara.search import service as search
+from tests.factories import Factory
+from tests.helpers import city_id, sql
 
 
 async def test_countries(client: AsyncClient) -> None:
@@ -20,6 +23,33 @@ async def test_city_autocomplete(client: AsyncClient) -> None:
     assert [c["name"] for c in by_country.json()] == ["Stockholm"]
     wildcard = await client.get("/cities", params={"q": "%"})
     assert wildcard.json() == []  # LIKE wildcards are escaped
+
+
+async def test_popular_cities_come_first(client: AsyncClient, factory: Factory) -> None:
+    """Feature 030: most bookings in the last 90 days first, then by name; only public listings count."""
+    search.forget_popularity()
+    shiraz = await factory.listing(city=await city_id(client, "Shiraz"))
+    london = await factory.listing(city=await city_id(client, "London"))
+    for n in range(2):
+        await factory.booking(listing=shiraz, check_in=10 + 5 * n)
+    await factory.booking(listing=london, status="completed", check_in=-5)
+    await factory.booking(listing=london, status="cancelled")  # cancelled and expired do not count
+    await factory.booking(listing=london, status="expired")
+    old = await factory.booking(listing=london, check_in=20)  # made before the 90 days
+    await sql(factory.engine, "UPDATE bookings SET created_at = now() - interval '91 days' WHERE id = :id", id=old.id)
+    hidden = await factory.listing(city=await city_id(client, "Tehran"), approved=False)
+    for n in range(3):
+        await factory.booking(listing=hidden, check_in=10 + 5 * n)  # a listing that is not public does not count
+
+    r = await client.get("/cities", params={"sort": "popular", "limit": 4})
+    assert [c["name"] for c in r.json()] == ["Shiraz", "London", "Amsterdam", "Copenhagen"]
+    iran = await client.get("/cities", params={"sort": "popular", "country": "IR"})
+    assert [c["name"] for c in iran.json()] == ["Shiraz", "Isfahan", "Tehran"]
+    by_name = await client.get("/cities", params={"limit": 2})
+    assert [c["name"] for c in by_name.json()] == ["Amsterdam", "Copenhagen"]  # the default stays A to Z
+    bad = await client.get("/cities", params={"sort": "busy"})
+    assert bad.status_code == 422
+    search.forget_popularity()
 
 
 async def test_amenities_are_grouped(client: AsyncClient) -> None:

@@ -123,6 +123,7 @@
     "when": "کی",
     "wherePlaceholder": "نام شهر",
     "noCities": "شهری با این نام پیدا نشد.",
+    "popularCities": "مقصدهای پرطرفدار",
     "guests": "مهمان‌ها",
     "guestsSummary": "{count, plural, one {# مهمان} other {# مهمان}}",
     "adults": "بزرگسال",

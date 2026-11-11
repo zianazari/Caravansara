@@ -9,7 +9,7 @@ async def list_countries(session: AsyncSession) -> list[Country]:
 
 
 async def search_cities(
-    session: AsyncSession, q: str | None, country_code: str | None, limit: int
+    session: AsyncSession, q: str | None, country_code: str | None, limit: int | None
 ) -> list[tuple[City, Country]]:
     query = select(City, Country).join(Country, Country.id == City.country_id)
     if q:
@@ -17,7 +17,9 @@ async def search_cities(
         query = query.where(City.name.ilike(f"{escaped}%", escape="\\"))
     if country_code:
         query = query.where(Country.code == country_code.upper())
-    query = query.order_by(City.name).limit(limit)
+    query = query.order_by(City.name)
+    if limit is not None:
+        query = query.limit(limit)
     return [(row[0], row[1]) for row in (await session.execute(query)).all()]
 
 

@@ -90,9 +90,16 @@ async def test_measures_every_query_and_changes_nothing(
 ) -> None:
     await factory.listing()
     before = await sql(engine, "SELECT count(*) FROM bookings")
-    report = await measure.measure(
-        prepared, database=database_name(prepared.database_url), catalog_dir=good_catalog(tmp_path / "c"), runs=3
-    )
+    target = database_name(prepared.database_url)
+    # With one row, and once autovacuum has analysed the table, the planner rightly prefers a Seq Scan,
+    # so whether the index shows up depended on timing (it failed once in CI). This test checks that index
+    # names are read from the plan, so it turns sequential scans off for its own test database while measuring:
+    # measure opens new connections, which take the database setting.
+    await sql(engine, f'ALTER DATABASE "{target}" SET enable_seqscan = off')
+    try:
+        report = await measure.measure(prepared, database=target, catalog_dir=good_catalog(tmp_path / "c"), runs=3)
+    finally:
+        await sql(engine, f'ALTER DATABASE "{target}" RESET enable_seqscan')
 
     assert [r.name for r in report.results] == ["listing_by_id", "add_booking"]
     for r in report.results:

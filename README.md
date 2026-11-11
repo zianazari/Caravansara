@@ -5,8 +5,8 @@
 <p align="center">
   <a href="https://github.com/zianazari/Caravansara/actions/workflows/ci.yml"><img src="https://github.com/zianazari/Caravansara/actions/workflows/ci.yml/badge.svg" alt="CI"></a>
   <img src="https://img.shields.io/badge/tests-397%20%C2%B7%2097.3%25%20coverage-b5651d" alt="397 backend tests, 97.3% coverage">
-  <img src="https://img.shields.io/badge/web-421%20Vitest%20tests-6E9F18" alt="421 Vitest tests for the web site">
-  <img src="https://img.shields.io/badge/e2e-117%20Playwright%20tests-2EAD33" alt="117 Playwright tests">
+  <img src="https://img.shields.io/badge/web-432%20Vitest%20tests-6E9F18" alt="432 Vitest tests for the web site">
+  <img src="https://img.shields.io/badge/e2e-120%20Playwright%20tests-2EAD33" alt="120 Playwright tests">
 </p>
 
 A *caravansara* (کاروانسرا) was a roadside inn on the Silk Road: travellers arrived at dusk, took a room for the night and moved on at dawn. **Caravansara** is the same idea for today: an Airbnb-like site where guests find a place, hold it, pay, save favourites and leave a review, and hosts list their homes.
@@ -175,7 +175,7 @@ Needs Docker.
 
 ```bash
 docker compose up --build                               # db, MinIO, migrations, API, worker, web site
-docker compose run --rm migrate caravansara seed-demo   # optional, empty database only: 790 listings in 9 cities, with photos
+docker compose run --rm migrate caravansara seed-demo   # optional, empty database only: 800 listings in 9 cities, with photos
 docker compose exec -e CARAVANSARA_ADMIN_PASSWORD=… api caravansara create-admin --email you@example.com --name "You"   # an admin to review listings
 docker compose run --rm migrate caravansara seed-bulk   # optional: 100,000 listings in their own database, for measuring
 ```
@@ -273,7 +273,7 @@ The same description is committed as [`backend/openapi.json`](backend/openapi.js
 ```
 frontend/    Next.js web site for guests and hosts, Persian and English, Vitest tests  → frontend/README.md
 backend/     FastAPI app, Alembic migrations, tests  → backend/README.md
-e2e/         Playwright tests against the running stack (116 tests)  → e2e/README.md
+e2e/         Playwright tests against the running stack (120 tests)  → e2e/README.md
 postman/     Postman collection of all endpoints, with saved ids and tokens
 observability/  Alloy, Loki, Tempo, Prometheus (alerts + rule tests), Grafana dashboard  → observability/README.md
 .specify/    GitHub Spec Kit: constitution, templates, scripts (commands in .claude/skills/)

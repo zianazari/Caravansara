@@ -94,7 +94,7 @@
  * The pointed caravansara arch, the site's recurring shape (FR-003). A mask, not clip-path: url(#arch):
  * that needs an <svg><defs> on every page and Safari does not always apply it to HTML elements; a data: mask
  * stretches with the element and adds nothing to the DOM. The CSP already allows data: images (research R3).
- * .arch is the tall doorway (logo, hero, category icons, bottom bar). Photos are plain rounded rectangles since
+ * .arch is the tall doorway (hero, category icons, bottom bar; the logo is drawn in lines since feature 027). Photos are plain rounded rectangles since
  * feature 017 (the lower photo arch is gone). The shape is symmetric, so it does not flip in LTR.
  */
 @layer components {
@@ -107,19 +107,6 @@
   .arch {
     -webkit-mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1 1' preserveAspectRatio='none'%3E%3Cpath d='M0,1 V0.36 C0,0.17 0.28,0.07 0.5,0 C0.72,0.07 1,0.17 1,0.36 V1 Z'/%3E%3C/svg%3E");
     mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1 1' preserveAspectRatio='none'%3E%3Cpath d='M0,1 V0.36 C0,0.17 0.28,0.07 0.5,0 C0.72,0.07 1,0.17 1,0.36 V1 Z'/%3E%3C/svg%3E");
-  }
-  /* The hero lamps glow only when the visitor has not asked for less motion (FR-009). */
-  .hero-glow {
-    animation: hero-glow 4s ease-in-out infinite alternate;
-  }
-}
-
-@keyframes hero-glow {
-  from {
-    opacity: 0.45;
-  }
-  to {
-    opacity: 0.95;
   }
 }
 
