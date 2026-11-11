@@ -9,6 +9,8 @@ import { HeroJourney } from "./HeroJourney";
  *
  * The title stays only for screen readers and search engines (sr-only): a page needs its main heading, and
  * "no text" was about what is seen. The strip sits above the search pill (z-30), which scrolls under it.
+ * Since 041d (owner's request) it is daytime in the page's own background colour; a thin border and a soft
+ * shadow keep it apart from the content scrolling under it.
  */
 export function Hero({ className }: { className?: string }) {
   const t = useTranslations("home");
@@ -16,7 +18,7 @@ export function Hero({ className }: { className?: string }) {
     <section
       aria-labelledby="hero-title"
       className={cn(
-        "sticky top-16 z-30 h-32 overflow-hidden rounded-3xl bg-night shadow-lg shadow-foreground/10 md:h-44",
+        "sticky top-16 z-30 h-32 overflow-hidden rounded-3xl border bg-background shadow-lg shadow-foreground/10 md:h-44",
         className,
       )}
     >

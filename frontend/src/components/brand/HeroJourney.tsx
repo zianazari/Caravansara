@@ -19,7 +19,8 @@ const STILL = (STOPS.indexOf("caravansara") + 0.75) / STOPS.length;
  * page (041c), and the trip follows the scroll of the whole page; scrolling up drives the car back. The strip
  * has no text (041c): the places are known by their shapes, and the one being visited lights up. The road is
  * longer than the view, so the view follows the car like a camera, and the far hills move slower for depth.
- * While nobody scrolls, the car idles with a slight bob (CSS). On the Persian site the road runs right to left.
+ * While nobody scrolls, the car idles with a slight bob (CSS). It is daytime since 041d: a sun and drifting
+ * clouds over light sand hills, on the page's own background. On the Persian site the road runs right to left.
  *
  * Plain SVG in the theme's colours, sharp at any size. Scroll is read once per frame with
  * requestAnimationFrame and the car, the world and the hills are moved by setting SVG attributes directly, so
@@ -111,9 +112,21 @@ export function HeroJourney() {
         </clipPath>
       </defs>
 
-      <g className="fill-gold">
-        {[60, 210, 330, 470, 640, 760, 880].map((x, i) => (
-          <circle key={x} cx={x} cy={30 + (i % 3) * 18} r={1.6} className="hero-star" />
+      {/* Daytime (041d): a sun and a few clouds that drift slowly, in the view itself, not the moving world. */}
+      <circle cx={860} cy={58} r={24} className="fill-amber opacity-80" />
+      <g className="fill-card">
+        {[
+          { x: 180, y: 46, s: 1 },
+          { x: 470, y: 30, s: 0.8 },
+          { x: 690, y: 70, s: 0.65 },
+        ].map((c) => (
+          <g key={c.x} transform={`translate(${c.x} ${c.y}) scale(${c.s})`}>
+            <g className="hero-cloud">
+              <ellipse cx={0} cy={0} rx={34} ry={12} />
+              <ellipse cx={-16} cy={-7} rx={16} ry={11} />
+              <ellipse cx={12} cy={-10} rx={20} ry={14} />
+            </g>
+          </g>
         ))}
       </g>
 
@@ -121,7 +134,7 @@ export function HeroJourney() {
         <g ref={far}>
           <path
             d={`M-600 190 ${Array.from({ length: 14 }, (_, i) => `L${i * 420 - 300} ${i % 2 ? 128 : 160}`).join(" ")} L${WORLD + 1200} 150 L${WORLD + 1200} 190Z`}
-            className="fill-foreground opacity-60"
+            className="fill-sand-strong opacity-50"
           />
         </g>
 
