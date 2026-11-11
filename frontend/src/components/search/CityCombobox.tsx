@@ -71,6 +71,10 @@ export function CityCombobox({
   const t = useTranslations();
   const locale = useLocale();
   const input = useRef<HTMLInputElement>(null);
+  // The list closes a moment after the box loses focus, so a click on an item lands first. The timer is
+  // cleared when the field goes away, so it never updates a field that is no longer on the page.
+  const closing = useRef<ReturnType<typeof setTimeout>>(undefined);
+  useEffect(() => () => clearTimeout(closing.current), []);
   const [text, setText] = useState(value?.label ?? "");
   const [query, setQuery] = useState("");
   const [open, setOpen] = useState(false);
@@ -151,7 +155,10 @@ export function CityCombobox({
             if (value) onChange(undefined);
           }}
           onFocus={() => setOpen(true)}
-          onBlur={() => setTimeout(() => setOpen(false), 150)}
+          onBlur={() => {
+            clearTimeout(closing.current);
+            closing.current = setTimeout(() => setOpen(false), 150);
+          }}
           onKeyDown={(event) => {
             if (event.key === "Escape") setOpen(false);
             else if (event.key === "ArrowDown") setOpen(true);
