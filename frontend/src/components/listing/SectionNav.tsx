@@ -47,11 +47,12 @@ export function SectionNav() {
     <nav
       aria-label={t("sections")}
       className={cn(
-        "sticky top-[60px] z-30 -mx-4 hidden border-b bg-background/95 px-4 backdrop-blur transition-[opacity,transform] duration-300 md:block",
+        // Fixed, not sticky: a hidden bar takes no room, so it leaves no gap under the photos (feature 034).
+        "fixed inset-x-0 top-[60px] z-30 hidden border-b bg-background/95 backdrop-blur transition-[opacity,transform] duration-300 md:block",
         shown ? "opacity-100" : "pointer-events-none -translate-y-2 opacity-0",
       )}
     >
-      <ul className="flex gap-6">
+      <ul className="mx-auto flex max-w-[calc(72rem+3rem)] gap-6 px-6">
         {SECTIONS.map(({ id, key }) => (
           <li key={id}>
             <a

@@ -84,9 +84,11 @@ export default async function ListingPage({ params }: Props) {
   ];
 
   return (
-    // data-wide: up to 1920 px with small margins, like the home page (owner's request, feature 019).
+    // Feature 034 (owner's request): a narrower column with wider margins, so lines and sections do not
+    // stretch across a wide screen; 1152 px at most, centred, about what booking sites use for a room page.
+    // This undoes 019's full width for this page only; the lists (home, search) stay wide.
     // Feature 032: the sections and their order follow a room page on a booking site (owner's request).
-    <article className="grid gap-6" data-wide>
+    <article className="mx-auto grid w-full max-w-6xl gap-6">
       <header className="flex flex-wrap items-center justify-between gap-3">
         <h1 className="text-2xl font-bold md:text-3xl">{listing.title}</h1>
         <div className="flex items-center gap-1">
