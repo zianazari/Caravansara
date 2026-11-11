@@ -6,6 +6,7 @@ import {
   formatDate,
   formatDay,
   formatMonth,
+  isWeeklyHoliday,
   jalaliToIso,
   monthGrid,
   monthOf,
@@ -85,5 +86,13 @@ describe("calendar", () => {
     expect(formatMonth("gregorian", 2026, 3, "en")).toBe("March 2026");
     expect(formatDay("2026-03-21", "fa")).toBe("۱");
     expect(formatDay("2026-03-21", "en")).toBe("21");
+  });
+
+  it("marks Friday on the Persian calendar and Sunday on the Gregorian one (feature 038)", () => {
+    // 2026-03-21 (1 Farvardin 1405) is a Saturday.
+    expect(isWeeklyHoliday("jalali", "2026-03-27")).toBe(true); // Friday
+    expect(isWeeklyHoliday("jalali", "2026-03-22")).toBe(false); // Sunday
+    expect(isWeeklyHoliday("gregorian", "2026-03-22")).toBe(true); // Sunday
+    expect(isWeeklyHoliday("gregorian", "2026-03-27")).toBe(false); // Friday
   });
 });

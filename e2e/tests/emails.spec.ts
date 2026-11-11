@@ -9,10 +9,19 @@ const MAILPIT = process.env.MAILPIT_URL ?? "http://localhost:8025";
 
 type Message = { ID: string; To: { Address: string }[]; Subject: string };
 
-async function messageTo(request: Parameters<typeof register>[0], address: string): Promise<Message | undefined> {
+/**
+ * The message with this subject sent to this address. Found by subject, not "the newest": a host gets the
+ * listing's approval email and later the booking email, and the worker may send them in either order, so the
+ * newest message was sometimes the approval (the cause of a flaky booking-email test, fixed in 042).
+ */
+async function messageTo(
+  request: Parameters<typeof register>[0],
+  address: string,
+  subject: string,
+): Promise<Message | undefined> {
   const res = await request.get(`${MAILPIT}/api/v1/search`, { params: { query: `to:"${address}"` } });
   expect(res.status()).toBe(200);
-  return ((await res.json()) as { messages: Message[] }).messages[0];
+  return ((await res.json()) as { messages: Message[] }).messages.find((m) => m.Subject === subject);
 }
 
 test.describe("Review-result emails", () => {
@@ -21,9 +30,9 @@ test.describe("Review-result emails", () => {
   test("a euro listing's host gets the approval in English only", async ({ request }) => {
     const host = await register(request, "mailhost");
     await createListing(request, host, { title: "E2E email courtyard" }); // EUR, and approves it
-    await expect.poll(() => messageTo(request, host.email), { timeout: 30_000 }).toBeTruthy();
-    const message = (await messageTo(request, host.email))!;
-    expect(message.Subject).toBe("Your listing is approved");
+    const subject = "Your listing is approved";
+    await expect.poll(() => messageTo(request, host.email, subject), { timeout: 30_000 }).toBeTruthy();
+    const message = (await messageTo(request, host.email, subject))!;
     const body = await (await request.get(`${MAILPIT}/api/v1/message/${message.ID}`)).json();
     expect(body.Text).toContain("E2E email courtyard");
     expect(body.Text).toMatch(/\/en\/host\/listings\/\d+/);
@@ -46,10 +55,10 @@ test.describe("Review-result emails", () => {
       data: { review_version: detail.review_version, reason: "Please add a photo of the bathroom." },
     });
     expect(rejected.status()).toBe(200);
-    await expect.poll(() => messageTo(request, host.email), { timeout: 30_000 }).toBeTruthy();
-    const message = (await messageTo(request, host.email))!;
+    const subject = "آگهی شما رد شد";
+    await expect.poll(() => messageTo(request, host.email, subject), { timeout: 30_000 }).toBeTruthy();
+    const message = (await messageTo(request, host.email, subject))!;
     const body = await (await request.get(`${MAILPIT}/api/v1/message/${message.ID}`)).json();
-    expect(message.Subject).toBe("آگهی شما رد شد");
     expect(body.Text).toContain("دلیل: Please add a photo of the bathroom.");
     expect(body.Text).toMatch(/\/fa\/host\/listings\/\d+/);
     expect(body.Text).not.toContain("Reason");
@@ -62,14 +71,16 @@ test.describe("Review-result emails", () => {
     const booking = await (await reserve(request, guest, listing.id, day(90), day(92))).json();
     expect((await request.post(`${API}/bookings/${booking.id}/pay`, { headers: auth(guest) })).status()).toBe(200);
 
-    await expect.poll(() => messageTo(request, guest.email), { timeout: 30_000 }).toBeTruthy();
-    const toGuest = (await messageTo(request, guest.email))!;
-    expect(toGuest.Subject).toBe("Your booking is confirmed");
+    const toGuestSubject = "Your booking is confirmed";
+    await expect.poll(() => messageTo(request, guest.email, toGuestSubject), { timeout: 30_000 }).toBeTruthy();
+    const toGuest = (await messageTo(request, guest.email, toGuestSubject))!;
     const text = (await (await request.get(`${MAILPIT}/api/v1/message/${toGuest.ID}`)).json()).Text as string;
     expect(text).toContain(`/en/trips/${booking.id}`);
     expect(text).not.toContain("Herengracht"); // the exact address stays on the trip page
 
-    await expect.poll(() => messageTo(request, host.email), { timeout: 30_000 }).toBeTruthy();
-    expect((await messageTo(request, host.email))!.Subject).toBe("New booking for your listing");
+    // The host also got the listing's approval email; the booking email is found by its own subject.
+    await expect
+      .poll(() => messageTo(request, host.email, "New booking for your listing"), { timeout: 30_000 })
+      .toBeTruthy();
   });
 });
