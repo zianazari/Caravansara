@@ -36,4 +36,5 @@ SELECT (SELECT id  FROM city WHERE name = 'London')    AS london_id,
        CURRENT_DATE + 38                               AS check_out,
        CURRENT_DATE + 49                               AS check_out_two_weeks, -- past the 7 nights the radius search collects for
        now()                                           AS now,
-       now() - interval '1 hour'                       AS hour_ago
+       now() - interval '1 hour'                       AS hour_ago,
+       now() - interval '90 days'                      AS ninety_days_ago

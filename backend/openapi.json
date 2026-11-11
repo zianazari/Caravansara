@@ -514,7 +514,7 @@
           "Catalog"
         ],
         "summary": "Cities (autocomplete)",
-        "description": "Cities whose name starts with `q`, optionally within one country.",
+        "description": "Cities whose name starts with `q`, optionally within one country. `sort=popular` puts the cities with the most bookings in the last 90 days first (counts refreshed every 10 minutes).",
         "operationId": "list_cities_api_v1_cities_get",
         "parameters": [
           {
@@ -573,6 +573,22 @@
               "default": 10,
               "title": "Limit"
             }
+          },
+          {
+            "name": "sort",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "enum": [
+                "name",
+                "popular"
+              ],
+              "type": "string",
+              "description": "`name` (A to Z) or `popular` (most booked first).",
+              "default": "name",
+              "title": "Sort"
+            },
+            "description": "`name` (A to Z) or `popular` (most booked first)."
           }
         ],
         "responses": {

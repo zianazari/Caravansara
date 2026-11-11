@@ -129,6 +129,7 @@ M = {
   "when": ("کی", "When"),
   "wherePlaceholder": ("نام شهر", "City name"),
   "noCities": ("شهری با این نام پیدا نشد.", "No city with this name."),
+  "popularCities": ("مقصدهای پرطرفدار", "Popular destinations"),  # 030: an empty city field suggests them
   "guests": ("مهمان‌ها", "Guests"),
   "guestsSummary": ("{count, plural, one {# مهمان} other {# مهمان}}", "{count, plural, one {# guest} other {# guests}}"),
   "adults": ("بزرگسال", "Adults"),
