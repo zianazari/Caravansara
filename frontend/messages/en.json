@@ -123,6 +123,7 @@
     "when": "When",
     "wherePlaceholder": "City name",
     "noCities": "No city with this name.",
+    "popularCities": "Popular destinations",
     "guests": "Guests",
     "guestsSummary": "{count, plural, one {# guest} other {# guests}}",
     "adults": "Adults",

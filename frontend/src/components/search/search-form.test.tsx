@@ -74,7 +74,58 @@ describe("CityCombobox (US1/AC1)", () => {
     renderIn("fa", <CityCombobox onChange={vi.fn()} />);
     await userEvent.type(screen.getByRole("combobox"), "قزوین");
     expect(await screen.findByText("شهری با این نام پیدا نشد.")).toBeInTheDocument();
-    expect(GET).not.toHaveBeenCalled();
+    // Only the popular cities of the empty field were asked for (feature 030), no name search.
+    const asked = GET.mock.calls.map(
+      ([, o]) => (o as { params: { query: Record<string, unknown> } }).params.query,
+    );
+    expect(asked.every((query) => query.sort === "popular" && !("q" in query))).toBe(true);
+  });
+
+  it("suggests popular cities in an empty field, the language's own country first (feature 030)", async () => {
+    const london = {
+      ...tehran,
+      id: 3,
+      name: "London",
+      country: { id: 6, code: "GB", name: "United Kingdom" },
+    };
+    GET.mockImplementation((_path: string, o: { params: { query: { country?: string } } }) =>
+      Promise.resolve({ data: o.params.query.country === "IR" ? [shiraz, tehran] : [london, shiraz] }),
+    );
+    const onChange = vi.fn();
+    renderIn("fa", <CityCombobox onChange={onChange} />);
+    await userEvent.click(screen.getByRole("combobox"));
+    const list = await screen.findByRole("listbox", { name: "مقصدهای پرطرفدار" });
+    expect(
+      within(list)
+        .getAllByRole("option")
+        .map((o) => o.textContent),
+    ).toEqual(["شیرازایران", "تهرانایران", "لندنبریتانیا"]);
+    expect(GET).toHaveBeenCalledWith("/api/v1/cities", {
+      params: { query: { sort: "popular", limit: 6, country: "IR" } },
+    });
+    await userEvent.keyboard("{ArrowDown}{ArrowDown}{Enter}");
+    expect(onChange).toHaveBeenLastCalledWith({ id: 3, label: "لندن", country: "GB" });
+  });
+
+  it("suggests the most booked cities on the English site, and hides them once typing starts", async () => {
+    const london = {
+      ...tehran,
+      id: 3,
+      name: "London",
+      country: { id: 6, code: "GB", name: "United Kingdom" },
+    };
+    GET.mockImplementation((_path: string, o: { params: { query: { q?: string } } }) =>
+      Promise.resolve({ data: o.params.query.q ? [tehran] : [london] }),
+    );
+    renderIn("en", <CityCombobox onChange={vi.fn()} />);
+    const box = screen.getByRole("combobox");
+    await userEvent.click(box);
+    expect(await screen.findByRole("option", { name: /London/ })).toBeInTheDocument();
+    expect(GET).toHaveBeenCalledWith("/api/v1/cities", { params: { query: { sort: "popular", limit: 6 } } });
+    expect(GET).toHaveBeenCalledTimes(1); // no country of its own for English
+    await userEvent.type(box, "Te");
+    expect(await screen.findByRole("option", { name: /Tehran/ })).toBeInTheDocument();
+    expect(screen.queryByRole("option", { name: /London/ })).not.toBeInTheDocument();
   });
 
   it("says so when no city matches", async () => {

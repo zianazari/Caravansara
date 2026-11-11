@@ -624,6 +624,17 @@
       },
       "target_ms": 300,
       "note": "from the code (the worker and many-row writes were not in the captured traffic)"
+    },
+    {
+      "name": "popular_cities",
+      "source": "caravansara.search.repository:bookings_per_city",
+      "endpoint": "GET /cities?sort=popular",
+      "kind": "read",
+      "params": {
+        "since": "@ninety_days_ago"
+      },
+      "target_ms": 600,
+      "note": "feature 030: counts every booking of the last 90 days, so it is kept 10 minutes per API process and runs at most that often"
     }
   ],
   "excluded": [

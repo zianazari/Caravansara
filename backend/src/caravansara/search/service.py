@@ -1,12 +1,14 @@
 """Where / When / Who search over active listings, by city or by centre and radius."""
 
-from datetime import date
+import time
+from datetime import date, timedelta
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from caravansara.core.config import Settings
 from caravansara.core.errors import Unprocessable
 from caravansara.core.storage import Storage
+from caravansara.core.timeutil import utcnow
 from caravansara.search import repository as repo
 from caravansara.search.repository import Criteria
 from caravansara.search.schemas import AmenityCount, FilterCounts, SearchPage, SearchPin, SearchResult
@@ -93,3 +95,27 @@ async def filter_counts(session: AsyncSession, criteria: Criteria) -> FilterCoun
             AmenityCount(id=r["id"], name=r["name"], category=r["category"], listings=r["listings"]) for r in rows
         ],
     )
+
+
+# Popular cities (feature 030): bookings made in the last 90 days, so the order follows what guests book now.
+# Counting reads every recent booking (median 166 ms on the 3-million-booking bulk data, `measure-queries`
+# popular_cities; an index does not help when a fifth of the rows are recent), and the field asks on every
+# focus, so each API process keeps the counts for 10 minutes. A city's place
+# may lag by that much, which does not matter for suggestions.
+POPULAR_WINDOW = timedelta(days=90)
+POPULAR_CACHE_SECONDS = 600
+_popular: tuple[float, dict[int, int]] | None = None
+
+
+def forget_popularity() -> None:
+    """Drop the kept counts, so the next request counts again (tests)."""
+    global _popular
+    _popular = None
+
+
+async def bookings_per_city(session: AsyncSession) -> dict[int, int]:
+    """Recent bookings per city id, for GET /cities?sort=popular."""
+    global _popular
+    if _popular is None or time.monotonic() - _popular[0] > POPULAR_CACHE_SECONDS:
+        _popular = (time.monotonic(), await repo.bookings_per_city(session, utcnow() - POPULAR_WINDOW))
+    return _popular[1]

@@ -21,8 +21,20 @@ def _city_out(city: City, country: Country) -> CityOut:
     )
 
 
-async def search_cities(session: AsyncSession, q: str | None, country_code: str | None, limit: int) -> list[CityOut]:
-    return [_city_out(c, co) for c, co in await repo.search_cities(session, q, country_code, limit)]
+async def search_cities(
+    session: AsyncSession,
+    q: str | None,
+    country_code: str | None,
+    limit: int,
+    bookings_per_city: dict[int, int] | None = None,
+) -> list[CityOut]:
+    """By name; with ``bookings_per_city`` (feature 030), the most booked first and then by name."""
+    if bookings_per_city is None:
+        return [_city_out(c, co) for c, co in await repo.search_cities(session, q, country_code, limit)]
+    # Every matching city is read and sorted here, which is fine for a catalog of cities.
+    rows = await repo.search_cities(session, q, country_code, None)
+    rows.sort(key=lambda row: -bookings_per_city.get(row[0].id, 0))  # stable: equal counts keep the name order
+    return [_city_out(c, co) for c, co in rows[:limit]]
 
 
 async def get_city(session: AsyncSession, city_id: int) -> CityOut | None:

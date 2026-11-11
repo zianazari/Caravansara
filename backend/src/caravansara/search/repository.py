@@ -6,7 +6,7 @@ Only public listings are found: active and approved by an admin (specs/backend (
 """
 
 from dataclasses import dataclass, field
-from datetime import date
+from datetime import date, datetime
 from typing import Any
 
 from sqlalchemy import text
@@ -178,3 +178,13 @@ async def amenity_counts(session: AsyncSession, c: Criteria) -> tuple[int, list[
     total = int((await session.execute(text(total_sql), params)).scalar_one())
     rows = [dict(r) for r in (await session.execute(text(counts_sql), params)).mappings()]
     return total, rows
+
+
+async def bookings_per_city(session: AsyncSession, since: datetime) -> dict[int, int]:
+    """Confirmed and completed bookings made since ``since`` on public listings, per city (feature 030)."""
+    sql = """SELECT l.city_id, count(*)
+             FROM   bookings b JOIN listings l ON l.id = b.listing_id
+             WHERE  b.status IN ('confirmed', 'completed') AND b.created_at >= :since
+               AND  l.is_active AND l.review_status = 'approved'
+             GROUP  BY l.city_id"""
+    return {int(city): int(count) for city, count in (await session.execute(text(sql), {"since": since})).all()}
