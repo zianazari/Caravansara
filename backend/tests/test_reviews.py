@@ -149,3 +149,48 @@ async def test_reviews_of_a_hidden_listing_follow_its_page(
         r = await client.get(f"/listings/{lid}/reviews", headers=viewer.auth)
         assert r.status_code == 200
         assert r.json()["total"] == 1
+
+
+async def test_review_summary_counts_stars_and_averages_each_category(
+    client: AsyncClient, db: AsyncEngine, factory: Factory, stay: tuple[User, User, int, int]
+) -> None:
+    """Feature 032: the listing page's review block shows every review's stars and category averages,
+    not just the first page; a category nobody rated has no average."""
+    host, guest, lid, booking = stay
+    empty = (await client.get(f"/listings/{lid}/reviews/summary")).json()
+    assert empty["total"] == 0
+    assert [s["count"] for s in empty["stars"]] == [0, 0, 0, 0, 0]
+    assert empty["cleanliness"] is None
+
+    first = {"rating": 5, "cleanliness_rating": 5, "location_rating": 4, "comment": "Lovely."}
+    assert (await client.post(f"/bookings/{booking}/review", json=first, headers=guest.auth)).status_code == 201
+    other = await register(client, "other")
+    today = date.today()
+    second_booking = (
+        await factory.booking(
+            listing=lid,
+            guest=other.id,
+            check_in=today - timedelta(days=9),
+            check_out=today - timedelta(days=7),
+            status="completed",
+        )
+    ).id
+    second = {"rating": 3, "cleanliness_rating": 4, "comment": "Fine."}
+    assert (await client.post(f"/bookings/{second_booking}/review", json=second, headers=other.auth)).status_code == 201
+
+    summary = (await client.get(f"/listings/{lid}/reviews/summary")).json()
+    assert summary["total"] == 2
+    assert summary["stars"] == [
+        {"stars": 5, "count": 1},
+        {"stars": 4, "count": 0},
+        {"stars": 3, "count": 1},
+        {"stars": 2, "count": 0},
+        {"stars": 1, "count": 0},
+    ]
+    assert summary["cleanliness"] == "4.50"
+    assert summary["location"] == "4.00"  # only one guest rated it
+    assert summary["accuracy"] is None
+
+    await sql(db, "UPDATE listings SET is_active = false WHERE id = :id", id=lid)
+    assert (await client.get(f"/listings/{lid}/reviews/summary")).status_code == 404
+    assert (await client.get(f"/listings/{lid}/reviews/summary", headers=host.auth)).status_code == 200

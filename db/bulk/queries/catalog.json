@@ -435,6 +435,17 @@
       "target_ms": 50
     },
     {
+      "name": "review_summary",
+      "source": "caravansara.reviews.repository:review_summary",
+      "endpoint": "GET /listings/{id}/reviews/summary",
+      "kind": "read",
+      "params": {
+        "listing_id": "@reviewed_listing"
+      },
+      "target_ms": 50,
+      "note": "stars and category averages over every review of the listing (feature 032)"
+    },
+    {
       "name": "reviews_page_1",
       "source": "caravansara.reviews.repository:listing_reviews",
       "endpoint": "GET /listings/{id}/reviews",

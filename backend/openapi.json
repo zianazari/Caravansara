@@ -2933,6 +2933,74 @@
         }
       }
     },
+    "/api/v1/listings/{listing_id}/reviews/summary": {
+      "get": {
+        "tags": [
+          "Reviews"
+        ],
+        "summary": "Review summary of a listing",
+        "description": "All of the listing's reviews in numbers: how many gave each star (5 down to 1) and the average of each category over the reviews that rated it; a category nobody rated is null. The same access rule as the reviews themselves.",
+        "operationId": "review_summary_api_v1_listings__listing_id__reviews_summary_get",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "listing_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Listing Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ReviewSummary"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, invalid or expired access token",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/admin/auth/login": {
       "post": {
         "tags": [
@@ -6099,6 +6167,101 @@
         ],
         "title": "ReviewStatus"
       },
+      "ReviewSummary": {
+        "properties": {
+          "total": {
+            "type": "integer",
+            "title": "Total"
+          },
+          "stars": {
+            "items": {
+              "$ref": "#/components/schemas/StarCount"
+            },
+            "type": "array",
+            "title": "Stars",
+            "description": "Five entries, from 5 stars down to 1."
+          },
+          "cleanliness": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Cleanliness"
+          },
+          "accuracy": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Accuracy"
+          },
+          "check_in": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Check In"
+          },
+          "communication": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Communication"
+          },
+          "location": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Location"
+          },
+          "value": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Value"
+          }
+        },
+        "type": "object",
+        "required": [
+          "total",
+          "stars",
+          "cleanliness",
+          "accuracy",
+          "check_in",
+          "communication",
+          "location",
+          "value"
+        ],
+        "title": "ReviewSummary",
+        "description": "All of a listing's reviews in numbers (feature 032): how many gave each star, and the average of\neach category over the reviews that rated it (a category nobody rated is null)."
+      },
       "SearchPage": {
         "properties": {
           "items": {
@@ -6259,6 +6422,26 @@
           "cover_url"
         ],
         "title": "SearchResult"
+      },
+      "StarCount": {
+        "properties": {
+          "stars": {
+            "type": "integer",
+            "maximum": 5.0,
+            "minimum": 1.0,
+            "title": "Stars"
+          },
+          "count": {
+            "type": "integer",
+            "title": "Count"
+          }
+        },
+        "type": "object",
+        "required": [
+          "stars",
+          "count"
+        ],
+        "title": "StarCount"
       },
       "TokensOut": {
         "properties": {

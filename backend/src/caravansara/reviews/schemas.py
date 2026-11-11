@@ -1,4 +1,5 @@
 from datetime import datetime
+from decimal import Decimal
 from typing import Annotated
 
 from pydantic import BaseModel, ConfigDict, Field
@@ -57,3 +58,22 @@ class ReviewOut(BaseModel):
 class ReviewPage(BaseModel):
     items: list[ReviewOut]
     total: int
+
+
+class StarCount(BaseModel):
+    stars: int = Field(ge=1, le=5)
+    count: int
+
+
+class ReviewSummary(BaseModel):
+    """All of a listing's reviews in numbers (feature 032): how many gave each star, and the average of
+    each category over the reviews that rated it (a category nobody rated is null)."""
+
+    total: int
+    stars: list[StarCount] = Field(description="Five entries, from 5 stars down to 1.")
+    cleanliness: Decimal | None
+    accuracy: Decimal | None
+    check_in: Decimal | None
+    communication: Decimal | None
+    location: Decimal | None
+    value: Decimal | None
