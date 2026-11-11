@@ -4,6 +4,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { useTranslations } from "next-intl";
 import { useSearchParams } from "next/navigation";
 import { useState, type FormEvent } from "react";
+import { LogoMark } from "@/components/brand/Logo";
 import { Button } from "@/components/ui/button";
 import { Field } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
@@ -92,8 +93,8 @@ export function AuthForm({ mode }: { mode: Mode }) {
 
   return (
     <section className="mx-auto mt-4 grid w-full max-w-md gap-6 rounded-3xl border bg-card p-6 shadow-xl shadow-foreground/5 md:mt-8 md:p-8">
-      {/* 007: a small caravansara arch above the form, as on every page of the theme. */}
-      <span aria-hidden className="arch mx-auto -mb-2 block h-10 w-9 bg-linear-to-b from-amber to-copper" />
+      {/* The site's mark above the form (feature 036: the new logo everywhere). */}
+      <LogoMark className="mx-auto -mb-2 h-11 w-10" />
       <h1 className="text-center text-2xl font-bold">
         {t(mode === "login" ? "auth.loginTitle" : "auth.registerTitle")}
       </h1>

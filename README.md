@@ -5,7 +5,7 @@
 <p align="center">
   <a href="https://github.com/zianazari/Caravansara/actions/workflows/ci.yml"><img src="https://github.com/zianazari/Caravansara/actions/workflows/ci.yml/badge.svg" alt="CI"></a>
   <img src="https://img.shields.io/badge/tests-399%20%C2%B7%2097.3%25%20coverage-b5651d" alt="399 backend tests, 97.3% coverage">
-  <img src="https://img.shields.io/badge/web-432%20Vitest%20tests-6E9F18" alt="432 Vitest tests for the web site">
+  <img src="https://img.shields.io/badge/web-436%20Vitest%20tests-6E9F18" alt="436 Vitest tests for the web site">
   <img src="https://img.shields.io/badge/e2e-119%20Playwright%20tests-2EAD33" alt="119 Playwright tests">
 </p>
 
