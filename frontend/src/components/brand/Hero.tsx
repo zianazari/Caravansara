@@ -9,8 +9,9 @@ import { HeroJourney } from "./HeroJourney";
  *
  * The title stays only for screen readers and search engines (sr-only): a page needs its main heading, and
  * "no text" was about what is seen. The strip sits above the search pill (z-30), which scrolls under it.
- * Since 041d (owner's request) it is daytime in the page's own background colour; a thin border and a soft
- * shadow keep it apart from the content scrolling under it.
+ * Since 041d (owner's request) it is daytime in the page's own background colour. Since 044 (owner's request)
+ * it has no border or shadow, so the scene blends into the page; the opaque band keeps the content scrolling
+ * under it out of sight.
  */
 export function Hero({ className }: { className?: string }) {
   const t = useTranslations("home");
@@ -29,7 +30,7 @@ export function Hero({ className }: { className?: string }) {
     >
       <section
         aria-labelledby="hero-title"
-        className="relative h-32 overflow-hidden rounded-3xl border bg-background shadow-lg shadow-foreground/10 md:h-44"
+        className="relative h-32 overflow-hidden rounded-3xl bg-background md:h-44"
       >
         <h1 id="hero-title" className="sr-only">
           {t("heroTitle")}
