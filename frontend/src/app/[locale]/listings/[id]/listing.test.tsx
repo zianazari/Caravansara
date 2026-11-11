@@ -97,9 +97,31 @@ const reviews = {
   ],
 };
 
+// Feature 032: the page also loads the summary of every review.
+const summary = {
+  total: 2,
+  stars: [
+    { stars: 5, count: 1 },
+    { stars: 4, count: 1 },
+    { stars: 3, count: 0 },
+    { stars: 2, count: 0 },
+    { stars: 1, count: 0 },
+  ],
+  cleanliness: "4.50",
+  accuracy: null,
+  check_in: null,
+  communication: null,
+  location: "5.00",
+  value: null,
+};
+
 function answer() {
   GET.mockImplementation(async (path: string) =>
-    path.endsWith("/reviews") ? { data: reviews } : { data: listing },
+    path.endsWith("/reviews")
+      ? { data: reviews }
+      : path.endsWith("/summary")
+        ? { data: summary }
+        : { data: listing },
   );
 }
 
@@ -118,8 +140,12 @@ describe("listing page", () => {
     answer();
     await show("fa");
     expect(screen.getByRole("heading", { level: 1, name: "Garden flat in Tajrish" })).toBeInTheDocument();
-    expect(screen.getByText(/کل اقامتگاه · تهران/)).toBeInTheDocument();
-    expect(screen.getByText("۴ مهمان")).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "کل اقامتگاه در تهران، ایران" })).toBeInTheDocument();
+    expect(screen.getByText(/^۴ مهمان، ۲ اتاق خواب/)).toBeInTheDocument(); // the facts line under the type
+    // 032: highlights, the review summary, the area and things to know
+    expect(screen.getByRole("heading", { name: "نکته‌هایی که باید بدانید" })).toBeInTheDocument();
+    expect(screen.getByRole("region", { name: "نقشه‌ی محدوده‌ی تقریبی اقامتگاه" })).toBeInTheDocument();
+    expect(screen.getAllByText("تمیزی").length).toBeGreaterThan(1); // the summary and the review
     expect(screen.getByText("حداکثر ۱ حیوان خانگی")).toBeInTheDocument();
     expect(screen.getByText("وای‌فای")).toBeInTheDocument();
     expect(screen.getByText("ورود از ۱۵:۰۰ به وقت تهران")).toBeInTheDocument();
