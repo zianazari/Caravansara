@@ -4,7 +4,7 @@ import { getLocale, getTranslations, setRequestLocale } from "next-intl/server";
 import type { components } from "@/api/schema";
 import { serverApi } from "@/api/server";
 import { ResultCard } from "@/components/search/ResultCard";
-import { SearchControls } from "@/components/search/SearchControls";
+import { SearchControls, SearchFilters } from "@/components/search/SearchControls";
 import { CategoryBar } from "@/components/home/CategoryBar";
 import { SearchForm } from "@/components/search/SearchForm";
 import { Button } from "@/components/ui/button";
@@ -78,7 +78,7 @@ export default async function SearchPage({ params, searchParams }: Props) {
       />
       {/* specs/007-caravansara-theme, US3: a category sets this search's own filters (research R6). */}
       <Suspense>
-        <CategoryBar mode="search" />
+        <CategoryBar mode="search" filters={<SearchFilters state={state} />} />
       </Suspense>
       {problem ? (
         <p role="alert" className="rounded-lg border border-destructive p-4 text-destructive">

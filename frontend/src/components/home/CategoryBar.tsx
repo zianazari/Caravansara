@@ -18,7 +18,7 @@ import {
 } from "lucide-react";
 import { useLocale, useTranslations } from "next-intl";
 import { useSearchParams } from "next/navigation";
-import type { KeyboardEvent } from "react";
+import type { KeyboardEvent, ReactNode } from "react";
 import { api } from "@/api/client";
 import { Link, usePathname } from "@/i18n/navigation";
 import { cn } from "@/lib/cn";
@@ -50,8 +50,9 @@ export function useAmenityGroups() {
 }
 
 /**
- * The row of categories under the search (specs/007-caravansara-theme, US3, FR-014): each an icon in the
- * caravansara arch with its name, the active one copper and underlined. They are links, so the address, the
+ * The row of categories under the search (specs/007-caravansara-theme, US3, FR-014): each a line icon with its
+ * name, the active one copper and underlined (the arch behind the icons was dropped in feature 033), and at the
+ * end a filters button for more than one amenity at a time. They are links, so the address, the
  * back button and a shared link all keep the choice (?category=).
  *
  * On the home page a category only changes ?category=, and the city rows filter themselves: the home page has
@@ -59,7 +60,14 @@ export function useAmenityGroups() {
  * amenity, or pets) and starts again from the first page; if the filters panel later changes them, the row
  * shows "all" again, so there is never a category that does not match the results.
  */
-export function CategoryBar({ mode }: { mode: "home" | "search" }) {
+export function CategoryBar({
+  mode,
+  filters,
+}: {
+  mode: "home" | "search";
+  /** The filters button at the end of the row (feature 033), outside the scrolling part so it stays in view. */
+  filters?: ReactNode;
+}) {
   const t = useTranslations("category");
   const locale = useLocale();
   const pathname = usePathname();
@@ -117,41 +125,44 @@ export function CategoryBar({ mode }: { mode: "home" | "search" }) {
   return (
     // min-w-0: a grid item is as wide as its content by default, and this row scrolls sideways, so without it the
     // whole page would grow to the row's width on a phone (found by the browser test, SC-004).
-    <nav aria-label={t("label")} onKeyDown={onKeyDown} className="min-w-0 border-b">
-      {/* A shadcn/ui ScrollArea (feature 026): on a phone the row scrolls with a thin scroll bar. */}
-      <ScrollArea orientation="horizontal" viewportClassName="snap-x scroll-px-4" className="-mx-4 md:mx-0">
-        <ul className="flex gap-7 px-4 pb-1 md:justify-center md:px-0">
-          {offered.map((category) => {
-            const Icon = ICONS[category.icon] ?? LayoutGridIcon;
-            const on = category.key === active;
-            return (
-              <li key={category.key} className="snap-start">
-                <Link
-                  href={hrefFor(category.key)}
-                  aria-current={on ? "true" : undefined}
-                  className={cn(
-                    "group flex flex-col items-center gap-1.5 border-b-2 pt-1 pb-2.5 text-sm whitespace-nowrap transition-colors",
-                    on
-                      ? "border-primary font-bold text-foreground"
-                      : "border-transparent text-muted-foreground hover:border-border hover:text-foreground",
-                  )}
-                >
-                  <span
-                    aria-hidden
+    <div className="flex min-w-0 items-center gap-4 border-b">
+      <nav aria-label={t("label")} onKeyDown={onKeyDown} className="min-w-0 flex-1">
+        {/* A shadcn/ui ScrollArea (feature 026): on a phone the row scrolls with a thin scroll bar. */}
+        <ScrollArea orientation="horizontal" viewportClassName="snap-x scroll-px-4" className="-ms-4 md:ms-0">
+          <ul className="flex gap-7 px-4 pb-1 md:justify-center md:px-0">
+            {offered.map((category) => {
+              const Icon = ICONS[category.icon] ?? LayoutGridIcon;
+              const on = category.key === active;
+              return (
+                <li key={category.key} className="snap-start">
+                  <Link
+                    href={hrefFor(category.key)}
+                    aria-current={on ? "true" : undefined}
                     className={cn(
-                      "arch grid h-10 w-9 place-items-center transition-[transform,background-color] duration-300 ease-(--ease-soft) group-hover:-translate-y-1",
-                      on ? "bg-copper" : "bg-sand-strong group-hover:bg-copper",
+                      "group flex flex-col items-center gap-1.5 border-b-2 pt-1 pb-2.5 text-sm whitespace-nowrap transition-colors",
+                      on
+                        ? "border-primary font-bold text-foreground"
+                        : "border-transparent text-muted-foreground hover:border-border hover:text-foreground",
                     )}
                   >
-                    <Icon className="mt-2 size-4 text-on-dark" />
-                  </span>
-                  {t(category.key)}
-                </Link>
-              </li>
-            );
-          })}
-        </ul>
-      </ScrollArea>
-    </nav>
+                    {/* A plain line icon (feature 033): the arch behind each icon made the row heavy. */}
+                    <Icon
+                      aria-hidden
+                      strokeWidth={1.75}
+                      className={cn(
+                        "size-6 transition-[transform,color] duration-300 ease-(--ease-soft) group-hover:-translate-y-0.5",
+                        on ? "text-primary" : "text-muted-foreground group-hover:text-foreground",
+                      )}
+                    />
+                    {t(category.key)}
+                  </Link>
+                </li>
+              );
+            })}
+          </ul>
+        </ScrollArea>
+      </nav>
+      {filters ? <div className="shrink-0 pb-2">{filters}</div> : null}
+    </div>
   );
 }

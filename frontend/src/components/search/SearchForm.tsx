@@ -111,8 +111,9 @@ function SearchFields({
       className={cn(
         stacked
           ? "grid gap-4"
-          : // The pill: one rounded white bar; the fields lose their own borders and are split by sand lines.
-            "grid grid-cols-[2fr_2fr_1.5fr_auto] items-center gap-0 rounded-full border bg-card p-2 shadow-lg shadow-foreground/10 [&_input]:border-0 [&_input]:bg-transparent [&>div]:px-5 [&>div:not(:nth-last-child(2))]:border-e [&_button[aria-haspopup]]:border-0 [&_button[aria-haspopup]]:bg-transparent [&_button[aria-haspopup]]:shadow-none",
+          : // The pill: one rounded white bar; the fields lose their own borders and hover colours, and the
+            // sections are split by sand lines and light up under the pointer (.search-pill in globals.css, 033).
+            "search-pill grid grid-cols-[2fr_2fr_1.5fr_auto] items-center gap-0 rounded-full border p-2 shadow-lg shadow-foreground/10 [&_input]:border-0 [&_input]:bg-transparent [&_button[aria-haspopup]]:border-0 [&_button[aria-haspopup]]:bg-transparent [&_button[aria-haspopup]]:shadow-none [&_button[aria-haspopup]]:hover:bg-transparent [&_button[aria-haspopup]]:hover:shadow-none",
         className,
       )}
     >

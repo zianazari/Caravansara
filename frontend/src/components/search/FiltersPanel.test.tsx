@@ -22,7 +22,7 @@ describe("FiltersPanel (US1/AC3)", () => {
 
   it("shows grouped, translated amenities with the number of places for each", async () => {
     renderIn("fa", <FiltersPanel state={parseSearch({ city_id: "1", adults: "2" })} onApply={vi.fn()} />);
-    await userEvent.click(screen.getByRole("button", { name: /امکانات/ }));
+    await userEvent.click(screen.getByRole("button", { name: /فیلترها/ }));
     expect(await screen.findByRole("group", { name: "اینترنت و کار" })).toBeInTheDocument();
     expect(screen.getByText("وای‌فای")).toBeInTheDocument();
     expect(screen.getByText("۳۱ اقامتگاه")).toBeInTheDocument();
@@ -34,11 +34,27 @@ describe("FiltersPanel (US1/AC3)", () => {
   it("applies the chosen amenities together", async () => {
     const onApply = vi.fn();
     renderIn("en", <FiltersPanel state={parseSearch({ city_id: "1" })} onApply={onApply} />);
-    await userEvent.click(screen.getByRole("button", { name: /Amenities/ }));
+    await userEvent.click(screen.getByRole("button", { name: /Filters/ }));
     await userEvent.click(await screen.findByRole("checkbox", { name: /Kitchen/ }));
     await userEvent.click(screen.getByRole("checkbox", { name: /Wifi/ }));
     await userEvent.click(screen.getByRole("button", { name: "Show results" }));
     expect(onApply).toHaveBeenCalledWith([18, 24]);
+  });
+
+  it("without a city (home page), lists the amenities without counts (feature 033)", async () => {
+    GET.mockImplementation(async (path: string) =>
+      path === "/api/v1/amenities"
+        ? { data: [{ id: 1, name: "Internet and office", amenities: [{ id: 18, name: "Wifi", icon: "w" }] }] }
+        : { data: filters },
+    );
+    const onApply = vi.fn();
+    renderIn("fa", <FiltersPanel state={parseSearch({})} onApply={onApply} />);
+    await userEvent.click(screen.getByRole("button", { name: /فیلترها/ }));
+    await userEvent.click(await screen.findByRole("checkbox", { name: /وای‌فای/ }));
+    expect(screen.queryByText(/اقامتگاه$/)).toBeNull();
+    expect(GET).not.toHaveBeenCalledWith("/api/v1/search/filters", expect.anything());
+    await userEvent.click(screen.getByRole("button", { name: "نمایش نتایج" }));
+    expect(onApply).toHaveBeenCalledWith([18]);
   });
 
   it("is accessible", async () => {
@@ -46,7 +62,7 @@ describe("FiltersPanel (US1/AC3)", () => {
       "fa",
       <FiltersPanel state={parseSearch({ city_id: "1" })} onApply={vi.fn()} />,
     );
-    await userEvent.click(screen.getByRole("button", { name: /امکانات/ }));
+    await userEvent.click(screen.getByRole("button", { name: /فیلترها/ }));
     await screen.findByText("وای‌فای");
     await expectAccessible(baseElement);
   });

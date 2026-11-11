@@ -12,6 +12,7 @@ vi.mock("@/components/search/SearchControls", () => ({
   SearchControls: ({ pins }: { pins: { id: number }[] }) => (
     <div data-testid="pins">{pins.map((p) => p.id).join(",")}</div>
   ),
+  SearchFilters: () => <button type="button">filters</button>,
 }));
 vi.mock("@/components/search/ResultCard", () => ({
   ResultCard: ({ result }: { result: { id: number; title: string } }) => <span>{result.title}</span>,

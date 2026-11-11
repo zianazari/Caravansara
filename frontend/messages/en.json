@@ -144,7 +144,7 @@
     "sort": "Sort",
     "sortRating": "Top rated",
     "sortDistance": "Closest",
-    "filters": "Amenities",
+    "filters": "Filters",
     "filtersTitle": "Filter by amenities",
     "filtersHint": "A place must have every amenity you choose.",
     "filtersCount": "{count} places",

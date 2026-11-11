@@ -104,6 +104,17 @@ describe("CategoryBar (specs/007-caravansara-theme, US3)", () => {
     expect(all).toHaveFocus();
   });
 
+  it("shows plain icons, without the arch, and the filters button at the end (feature 033)", async () => {
+    search = new URLSearchParams();
+    const { container } = renderIn(
+      "fa",
+      <CategoryBar mode="home" filters={<button type="button">فیلترها</button>} />,
+    );
+    await screen.findByRole("link", { name: "سونا" });
+    expect(container.querySelector(".arch")).toBeNull();
+    expect(screen.getByRole("button", { name: "فیلترها" })).toBeInTheDocument();
+  });
+
   it("is accessible", async () => {
     search = new URLSearchParams();
     const { container } = renderIn("fa", <CategoryBar mode="home" />);
