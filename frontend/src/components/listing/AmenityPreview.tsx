@@ -14,7 +14,8 @@ const PREVIEW = 10;
 
 /**
  * "What this place offers" (feature 032): the first ten amenities in two columns, and a button that opens
- * all of them, grouped by category, in a dialog. The page stays short and nothing is hidden.
+ * all of them, grouped by category, in a dialog. The page stays short and nothing is hidden. The button
+ * reads "other amenities" since feature 040 (owner's request), without the count.
  */
 export function AmenityPreview({ categories }: { categories: Category[] }) {
   const t = useTranslations();
@@ -36,7 +37,7 @@ export function AmenityPreview({ categories }: { categories: Category[] }) {
       </ul>
       {all.length > PREVIEW ? (
         <Button variant="outline" size="lg" className="rounded-xl" onClick={() => setOpen(true)}>
-          {t("listing.showAllAmenities", { count: all.length })}
+          {t("listing.otherAmenities")}
         </Button>
       ) : null}
       <Dialog open={open} onOpenChange={setOpen}>
