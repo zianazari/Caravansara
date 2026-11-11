@@ -560,4 +560,10 @@ def build(index):
 root = pathlib.Path(__file__).resolve().parent.parent / "messages"
 for i, lang in enumerate(("fa", "en")):
     (root / f"{lang}.json").write_text(json.dumps(build(i), ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
-print("wrote fa.json, en.json")
+# The Persian city names on their own (feature 028): the city field matches Persian typing against them on
+# both sites, so a visitor on the English site can type «تهران» too, without loading all of fa.json.
+cities_fa = {name: pair[0] for name, pair in M["cities"].items()}
+(root.parent / "src" / "lib" / "city-names-fa.json").write_text(
+    json.dumps(cities_fa, ensure_ascii=False, indent=2) + "\n", encoding="utf-8"
+)
+print("wrote fa.json, en.json, src/lib/city-names-fa.json")
