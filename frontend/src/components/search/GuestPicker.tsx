@@ -6,6 +6,7 @@ import { useId } from "react";
 import { Button } from "@/components/ui/button";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { parseIntInput } from "@/lib/digits";
+import { Input } from "@/components/ui/input";
 
 export type Guests = { adults: number; children: number; infants: number; pets: number };
 
@@ -85,10 +86,10 @@ function Counter({
         >
           <MinusIcon />
         </Button>
-        <input
+        <Input
           id={id}
           inputMode="numeric"
-          className="h-9 w-12 rounded-md border bg-card text-center"
+          className="h-9 w-12 rounded-md px-0 text-center"
           value={new Intl.NumberFormat(locale === "fa" ? "fa-IR" : "en").format(value)}
           onChange={(event) => {
             const n = parseIntInput(event.target.value);

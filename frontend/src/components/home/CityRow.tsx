@@ -9,6 +9,8 @@ import { HomeCard } from "./HomeCard";
 import { Link } from "@/i18n/navigation";
 import type { CategoryFilter } from "@/lib/categories";
 import { cityName } from "@/lib/names";
+import { Button } from "@/components/ui/button";
+import { ScrollArea } from "@/components/ui/scroll-area";
 
 export type { CategoryFilter } from "@/lib/categories";
 
@@ -117,38 +119,47 @@ export function CityRow({
         </h2>
         {/* Wide screens: arrows move the row a screen at a time. On a phone the row is swiped. */}
         <div className="hidden gap-2 md:flex">
-          <button
+          <Button
             type="button"
+            variant="outline"
+            size="icon"
             onClick={() => scroll(false)}
             aria-label={t("home.previous", { city: name })}
-            className="grid size-8 place-items-center rounded-full border bg-card shadow-sm hover:shadow-md"
+            className="size-8 rounded-full shadow-sm hover:shadow-md"
           >
-            <Back className="size-4" aria-hidden />
-          </button>
-          <button
+            <Back aria-hidden />
+          </Button>
+          <Button
             type="button"
+            variant="outline"
+            size="icon"
             onClick={() => scroll(true)}
             aria-label={t("home.next", { city: name })}
-            className="grid size-8 place-items-center rounded-full border bg-card shadow-sm hover:shadow-md"
+            className="size-8 rounded-full shadow-sm hover:shadow-md"
           >
-            <Next className="size-4" aria-hidden />
-          </button>
+            <Next aria-hidden />
+          </Button>
         </div>
       </div>
-      {/* One row that scrolls sideways, card by card: about 2 on a phone and 7 on a wide screen (feature 017). */}
-      <div
-        ref={track}
-        className="-mx-4 flex snap-x snap-mandatory scroll-px-4 gap-4 overflow-x-auto px-4 pb-2 [scrollbar-width:none] md:mx-0 md:px-0"
+      {/* One row that scrolls sideways, card by card: about 2 on a phone and 7 on a wide screen (feature 017).
+          A shadcn/ui ScrollArea draws a thin scroll bar under it in the theme's colours (feature 026). */}
+      <ScrollArea
+        orientation="horizontal"
+        viewportRef={track}
+        viewportClassName="snap-x snap-mandatory scroll-px-4 md:scroll-px-0"
+        className="-mx-4 md:mx-0"
       >
-        {items.map((result) => (
-          <div
-            key={result.id}
-            className="w-[44%] shrink-0 snap-start sm:w-[30%] md:w-[calc((100%-3*1rem)/4)] lg:w-[calc((100%-4*1rem)/5)] xl:w-[calc((100%-5*1rem)/6)] 2xl:w-[calc((100%-6*1rem)/7)]"
-          >
-            <HomeCard result={result} />
-          </div>
-        ))}
-      </div>
+        <div className="flex gap-4 px-4 pb-3 md:px-0">
+          {items.map((result) => (
+            <div
+              key={result.id}
+              className="w-[44%] shrink-0 snap-start sm:w-[30%] md:w-[calc((100%-3*1rem)/4)] lg:w-[calc((100%-4*1rem)/5)] xl:w-[calc((100%-5*1rem)/6)] 2xl:w-[calc((100%-6*1rem)/7)]"
+            >
+              <HomeCard result={result} />
+            </div>
+          ))}
+        </div>
+      </ScrollArea>
     </section>
   );
 }

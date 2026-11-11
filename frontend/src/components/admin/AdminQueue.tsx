@@ -2,13 +2,15 @@
 
 import { keepPreviousData, useQuery } from "@tanstack/react-query";
 import { useSearchParams } from "next/navigation";
-import { useEffect } from "react";
+import { useEffect, useId } from "react";
 import { useLocale, useTranslations } from "next-intl";
 import type { components } from "@/api/schema";
 import { adminApi } from "@/api/adminClient";
 import { ArchFrame } from "@/components/brand/ArchFrame";
 import { Button } from "@/components/ui/button";
+import { Label } from "@/components/ui/label";
 import { Pager } from "@/components/ui/Pager";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Link, useRouter } from "@/i18n/navigation";
 import { formatDate } from "@/lib/calendar";
@@ -38,6 +40,7 @@ export function AdminQueue() {
   const t = useTranslations();
   const locale = useLocale();
   const router = useRouter();
+  const sortId = useId();
   const params = useSearchParams();
   const sort: Sort = params.get("sort") === "newest" ? "newest" : "oldest";
   const page = parsePage(params.get("page"));
@@ -75,17 +78,20 @@ export function AdminQueue() {
       <div className="flex flex-wrap items-baseline gap-3">
         <h1 className="text-2xl font-bold">{t("admin.queueTitle")}</h1>
         <p className="text-muted-foreground">{t("admin.queueCount", { count: total })}</p>
-        <label className="flex items-center gap-2 text-sm sm:ms-auto">
-          {t("admin.sortLabel")}
-          <select
-            className="h-11 rounded-lg border bg-card px-2"
-            value={sort}
-            onChange={(event) => router.push(queueHref(event.target.value as Sort, 1))}
-          >
-            <option value="oldest">{t("admin.sortOldest")}</option>
-            <option value="newest">{t("admin.sortNewest")}</option>
-          </select>
-        </label>
+        <div className="flex items-center gap-2 sm:ms-auto">
+          <Label htmlFor={sortId} className="font-normal">
+            {t("admin.sortLabel")}
+          </Label>
+          <Select value={sort} onValueChange={(value) => router.push(queueHref(value as Sort, 1))}>
+            <SelectTrigger id={sortId} className="w-auto min-w-40">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="oldest">{t("admin.sortOldest")}</SelectItem>
+              <SelectItem value="newest">{t("admin.sortNewest")}</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
       </div>
       {items.length === 0 ? (
         <p className="rounded-2xl border bg-surface p-6">{t("admin.queueEmpty")}</p>

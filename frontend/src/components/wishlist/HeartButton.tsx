@@ -4,6 +4,7 @@ import { HeartIcon } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { useWishlist } from "@/hooks/useWishlist";
 import { cn } from "@/lib/cn";
+import { Button } from "@/components/ui/button";
 
 /**
  * Save or remove a listing (feature 012). A toggle button with its state (aria-pressed) and the listing's
@@ -23,8 +24,10 @@ export function HeartButton({
   const { saved, toggle, ready } = useWishlist();
   const on = saved.has(listingId);
   return (
-    <button
+    <Button
       type="button"
+      variant="ghost"
+      size="icon"
       aria-pressed={on}
       disabled={!ready}
       aria-label={t(on ? "remove" : "save", { title })}
@@ -34,11 +37,11 @@ export function HeartButton({
         toggle(listingId);
       }}
       className={cn(
-        "grid size-10 place-items-center rounded-full bg-card/90 shadow-md ring-1 ring-border hover:bg-card focus-visible:outline-2 disabled:opacity-60",
+        "size-10 rounded-full bg-card/90 shadow-md ring-1 ring-border hover:bg-card disabled:opacity-60 [&_svg]:size-5",
         className,
       )}
     >
-      <HeartIcon className={cn("size-5", on ? "fill-primary text-primary" : "text-foreground")} aria-hidden />
-    </button>
+      <HeartIcon className={on ? "fill-primary text-primary" : "text-foreground"} aria-hidden />
+    </Button>
   );
 }

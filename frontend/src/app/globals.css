@@ -76,6 +76,15 @@
     @apply bg-background text-foreground font-sans antialiased;
     overflow-x: hidden;
   }
+  /* Native scroll bars (the page, dialogs, long lists) in the theme's sand, thin, like the shadcn/ui ScrollArea
+     used for the sideways rows (feature 026). The page itself keeps the browser's scrolling: a ScrollArea around
+     it would break the sticky header and the browser's own scroll restoring. */
+  html {
+    scrollbar-color: var(--sand-strong) transparent;
+  }
+  * {
+    scrollbar-width: thin;
+  }
   :focus-visible {
     @apply outline-2 outline-offset-2 outline-ring;
   }

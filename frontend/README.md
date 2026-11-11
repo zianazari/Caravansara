@@ -64,6 +64,17 @@ src/
   `src/no-raw-colors.test.ts` refuses a colour anywhere else, and `src/theme.test.ts` checks every text and
   background pair against WCAG AA. Buttons and links use the darker copper `#9a5418`, because white on the
   diagrams' copper is below AA.
+- **UI elements (feature 026):** every control comes from shadcn/ui in `src/components/ui/`: Button, Input,
+  Textarea, Select, DropdownMenu, Tabs, RadioGroup, Checkbox, Dialog, Popover, Command (the city box, on `cmdk`)
+  and ScrollArea (the sideways rows). They are written in shadcn's style on `radix-ui` with this site's tokens,
+  so a new one should be copied from the shadcn docs and its colours changed to the tokens, not added with
+  `npx shadcn add` as is (that brings shadcn's own colour names, which `no-raw-colors.test.ts` and the theme
+  do not have). `components.json` tells the CLI where things live. `Providers` sets Radix's `DirectionProvider`
+  from the page's language, so menus, selects and tabs open and move with the arrow keys in right-to-left order.
+  The Jalali calendars (`DateRangePicker`, `AvailabilityCalendar`) keep their own day buttons: shadcn's Calendar
+  is `react-day-picker`, and changing to it is a separate decision. Native scroll bars (page, dialogs, lists)
+  are thin and sand-coloured from `globals.css`; the page itself is not in a ScrollArea, so the sticky header
+  and the browser's own scrolling stay.
 - **The arch:** the class `arch` (the tall doorway) is a CSS mask, for decoration only. Listing photos are plain
   rounded rectangles since feature 017; `ArchFrame` puts a photo, or a warm placeholder, in one. A page that marks
   itself `data-wide` (the home page) gets up to 1920 px; the others stay at 1280 px.

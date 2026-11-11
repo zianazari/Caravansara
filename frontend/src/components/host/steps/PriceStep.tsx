@@ -2,6 +2,7 @@
 
 import { useTranslations } from "next-intl";
 import { Field } from "@/components/ui/field";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { CURRENCIES, currencyFor } from "@/lib/listingForm";
 import { MoneyInput } from "../MoneyInput";
 import type { StepProps } from "./types";
@@ -17,18 +18,18 @@ export function PriceStep({ draft, onChange, errors }: StepProps) {
     <div className="grid gap-5">
       <Field label={t("currency")} error={errors.currency}>
         {(props) => (
-          <select
-            {...props}
-            value={currency}
-            onChange={(e) => onChange({ currency: e.target.value })}
-            className="h-11 w-full rounded-lg border bg-card px-3 text-base"
-          >
-            {CURRENCIES.map((code) => (
-              <option key={code} value={code}>
-                {code}
-              </option>
-            ))}
-          </select>
+          <Select value={currency} onValueChange={(value) => onChange({ currency: value })}>
+            <SelectTrigger {...props} className="text-base">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {CURRENCIES.map((code) => (
+                <SelectItem key={code} value={code}>
+                  {code}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
         )}
       </Field>
       <MoneyInput

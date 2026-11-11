@@ -87,16 +87,18 @@ function Carousel({ photos, title }: { photos: Photo[]; title: string }) {
           </Button>
           <div className="flex flex-wrap items-center justify-center gap-1.5">
             {sorted.map((p, i) => (
-              <button
+              <Button
                 key={p.id}
                 type="button"
+                variant="ghost"
+                size="icon"
                 aria-label={t("photo", { index: i + 1, count: sorted.length })}
                 aria-current={i === index ? "true" : undefined}
                 onClick={() => setIndex(i)}
-                className="grid size-6 place-items-center rounded-full"
+                className="size-6 rounded-full hover:bg-transparent"
               >
                 <span className={cn("size-2 rounded-full", i === index ? "bg-primary" : "bg-border")} />
-              </button>
+              </Button>
             ))}
           </div>
           <span className="sr-only" aria-live="polite">
@@ -166,14 +168,16 @@ export function Gallery({ photos, title }: { photos: Photo[]; title: string }) {
           ))}
         </div>
         {sorted.length > 0 ? (
-          <button
+          <Button
             type="button"
+            variant="outline"
+            size="sm"
             onClick={() => setOpen(0)}
-            className="absolute end-4 bottom-4 flex items-center gap-2 rounded-lg border border-foreground/20 bg-card px-3 py-1.5 text-sm font-semibold shadow-sm hover:bg-muted"
+            className="absolute end-4 bottom-4 border-foreground/20 font-semibold shadow-sm"
           >
-            <LayoutGridIcon className="size-4" aria-hidden />
+            <LayoutGridIcon aria-hidden />
             {t("showAllPhotos", { count: sorted.length })}
-          </button>
+          </Button>
         ) : null}
       </section>
       <Dialog open={open !== null} onOpenChange={(next) => (next ? undefined : setOpen(null))}>

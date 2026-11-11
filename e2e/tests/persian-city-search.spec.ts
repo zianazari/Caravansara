@@ -21,5 +21,5 @@ test("a city typed in Persian, even on an Arabic keyboard, opens its search", as
   await field.fill("شيراز"); // Arabic yeh, on the English site
   await expect(page.getByRole("option", { name: /Shiraz/ })).toBeVisible();
   await field.fill("قزوین");
-  await expect(page.getByRole("option", { name: "No city with this name." })).toBeVisible();
+  await expect(page.getByText("No city with this name.")).toBeVisible();
 });

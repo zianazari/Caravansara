@@ -147,7 +147,8 @@ describe("admin panel (feature 009)", () => {
     queueOf(45);
     const { unmount } = renderIn("en", <AdminQueue />);
     await screen.findByText("Listing 1");
-    await userEvent.selectOptions(screen.getByLabelText("Order"), "Newest first");
+    await userEvent.click(screen.getByRole("combobox", { name: "Order" }));
+    await userEvent.click(await screen.findByRole("option", { name: "Newest first" }));
     expect(push).toHaveBeenCalledWith("/admin?sort=newest");
     unmount();
 
@@ -157,7 +158,7 @@ describe("admin panel (feature 009)", () => {
     expect(GET).toHaveBeenLastCalledWith("/api/v1/admin/listings/pending", {
       params: { query: { limit: 20, offset: 20, sort: "newest" } },
     });
-    expect(screen.getByLabelText("Order")).toHaveValue("newest");
+    expect(screen.getByRole("combobox", { name: "Order" })).toHaveTextContent("Newest first");
     const pager = screen.getByRole("navigation", { name: "Pages" });
     expect(within(pager).getByRole("link", { name: "Page 3" })).toHaveAttribute(
       "href",

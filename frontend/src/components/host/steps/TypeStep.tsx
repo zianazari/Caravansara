@@ -1,42 +1,40 @@
 "use client";
 
 import { useTranslations } from "next-intl";
-import { cn } from "@/lib/cn";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import type { StepProps } from "./types";
 
 const TYPES = ["entire_place", "private_room", "shared_room"] as const;
 
-/** Step 1: the kind of place, as three large choices (a radio group). */
+/** Step 1: the kind of place, as three large choices (a shadcn/ui RadioGroup, feature 026). */
 export function TypeStep({ draft, onChange, errors }: StepProps) {
   const t = useTranslations();
   return (
-    <fieldset className="grid gap-3" aria-describedby={errors.property_type ? "type-error" : undefined}>
-      <legend className="sr-only">{t("wizard.step_type")}</legend>
-      {TYPES.map((type) => (
-        <label
-          key={type}
-          className={cn(
-            "flex cursor-pointer items-start gap-3 rounded-xl border bg-card p-4 has-[:checked]:border-primary has-[:checked]:ring-1 has-[:checked]:ring-primary",
-          )}
-        >
-          <input
-            type="radio"
-            name="property_type"
-            className="mt-1 size-4 accent-primary"
-            checked={draft.property_type === type}
-            onChange={() => onChange({ property_type: type })}
-          />
-          <span className="grid gap-0.5">
-            <span className="font-semibold">{t(`propertyTypes.${type}`)}</span>
-            <span className="text-sm text-muted-foreground">{t(`wizard.type_${type}`)}</span>
-          </span>
-        </label>
-      ))}
+    <div className="grid gap-3">
+      <RadioGroup
+        aria-label={t("wizard.step_type")}
+        aria-describedby={errors.property_type ? "type-error" : undefined}
+        value={draft.property_type ?? ""}
+        onValueChange={(value) => onChange({ property_type: value as (typeof TYPES)[number] })}
+      >
+        {TYPES.map((type) => (
+          <label
+            key={type}
+            className="flex cursor-pointer items-start gap-3 rounded-xl border bg-card p-4 has-[[data-state=checked]]:border-primary has-[[data-state=checked]]:ring-1 has-[[data-state=checked]]:ring-primary"
+          >
+            <RadioGroupItem value={type} className="mt-0.5" />
+            <span className="grid gap-0.5">
+              <span className="font-semibold">{t(`propertyTypes.${type}`)}</span>
+              <span className="text-sm text-muted-foreground">{t(`wizard.type_${type}`)}</span>
+            </span>
+          </label>
+        ))}
+      </RadioGroup>
       {errors.property_type ? (
         <p id="type-error" role="alert" className="text-sm text-destructive">
           {errors.property_type}
         </p>
       ) : null}
-    </fieldset>
+    </div>
   );
 }

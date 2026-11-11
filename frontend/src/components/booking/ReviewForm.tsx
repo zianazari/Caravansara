@@ -6,7 +6,9 @@ import { useId, useState, type FormEvent } from "react";
 import { toast } from "sonner";
 import { api } from "@/api/client";
 import { Button } from "@/components/ui/button";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Textarea } from "@/components/ui/textarea";
 import { useRouter } from "@/i18n/navigation";
 import { canReview } from "@/lib/bookingView";
 import { errorCode, errorMessage, type Translate } from "@/lib/errors";
@@ -111,7 +113,7 @@ export function ReviewForm({ bookingId }: { bookingId: number }) {
         <label htmlFor={commentId} className="font-semibold">
           {t("review.comment")}
         </label>
-        <textarea
+        <Textarea
           id={commentId}
           rows={5}
           maxLength={5000}
@@ -119,7 +121,7 @@ export function ReviewForm({ bookingId }: { bookingId: number }) {
           onChange={(e) => setComment(e.target.value)}
           aria-invalid={errors.comment ? true : undefined}
           aria-describedby={`${commentId}-hint${errors.comment ? ` ${commentId}-error` : ""}`}
-          className="rounded-lg border bg-card p-3 text-base"
+          className="p-3"
         />
         <p id={`${commentId}-hint`} className="text-sm text-muted-foreground">
           {t("review.commentHint")}
@@ -155,28 +157,26 @@ function Stars({
   const name = useId();
   return (
     <fieldset className="grid gap-1" aria-invalid={error ? true : undefined}>
-      <legend className={small ? "text-sm" : "font-semibold"}>{legend}</legend>
-      <div className="flex gap-1">
+      <legend id={name} className={small ? "text-sm" : "font-semibold"}>
+        {legend}
+      </legend>
+      <RadioGroup
+        aria-labelledby={name}
+        value={value === null ? "" : String(value)}
+        onValueChange={(v) => onChange(Number(v))}
+        className="flex gap-1"
+      >
         {[1, 2, 3, 4, 5].map((n) => (
-          <label key={n} className="cursor-pointer">
-            <input
-              type="radio"
-              name={name}
-              value={n}
-              checked={value === n}
-              onChange={() => onChange(n)}
-              className="peer sr-only"
-            />
-            <span
-              aria-hidden
-              className={`grid size-10 place-content-center rounded-md border text-lg peer-focus-visible:outline-2 peer-focus-visible:outline-ring ${value !== null && n <= value ? "bg-primary text-primary-foreground" : "bg-card"}`}
-            >
-              ★
-            </span>
-            <span className="sr-only">{t("stars", { count: n })}</span>
-          </label>
+          <RadioGroupItem
+            key={n}
+            value={String(n)}
+            aria-label={t("stars", { count: n })}
+            className={`grid size-10 cursor-pointer place-content-center rounded-md border text-lg ${value !== null && n <= value ? "bg-primary text-primary-foreground" : "bg-card"}`}
+          >
+            <span aria-hidden>★</span>
+          </RadioGroupItem>
         ))}
-      </div>
+      </RadioGroup>
       {error ? (
         <p role="alert" className="text-sm text-destructive">
           {error}

@@ -2,6 +2,7 @@
 
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { useState, type ReactNode } from "react";
+import { Direction } from "radix-ui";
 import { Toaster } from "sonner";
 
 export function Providers({ children, dir }: { children: ReactNode; dir: "rtl" | "ltr" }) {
@@ -13,9 +14,12 @@ export function Providers({ children, dir }: { children: ReactNode; dir: "rtl" |
       }),
   );
   return (
-    <QueryClientProvider client={client}>
-      {children}
-      <Toaster dir={dir} position={dir === "rtl" ? "bottom-left" : "bottom-right"} />
-    </QueryClientProvider>
+    // Radix menus, selects and tabs read the direction from here, so arrow keys and placement follow RTL.
+    <Direction.DirectionProvider dir={dir}>
+      <QueryClientProvider client={client}>
+        {children}
+        <Toaster dir={dir} position={dir === "rtl" ? "bottom-left" : "bottom-right"} />
+      </QueryClientProvider>
+    </Direction.DirectionProvider>
   );
 }
