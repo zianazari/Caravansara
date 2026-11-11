@@ -129,7 +129,7 @@ export function CategoryBar({
       <nav aria-label={t("label")} onKeyDown={onKeyDown} className="min-w-0 flex-1">
         {/* A shadcn/ui ScrollArea (feature 026): on a phone the row scrolls with a thin scroll bar. */}
         <ScrollArea orientation="horizontal" viewportClassName="snap-x scroll-px-4" className="-ms-4 md:ms-0">
-          <ul className="flex gap-7 px-4 pb-1 md:justify-center md:px-0">
+          <ul className="flex gap-6 px-4 pb-1 md:justify-center md:px-0">
             {offered.map((category) => {
               const Icon = ICONS[category.icon] ?? LayoutGridIcon;
               const on = category.key === active;
@@ -139,7 +139,8 @@ export function CategoryBar({
                     href={hrefFor(category.key)}
                     aria-current={on ? "true" : undefined}
                     className={cn(
-                      "group flex flex-col items-center gap-1.5 border-b-2 pt-1 pb-2.5 text-sm whitespace-nowrap transition-colors",
+                      // Feature 039 (owner's reference): 16 px names and 28 px icons, easy to read and to hit.
+                      "group flex flex-col items-center gap-2 border-b-2 pt-1 pb-3 text-base font-medium whitespace-nowrap transition-colors",
                       on
                         ? "border-primary font-bold text-foreground"
                         : "border-transparent text-muted-foreground hover:border-border hover:text-foreground",
@@ -150,7 +151,7 @@ export function CategoryBar({
                       aria-hidden
                       strokeWidth={1.75}
                       className={cn(
-                        "size-6 transition-[transform,color] duration-300 ease-(--ease-soft) group-hover:-translate-y-0.5",
+                        "size-7 stroke-[1.5] transition-[transform,color] duration-300 ease-(--ease-soft) group-hover:-translate-y-0.5",
                         on ? "text-primary" : "text-muted-foreground group-hover:text-foreground",
                       )}
                     />

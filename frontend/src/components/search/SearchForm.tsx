@@ -113,7 +113,8 @@ function SearchFields({
           ? "grid gap-4"
           : // The pill: one rounded white bar; the fields lose their own borders and hover colours, and the
             // sections are split by sand lines and light up under the pointer (.search-pill in globals.css, 033).
-            "search-pill grid grid-cols-[2fr_2fr_1.5fr_auto] items-center gap-0 rounded-full border p-2 shadow-lg shadow-foreground/10 [&_input]:border-0 [&_input]:bg-transparent [&_button[aria-haspopup]]:border-0 [&_button[aria-haspopup]]:bg-transparent [&_button[aria-haspopup]]:shadow-none [&_button[aria-haspopup]]:hover:bg-transparent [&_button[aria-haspopup]]:hover:shadow-none",
+            // Feature 039 (owner's reference): larger titles (17 px, semibold) and values (16 px) in the pill.
+            "search-pill grid grid-cols-[2fr_2fr_1.5fr_auto] items-center gap-0 rounded-full border p-2 shadow-lg shadow-foreground/10 [&_.field-label]:text-[1.0625rem] [&_.field-label]:font-semibold [&_button[aria-haspopup]]:text-base [&_input]:text-base [&_input]:border-0 [&_input]:bg-transparent [&_button[aria-haspopup]]:border-0 [&_button[aria-haspopup]]:bg-transparent [&_button[aria-haspopup]]:shadow-none [&_button[aria-haspopup]]:hover:bg-transparent [&_button[aria-haspopup]]:hover:shadow-none",
         className,
       )}
     >
@@ -126,7 +127,7 @@ function SearchFields({
         ) : null}
       </div>
       <div className="grid gap-1.5">
-        <span className="text-sm font-medium">{t("when")}</span>
+        <span className="field-label text-sm font-medium">{t("when")}</span>
         <DateRangePicker value={dates} onChange={setDates} min={today} />
       </div>
       <GuestPicker value={guests} onChange={setGuests} />
@@ -136,10 +137,10 @@ function SearchFields({
         className={
           stacked
             ? undefined
-            : "size-14 rounded-full bg-linear-to-b from-copper to-primary p-0 text-primary-foreground hover:opacity-90"
+            : "size-16 rounded-full bg-linear-to-b from-copper to-primary p-0 text-primary-foreground hover:opacity-90 [&_svg]:size-7"
         }
       >
-        <SearchIcon className={stacked ? undefined : "size-6"} />
+        <SearchIcon />
         <span className={stacked ? undefined : "sr-only"}>{t("submit")}</span>
       </Button>
     </form>
