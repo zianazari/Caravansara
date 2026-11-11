@@ -66,12 +66,14 @@ describe("theme tokens", () => {
     expect(contrast("#ffffff", "#b5651d")).toBeLessThan(TEXT);
   });
 
-  it("keeps the README palette", () => {
-    expect(token("background")).toBe("#fffaf2");
-    expect(token("foreground")).toBe("#3b1f08");
+  it("keeps the README's copper and amber, on the tile-and-garden surfaces of feature 037", () => {
+    // The warm accents of the caravansara stay; the page, the surfaces and the hero sky turned fresher
+    // (owner's choice "الف" among four samples): near-white cream, pale tile turquoise, deep teal sky.
     expect(token("copper")).toBe("#b5651d");
     expect(token("amber")).toBe("#e08a2e");
-    expect(token("night")).toBe("#07101e");
+    expect(token("background")).toBe("#fffdf8");
+    expect(token("muted")).toBe("#e3f0ec");
+    expect(token("night")).toBe("#0b3b44");
   });
 
   it("asks the browser for light form controls, whatever the system theme (edge case: dark mode)", () => {

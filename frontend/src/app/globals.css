@@ -17,23 +17,23 @@
  */
 :root {
   color-scheme: light;
-  --background: #fffaf2; /* cream */
-  --surface: #f8efe1; /* second surface: filters, trips table */
+  --background: #fffdf8; /* near-white cream (037: lighter, so the page breathes) */
+  --surface: #eef6f3; /* second surface, pale turquoise-sage (037): filters, trips table */
   --card: #ffffff;
-  --foreground: #3b1f08; /* dark brown text */
-  --muted: #f3e4cc; /* light sand */
-  --muted-foreground: #6b4a2b;
-  --border: #e3cfae; /* sand */
+  --foreground: #2b2118; /* dark brown text */
+  --muted: #e3f0ec; /* pale tile turquoise (037), was light sand */
+  --muted-foreground: #46564f; /* grey-green, pairs with the turquoise surfaces (037) */
+  --border: #d5e4dd; /* pale sage (037), was sand */
   --primary: #9a5418; /* dark copper: buttons, links, the active item */
   --primary-foreground: #ffffff;
-  --accent: #f3e4cc;
+  --accent: #e3f0ec;
   --destructive: #9c3b28; /* brick */
   --ring: #9a5418;
   --copper: #b5651d; /* shapes, large icons, the search button's gradient */
   --amber: #e08a2e; /* glow only, never under text */
-  --sand-strong: #d9b27c; /* inactive category icons, decorative arches */
-  --night: #07101e; /* hero sky */
-  --gold: #f3c98b; /* hero subtitle, footer site name */
+  --sand-strong: #5fb3a8; /* tile turquoise (037): the doorway frame, quiet marks; the token keeps its name */
+  --night: #0b3b44; /* hero sky, deep tile teal (037), was night blue */
+  --gold: #f6d08f; /* hero subtitle, footer site name */
   --on-dark: #fffaf2; /* text on night and dark brown */
   --on-dark-muted: #e3cfae; /* quiet text on dark brown (footer) */
   --radius: 1rem;
