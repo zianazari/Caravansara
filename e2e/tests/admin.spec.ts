@@ -129,7 +129,9 @@ test("the queue sorts oldest or newest first, and the order is kept in the addre
   const titles = () => page.locator("main article h2").allTextContents();
   await expect.poll(async () => (await titles())[0]).toBe("E2E queue oldest");
 
-  await page.getByLabel("ترتیب").selectOption("newest");
+  // A shadcn/ui Select (feature 026): open the list, then choose the option.
+  await page.getByRole("combobox", { name: "ترتیب" }).click();
+  await page.getByRole("option", { name: "جدیدترین" }).click();
   await page.waitForURL(/\/admin\?sort=newest$/);
   await expect(page.getByText("E2E queue newest")).toBeVisible();
   const newest = await titles();
@@ -137,7 +139,7 @@ test("the queue sorts oldest or newest first, and the order is kept in the addre
   expect(at === -1 || at > newest.indexOf("E2E queue newest")).toBe(true);
 
   await page.reload();
-  await expect(page.getByLabel("ترتیب")).toHaveValue("newest");
+  await expect(page.getByRole("combobox", { name: "ترتیب" })).toHaveText("جدیدترین");
   expect(recent.id).toBeGreaterThan(0);
 });
 

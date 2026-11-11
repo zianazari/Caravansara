@@ -81,8 +81,10 @@ test("a new user makes a listing in eight steps, with five photos (US1, US2)", a
   await page.getByRole("textbox", { name: "عنوان" }).fill(title);
   await next(page);
 
-  await expect(page.getByRole("combobox", { name: "واحد پول" })).toHaveValue("EUR"); // from the Netherlands
-  await page.getByRole("combobox", { name: "واحد پول" }).selectOption("IRR");
+  // A shadcn/ui Select (feature 026): its button shows the chosen currency.
+  await expect(page.getByRole("combobox", { name: "واحد پول" })).toHaveText("EUR"); // from the Netherlands
+  await page.getByRole("combobox", { name: "واحد پول" }).click();
+  await page.getByRole("option", { name: "IRR" }).click();
   await page.getByRole("textbox", { name: "قیمت هر شب" }).fill("۱۲۰٬۰۰۰");
   await next(page);
   await next(page); // the usual times

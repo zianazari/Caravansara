@@ -23,6 +23,7 @@ import { api } from "@/api/client";
 import { Link, usePathname } from "@/i18n/navigation";
 import { cn } from "@/lib/cn";
 import { type CategoryKey, activeCategory, categoriesFor, filterOf } from "@/lib/categories";
+import { ScrollArea } from "@/components/ui/scroll-area";
 
 const ICONS: Record<string, LucideIcon> = {
   LayoutGrid: LayoutGridIcon,
@@ -117,34 +118,40 @@ export function CategoryBar({ mode }: { mode: "home" | "search" }) {
     // min-w-0: a grid item is as wide as its content by default, and this row scrolls sideways, so without it the
     // whole page would grow to the row's width on a phone (found by the browser test, SC-004).
     <nav aria-label={t("label")} onKeyDown={onKeyDown} className="min-w-0 border-b">
-      <ul className="-mx-4 flex snap-x scroll-px-4 gap-7 overflow-x-auto px-4 md:mx-0 md:justify-center md:px-0">
-        {offered.map((category) => {
-          const Icon = ICONS[category.icon] ?? LayoutGridIcon;
-          const on = category.key === active;
-          return (
-            <li key={category.key} className="snap-start">
-              <Link
-                href={hrefFor(category.key)}
-                aria-current={on ? "true" : undefined}
-                className={cn(
-                  "flex flex-col items-center gap-1.5 border-b-2 pt-1 pb-2.5 text-xs whitespace-nowrap",
-                  on
-                    ? "border-primary font-bold text-foreground"
-                    : "border-transparent text-muted-foreground hover:border-border hover:text-foreground",
-                )}
-              >
-                <span
-                  aria-hidden
-                  className={cn("arch grid h-9 w-8 place-items-center", on ? "bg-copper" : "bg-sand-strong")}
+      {/* A shadcn/ui ScrollArea (feature 026): on a phone the row scrolls with a thin scroll bar. */}
+      <ScrollArea orientation="horizontal" viewportClassName="snap-x scroll-px-4" className="-mx-4 md:mx-0">
+        <ul className="flex gap-7 px-4 pb-1 md:justify-center md:px-0">
+          {offered.map((category) => {
+            const Icon = ICONS[category.icon] ?? LayoutGridIcon;
+            const on = category.key === active;
+            return (
+              <li key={category.key} className="snap-start">
+                <Link
+                  href={hrefFor(category.key)}
+                  aria-current={on ? "true" : undefined}
+                  className={cn(
+                    "flex flex-col items-center gap-1.5 border-b-2 pt-1 pb-2.5 text-xs whitespace-nowrap",
+                    on
+                      ? "border-primary font-bold text-foreground"
+                      : "border-transparent text-muted-foreground hover:border-border hover:text-foreground",
+                  )}
                 >
-                  <Icon className="mt-2 size-4 text-on-dark" />
-                </span>
-                {t(category.key)}
-              </Link>
-            </li>
-          );
-        })}
-      </ul>
+                  <span
+                    aria-hidden
+                    className={cn(
+                      "arch grid h-9 w-8 place-items-center",
+                      on ? "bg-copper" : "bg-sand-strong",
+                    )}
+                  >
+                    <Icon className="mt-2 size-4 text-on-dark" />
+                  </span>
+                  {t(category.key)}
+                </Link>
+              </li>
+            );
+          })}
+        </ul>
+      </ScrollArea>
     </nav>
   );
 }

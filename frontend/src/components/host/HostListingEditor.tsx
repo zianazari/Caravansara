@@ -12,10 +12,11 @@ import { ArchFrame } from "@/components/brand/ArchFrame";
 import { ReviewList } from "@/components/listing/ReviewList";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
+import { ScrollArea } from "@/components/ui/scroll-area";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useMe } from "@/hooks/useAuth";
 import { Link, usePathname, useRouter } from "@/i18n/navigation";
-import { cn } from "@/lib/cn";
 import { errorMessage, type Translate } from "@/lib/errors";
 import type { ListingDraft } from "@/lib/listingDraft";
 import { apiFieldProblems, STEPS, toListingCreate, validateStep } from "@/lib/listingForm";
@@ -121,42 +122,40 @@ export function HostListingEditor({
   return (
     <div className="grid gap-6">
       <ListingHeader listing={listing} onSaved={refresh} />
-      <div role="tablist" aria-label={t("host.tabs")} className="flex gap-1 overflow-x-auto border-b">
-        {TABS.map((key) => (
-          <button
-            key={key}
-            type="button"
-            role="tab"
-            id={`tab-${key}`}
-            aria-selected={tab === key}
-            aria-controls={`panel-${key}`}
-            onClick={() => router.replace(`${pathname}?tab=${key}`)}
-            className={cn(
-              "-mb-px border-b-2 px-4 py-2.5 text-sm whitespace-nowrap",
-              tab === key
-                ? "border-primary font-bold text-primary"
-                : "border-transparent text-muted-foreground",
-            )}
-          >
-            {t(`host.tab_${key}`)}
-          </button>
-        ))}
-      </div>
-      <div role="tabpanel" id={`panel-${tab}`} aria-labelledby={`tab-${tab}`}>
-        {tab === "details" ? (
+      {/* shadcn/ui Tabs (feature 026); the chosen tab stays in the address (?tab=). On a phone the row scrolls
+          sideways with a thin scroll bar. */}
+      <Tabs
+        value={tab}
+        onValueChange={(key) => router.replace(`${pathname}?tab=${key}`)}
+        className="grid gap-6"
+      >
+        <ScrollArea orientation="horizontal">
+          <TabsList aria-label={t("host.tabs")} className="w-max min-w-full pb-px">
+            {TABS.map((key) => (
+              <TabsTrigger key={key} value={key}>
+                {t(`host.tab_${key}`)}
+              </TabsTrigger>
+            ))}
+          </TabsList>
+        </ScrollArea>
+        <TabsContent value="details">
           <DetailsForm key={detail.dataUpdatedAt} listing={listing} onSaved={refresh} loadMap={loadMap} />
-        ) : null}
-        {tab === "photos" ? (
+        </TabsContent>
+        <TabsContent value="photos">
           <PhotoManager
             listingId={id}
             photos={listing.photos}
             reviewStatus={listing.review?.status ?? "approved"}
             onChange={() => void refresh()}
           />
-        ) : null}
-        {tab === "bookings" ? <HostBookings listingId={id} /> : null}
-        {tab === "reviews" ? <HostReviews listing={listing} /> : null}
-      </div>
+        </TabsContent>
+        <TabsContent value="bookings">
+          <HostBookings listingId={id} />
+        </TabsContent>
+        <TabsContent value="reviews">
+          <HostReviews listing={listing} />
+        </TabsContent>
+      </Tabs>
     </div>
   );
 }

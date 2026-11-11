@@ -1,6 +1,9 @@
 "use client";
 
 import { useTranslations } from "next-intl";
+import { useId } from "react";
+import { Label } from "@/components/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useRouter } from "@/i18n/navigation";
 import { type SearchState, toQuery } from "@/lib/searchParams";
 import { FiltersPanel } from "./FiltersPanel";
@@ -10,25 +13,30 @@ import { ResultsMap, type MapPin } from "./ResultsMap";
 export function SearchControls({ state, pins }: { state: SearchState; pins: MapPin[] }) {
   const t = useTranslations("search");
   const router = useRouter();
+  const sortId = useId();
   const go = (next: SearchState) => router.push(`/search?${toQuery(next).toString()}`);
   return (
     <div className="grid gap-3">
       <div className="flex flex-wrap items-center gap-2">
         <FiltersPanel state={state} onApply={(amenity_ids) => go({ ...state, amenity_ids, offset: 0 })} />
         {state.lat !== undefined ? (
-          <label className="flex items-center gap-2 text-sm">
-            {t("sort")}
-            <select
-              className="h-11 rounded-lg border bg-card px-2"
+          <div className="flex items-center gap-2">
+            <Label htmlFor={sortId} className="font-normal">
+              {t("sort")}
+            </Label>
+            <Select
               value={state.sort}
-              onChange={(event) =>
-                go({ ...state, sort: event.target.value as SearchState["sort"], offset: 0 })
-              }
+              onValueChange={(value) => go({ ...state, sort: value as SearchState["sort"], offset: 0 })}
             >
-              <option value="rating">{t("sortRating")}</option>
-              <option value="distance">{t("sortDistance")}</option>
-            </select>
-          </label>
+              <SelectTrigger id={sortId} className="w-auto min-w-36">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="rating">{t("sortRating")}</SelectItem>
+                <SelectItem value="distance">{t("sortDistance")}</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
         ) : null}
       </div>
       <ResultsMap

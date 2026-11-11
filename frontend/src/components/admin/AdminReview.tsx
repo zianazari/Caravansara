@@ -9,7 +9,9 @@ import { adminApi } from "@/api/adminClient";
 import { ArchFrame } from "@/components/brand/ArchFrame";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/components/ui/dialog";
+import { Label } from "@/components/ui/label";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Textarea } from "@/components/ui/textarea";
 import { useMoney } from "@/hooks/useMoney";
 import { Link, useRouter } from "@/i18n/navigation";
 import { formatClock } from "@/lib/cityTime";
@@ -254,17 +256,14 @@ export function AdminReview({
         <DialogContent closeLabel={t("common.close")}>
           <DialogTitle>{t("admin.rejectTitle")}</DialogTitle>
           <DialogDescription className="sr-only">{t("admin.reason")}</DialogDescription>
-          <label htmlFor="reject-reason" className="text-sm font-medium">
-            {t("admin.reason")}
-          </label>
-          <textarea
+          <Label htmlFor="reject-reason">{t("admin.reason")}</Label>
+          <Textarea
             id="reject-reason"
             rows={5}
             value={reason}
             aria-invalid={reasonError ? true : undefined}
             aria-describedby={reasonError ? "reject-reason-error" : "reject-reason-count"}
             onChange={(e) => setReason(e.target.value)}
-            className="w-full rounded-lg border bg-card px-3 py-2 text-base aria-invalid:border-destructive"
           />
           <p id="reject-reason-count" className="text-sm text-muted-foreground">
             {t("wizard.chars", { count: reason.trim().length, max: REASON_MAX })}

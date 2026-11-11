@@ -59,8 +59,8 @@ describe("Header host link (specs/008-host-pages, FR-001, R11)", () => {
     expect(wide).toHaveClass("hidden", "md:block");
 
     await userEvent.click(screen.getByRole("button", { name: "حساب من" }));
-    const menu = await screen.findByRole("dialog");
-    const inMenu = within(menu).getByRole("link", { name: "آگهی‌های من" });
+    const menu = await screen.findByRole("menu");
+    const inMenu = within(menu).getByRole("menuitem", { name: "آگهی‌های من" });
     expect(inMenu).toHaveAttribute("href", "/host");
     expect(inMenu).toHaveClass("md:hidden");
   });
@@ -70,8 +70,8 @@ describe("Header host link (specs/008-host-pages, FR-001, R11)", () => {
     GET.mockResolvedValue({ data: { items: [], total: 0 } });
     renderIn("fa", <Header />);
     await userEvent.click(screen.getByRole("button", { name: "حساب من" }));
-    const menu = await screen.findByRole("dialog");
-    const items = within(menu).getAllByRole("button");
+    const menu = await screen.findByRole("menu");
+    const items = within(menu).getAllByRole("menuitem");
     const last = items[items.length - 1]!;
     expect(last).toHaveTextContent("خروج");
     await userEvent.click(last);

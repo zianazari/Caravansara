@@ -15,6 +15,7 @@ import { MIN_PHOTOS } from "@/lib/listingStatus";
 import { uploadAll, uploadPhoto } from "@/lib/photoUpload";
 import { needsReview, type PhotoChange } from "@/lib/reviewFields";
 import { ReviewWarningDialog } from "./ReviewWarningDialog";
+import { Input } from "@/components/ui/input";
 
 type PhotoOut = components["schemas"]["PhotoOut"];
 
@@ -71,21 +72,23 @@ function PhotoPicker({ onFiles }: { onFiles: (files: File[]) => void }) {
   }
   return (
     <div className="grid gap-2">
-      <label className="flex w-fit cursor-pointer items-center gap-2 rounded-full border bg-card px-4 py-2.5 text-sm font-semibold hover:bg-muted">
-        <ImagePlusIcon className="size-4" aria-hidden />
-        {t("choose")}
-        <input
-          type="file"
-          multiple
-          accept={PHOTO_TYPES.join(",")}
-          data-max-bytes={MAX_PHOTO_BYTES}
-          className="sr-only"
-          onChange={(e) => {
-            void choose(e.target.files);
-            e.target.value = "";
-          }}
-        />
-      </label>
+      <Button asChild variant="outline" className="w-fit cursor-pointer rounded-full font-semibold">
+        <label>
+          <ImagePlusIcon aria-hidden />
+          {t("choose")}
+          <input
+            type="file"
+            multiple
+            accept={PHOTO_TYPES.join(",")}
+            data-max-bytes={MAX_PHOTO_BYTES}
+            className="sr-only"
+            onChange={(e) => {
+              void choose(e.target.files);
+              e.target.value = "";
+            }}
+          />
+        </label>
+      </Button>
       <p className="text-sm text-muted-foreground">{t("hint")}</p>
       {rejected.length ? (
         <ul role="alert" className="grid gap-1 text-sm text-destructive">
@@ -198,20 +201,20 @@ function PhotoTile({
         </div>
         <label className="grid gap-1 text-sm">
           {t("roomTag")}
-          <input
+          <Input
             value={tag}
             maxLength={50}
             onChange={(e) => setTag(e.target.value)}
-            className="h-10 rounded-lg border bg-card px-3"
+            className="h-10 text-sm"
           />
         </label>
         <label className="grid gap-1 text-sm">
           {t("caption")}
-          <input
+          <Input
             value={text}
             maxLength={200}
             onChange={(e) => setText(e.target.value)}
-            className="h-10 rounded-lg border bg-card px-3"
+            className="h-10 text-sm"
           />
         </label>
         {tag !== roomTag || text !== caption ? (

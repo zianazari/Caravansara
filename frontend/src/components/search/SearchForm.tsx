@@ -36,16 +36,17 @@ export function SearchForm({ className, ...props }: Props) {
       <SearchFields {...props} className="hidden md:grid" />
       <Dialog open={open} onOpenChange={setOpen}>
         <DialogTrigger asChild>
-          <button
+          <Button
             type="button"
-            className="flex w-full items-center gap-3 rounded-full border bg-card px-4 py-3 text-start shadow-lg shadow-foreground/10 md:hidden"
+            variant="outline"
+            className="h-auto w-full justify-start gap-3 rounded-full px-4 py-3 text-start font-normal whitespace-normal shadow-lg shadow-foreground/10 hover:bg-card md:hidden [&_svg]:size-5"
           >
-            <SearchIcon className="size-5 shrink-0" aria-hidden />
+            <SearchIcon aria-hidden />
             <span className="grid">
               <span className="font-bold">{props.initialCity?.label ?? t("home.whereTo")}</span>
               <span className="text-xs text-muted-foreground">{t("home.anyWhereAnyWhen")}</span>
             </span>
-          </button>
+          </Button>
         </DialogTrigger>
         <DialogContent side="bottom" closeLabel={t("common.close")}>
           <DialogTitle>{t("home.whereTo")}</DialogTitle>

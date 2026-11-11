@@ -3,6 +3,7 @@
 import { useTranslations } from "next-intl";
 import { Field } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import type { StepProps } from "./types";
 
 /** Step 5: title and description, each with how many characters remain allowed. */
@@ -25,12 +26,11 @@ export function DescriptionStep({ draft, onChange, errors }: StepProps) {
         hint={t("chars", { count: description.length, max: 5000 })}
       >
         {(props) => (
-          <textarea
+          <Textarea
             {...props}
             rows={8}
             value={description}
             onChange={(e) => onChange({ description: e.target.value })}
-            className="w-full rounded-lg border bg-card px-3 py-2 text-base aria-invalid:border-destructive"
           />
         )}
       </Field>
