@@ -34,6 +34,8 @@
   --sand-strong: #d9b27c; /* inactive category icons, decorative arches */
   --night: #07101e; /* hero sky */
   --gold: #f3c98b; /* hero subtitle, footer site name */
+  --leaf: #4f7d43; /* trees in the hero's story (041b); decoration only, never under text */
+  --water: #6fb7c4; /* pools in the hero's story (041b); decoration only, never under text */
   --on-dark: #fffaf2; /* text on night and dark brown */
   --on-dark-muted: #e3cfae; /* quiet text on dark brown (footer) */
   --radius: 1rem;
@@ -57,6 +59,8 @@
   --color-sand-strong: var(--sand-strong);
   --color-night: var(--night);
   --color-gold: var(--gold);
+  --color-leaf: var(--leaf);
+  --color-water: var(--water);
   --color-on-dark: var(--on-dark);
   --color-on-dark-muted: var(--on-dark-muted);
   --radius-md: calc(var(--radius) - 4px);
@@ -259,6 +263,53 @@
   }
   to {
     transform: none;
+  }
+}
+
+/*
+ * The hero's car story (features 041, 041b). The car bobs a little while it idles; its wheels turn and it moves
+ * with the scroll from HeroJourney's script. A place's gate glows and its windows light up while
+ * the car is parked there (data-active on the place, 041b). Clouds drift (daytime, 041d). All of it stops under
+ * reduced motion.
+ */
+.hero-car-idle {
+  animation: car-idle 1.6s ease-in-out infinite alternate;
+  transform-box: fill-box;
+}
+@keyframes car-idle {
+  from {
+    transform: translateY(0) rotate(0deg);
+  }
+  to {
+    transform: translateY(-1.5px) rotate(-0.4deg);
+  }
+}
+.hero-scene[data-moving="true"] .hero-car-idle {
+  animation-duration: 0.35s;
+}
+.hero-glow {
+  opacity: 0;
+  transition: opacity 0.6s var(--ease-soft);
+}
+.hero-lit {
+  transition: fill 0.6s var(--ease-soft);
+}
+/* The place the car is parked at: its gate glows and its windows light up. */
+.hero-stop[data-active="true"] .hero-glow {
+  opacity: 1;
+}
+.hero-stop[data-active="true"] .hero-lit {
+  fill: var(--gold);
+}
+.hero-cloud {
+  animation: cloud-drift 14s ease-in-out infinite alternate;
+}
+@keyframes cloud-drift {
+  from {
+    transform: translateX(-12px);
+  }
+  to {
+    transform: translateX(12px);
   }
 }
 

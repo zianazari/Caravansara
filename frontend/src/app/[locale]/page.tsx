@@ -16,13 +16,21 @@ export default async function HomePage({ params }: { params: Promise<{ locale: s
   setRequestLocale(locale);
   return (
     <div className="grid gap-10" data-wide>
-      <div>
-        <Hero />
-        <SearchForm
-          today={todayInZone("UTC")}
-          className="relative z-10 mx-auto -mt-8 w-full max-w-4xl px-2 md:-mt-10 md:px-6"
-        />
-      </div>
+      {/*
+        The hero is a short strip with the car's story, pinned under the header for the whole page (feature
+        041c, owner's request: always visible at the top). The search pill sits just below it and scrolls under it
+        with the page. Sticky needs a tall parent, so the strip is a direct child of the page grid.
+      */}
+      {/* A direct child of the page's grid, so sticky keeps it under the header for the whole page. */}
+      <Hero />
+      {/*
+        Just below the strip, not overlapping it: the strip stays above everything that scrolls under it, so an
+        overlapping pill would be half hidden at the top of the page. -mt-6 trims the grid's gap to 1rem.
+      */}
+      <SearchForm
+        today={todayInZone("UTC")}
+        className="relative z-10 mx-auto -mt-6 w-full max-w-4xl px-2 md:px-6"
+      />
       {/* The rows read ?category= from the address, which needs a Suspense boundary in the App Router. */}
       <Suspense>
         <HomeRows />
