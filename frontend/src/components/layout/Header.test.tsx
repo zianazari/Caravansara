@@ -10,8 +10,12 @@ vi.mock("@/hooks/useAuth", () => ({
   useMe: () => ({ data: undefined }),
 }));
 vi.mock("@/api/client", () => ({ api: { GET: (...a: unknown[]) => GET(...a) } }));
+const replace = vi.fn();
+const logout = vi.fn(async () => {});
+vi.mock("@/lib/session", () => ({ logout: () => logout() }));
 vi.mock("@/i18n/navigation", () => ({
   usePathname: () => "/",
+  useRouter: () => ({ replace }),
   Link: ({ href, children, ...rest }: { href: string | { pathname: string }; children: React.ReactNode }) => (
     <a href={typeof href === "string" ? href : href.pathname} {...rest}>
       {children}
@@ -59,5 +63,19 @@ describe("Header host link (specs/008-host-pages, FR-001, R11)", () => {
     const inMenu = within(menu).getByRole("link", { name: "آگهی‌های من" });
     expect(inMenu).toHaveAttribute("href", "/host");
     expect(inMenu).toHaveClass("md:hidden");
+  });
+
+  it("ends the session from the bottom of the account menu (feature 024)", async () => {
+    state = "signedIn";
+    GET.mockResolvedValue({ data: { items: [], total: 0 } });
+    renderIn("fa", <Header />);
+    await userEvent.click(screen.getByRole("button", { name: "حساب من" }));
+    const menu = await screen.findByRole("dialog");
+    const items = within(menu).getAllByRole("button");
+    const last = items[items.length - 1]!;
+    expect(last).toHaveTextContent("خروج");
+    await userEvent.click(last);
+    expect(logout).toHaveBeenCalled();
+    expect(replace).toHaveBeenCalledWith("/");
   });
 });

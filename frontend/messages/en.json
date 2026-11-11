@@ -419,8 +419,7 @@
     "too_large": "The picture can be at most 5 MB.",
     "wrong_type": "Only PNG or JPEG pictures are accepted.",
     "not_image": "This file is not a PNG or JPEG picture.",
-    "email": "Email: {email}",
-    "logout": "Log out"
+    "email": "Email: {email}"
   },
   "booking": {
     "title": "Booking",

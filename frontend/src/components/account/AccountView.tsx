@@ -10,20 +10,18 @@ import { Field } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useMe } from "@/hooks/useAuth";
-import { useRouter } from "@/i18n/navigation";
 import { errorMessage, type Translate } from "@/lib/errors";
-import { logout } from "@/lib/session";
 import { AvatarUploader } from "./AvatarUploader";
 
 /**
- * The profile (FR-015, US2/AC6, AC8): the name, the picture, and logging out. The name is changed with
+ * The profile (FR-015, US2/AC8): the name and the picture. Logging out is in the header's account menu since
+ * feature 024 (owner's request), not here. The name is changed with
  * PATCH /me and only `full_name`; the site never sends `avatar_url` there, pictures go through
  * PUT /me/avatar (FR-041).
  */
 export function AccountView() {
   const t = useTranslations();
   const me = useMe();
-  const router = useRouter();
   const queryClient = useQueryClient();
   const [name, setName] = useState<string | null>(null);
   const [error, setError] = useState<string>();
@@ -60,12 +58,6 @@ export function AccountView() {
     }
   }
 
-  async function signOut() {
-    await logout();
-    queryClient.removeQueries({ queryKey: ["me"] });
-    router.replace("/");
-  }
-
   return (
     <div className="mx-auto grid w-full max-w-2xl min-w-0 gap-8 rounded-3xl border bg-card p-5 shadow-sm md:p-8">
       <h1 className="text-2xl font-bold">{t("account.title")}</h1>
@@ -86,9 +78,6 @@ export function AccountView() {
           </Button>
         </form>
       </section>
-      <Button variant="outline" className="justify-self-start" onClick={signOut}>
-        {t("account.logout")}
-      </Button>
     </div>
   );
 }
