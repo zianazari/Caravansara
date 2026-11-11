@@ -16,9 +16,9 @@ It is generated: do not edit it by hand. Bulk data for measuring performance is 
 | Stockholm | SE | SEK | Europe/Stockholm | Inside Airbnb, 2026-09-25 | 125 |
 | London | GB | GBP | Europe/London | Inside Airbnb, 2026-09-17 | 125 |
 | New York City | US | USD | America/New_York | Inside Airbnb, 2026-09-14 | 125 |
-| Tehran | IR | IRR | Asia/Tehran | hand-written (`fa_listings.json`) | 16 |
-| Isfahan | IR | IRR | Asia/Tehran | hand-written | 11 |
-| Shiraz | IR | IRR | Asia/Tehran | hand-written | 13 |
+| Tehran | IR | IRR | Asia/Tehran | hand-written (`fa_listings.json`) | 20 |
+| Isfahan | IR | IRR | Asia/Tehran | hand-written | 14 |
+| Shiraz | IR | IRR | Asia/Tehran | hand-written | 16 |
 
 New York is the only city behind UTC, and Tehran is UTC+3:30. Together they catch mistakes with "today in the listing's city".
 
@@ -42,12 +42,12 @@ The Persian listings in Iran are written for this project in `fa_listings.json`:
 
 ## Contents
 
-- 790 listings: 561 entire places, 218 private rooms, 11 shared rooms
-- 2,044 users: 759 hosts, the guests, the two demo accounts and the demo admin
-- 787 public listings: all 790 are approved except the two review edge cases below, and one more is inactive
-- 10,748 bookings: 9,525 completed (one behind each review, plus a few edge cases), 1,050 confirmed, 171 cancelled, 1 pending and 1 expired
-- 9,523 reviews; the trigger fills `avg_rating` and `review_count` (city averages 4.40–4.73)
-- 4,549 photos, 3–8 per listing
+- 800 listings: 569 entire places, 220 private rooms, 11 shared rooms
+- 2,054 users: 769 hosts, the guests, the two demo accounts and the demo admin
+- 797 public listings: all 800 are approved except the two review edge cases below, and one more is inactive
+- 10,783 bookings: 9,548 completed (one behind each review, plus a few edge cases), 1,062 confirmed, 171 cancelled, 1 pending and 1 expired
+- 9,546 reviews; the trigger fills `avg_rating` and `review_count` (city averages 4.40–4.73)
+- 4,608 photos, 3–8 per listing
 
 Upcoming bookings are relative to the day you load the file, in the listing city's time zone (`(now() AT TIME ZONE 'Europe/Amsterdam')::date + 20`), so they stay in the future. Past bookings behind reviews use fixed dates.
 

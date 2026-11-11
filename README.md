@@ -175,7 +175,7 @@ Needs Docker.
 
 ```bash
 docker compose up --build                               # db, MinIO, migrations, API, worker, web site
-docker compose run --rm migrate caravansara seed-demo   # optional, empty database only: 790 listings in 9 cities, with photos
+docker compose run --rm migrate caravansara seed-demo   # optional, empty database only: 800 listings in 9 cities, with photos
 docker compose exec -e CARAVANSARA_ADMIN_PASSWORD=… api caravansara create-admin --email you@example.com --name "You"   # an admin to review listings
 docker compose run --rm migrate caravansara seed-bulk   # optional: 100,000 listings in their own database, for measuring
 ```
