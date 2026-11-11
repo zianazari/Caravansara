@@ -138,7 +138,7 @@ export function CityCombobox({
       loop={false}
       className="relative grid gap-1.5 overflow-visible"
     >
-      <span aria-hidden className="text-sm font-medium" onClick={() => input.current?.focus()}>
+      <span aria-hidden className="field-label text-sm font-medium" onClick={() => input.current?.focus()}>
         {name}
       </span>
       <div className="relative">
