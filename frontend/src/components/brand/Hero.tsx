@@ -1,4 +1,5 @@
 import { useTranslations } from "next-intl";
+import { cn } from "@/lib/cn";
 import { HeroJourney } from "./HeroJourney";
 
 /**
@@ -8,21 +9,22 @@ import { HeroJourney } from "./HeroJourney";
  * city (HeroJourney). It replaces the photo doorway and the row of arches.
  *
  * The title and subtitle sit on the dark sky above the road only, never on the scene, because a contrast
- * check cannot measure text on a picture (data-model: hero); the bottom padding keeps them clear of it.
+ * check cannot measure text on a picture (data-model: hero). Since 041b the hero fills the pinned stage's
+ * height, so the text sits at the top and the scene takes the lower part.
  */
-export function Hero() {
+export function Hero({ className }: { className?: string }) {
   const t = useTranslations("home");
   return (
     <section
       aria-labelledby="hero-title"
-      className="relative isolate overflow-hidden rounded-3xl bg-night text-on-dark"
+      className={cn("relative isolate overflow-hidden rounded-3xl bg-night text-on-dark", className)}
     >
       <div
         aria-hidden
         className="absolute inset-0 -z-10 bg-[radial-gradient(120%_90%_at_20%_115%,var(--amber)_0%,var(--brick)_30%,var(--foreground)_58%,var(--night)_85%)]"
       />
       <HeroJourney />
-      <div className="relative max-w-xl px-6 pt-10 pb-52 md:max-w-[60%] md:px-14 md:pt-14 md:pb-68">
+      <div className="relative max-w-xl px-6 pt-10 md:max-w-[60%] md:px-14 md:pt-14">
         <h1
           id="hero-title"
           className="animate-rise text-3xl leading-snug font-extrabold md:text-5xl md:leading-tight"

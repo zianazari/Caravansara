@@ -28,6 +28,13 @@ M = {
   "samplePhoto": ("تصویر نمونه", "Sample picture"),
  },
  "home": {
+  # 041b: the places the hero's car stops at (signs in the scene)
+  "stopGarden": ("باغ", "Garden"),
+  "stopVilla": ("ویلا", "Villa"),
+  "stopCaravansara": ("کاروانسرا", "Caravansara"),
+  "stopApartment": ("آپارتمان", "Apartment"),
+  "stopCabin": ("کلبه‌ی جنگلی", "Forest cabin"),
+  "stopEcolodge": ("بوم‌گردی", "Eco-lodge"),
   "siteName": ("کاروانسرا", "Caravansara"),
   "title": ("کاروانسرا: اقامتگاه برای سفر بعدی شما", "Caravansara: a place for your next trip"),
   "description": ("اقامتگاه پیدا کنید، تاریخ‌ها را نگه دارید و رزرو کنید.", "Find a place to stay, hold the dates and book."),

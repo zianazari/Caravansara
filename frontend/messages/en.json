@@ -24,6 +24,12 @@
     "samplePhoto": "Sample picture"
   },
   "home": {
+    "stopGarden": "Garden",
+    "stopVilla": "Villa",
+    "stopCaravansara": "Caravansara",
+    "stopApartment": "Apartment",
+    "stopCabin": "Forest cabin",
+    "stopEcolodge": "Eco-lodge",
     "siteName": "Caravansara",
     "title": "Caravansara: a place for your next trip",
     "description": "Find a place to stay, hold the dates and book.",

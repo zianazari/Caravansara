@@ -24,6 +24,12 @@
     "samplePhoto": "تصویر نمونه"
   },
   "home": {
+    "stopGarden": "باغ",
+    "stopVilla": "ویلا",
+    "stopCaravansara": "کاروانسرا",
+    "stopApartment": "آپارتمان",
+    "stopCabin": "کلبه‌ی جنگلی",
+    "stopEcolodge": "بوم‌گردی",
     "siteName": "کاروانسرا",
     "title": "کاروانسرا: اقامتگاه برای سفر بعدی شما",
     "description": "اقامتگاه پیدا کنید، تاریخ‌ها را نگه دارید و رزرو کنید.",

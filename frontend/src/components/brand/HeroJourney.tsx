@@ -1,52 +1,90 @@
 "use client";
 
-import { useLocale } from "next-intl";
-import { useEffect, useRef } from "react";
+import { useLocale, useTranslations } from "next-intl";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 import courtyard from "@/assets/hero-courtyard.jpg";
-import { ROAD, journeyAt, mirror } from "@/lib/heroJourney";
+import { PARK_X, PLACE_AHEAD, START, STOPS, VIEW, WORLD, journeyAt, type StopKind } from "@/lib/heroJourney";
 
-/** Scroll distance, as a share of the hero's height, over which the whole trip plays. */
-const TRIP_SHARE = 0.8;
 /** How quickly the drawn car catches up with the scroll each frame: it rolls on a little after a scroll. */
 const CATCH_UP = 0.1;
-const GATE_X = 560;
-const CITY_X = 905;
+/** The far hills move slower than the road, for depth. */
+const FAR_SPEED = 0.35;
+/** Progress at which the car is shown under reduced motion: parked at the caravansara. */
+const STILL = (STOPS.indexOf("caravansara") + 0.75) / STOPS.length;
+
+const LABEL: Record<StopKind, string> = {
+  garden: "stopGarden",
+  villa: "stopVilla",
+  caravansara: "stopCaravansara",
+  apartment: "stopApartment",
+  cabin: "stopCabin",
+  ecolodge: "stopEcolodge",
+};
+/** Height of each place, so its sign sits just above it. */
+const HEIGHT: Record<StopKind, number> = {
+  garden: 70,
+  villa: 92,
+  caravansara: 118,
+  apartment: 132,
+  cabin: 96,
+  ecolodge: 104,
+};
 
 /**
- * The home page hero's story (feature 041, owner's request): a car with three passengers drives along a road
- * as the visitor scrolls down, stops at a caravansara (its gateway frames the owner's courtyard photo from the
- * README, feature 027), drives on and stops at a city. Scrolling up drives it back. While nobody scrolls, the
- * car idles in place with a slight bob (CSS, .hero-car-idle). On the Persian site the road runs from right to
- * left, the reading direction.
+ * The home page hero's story (features 041, 041b; owner's requests): a car with three passengers drives along
+ * a road and stops at a garden, a villa, a caravansara (its gate frames the owner's courtyard photo, 027), an
+ * apartment block, a forest cabin and an eco-lodge. The hero is pinned while the story plays (data-hero-stage
+ * on the home page), so the whole trip is seen while scrolling; scrolling up drives the car back. The road is
+ * longer than the view, so the view follows the car like a camera, and the far hills move slower for depth.
+ * While nobody scrolls, the car idles with a slight bob (CSS). On the Persian site the road runs right to left.
  *
- * The drawing is plain SVG in the theme's colours, so it is sharp at any size and adds no request but the
- * photo. Scroll is read once per frame with requestAnimationFrame, and the car is moved by setting SVG
- * attributes directly, so React does not re-render on every frame. Decoration only: hidden from screen
- * readers. Under prefers-reduced-motion the car is shown parked at the caravansara and nothing moves.
+ * Plain SVG in the theme's colours, sharp at any size. Scroll is read once per frame with
+ * requestAnimationFrame and the car, the world and the hills are moved by setting SVG attributes directly, so
+ * React does not re-render each frame. Decoration only: hidden from screen readers. Under
+ * prefers-reduced-motion nothing is pinned or moves, and the car is parked at the caravansara.
  */
 export function HeroJourney() {
+  const t = useTranslations("home");
   const rtl = useLocale() === "fa";
   const svg = useRef<SVGSVGElement>(null);
+  const world = useRef<SVGGElement>(null);
+  const far = useRef<SVGGElement>(null);
   const car = useRef<SVGGElement>(null);
   const wheels = useRef<SVGGElement[]>([]);
+  const places = useRef<SVGGElement[]>([]);
+  // On a narrow screen the whole 1000-wide view would be drawn tiny; there the scene fills its box and keeps
+  // the middle, which holds the car and the place ahead of it (041b).
+  const [narrow, setNarrow] = useState(false);
+  useEffect(() => {
+    const query = window.matchMedia?.("(max-width: 767px)");
+    if (!query) return;
+    const update = () => setNarrow(query.matches);
+    update();
+    query.addEventListener("change", update);
+    return () => query.removeEventListener("change", update);
+  }, []);
 
   useEffect(() => {
     const scene = svg.current;
+    const road = world.current;
+    const hills = far.current;
     const body = car.current;
-    if (!scene || !body) return;
-    const hero = scene.closest("section") ?? scene;
+    if (!scene || !road || !hills || !body) return;
     // Without matchMedia (an old browser, or the test DOM) the visitor has not asked for less motion.
     const reduced = window.matchMedia?.("(prefers-reduced-motion: reduce)").matches ?? false;
-    let shown = reduced ? 0.42 : 0;
+    const stage = scene.closest<HTMLElement>("[data-hero-stage]");
+    const pinned = stage?.firstElementChild as HTMLElement | null;
+    let shown = reduced ? STILL : 0;
     let target = shown;
     let frame = 0;
 
     const place = (progress: number) => {
-      const { x, parkedAt } = journeyAt(progress);
-      const at = mirror(x, rtl);
-      body.setAttribute("transform", `translate(${at} 0) scale(${rtl ? -1 : 1} 1)`);
+      const { x, parkedAt, camera } = journeyAt(progress);
+      road.setAttribute("transform", `translate(${-camera} 0)`);
+      hills.setAttribute("transform", `translate(${-camera * FAR_SPEED} 0)`);
+      body.setAttribute("transform", `translate(${x} 0)`);
       for (const wheel of wheels.current) wheel.setAttribute("transform", `rotate(${(x * 3.2) % 360})`);
-      scene.dataset.parked = parkedAt === null ? "" : String(parkedAt);
+      places.current.forEach((g, i) => (g.dataset.active = String(i === parkedAt)));
       scene.dataset.moving = Math.abs(target - shown) > 0.002 ? "true" : "false";
     };
     const step = () => {
@@ -55,8 +93,14 @@ export function HeroJourney() {
       place(shown);
       frame = shown === target ? 0 : requestAnimationFrame(step);
     };
+    /** Progress is how far the pinned stage has scrolled, over the extra height it has for the trip. */
     const onScroll = () => {
-      target = window.scrollY / Math.max(1, hero.getBoundingClientRect().height * TRIP_SHARE);
+      if (stage && pinned) {
+        const trip = Math.max(1, stage.offsetHeight - pinned.offsetHeight);
+        target = (pinned.getBoundingClientRect().top - stage.getBoundingClientRect().top) / trip;
+      } else {
+        target = window.scrollY / Math.max(1, scene.getBoundingClientRect().height * 3);
+      }
       if (!frame) frame = requestAnimationFrame(step);
     };
 
@@ -64,26 +108,26 @@ export function HeroJourney() {
     if (reduced) return;
     onScroll();
     window.addEventListener("scroll", onScroll, { passive: true });
+    window.addEventListener("resize", onScroll);
     return () => {
       window.removeEventListener("scroll", onScroll);
+      window.removeEventListener("resize", onScroll);
       cancelAnimationFrame(frame);
     };
-  }, [rtl]);
+  }, []);
 
-  const wheelRef = (index: number) => (el: SVGGElement | null) => {
-    if (el) wheels.current[index] = el;
-  };
+  /** Text and the photo are drawn back the right way round inside the mirrored Persian scene. */
+  const unmirror = rtl ? "scale(-1 1)" : undefined;
 
   return (
     <svg
       ref={svg}
       aria-hidden
       data-hero="scene"
-      viewBox="0 0 1000 220"
-      preserveAspectRatio="xMidYMax meet"
+      viewBox={`0 0 ${VIEW} 220`}
+      preserveAspectRatio={narrow ? "xMidYMax slice" : "xMidYMax meet"}
       overflow="visible"
-      // Above the search pill, which rests on the hero's lower edge (-mt-8, md:-mt-10), so the road shows.
-      className="hero-scene absolute inset-x-0 bottom-9 h-40 w-full md:bottom-12 md:h-52"
+      className="hero-scene absolute inset-x-0 bottom-9 h-[190px] w-full md:bottom-12 md:h-[46%]"
     >
       <defs>
         <clipPath id="hero-gate-arch">
@@ -91,25 +135,148 @@ export function HeroJourney() {
         </clipPath>
       </defs>
 
-      {/* Stars over the far hills. */}
       <g className="fill-gold">
         {[60, 210, 330, 470, 640, 760, 880].map((x, i) => (
-          <circle key={x} cx={x} cy={70 + (i % 3) * 14} r={1.6} className="hero-star" />
+          <circle key={x} cx={x} cy={30 + (i % 3) * 18} r={1.6} className="hero-star" />
         ))}
       </g>
-      {/* Far hills, wider than the scene so wide screens show no edge. */}
-      <path
-        d="M-600 190 L-300 140 L-50 165 L150 120 L330 160 L520 128 L700 158 L880 118 L1100 160 L1600 140 L1600 190Z"
-        className="fill-foreground opacity-60"
-      />
 
-      {/* The caravansara: a wide wall, two towers and a pointed gateway with the courtyard inside. */}
-      <g transform={`translate(${mirror(GATE_X, rtl)} 186)`} className="hero-gate">
-        <rect x={-110} y={-62} width={220} height={62} className="fill-sand-strong" />
-        <rect x={-122} y={-84} width={24} height={84} className="fill-copper" />
-        <rect x={98} y={-84} width={24} height={84} className="fill-copper" />
-        <rect x={-46} y={-118} width={92} height={118} className="fill-copper" />
-        <g clipPath="url(#hero-gate-arch)">
+      <g transform={rtl ? `translate(${VIEW} 0) scale(-1 1)` : undefined}>
+        <g ref={far}>
+          <path
+            d={`M-600 190 ${Array.from({ length: 14 }, (_, i) => `L${i * 420 - 300} ${i % 2 ? 128 : 160}`).join(" ")} L${WORLD + 1200} 150 L${WORLD + 1200} 190Z`}
+            className="fill-foreground opacity-60"
+          />
+        </g>
+
+        <g ref={world}>
+          <rect x={-600} y={186} width={WORLD + 1800} height={34} className="fill-foreground" />
+          <line
+            x1={-600}
+            x2={WORLD + 1200}
+            y1={203}
+            y2={203}
+            className="stroke-gold"
+            strokeWidth={2}
+            strokeDasharray="18 16"
+          />
+
+          {STOPS.map((kind, i) => (
+            <g
+              key={kind}
+              ref={(el) => {
+                if (el) places.current[i] = el;
+              }}
+              data-stop={kind}
+              className="hero-stop"
+              transform={`translate(${PARK_X[i]! + PLACE_AHEAD} 186)`}
+            >
+              {PLACES[kind](unmirror)}
+              {/* The sign's lift is on an inner group: a CSS transform would replace the position attribute. */}
+              <g transform={`translate(0 ${-HEIGHT[kind] - 22})`}>
+                <g className="hero-sign">
+                  <rect
+                    x={-56}
+                    y={-15}
+                    width={112}
+                    height={28}
+                    rx={14}
+                    className="hero-sign-pill fill-card"
+                  />
+                  <g transform={unmirror}>
+                    <text
+                      textAnchor="middle"
+                      dominantBaseline="middle"
+                      y={1}
+                      className="fill-foreground"
+                      style={{ fontSize: 15, fontWeight: 700 }}
+                    >
+                      {t(LABEL[kind])}
+                    </text>
+                  </g>
+                </g>
+              </g>
+            </g>
+          ))}
+
+          {/* The car, drawn facing forward (+x); the whole scene is mirrored on the Persian site. */}
+          <g ref={car} transform={`translate(${START} 0)`}>
+            <g className="hero-car-idle">
+              <path
+                d="M-48 186 L-48 166 Q-46 154 -32 152 L-18 150 L-4 132 Q2 126 12 126 L40 126 Q50 126 56 134 L66 150 Q86 152 92 160 L94 186Z"
+                className="fill-copper"
+              />
+              <path d="M-12 150 L0 135 Q4 131 10 131 L22 131 L22 150Z" className="fill-gold" />
+              <path d="M28 131 L40 131 Q47 131 51 137 L58 150 L28 150Z" className="fill-gold" />
+              <circle cx={6} cy={142} r={5.5} className="fill-foreground" />
+              <circle cx={17} cy={143} r={4.5} className="fill-foreground" />
+              <circle cx={42} cy={142} r={5.5} className="fill-foreground" />
+              <rect x={86} y={164} width={8} height={6} rx={2} className="fill-amber" />
+              <rect x={-48} y={164} width={6} height={6} rx={2} className="fill-destructive" />
+              {[-24, 64].map((cx, i) => (
+                <g key={cx} transform={`translate(${cx} 186)`}>
+                  <g
+                    ref={(el) => {
+                      if (el) wheels.current[i] = el;
+                    }}
+                  >
+                    <circle r={13} className="fill-foreground" />
+                    <circle r={6} className="fill-sand-strong" />
+                    <rect x={-1.5} y={-11} width={3} height={22} className="fill-sand-strong" />
+                  </g>
+                </g>
+              ))}
+            </g>
+          </g>
+        </g>
+      </g>
+    </svg>
+  );
+}
+
+/**
+ * The six places, each standing on the road's edge (y = 0 is the ground). Windows and pools with
+ * .hero-lit light up while the car is parked there. Simple shapes in the theme's colours.
+ */
+const PLACES: Record<StopKind, (unmirror?: string) => ReactNode> = {
+  garden: () => (
+    <>
+      {[-80, -20, 45].map((x, i) => (
+        <g key={x}>
+          <rect x={x - 3} y={-34} width={6} height={34} className="fill-muted-foreground" />
+          <circle cx={x} cy={-48 - (i % 2) * 8} r={20 + (i % 2) * 4} className="fill-leaf" />
+        </g>
+      ))}
+      <rect x={-110} y={-8} width={220} height={8} className="fill-sand-strong" />
+      <rect x={-40} y={-6} width={70} height={6} rx={2} className="fill-water" />
+      <path
+        d="M86 0V-30C86 -42 94 -50 100 -54C106 -50 114 -42 114 -30V0"
+        className="fill-none stroke-sand-strong"
+        strokeWidth={5}
+      />
+    </>
+  ),
+  villa: () => (
+    <>
+      <rect x={-75} y={-62} width={130} height={62} className="fill-sand-strong" />
+      <path d="M-86 -60 L-10 -92 L66 -60Z" className="fill-destructive" />
+      <rect x={-18} y={-34} width={18} height={34} className="fill-copper" />
+      {[-58, 20].map((x) => (
+        <rect key={x} x={x} y={-48} width={22} height={18} rx={2} className="hero-lit fill-night" />
+      ))}
+      <rect x={66} y={-7} width={60} height={7} rx={2} className="fill-water" />
+      <circle cx={-100} cy={-36} r={18} className="fill-leaf" />
+      <rect x={-102} y={-20} width={4} height={20} className="fill-muted-foreground" />
+    </>
+  ),
+  caravansara: (unmirror) => (
+    <>
+      <rect x={-110} y={-62} width={220} height={62} className="fill-sand-strong" />
+      <rect x={-122} y={-84} width={24} height={84} className="fill-copper" />
+      <rect x={98} y={-84} width={24} height={84} className="fill-copper" />
+      <rect x={-46} y={-118} width={92} height={118} className="fill-copper" />
+      <g clipPath="url(#hero-gate-arch)">
+        <g transform={unmirror}>
           <image
             href={courtyard.src}
             x={-60}
@@ -119,81 +286,68 @@ export function HeroJourney() {
             preserveAspectRatio="xMidYMid slice"
           />
         </g>
-        <path
-          d="M-34 0V-58C-34 -80 -16 -94 0 -106C16 -94 34 -80 34 -58V0"
-          className="hero-gate-glow fill-none stroke-amber"
-          strokeWidth={4}
-        />
       </g>
-
-      {/* The city: a few houses whose windows light up when the car arrives, and a pin above them. */}
-      <g transform={`translate(${mirror(CITY_X, rtl)} 186)`} className="hero-city">
-        {[
-          { x: -70, w: 40, h: 70 },
-          { x: -26, w: 34, h: 104 },
-          { x: 12, w: 46, h: 82 },
-          { x: 62, w: 30, h: 56 },
-        ].map((b) => (
-          <g key={b.x}>
-            <rect x={b.x} y={-b.h} width={b.w} height={b.h} className="fill-muted-foreground" />
-            {Array.from({ length: Math.floor(b.h / 22) }, (_, row) => (
-              <rect
-                key={row}
-                x={b.x + 8}
-                y={-b.h + 10 + row * 22}
-                width={b.w - 16}
-                height={8}
-                rx={1.5}
-                className="hero-window fill-night"
-              />
-            ))}
-          </g>
-        ))}
-        <path
-          d="M0 -146a14 14 0 0 0-14 14c0 11 14 24 14 24s14-13 14-24a14 14 0 0 0-14-14z"
-          className="hero-pin fill-amber"
-        />
-        <circle cx={0} cy={-132} r={5} className="fill-night" />
-      </g>
-
-      {/* The road, longer than the scene, with a dashed middle line. */}
-      <rect x={-600} y={186} width={2200} height={34} className="fill-foreground" />
-      <line
-        x1={-600}
-        x2={1600}
-        y1={203}
-        y2={203}
-        className="stroke-gold"
-        strokeWidth={2}
-        strokeDasharray="18 16"
+      <path
+        d="M-34 0V-58C-34 -80 -16 -94 0 -106C16 -94 34 -80 34 -58V0"
+        className="hero-glow fill-none stroke-amber"
+        strokeWidth={4}
       />
-
-      {/* The car, drawn facing forward (+x); mirrored on the Persian site. */}
-      <g ref={car} transform={`translate(${mirror(ROAD.start, rtl)} 0) scale(${rtl ? -1 : 1} 1)`}>
-        <g className="hero-car-idle">
-          <path
-            d="M-48 186 L-48 166 Q-46 154 -32 152 L-18 150 L-4 132 Q2 126 12 126 L40 126 Q50 126 56 134 L66 150 Q86 152 92 160 L94 186Z"
-            className="fill-copper"
-          />
-          {/* Two windows with three passengers. */}
-          <path d="M-12 150 L0 135 Q4 131 10 131 L22 131 L22 150Z" className="fill-gold" />
-          <path d="M28 131 L40 131 Q47 131 51 137 L58 150 L28 150Z" className="fill-gold" />
-          <circle cx={6} cy={142} r={5.5} className="fill-foreground" />
-          <circle cx={17} cy={143} r={4.5} className="fill-foreground" />
-          <circle cx={42} cy={142} r={5.5} className="fill-foreground" />
-          <rect x={86} y={164} width={8} height={6} rx={2} className="fill-amber" />
-          <rect x={-48} y={164} width={6} height={6} rx={2} className="fill-destructive" />
-          {[-24, 64].map((cx, i) => (
-            <g key={cx} transform={`translate(${cx} 186)`}>
-              <g ref={wheelRef(i)}>
-                <circle r={13} className="fill-foreground" />
-                <circle r={6} className="fill-sand-strong" />
-                <rect x={-1.5} y={-11} width={3} height={22} className="fill-sand-strong" />
-              </g>
-            </g>
-          ))}
+    </>
+  ),
+  apartment: () => (
+    <>
+      {[
+        { x: -70, w: 56, h: 104 },
+        { x: -8, w: 64, h: 132 },
+        { x: 62, w: 44, h: 80 },
+      ].map((b) => (
+        <g key={b.x}>
+          <rect x={b.x} y={-b.h} width={b.w} height={b.h} className="fill-muted-foreground" />
+          {Array.from({ length: Math.floor((b.h - 12) / 20) }, (_, row) =>
+            [0, 1].map((col) => (
+              <rect
+                key={`${row}-${col}`}
+                x={b.x + 8 + col * ((b.w - 16) / 2 + 2)}
+                y={-b.h + 10 + row * 20}
+                width={(b.w - 20) / 2}
+                height={9}
+                rx={1.5}
+                className="hero-lit fill-night"
+              />
+            )),
+          )}
         </g>
-      </g>
-    </svg>
-  );
-}
+      ))}
+    </>
+  ),
+  cabin: () => (
+    <>
+      {[-90, -62, 74, 100].map((x, i) => (
+        <path
+          key={x}
+          d={`M${x} 0 L${x - 18} 0 L${x - 9} ${-56 - (i % 2) * 14}Z`}
+          transform={`translate(9 0)`}
+          className="fill-leaf"
+        />
+      ))}
+      <path d="M-46 0 L0 -86 L46 0Z" className="fill-copper" />
+      <path d="M-30 0 L0 -56 L30 0Z" className="fill-sand-strong" />
+      <rect x={-9} y={-24} width={18} height={24} className="fill-foreground" />
+      <rect x={-8} y={-46} width={16} height={12} rx={2} className="hero-lit fill-night" />
+    </>
+  ),
+  ecolodge: () => (
+    <>
+      <rect x={-80} y={-50} width={150} height={50} rx={6} className="fill-sand-strong" />
+      <path d="M-50 -50 A34 34 0 0 1 18 -50Z" className="fill-copper" />
+      <rect x={42} y={-104} width={24} height={56} className="fill-sand-strong" />
+      {[0, 1, 2].map((i) => (
+        <rect key={i} x={46 + i * 7} y={-98} width={3} height={18} className="fill-foreground" />
+      ))}
+      <path d="M-24 0V-22C-24 -30 -18 -35 -12 -37C-6 -35 0 -30 0 -22V0" className="fill-foreground" />
+      {[-66, 14].map((x) => (
+        <rect key={x} x={x} y={-36} width={18} height={14} rx={3} className="hero-lit fill-night" />
+      ))}
+    </>
+  ),
+};

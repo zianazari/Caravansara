@@ -223,22 +223,33 @@ test.describe("Caravansara theme in a real browser", () => {
     }
   });
 
-  test("the hero's car drives as the page scrolls, and parks at the caravansara and the city (041)", async ({ page }) => {
+  test("the hero stays pinned while its car stops at six places, and drives back when scrolling up (041)", async ({ page }) => {
     await page.setViewportSize({ width: 1280, height: 900 });
     await page.goto(`${WEB}/fa`, { waitUntil: "networkidle" });
-    await page.evaluate(() => document.fonts.ready); // the hero's height, and so the trip, depends on the font
+    await page.evaluate(() => document.fonts.ready);
     const scene = page.locator("svg[data-hero='scene']");
-    const car = scene.locator("> g").last();
-    const start = await car.getAttribute("transform");
-    // The trip plays over 80% of the hero's height (HeroJourney); scroll to the middle of each stop.
-    const trip = ((await page.locator("section[aria-labelledby='hero-title']").boundingBox())!.height * 0.8);
-    await page.evaluate((y) => window.scrollTo(0, y), trip * 0.42);
-    await expect.poll(() => scene.getAttribute("data-parked")).toBe("0");
-    expect(await car.getAttribute("transform")).not.toBe(start);
-    await page.evaluate((y) => window.scrollTo(0, y), trip * 0.92);
-    await expect.poll(() => scene.getAttribute("data-parked")).toBe("1");
-    await page.evaluate(() => window.scrollTo(0, 0)); // and back to the start when scrolling up
-    await expect.poll(() => car.getAttribute("transform")).toBe(start);
+    const hero = page.locator("section[aria-labelledby='hero-title']");
+    const stops = scene.locator("[data-stop]");
+    await expect(stops).toHaveCount(6);
+    // Progress is how far the pinned part has scrolled within its stage, over the stage's extra height.
+    const { trip, offset } = await page.evaluate(() => {
+      const stage = document.querySelector<HTMLElement>("[data-hero-stage]")!;
+      const pinned = stage.firstElementChild as HTMLElement;
+      return {
+        trip: stage.offsetHeight - pinned.offsetHeight,
+        offset: stage.getBoundingClientRect().top - parseFloat(getComputedStyle(pinned).top),
+      };
+    });
+    const heroTop = (await hero.boundingBox())!.y;
+    for (const [index, kind] of [[2, "caravansara"], [5, "ecolodge"]] as const) {
+      await page.evaluate((y) => window.scrollTo(0, y), offset + ((index + 0.75) / 6) * trip);
+      await expect.poll(() => scene.locator(`[data-stop='${kind}']`).getAttribute("data-active")).toBe("true");
+      // The hero has not scrolled away: the whole story is seen.
+      expect(Math.abs((await hero.boundingBox())!.y - (heroTop - offset))).toBeLessThan(2);
+    }
+    await page.evaluate(() => window.scrollTo(0, 0));
+    await expect.poll(() => scene.locator("[data-stop='garden']").getAttribute("data-active")).toBe("false");
+    await expect.poll(() => scene.locator("[data-active='true']").count()).toBe(0);
   });
 
   test("screenshots for the owner (SC-001)", async ({ page }) => {
