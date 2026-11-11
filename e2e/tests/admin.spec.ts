@@ -131,10 +131,14 @@ test("the queue sorts oldest or newest first, and the order is kept in the addre
 
   await page.getByLabel("ترتیب").selectOption("newest");
   await page.waitForURL(/\/admin\?sort=newest$/);
-  await expect(page.getByText("E2E queue newest")).toBeVisible();
-  const newest = await titles();
-  const at = newest.indexOf("E2E queue oldest");
-  expect(at === -1 || at > newest.indexOf("E2E queue newest")).toBe(true);
+  // The previous order stays on screen until the new page arrives, so wait for the order itself.
+  await expect
+    .poll(async () => {
+      const newest = await titles();
+      const at = newest.indexOf("E2E queue oldest");
+      return newest.includes("E2E queue newest") && (at === -1 || at > newest.indexOf("E2E queue newest"));
+    })
+    .toBe(true);
 
   await page.reload();
   await expect(page.getByLabel("ترتیب")).toHaveValue("newest");
