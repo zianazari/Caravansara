@@ -12,6 +12,7 @@ import {
   formatDate,
   formatDay,
   formatMonth,
+  isWeeklyHoliday,
   monthGrid,
   monthOf,
   shiftMonth,
@@ -130,7 +131,13 @@ export function AvailabilityCalendar({ city }: { city: string }) {
               <div role="grid" aria-label={title} className="grid gap-1">
                 <div role="row" className="grid grid-cols-7 text-center text-xs text-muted-foreground">
                   {dayNames.map((name, i) => (
-                    <span role="columnheader" key={i}>
+                    <span
+                      role="columnheader"
+                      key={i}
+                      className={cn(
+                        isWeeklyHoliday(calendar, weeks[1]![i]!) && "font-semibold text-destructive",
+                      )}
+                    >
                       {name}
                     </span>
                   ))}
@@ -170,6 +177,8 @@ export function AvailabilityCalendar({ city }: { city: string }) {
                             className={cn(
                               "mx-auto grid size-10 place-content-center rounded-full text-sm transition-[transform,background-color,box-shadow] duration-200 hover:scale-110 hover:bg-muted hover:ring-1 hover:ring-foreground disabled:text-muted-foreground/50 disabled:hover:scale-100 disabled:hover:bg-transparent disabled:hover:ring-0",
                               taken && "line-through",
+                              // Friday (Persian) or Sunday (English) in red; a chosen end keeps its own colours.
+                              isWeeklyHoliday(calendar, iso) && "text-destructive",
                               ends && "bg-foreground text-background hover:ring-0",
                             )}
                           >

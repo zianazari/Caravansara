@@ -12,6 +12,7 @@ import {
   formatDate,
   formatDay,
   formatMonth,
+  isWeeklyHoliday,
   monthGrid,
   monthOf,
   shiftMonth,
@@ -159,7 +160,11 @@ export function DateRangePicker({
         <div ref={grid} role="grid" aria-label={t("calendar")} onKeyDown={onKey} className="grid gap-1">
           <div role="row" className="grid grid-cols-7 text-center text-xs text-muted-foreground">
             {dayNames.map((name, i) => (
-              <span role="columnheader" key={i}>
+              <span
+                role="columnheader"
+                key={i}
+                className={cn(isWeeklyHoliday(calendar, fullWeek[i]!) && "font-semibold text-destructive")}
+              >
                 {name}
               </span>
             ))}
@@ -186,6 +191,8 @@ export function DateRangePicker({
                       className={cn(
                         "grid size-10 w-full place-content-center rounded-md text-sm transition-[transform,background-color] duration-200 hover:scale-105 hover:bg-muted disabled:text-muted-foreground/40 disabled:hover:scale-100 disabled:hover:bg-transparent",
                         taken.has(iso) && "line-through",
+                        // Friday (Persian) or Sunday (English) in red (feature 038); a chosen day keeps its colours.
+                        isWeeklyHoliday(calendar, iso) && "text-destructive",
                         value.checkIn &&
                           value.checkOut &&
                           iso > value.checkIn &&
