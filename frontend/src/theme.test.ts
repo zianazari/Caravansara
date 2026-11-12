@@ -61,14 +61,14 @@ describe("theme tokens", () => {
     expect(contrast(token(fg), token(bg))).toBeGreaterThanOrEqual(min);
   });
 
-  it("uses the darker copper for buttons and links, because white on #b5651d is only 4.3:1 (research R2)", () => {
-    expect(token("primary")).toBe("#9a5418");
+  it("uses olive for buttons and keeps copper for decoration", () => {
+    expect(token("primary")).toBe("#43533b");
     expect(contrast("#ffffff", "#b5651d")).toBeLessThan(TEXT);
   });
 
-  it("keeps the README palette", () => {
-    expect(token("background")).toBe("#fffaf2");
-    expect(token("foreground")).toBe("#3b1f08");
+  it("keeps the boutique palette and copper brand accents", () => {
+    expect(token("background")).toBe("#faf9f5");
+    expect(token("foreground")).toBe("#292e27");
     expect(token("copper")).toBe("#b5651d");
     expect(token("amber")).toBe("#e08a2e");
     expect(token("night")).toBe("#07101e");

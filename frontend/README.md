@@ -100,3 +100,12 @@ src/
   source.
 - **Time:** dates that decide cancelling and reviewing are counted in the listing city's time zone, as the API
   counts them.
+
+## Boutique home design
+
+The home page uses an atmospheric Persian courtyard cover, an overlapping search bar, olive actions and
+ivory surfaces. The decorative cover (`src/assets/hero-boutique.jpg`) is AI-generated, not a photo of a
+bookable property. The original courtyard asset and animated travel scene remain in the project; the scene
+now sits below the city rows. Collection links use existing property-type and pets filters. Both Persian
+and English are supported. `e2e/tests/boutique-home.spec.ts` checks responsive widths, accessibility, mobile
+search and category navigation. Set `BOUTIQUE_WEB` to test an alternate local preview port.

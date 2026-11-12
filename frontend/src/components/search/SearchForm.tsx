@@ -39,7 +39,7 @@ export function SearchForm({ className, ...props }: Props) {
           <Button
             type="button"
             variant="outline"
-            className="h-auto w-full justify-start gap-3 rounded-full px-4 py-3 text-start font-normal whitespace-normal shadow-lg shadow-foreground/10 hover:bg-card md:hidden [&_svg]:size-5"
+            className="home-search-mobile h-auto w-full justify-start gap-3 rounded-full px-4 py-3 text-start font-normal whitespace-normal shadow-lg shadow-foreground/10 hover:bg-card md:hidden [&_svg]:size-5"
           >
             <SearchIcon aria-hidden />
             <span className="grid">

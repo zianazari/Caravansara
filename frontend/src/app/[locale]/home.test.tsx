@@ -58,7 +58,10 @@ const place = (id: number, city: string) => ({
 class SeenObserver {
   constructor(private callback: IntersectionObserverCallback) {}
   observe() {
-    this.callback([{ isIntersecting: true } as IntersectionObserverEntry], this as never);
+    this.callback(
+      [{ isIntersecting: true, boundingClientRect: { top: 1000 } } as IntersectionObserverEntry],
+      this as never,
+    );
   }
   disconnect() {}
 }
@@ -77,8 +80,8 @@ describe("home page (US1/AC1)", () => {
   });
 
   it.each([
-    ["fa", "جایی برای ماندن، در هر شهر سر راه", "جستجو", "دسته‌ها", "محبوب در تهران"],
-    ["en", "A place to stay, in every city on the way", "Search", "Categories", "Popular in Tehran"],
+    ["fa", "جایی برای مکث، مقصدی برای کشف.", "جستجو", "دسته‌ها", "محبوب در تهران"],
+    ["en", "Somewhere to slow down. Something to discover.", "Search", "Categories", "Popular in Tehran"],
   ] as const)(
     "in %s: hero, search pill, categories and a row per city",
     async (locale, title, search, categories, firstRow) => {
@@ -93,7 +96,7 @@ describe("home page (US1/AC1)", () => {
       expect(screen.getByRole("search")).toContainElement(screen.getByRole("button", { name: search }));
       expect(screen.getByRole("navigation", { name: categories })).toBeInTheDocument();
       expect(await screen.findByRole("heading", { name: new RegExp(firstRow) })).toBeInTheDocument();
-      expect(await screen.findAllByRole("heading", { level: 2 })).toHaveLength(SUGGESTED.length);
+      expect(await screen.findAllByRole("heading", { level: 2 })).toHaveLength(SUGGESTED.length + 1);
       // The arcade band of decorative arches is gone (feature 035, owner's request: it served no purpose).
       expect(container.querySelectorAll("[aria-hidden] > .arch.bg-muted")).toHaveLength(0);
     },

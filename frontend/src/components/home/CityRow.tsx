@@ -103,9 +103,9 @@ export function CityRow({
   const Next = locale === "fa" ? ChevronLeftIcon : ChevronRightIcon;
 
   return (
-    <section ref={ref} aria-labelledby={`row-${city}`} className="reveal grid min-w-0 gap-4 pb-10 last:pb-0">
+    <section ref={ref} aria-labelledby={`row-${city}`} className="reveal grid min-w-0 gap-5 pb-12 last:pb-0">
       <div className="flex items-center justify-between gap-4">
-        <h2 id={`row-${city}`} className="flex items-center gap-2 text-xl font-bold">
+        <h2 id={`row-${city}`} className="flex items-center gap-2 text-xl font-semibold md:text-2xl">
           <Link
             href={`/search?${all.toString()}`}
             className="group flex items-center gap-2 rounded-lg transition-colors hover:text-primary"
@@ -156,7 +156,7 @@ export function CityRow({
           {items.map((result) => (
             <div
               key={result.id}
-              className="w-[44%] shrink-0 snap-start sm:w-[30%] md:w-[calc((100%-3*1rem)/4)] lg:w-[calc((100%-4*1rem)/5)] xl:w-[calc((100%-5*1rem)/6)] 2xl:w-[calc((100%-6*1rem)/7)]"
+              className="w-[44%] shrink-0 snap-start sm:w-[30%] md:w-[calc((100%-3*1rem)/4)] lg:w-[calc((100%-3*1rem)/4)] 2xl:w-[calc((100%-4*1rem)/5)]"
             >
               <HomeCard result={result} />
             </div>

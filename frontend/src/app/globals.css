@@ -1,34 +1,24 @@
 @import "tailwindcss";
 @import "tw-animate-css";
 
-/*
- * The caravansara theme (specs/007-caravansara-theme). This file is the only place with colours: every
- * component reads these tokens (bg-primary, text-muted-foreground, …), so the whole site changes here, and
- * src/no-raw-colors.test.ts keeps it that way (FR-001). Every text/background pair is measured against WCAG AA
- * in src/theme.test.ts (FR-002).
- *
- * The palette is the one of the README diagrams. Buttons and links use a darker copper (#9a5418): white text
- * on the diagrams' copper (#b5651d) is only 4.3:1, below AA; #9a5418 reaches 5.75:1 and looks the same at a
- * glance (research R2). Copper and amber stay for shapes, icons and glow.
- *
- * Light only (spec, Assumptions); color-scheme keeps form controls light under a dark system theme. Layout
- * uses logical properties (ms-*, ps-*, start-*), so one stylesheet serves right-to-left Persian and
- * left-to-right English.
+/* Shared boutique travel palette. Olive actions, warm ivory surfaces and charcoal text pair with
+ * the established copper arch mark. Colours stay in tokens and theme.test.ts checks text contrast.
+ * Logical properties support Persian RTL and English LTR; reduced-motion overrides remain below.
  */
 :root {
   color-scheme: light;
-  --background: #fffaf2; /* cream */
-  --surface: #f8efe1; /* second surface: filters, trips table */
+  --background: #faf9f5; /* cream */
+  --surface: #f1f0e8; /* second surface: filters, trips table */
   --card: #ffffff;
-  --foreground: #3b1f08; /* dark brown text */
-  --muted: #f3e4cc; /* light sand */
-  --muted-foreground: #6b4a2b;
-  --border: #e3cfae; /* sand */
-  --primary: #9a5418; /* dark copper: buttons, links, the active item */
+  --foreground: #292e27; /* charcoal text */
+  --muted: #eaece2; /* light sand */
+  --muted-foreground: #606657;
+  --border: #dedfd4; /* sand */
+  --primary: #43533b; /* olive: buttons, links, the active item */
   --primary-foreground: #ffffff;
-  --accent: #f3e4cc;
+  --accent: #eaece2;
   --destructive: #9c3b28; /* brick */
-  --ring: #9a5418;
+  --ring: #43533b;
   --copper: #b5651d; /* shapes, large icons, the search button's gradient */
   --amber: #e08a2e; /* glow only, never under text */
   --sand-strong: #d9b27c; /* inactive category icons, decorative arches */
@@ -38,10 +28,12 @@
   --water: #6fb7c4; /* pools in the hero's story (041b); decoration only, never under text */
   --on-dark: #fffaf2; /* text on night and dark brown */
   --on-dark-muted: #e3cfae; /* quiet text on dark brown (footer) */
+  --hero-shade: #142015;
   --radius: 1rem;
 }
 
 @theme inline {
+  --color-hero-shade: var(--hero-shade);
   --color-background: var(--background);
   --color-surface: var(--surface);
   --color-foreground: var(--foreground);
@@ -71,17 +63,25 @@
 
 /*
  * Text sizes and motion (feature 031, owner's request: the site looked dry, text was small and left gaps).
- * Persian at 14 px reads small, so the two small steps grow (sm 15 px, xs 13 px) with a taller line for the
+ * Small text uses 14/16 px and body text 17 px, with a taller line for the
  * dots and descenders of Persian letters; every text-sm and text-xs on the site follows from here.
  * Motion is short and soft (--ease-soft); prefers-reduced-motion turns all of it off (rule further down).
  */
 @theme {
-  --text-xs: 0.8125rem;
+  --text-xs: 0.875rem;
   --text-xs--line-height: 1.6;
-  --text-sm: 0.9375rem;
+  --text-sm: 1rem;
   --text-sm--line-height: 1.7;
-  --text-base: 1rem;
+  --text-base: 1.0625rem;
   --text-base--line-height: 1.8;
+  --text-lg: 1.1875rem;
+  --text-lg--line-height: 1.75;
+  --text-xl: 1.375rem;
+  --text-xl--line-height: 1.6;
+  --text-2xl: 1.625rem;
+  --text-2xl--line-height: 1.6;
+  --text-3xl: 2rem;
+  --text-3xl--line-height: 1.5;
   --ease-soft: cubic-bezier(0.22, 0.8, 0.24, 1);
   --animate-rise: rise 0.7s var(--ease-soft) both;
   --animate-pop: pop 0.45s var(--ease-soft);
@@ -366,4 +366,55 @@
     border-radius: 0 !important;
     break-inside: avoid;
   }
+}
+
+/* Boutique travel direction: the photograph is atmospheric, with a dark scrim for readable text. */
+.boutique-hero-shade {
+  background: linear-gradient(90deg, rgb(20 32 21 / 0.14), rgb(20 32 21 / 0.78));
+}
+[dir="ltr"] .boutique-hero-shade {
+  background: linear-gradient(90deg, rgb(20 32 21 / 0.78), rgb(20 32 21 / 0.14));
+}
+.boutique-search .search-pill {
+  border-color: var(--border);
+  box-shadow: 0 16px 60px -20px rgb(20 32 21 / 0.24);
+}
+.boutique-search .search-pill > button[type="submit"] {
+  background: var(--primary);
+}
+html {
+  scroll-behavior: smooth;
+}
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+}
+
+/* The existing home form becomes compact after its original position passes below the header. */
+[data-home-search][data-compact="true"] .search-pill {
+  padding: 0.25rem;
+  box-shadow: none;
+}
+[data-home-search][data-compact="true"] .search-pill > div {
+  padding: 0.25rem 0.75rem;
+}
+[data-home-search][data-compact="true"] .search-pill .field-label {
+  display: none;
+}
+[data-home-search][data-compact="true"] .search-pill > button[type="submit"] {
+  width: 2.5rem;
+  height: 2.5rem;
+}
+[data-home-search][data-compact="true"] .search-pill > button[type="submit"] svg {
+  width: 1.25rem;
+  height: 1.25rem;
+}
+[data-home-search][data-compact="true"] .home-search-mobile {
+  min-height: 2.75rem;
+  padding-block: 0.5rem;
+  box-shadow: none;
+}
+[data-home-search][data-compact="true"] .home-search-mobile .text-xs {
+  display: none;
 }
