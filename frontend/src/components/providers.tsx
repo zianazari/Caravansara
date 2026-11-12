@@ -18,8 +18,21 @@ export function Providers({ children, dir }: { children: ReactNode; dir: "rtl" |
     <Direction.DirectionProvider dir={dir}>
       <QueryClientProvider client={client}>
         {children}
-        {/* no-print: a toast must not land on a printed receipt (feature 047). */}
-        <Toaster className="no-print" dir={dir} position={dir === "rtl" ? "bottom-left" : "bottom-right"} />
+        {/*
+          Feature 050 (owner's request: messages such as "listing activated" sat too low to notice): toasts appear
+          at the top centre, just under the 4rem header, where the eye already is; on a phone they no longer sit
+          over the bottom bar. A larger, bolder text and the theme's colours (richColors) make them readable.
+          no-print: a toast must not land on a printed receipt (feature 047).
+        */}
+        <Toaster
+          className="no-print"
+          dir={dir}
+          position="top-center"
+          offset={{ top: 76 }}
+          mobileOffset={{ top: 72 }}
+          richColors
+          toastOptions={{ classNames: { toast: "text-base font-semibold shadow-lg", title: "text-base" } }}
+        />
       </QueryClientProvider>
     </Direction.DirectionProvider>
   );
