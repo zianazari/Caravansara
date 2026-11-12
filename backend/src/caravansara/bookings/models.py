@@ -38,5 +38,7 @@ class Booking(Base):
         Enum(BookingStatus, name="booking_status", create_type=False, values_callable=lambda e: [m.value for m in e])
     )
     hold_expires_at: Mapped[datetime | None]
+    # When the guest paid (feature 047, migration 0010); NULL before payment and for older bookings.
+    paid_at: Mapped[datetime | None]
     idempotency_key: Mapped[uuid.UUID] = mapped_column(Uuid)
     created_at: Mapped[datetime] = mapped_column(server_default=func.now())

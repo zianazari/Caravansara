@@ -18,7 +18,8 @@ export function Providers({ children, dir }: { children: ReactNode; dir: "rtl" |
     <Direction.DirectionProvider dir={dir}>
       <QueryClientProvider client={client}>
         {children}
-        <Toaster dir={dir} position={dir === "rtl" ? "bottom-left" : "bottom-right"} />
+        {/* no-print: a toast must not land on a printed receipt (feature 047). */}
+        <Toaster className="no-print" dir={dir} position={dir === "rtl" ? "bottom-left" : "bottom-right"} />
       </QueryClientProvider>
     </Direction.DirectionProvider>
   );
