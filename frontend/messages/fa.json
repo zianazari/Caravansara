@@ -119,7 +119,7 @@
   },
   "search": {
     "where": "کجا",
-    "when": "کی",
+    "when": "چه زمانی",
     "wherePlaceholder": "نام شهر",
     "noCities": "شهری با این نام پیدا نشد.",
     "popularCities": "مقصدهای پرطرفدار",
