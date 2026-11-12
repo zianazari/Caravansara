@@ -132,3 +132,13 @@ python3 db/demo/build_demo_seed.py                                     # writes 
 ```
 
 `build_demo_seed.py` needs only the Python 3.9+ standard library. To change the cities, snapshots or counts, edit `CITIES`, `LISTINGS_PER_CITY` or `REVIEWS_PER_LISTING` at the top of the script; for the Persian listings, edit `fa_listings.json`.
+
+## Real photos for the popular listings (feature 043)
+
+`commons/` holds 24 freely licensed photos from Wikimedia Commons (CC0, public domain, CC BY, CC BY-SA), chosen by hand for rooms a rental would show, with `manifest.json` (room, size, author, licence, source) and `CREDITS.md`. After the demo is loaded, this gives the top 12 public listings of every city, the ones the home page's rows show, a real photo for each of their photos whose room has one:
+
+```bash
+docker compose run --rm migrate caravansara demo-commons-photos
+```
+
+It uploads the photo under each listing photo's own key and sets its caption to the author and licence (the gallery shows the caption beside the room tag, which is how the licences' credit is given), and its size. Nothing is added or deleted, and a rerun gives the same result. `seed-demo --photos-only` puts the drawn images back, so run this again after it. It refuses to run in production.

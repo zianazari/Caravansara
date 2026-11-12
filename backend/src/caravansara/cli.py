@@ -211,6 +211,10 @@ def build_parser() -> argparse.ArgumentParser:
     only = demo.add_mutually_exclusive_group()
     only.add_argument("--skip-photos", action="store_true", help="load the data only")
     only.add_argument("--photos-only", action="store_true", help="upload the photos of already loaded demo data")
+    sub.add_parser(
+        "demo-commons-photos",
+        help="give the demo's popular listings real Commons photos (db/demo/commons); development only",
+    )
     storage = sub.add_parser("init-storage", help="create the photo bucket if missing")
     storage.add_argument("--public-read", action="store_true", help="let browsers read photos (development)")
     sub.add_parser("worker", help="run the booking jobs every minute")
@@ -318,6 +322,14 @@ def _run(settings: Settings, args: argparse.Namespace) -> None:
     elif args.command == "seed-demo":
         result = asyncio.run(seed_demo(settings, photos=not args.skip_photos, photos_only=args.photos_only))
         print(result.summary())
+    elif args.command == "demo-commons-photos":
+        from caravansara.devdata.commons import CommonsRefused, apply_commons_photos
+
+        try:
+            print(asyncio.run(apply_commons_photos(settings, _dsn(settings))).summary())
+        except CommonsRefused as refused:
+            print(refused, file=sys.stderr)
+            raise SystemExit(1) from None
     elif args.command == "init-storage":
         from caravansara.core.storage import Storage
 
