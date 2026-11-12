@@ -150,6 +150,32 @@ export function HeroJourney() {
             strokeDasharray="18 16"
           />
 
+          {/*
+            Feature 049 (owner's request: the start looked unfinished): a small house the trip leaves from, just
+            behind the car's starting point (the right edge on the Persian site), and a few trees between the
+            places, so no stretch of road is bare. They stand on the ground behind the road, under the car.
+          */}
+          <g transform={`translate(${START - 95} 186)`}>
+            <rect x={-34} y={-44} width={68} height={44} className="fill-sand-strong" />
+            <path d="M-42 -42 L0 -66 L42 -42Z" className="fill-destructive" />
+            <rect x={-8} y={-24} width={16} height={24} className="fill-copper" />
+            <rect x={-26} y={-34} width={12} height={10} rx={2} className="fill-night" />
+            <rect x={14} y={-34} width={12} height={10} rx={2} className="fill-night" />
+            {[-62, 58].map((x, i) => (
+              <g key={x}>
+                <rect x={x - 2} y={-26} width={4} height={26} className="fill-muted-foreground" />
+                <circle cx={x} cy={-36 - i * 4} r={14 + i * 3} className="fill-leaf" />
+              </g>
+            ))}
+          </g>
+          {[START + 210, ...PARK_X.map((x) => x + PLACE_AHEAD + 215), WORLD - 120].map((x, i) => (
+            <g key={x} transform={`translate(${x} 186)`}>
+              <rect x={-2} y={-22} width={4} height={22} className="fill-muted-foreground" />
+              <circle cx={0} cy={-30} r={10 + (i % 3) * 3} className="fill-leaf" />
+              <circle cx={i % 2 ? 16 : -16} cy={-20} r={7} className="fill-leaf opacity-80" />
+            </g>
+          ))}
+
           {STOPS.map((kind, i) => (
             <g
               key={kind}
