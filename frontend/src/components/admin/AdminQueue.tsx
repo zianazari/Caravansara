@@ -35,6 +35,7 @@ function queueHref(sort: Sort, page: number): string {
  * The review queue (feature 009): the listings waiting for a decision. Oldest first by default, so the
  * longest wait is decided first; newest first on request (feature 025). Numbered pages replace "more"
  * (feature 025): the page and the order are in the address bar, so reload and the back button keep them.
+ * Since feature 051 it is the panel's first tab, with smaller rows so a page needs little scrolling.
  */
 export function AdminQueue() {
   const t = useTranslations();
@@ -74,9 +75,9 @@ export function AdminQueue() {
   if (!queue.data || last === undefined) return <Skeleton className="h-64 w-full" />;
   const { items, total } = queue.data;
   return (
-    <div className="grid gap-6">
+    <div className="grid min-w-0 gap-4">
       <div className="flex flex-wrap items-baseline gap-3">
-        <h1 className="text-2xl font-bold">{t("admin.queueTitle")}</h1>
+        <h2 className="text-lg font-bold">{t("admin.queueTitle")}</h2>
         <p className="text-muted-foreground">{t("admin.queueCount", { count: total })}</p>
         <div className="flex items-center gap-2 sm:ms-auto">
           <Label htmlFor={sortId} className="font-normal">
@@ -96,18 +97,18 @@ export function AdminQueue() {
       {items.length === 0 ? (
         <p className="rounded-2xl border bg-surface p-6">{t("admin.queueEmpty")}</p>
       ) : (
-        <ul className="grid gap-3">
+        <ul className="grid gap-2">
           {items.map((item) => (
             <li key={item.id}>
-              <article className="flex gap-4 rounded-2xl border bg-card p-3 shadow-sm">
-                <ArchFrame src={item.cover_url} alt="" sizes="96px" className="h-24 w-20 shrink-0" />
+              <article className="flex items-center gap-3 rounded-2xl border bg-card p-2 shadow-sm">
+                <ArchFrame src={item.cover_url} alt="" sizes="56px" className="h-16 w-12 shrink-0" />
                 <div className="grid min-w-0 flex-1 content-start gap-0.5">
                   <h2 className="truncate font-semibold">{item.title}</h2>
                   <p className="text-sm text-muted-foreground">
                     {cityName(t, item.city.name)} · {t("admin.hostName", { name: item.host.full_name })}
                   </p>
                   {item.submitted_at ? (
-                    <p className="text-sm text-muted-foreground">
+                    <p className="text-xs text-muted-foreground">
                       {t("admin.submittedAt", { date: formatDate(item.submitted_at.slice(0, 10), locale) })}
                     </p>
                   ) : null}

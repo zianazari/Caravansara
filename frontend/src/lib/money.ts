@@ -99,3 +99,8 @@ export function tomanToRial(toman: string): string | null {
 export function formatInteger(value: number, locale: string): string {
   return new Intl.NumberFormat(TAG[locale] ?? locale, { useGrouping: false }).format(value);
 }
+
+/** A count in the page's digits with thousands grouped, e.g. 2,317,433 bookings (feature 051). */
+export function formatCount(value: number, locale: string): string {
+  return new Intl.NumberFormat(TAG[locale] ?? locale).format(value);
+}

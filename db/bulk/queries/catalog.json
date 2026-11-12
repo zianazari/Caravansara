@@ -646,6 +646,84 @@
       },
       "target_ms": 600,
       "note": "feature 030: counts every booking of the last 90 days, so it is kept 10 minutes per API process and runs at most that often"
+    },
+    {
+      "name": "admin_users_page",
+      "source": "caravansara.identity.repository:admin_users",
+      "endpoint": "GET /admin/users",
+      "kind": "read",
+      "params": {
+        "limit": 20,
+        "offset": 0
+      },
+      "target_ms": 50
+    },
+    {
+      "name": "admin_users_count",
+      "source": "caravansara.identity.repository:admin_users",
+      "endpoint": "GET /admin/users",
+      "kind": "read",
+      "params": {},
+      "target_ms": 100,
+      "note": "every account, on the smallest index (feature 051)"
+    },
+    {
+      "name": "admin_users_search_page",
+      "source": "caravansara.identity.repository:admin_users",
+      "endpoint": "GET /admin/users?q=ali",
+      "kind": "read",
+      "params": {
+        "pattern": "%ali%",
+        "limit": 20,
+        "offset": 0
+      },
+      "target_ms": 50,
+      "note": "users_search_trgm_idx (migration 0011)"
+    },
+    {
+      "name": "admin_users_search_count",
+      "source": "caravansara.identity.repository:admin_users",
+      "endpoint": "GET /admin/users?q=ali",
+      "kind": "read",
+      "params": {
+        "pattern": "%ali%"
+      },
+      "target_ms": 50,
+      "note": "users_search_trgm_idx (migration 0011)"
+    },
+    {
+      "name": "admin_bookings_page",
+      "source": "caravansara.bookings.repository:admin_bookings",
+      "endpoint": "GET /admin/bookings",
+      "kind": "read",
+      "params": {
+        "limit": 21,
+        "offset": 0
+      },
+      "target_ms": 50,
+      "note": "one row more than the page, to know whether a next page exists"
+    },
+    {
+      "name": "admin_bookings_pending_page",
+      "source": "caravansara.bookings.repository:admin_bookings",
+      "endpoint": "GET /admin/bookings?status=pending",
+      "kind": "read",
+      "params": {
+        "status": "pending",
+        "limit": 21,
+        "offset": 0
+      },
+      "target_ms": 50,
+      "note": "bookings_status_id_idx (migration 0011)"
+    },
+    {
+      "name": "booking_status_counts",
+      "source": "caravansara.bookings.repository:status_counts",
+      "endpoint": "GET /admin/summary",
+      "kind": "read",
+      "params": {},
+      "target_ms": 500,
+      "note": "one pass over every booking; asked once when the admin panel opens, not per page (feature 051)"
     }
   ],
   "excluded": [

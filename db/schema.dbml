@@ -78,6 +78,7 @@ Table users [headercolor: #1F6FEB] {
 
   indexes {
     `lower(email)` [unique, name: 'users_email_lower_key', note: 'A@x.com and a@x.com are one account']
+    `(lower(email) || ' ' || lower(full_name))` [type: gin, name: 'users_search_trgm_idx', note: 'pg_trgm; the admin user search, any part of an email or a name (051)']
   }
 
   Note: 'Guests and hosts (members), and admins. A host is a member who owns listings. An admin token works on no member endpoint.'
@@ -233,6 +234,7 @@ Table bookings [headercolor: #D9822B] {
     (listing_id, check_in, id) [note: "bookings of a listing, in page order"]
     stay [type: gist, note: "partial: WHERE status IN (pending, confirmed, completed); search with dates"]
     check_out [note: "partial: WHERE status = 'confirmed' (worker: complete stays)"]
+    (status, id) [note: "admin bookings list: newest first, by status (051)"]
   }
 
   Note: '''

@@ -18,6 +18,7 @@
 
 CREATE EXTENSION IF NOT EXISTS btree_gist;   -- lets "listing_id WITH =" join a GiST exclusion constraint
 CREATE EXTENSION IF NOT EXISTS postgis;      -- geography type, ST_DWithin, ST_Distance
+CREATE EXTENSION IF NOT EXISTS pg_trgm;      -- trigram index for the admin's user search (feature 051)
 
 -- ---------- Enums ----------------------------------------------------
 CREATE TYPE property_type  AS ENUM ('entire_place', 'private_room', 'shared_room');
@@ -44,6 +45,8 @@ CREATE TABLE users (
 );
 -- 'A@x.com' and 'a@x.com' must not become two accounts
 CREATE UNIQUE INDEX users_email_lower_key ON users (lower(email));
+-- the admin's user search: any part of an email or a name, LIKE '%…%' (feature 051, migration 0011)
+CREATE INDEX users_search_trgm_idx ON users USING gin ((lower(email) || ' ' || lower(full_name)) gin_trgm_ops);
 
 -- Refresh tokens: only a hash is stored; rotation revokes the old row.
 CREATE TABLE refresh_tokens (
@@ -260,6 +263,8 @@ CREATE INDEX bookings_active_stay_idx ON bookings USING gist (stay)
     WHERE status IN ('pending', 'confirmed', 'completed');
 -- the worker completes finished stays every minute: check_out is bounded by now + 14 hours
 CREATE INDEX bookings_confirmed_check_out_idx ON bookings (check_out) WHERE status = 'confirmed';
+-- the admin's bookings list: newest first, one status at a time (feature 051, migration 0011)
+CREATE INDEX bookings_status_id_idx ON bookings (status, id);
 
 -- ---------- Reviews (rank + comment) ---------------------------------
 -- One review per booking, written by that booking's guest about that booking's listing.

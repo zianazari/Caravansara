@@ -3486,6 +3486,233 @@
         }
       }
     },
+    "/api/v1/admin/summary": {
+      "get": {
+        "tags": [
+          "Admin"
+        ],
+        "summary": "Panel numbers",
+        "description": "Listings waiting for review, all accounts, and bookings in each status. Counting every booking takes a moment on a large database, so the panel asks once when it opens, not on every page.",
+        "operationId": "panel_summary_api_v1_admin_summary_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AdminSummary"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, invalid or expired access token",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "AdminBearer": []
+          }
+        ]
+      }
+    },
+    "/api/v1/admin/users": {
+      "get": {
+        "tags": [
+          "Admin"
+        ],
+        "summary": "Users",
+        "description": "Every account, newest first. `q` finds any part of an email or a name (at least 3 characters, ignoring case). Never shows a password.",
+        "operationId": "users_list_api_v1_admin_users_get",
+        "security": [
+          {
+            "AdminBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "q",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "minLength": 3,
+                  "maxLength": 100
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Part of an email or a name, at least 3 characters.",
+              "title": "Q"
+            },
+            "description": "Part of an email or a name, at least 3 characters."
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 100,
+              "minimum": 1,
+              "description": "Items per page.",
+              "default": 20,
+              "title": "Limit"
+            },
+            "description": "Items per page."
+          },
+          {
+            "name": "offset",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 0,
+              "description": "Items to skip.",
+              "default": 0,
+              "title": "Offset"
+            },
+            "description": "Items to skip."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AdminUserPage"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, invalid or expired access token",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Invalid input or a broken business rule",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/admin/bookings": {
+      "get": {
+        "tags": [
+          "Admin"
+        ],
+        "summary": "Bookings",
+        "description": "Every booking, newest first, optionally one status: `pending` (held, not paid), `confirmed`, `completed`, `cancelled` or `expired` (not paid in time). With the guest's name and email; never the address. `has_more` says whether a next page exists; the totals are in `GET /admin/summary`.",
+        "operationId": "bookings_list_api_v1_admin_bookings_get",
+        "security": [
+          {
+            "AdminBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "status",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "$ref": "#/components/schemas/BookingStatus"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Only bookings in this status.",
+              "title": "Status"
+            },
+            "description": "Only bookings in this status."
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 100,
+              "minimum": 1,
+              "description": "Items per page.",
+              "default": 20,
+              "title": "Limit"
+            },
+            "description": "Items per page."
+          },
+          {
+            "name": "offset",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 0,
+              "description": "Items to skip.",
+              "default": 0,
+              "title": "Offset"
+            },
+            "description": "Items to skip."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AdminBookingPage"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, invalid or expired access token",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Invalid input or a broken business rule",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/me/wishlist": {
       "get": {
         "tags": [
@@ -3743,6 +3970,186 @@
   },
   "components": {
     "schemas": {
+      "AccountKind": {
+        "type": "string",
+        "enum": [
+          "member",
+          "admin"
+        ],
+        "title": "AccountKind"
+      },
+      "AdminBookingOut": {
+        "properties": {
+          "id": {
+            "type": "integer",
+            "title": "Id"
+          },
+          "status": {
+            "$ref": "#/components/schemas/BookingStatus"
+          },
+          "listing": {
+            "$ref": "#/components/schemas/BookingListing"
+          },
+          "guest_id": {
+            "type": "integer",
+            "title": "Guest Id"
+          },
+          "host_id": {
+            "type": "integer",
+            "title": "Host Id"
+          },
+          "check_in": {
+            "type": "string",
+            "format": "date",
+            "title": "Check In"
+          },
+          "check_out": {
+            "type": "string",
+            "format": "date",
+            "title": "Check Out"
+          },
+          "nights": {
+            "type": "integer",
+            "title": "Nights"
+          },
+          "adults": {
+            "type": "integer",
+            "title": "Adults"
+          },
+          "children": {
+            "type": "integer",
+            "title": "Children"
+          },
+          "infants": {
+            "type": "integer",
+            "title": "Infants"
+          },
+          "pets": {
+            "type": "integer",
+            "title": "Pets"
+          },
+          "nightly_price": {
+            "type": "string",
+            "title": "Nightly Price"
+          },
+          "cleaning_fee": {
+            "type": "string",
+            "title": "Cleaning Fee"
+          },
+          "total_price": {
+            "type": "string",
+            "title": "Total Price"
+          },
+          "currency": {
+            "type": "string",
+            "title": "Currency"
+          },
+          "hold_expires_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Hold Expires At",
+            "description": "Pay before this time, or the hold expires."
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Created At"
+          },
+          "paid_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Paid At",
+            "description": "When the guest paid; null before payment (feature 047)."
+          },
+          "address": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/BookingAddress"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "has_review": {
+            "type": "boolean",
+            "title": "Has Review",
+            "description": "The guest has reviewed this stay, so the site no longer offers the review form (feature 015).",
+            "default": false
+          },
+          "guest_name": {
+            "type": "string",
+            "title": "Guest Name"
+          },
+          "guest_email": {
+            "type": "string",
+            "title": "Guest Email"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "status",
+          "listing",
+          "guest_id",
+          "host_id",
+          "check_in",
+          "check_out",
+          "nights",
+          "adults",
+          "children",
+          "infants",
+          "pets",
+          "nightly_price",
+          "cleaning_fee",
+          "total_price",
+          "currency",
+          "hold_expires_at",
+          "created_at",
+          "paid_at",
+          "address",
+          "guest_name",
+          "guest_email"
+        ],
+        "title": "AdminBookingOut",
+        "description": "A booking in the admin's list (feature 051): the guest's own view without the address, plus who the\nguest is, so the admin can answer a question about it."
+      },
+      "AdminBookingPage": {
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/AdminBookingOut"
+            },
+            "type": "array",
+            "title": "Items"
+          },
+          "has_more": {
+            "type": "boolean",
+            "title": "Has More",
+            "description": "A next page exists. The totals per status are in `GET /admin/summary`."
+          }
+        },
+        "type": "object",
+        "required": [
+          "items",
+          "has_more"
+        ],
+        "title": "AdminBookingPage"
+      },
       "AdminListingOut": {
         "properties": {
           "id": {
@@ -4008,6 +4415,31 @@
         ],
         "title": "AdminQueuePage"
       },
+      "AdminSummary": {
+        "properties": {
+          "pending_listings": {
+            "type": "integer",
+            "title": "Pending Listings",
+            "description": "Listings waiting for review."
+          },
+          "users": {
+            "type": "integer",
+            "title": "Users",
+            "description": "All accounts."
+          },
+          "bookings": {
+            "$ref": "#/components/schemas/BookingCounts"
+          }
+        },
+        "type": "object",
+        "required": [
+          "pending_listings",
+          "users",
+          "bookings"
+        ],
+        "title": "AdminSummary",
+        "description": "The numbers on the admin panel's tabs (feature 051), asked once when the panel opens."
+      },
       "AdminTokenOut": {
         "properties": {
           "access_token": {
@@ -4050,6 +4482,76 @@
           "session_expires_in": 28800,
           "token_type": "bearer"
         }
+      },
+      "AdminUserOut": {
+        "properties": {
+          "id": {
+            "type": "integer",
+            "title": "Id"
+          },
+          "email": {
+            "type": "string",
+            "title": "Email"
+          },
+          "full_name": {
+            "type": "string",
+            "title": "Full Name"
+          },
+          "kind": {
+            "$ref": "#/components/schemas/AccountKind",
+            "description": "`member` (guest or host) or `admin`."
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Created At"
+          },
+          "disabled_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Disabled At",
+            "description": "Set when an admin account was disabled."
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "email",
+          "full_name",
+          "kind",
+          "created_at",
+          "disabled_at"
+        ],
+        "title": "AdminUserOut",
+        "description": "One account in the admin's users list (feature 051). Never the password hash."
+      },
+      "AdminUserPage": {
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/AdminUserOut"
+            },
+            "type": "array",
+            "title": "Items"
+          },
+          "total": {
+            "type": "integer",
+            "title": "Total"
+          }
+        },
+        "type": "object",
+        "required": [
+          "items",
+          "total"
+        ],
+        "title": "AdminUserPage"
       },
       "AmenitiesIn": {
         "properties": {
@@ -4185,6 +4687,41 @@
         ],
         "title": "BookingAddress",
         "description": "Only on a confirmed or completed booking."
+      },
+      "BookingCounts": {
+        "properties": {
+          "pending": {
+            "type": "integer",
+            "title": "Pending",
+            "description": "Held, not paid yet."
+          },
+          "confirmed": {
+            "type": "integer",
+            "title": "Confirmed"
+          },
+          "completed": {
+            "type": "integer",
+            "title": "Completed"
+          },
+          "cancelled": {
+            "type": "integer",
+            "title": "Cancelled"
+          },
+          "expired": {
+            "type": "integer",
+            "title": "Expired",
+            "description": "Not paid in time."
+          }
+        },
+        "type": "object",
+        "required": [
+          "pending",
+          "confirmed",
+          "completed",
+          "cancelled",
+          "expired"
+        ],
+        "title": "BookingCounts"
       },
       "BookingCreate": {
         "properties": {

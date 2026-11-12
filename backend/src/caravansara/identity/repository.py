@@ -1,6 +1,6 @@
 from datetime import datetime, timedelta
 
-from sqlalchemy import func, select, update
+from sqlalchemy import func, literal_column, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from caravansara.identity.models import AccountKind, AuthAttempt, RefreshToken, User
@@ -31,6 +31,24 @@ async def get_users(session: AsyncSession, user_ids: set[int]) -> dict[int, User
         return {}
     result = await session.execute(select(User).where(User.id.in_(user_ids)))
     return {u.id: u for u in result.scalars()}
+
+
+# The exact expression of users_search_trgm_idx (migration 0011): Postgres uses the index only for this text.
+_SEARCH_TEXT = func.lower(User.email).concat(literal_column("' '")).concat(func.lower(User.full_name))
+
+
+def _like_pattern(q: str) -> str:
+    """``q`` anywhere in the text; its own % and _ are plain characters, not wildcards."""
+    escaped = q.lower().replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_")
+    return f"%{escaped}%"
+
+
+async def admin_users(session: AsyncSession, q: str | None, limit: int, offset: int) -> tuple[list[User], int]:
+    """Newest accounts first, on the primary key; with ``q``, on users_search_trgm_idx (feature 051)."""
+    where = [_SEARCH_TEXT.like(_like_pattern(q))] if q else []
+    total = (await session.execute(select(func.count()).select_from(User).where(*where))).scalar_one()
+    rows = await session.execute(select(User).where(*where).order_by(User.id.desc()).limit(limit).offset(offset))
+    return list(rows.scalars()), int(total)
 
 
 async def add_refresh_token(session: AsyncSession, user_id: int, token_hash: str, expires_at: datetime) -> None:
