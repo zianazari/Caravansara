@@ -5,8 +5,8 @@
 <p align="center">
   <a href="https://github.com/zianazari/Caravansara/actions/workflows/ci.yml"><img src="https://github.com/zianazari/Caravansara/actions/workflows/ci.yml/badge.svg" alt="CI"></a>
   <img src="https://img.shields.io/badge/tests-399%20%C2%B7%2097.3%25%20coverage-b5651d" alt="399 backend tests, 97.3% coverage">
-  <img src="https://img.shields.io/badge/web-452%20Vitest%20tests-6E9F18" alt="452 Vitest tests for the web site">
-  <img src="https://img.shields.io/badge/e2e-121%20Playwright%20tests-2EAD33" alt="121 Playwright tests">
+  <img src="https://img.shields.io/badge/web-457%20Vitest%20tests-6E9F18" alt="457 Vitest tests for the web site">
+  <img src="https://img.shields.io/badge/e2e-123%20Playwright%20tests-2EAD33" alt="123 Playwright tests">
 </p>
 
 A *caravansara* (کاروانسرا) was a roadside inn on the Silk Road: travellers arrived at dusk, took a room for the night and moved on at dawn. **Caravansara** is the same idea for today: an Airbnb-like site where guests find a place, hold it, pay, save favourites and leave a review, and hosts list their homes.
@@ -43,7 +43,7 @@ This repository holds the **backend**, the **database design** and the **web sit
 | Data | PostgreSQL 16 with PostGIS, SQLAlchemy 2 (async) with asyncpg, Alembic |
 | Security | argon2 password hashing, JWT access tokens with rotating refresh tokens |
 | Files | S3 API with presigned uploads; MinIO in development and tests |
-| Quality | pytest with testcontainers, Vitest with axe,121 Playwright tests against the stack, Ruff, mypy (strict), import-linter, ESLint, Prettier |
+| Quality | pytest with testcontainers, Vitest with axe, 123 Playwright tests against the stack, Ruff, mypy (strict), import-linter, ESLint, Prettier |
 | Monitoring | Prometheus with alert rules, Grafana, Loki for logs, Tempo for traces, OpenTelemetry, Grafana Alloy as the collector |
 | Delivery | uv, Docker and Docker Compose, GitHub Actions |
 
