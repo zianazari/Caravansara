@@ -756,6 +756,66 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  "/api/v1/admin/summary": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Panel numbers
+     * @description Listings waiting for review, all accounts, and bookings in each status. Counting every booking takes a moment on a large database, so the panel asks once when it opens, not on every page.
+     */
+    get: operations["panel_summary_api_v1_admin_summary_get"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/admin/users": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Users
+     * @description Every account, newest first. `q` finds any part of an email or a name (at least 3 characters, ignoring case). Never shows a password.
+     */
+    get: operations["users_list_api_v1_admin_users_get"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/admin/bookings": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Bookings
+     * @description Every booking, newest first, optionally one status: `pending` (held, not paid), `confirmed`, `completed`, `cancelled` or `expired` (not paid in time). With the guest's name and email; never the address. `has_more` says whether a next page exists; the totals are in `GET /admin/summary`.
+     */
+    get: operations["bookings_list_api_v1_admin_bookings_get"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   "/api/v1/me/wishlist": {
     parameters: {
       query?: never;
@@ -841,6 +901,90 @@ export interface paths {
 export type webhooks = Record<string, never>;
 export interface components {
   schemas: {
+    /**
+     * AccountKind
+     * @enum {string}
+     */
+    AccountKind: "member" | "admin";
+    /**
+     * AdminBookingOut
+     * @description A booking in the admin's list (feature 051): the guest's own view without the address, plus who the
+     *     guest is, so the admin can answer a question about it.
+     */
+    AdminBookingOut: {
+      /** Id */
+      id: number;
+      status: components["schemas"]["BookingStatus"];
+      listing: components["schemas"]["BookingListing"];
+      /** Guest Id */
+      guest_id: number;
+      /** Host Id */
+      host_id: number;
+      /**
+       * Check In
+       * Format: date
+       */
+      check_in: string;
+      /**
+       * Check Out
+       * Format: date
+       */
+      check_out: string;
+      /** Nights */
+      nights: number;
+      /** Adults */
+      adults: number;
+      /** Children */
+      children: number;
+      /** Infants */
+      infants: number;
+      /** Pets */
+      pets: number;
+      /** Nightly Price */
+      nightly_price: string;
+      /** Cleaning Fee */
+      cleaning_fee: string;
+      /** Total Price */
+      total_price: string;
+      /** Currency */
+      currency: string;
+      /**
+       * Hold Expires At
+       * @description Pay before this time, or the hold expires.
+       */
+      hold_expires_at: string | null;
+      /**
+       * Created At
+       * Format: date-time
+       */
+      created_at: string;
+      /**
+       * Paid At
+       * @description When the guest paid; null before payment (feature 047).
+       */
+      paid_at: string | null;
+      address: components["schemas"]["BookingAddress"] | null;
+      /**
+       * Has Review
+       * @description The guest has reviewed this stay, so the site no longer offers the review form (feature 015).
+       * @default false
+       */
+      has_review: boolean;
+      /** Guest Name */
+      guest_name: string;
+      /** Guest Email */
+      guest_email: string;
+    };
+    /** AdminBookingPage */
+    AdminBookingPage: {
+      /** Items */
+      items: components["schemas"]["AdminBookingOut"][];
+      /**
+       * Has More
+       * @description A next page exists. The totals per status are in `GET /admin/summary`.
+       */
+      has_more: boolean;
+    };
     /**
      * AdminListingOut
      * @description Everything the host sees, for a listing in any state, plus the version to decide on.
@@ -950,6 +1094,23 @@ export interface components {
       total: number;
     };
     /**
+     * AdminSummary
+     * @description The numbers on the admin panel's tabs (feature 051), asked once when the panel opens.
+     */
+    AdminSummary: {
+      /**
+       * Pending Listings
+       * @description Listings waiting for review.
+       */
+      pending_listings: number;
+      /**
+       * Users
+       * @description All accounts.
+       */
+      users: number;
+      bookings: components["schemas"]["BookingCounts"];
+    };
+    /**
      * AdminTokenOut
      * @description A short admin token and a rotating refresh token (feature 011). The session ends
      *     ``session_expires_in`` seconds after log-in, however often it is refreshed.
@@ -981,6 +1142,37 @@ export interface components {
        * @description Seconds until the admin session ends and a new log-in is needed.
        */
       session_expires_in: number;
+    };
+    /**
+     * AdminUserOut
+     * @description One account in the admin's users list (feature 051). Never the password hash.
+     */
+    AdminUserOut: {
+      /** Id */
+      id: number;
+      /** Email */
+      email: string;
+      /** Full Name */
+      full_name: string;
+      /** @description `member` (guest or host) or `admin`. */
+      kind: components["schemas"]["AccountKind"];
+      /**
+       * Created At
+       * Format: date-time
+       */
+      created_at: string;
+      /**
+       * Disabled At
+       * @description Set when an admin account was disabled.
+       */
+      disabled_at: string | null;
+    };
+    /** AdminUserPage */
+    AdminUserPage: {
+      /** Items */
+      items: components["schemas"]["AdminUserOut"][];
+      /** Total */
+      total: number;
     };
     /** AmenitiesIn */
     AmenitiesIn: {
@@ -1031,6 +1223,25 @@ export interface components {
       check_in_time: string;
       /** Check Out Time */
       check_out_time: string;
+    };
+    /** BookingCounts */
+    BookingCounts: {
+      /**
+       * Pending
+       * @description Held, not paid yet.
+       */
+      pending: number;
+      /** Confirmed */
+      confirmed: number;
+      /** Completed */
+      completed: number;
+      /** Cancelled */
+      cancelled: number;
+      /**
+       * Expired
+       * @description Not paid in time.
+       */
+      expired: number;
     };
     /**
      * BookingCreate
@@ -4122,6 +4333,125 @@ export interface operations {
       };
       /** @description Conflict with the current state */
       409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Invalid input or a broken business rule */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+    };
+  };
+  panel_summary_api_v1_admin_summary_get: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["AdminSummary"];
+        };
+      };
+      /** @description Missing, invalid or expired access token */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+    };
+  };
+  users_list_api_v1_admin_users_get: {
+    parameters: {
+      query?: {
+        /** @description Part of an email or a name, at least 3 characters. */
+        q?: string | null;
+        /** @description Items per page. */
+        limit?: number;
+        /** @description Items to skip. */
+        offset?: number;
+      };
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["AdminUserPage"];
+        };
+      };
+      /** @description Missing, invalid or expired access token */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Invalid input or a broken business rule */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+    };
+  };
+  bookings_list_api_v1_admin_bookings_get: {
+    parameters: {
+      query?: {
+        /** @description Only bookings in this status. */
+        status?: components["schemas"]["BookingStatus"] | null;
+        /** @description Items per page. */
+        limit?: number;
+        /** @description Items to skip. */
+        offset?: number;
+      };
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["AdminBookingPage"];
+        };
+      };
+      /** @description Missing, invalid or expired access token */
+      401: {
         headers: {
           [name: string]: unknown;
         };

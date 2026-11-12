@@ -10,16 +10,17 @@ from typing import Annotated, Literal
 
 from fastapi import APIRouter, Depends, Query, Request, status
 
+from caravansara.bookings.service import BookingStatus
 from caravansara.core.db import SessionDep
 from caravansara.core.deps import ClientIp, StorageDep
 from caravansara.core.errors import NotFound, error_responses
 from caravansara.core.pagination import PageDep
 from caravansara.core.security import CurrentAdminId, SettingsDep
 from caravansara.identity import service as identity
-from caravansara.identity.schemas import AdminTokenOut, RefreshIn
+from caravansara.identity.schemas import AdminTokenOut, AdminUserPage, RefreshIn
 from caravansara.listings.schemas import AdminListingOut, AdminQueuePage
 from caravansara.moderation import service
-from caravansara.moderation.schemas import AdminLoginIn, DecisionIn, RejectIn
+from caravansara.moderation.schemas import AdminBookingPage, AdminLoginIn, AdminSummary, DecisionIn, RejectIn
 
 
 async def admin_host_guard(request: Request, settings: SettingsDep) -> None:
@@ -150,3 +151,57 @@ async def reject(
     settings: SettingsDep,
 ) -> AdminListingOut:
     return await service.reject(session, storage, settings, listing_id, admin_id, body.review_version, body.reason)
+
+
+@router.get(
+    "/summary",
+    summary="Panel numbers",
+    description=(
+        "Listings waiting for review, all accounts, and bookings in each status. Counting every booking takes a "
+        "moment on a large database, so the panel asks once when it opens, not on every page."
+    ),
+    responses=error_responses(401),
+)
+async def panel_summary(admin_id: AdminId, session: SessionDep) -> AdminSummary:
+    return await service.summary(session)
+
+
+@router.get(
+    "/users",
+    summary="Users",
+    description=(
+        "Every account, newest first. `q` finds any part of an email or a name (at least 3 characters, "
+        "ignoring case). Never shows a password."
+    ),
+    responses=error_responses(401, 422),
+)
+async def users_list(
+    admin_id: AdminId,
+    session: SessionDep,
+    page: PageDep,
+    q: Annotated[
+        str | None,
+        Query(min_length=3, max_length=100, description="Part of an email or a name, at least 3 characters."),
+    ] = None,
+) -> AdminUserPage:
+    return await service.users(session, q.strip() if q else None, page.limit, page.offset)
+
+
+@router.get(
+    "/bookings",
+    summary="Bookings",
+    description=(
+        "Every booking, newest first, optionally one status: `pending` (held, not paid), `confirmed`, "
+        "`completed`, `cancelled` or `expired` (not paid in time). With the guest's name and email; never the "
+        "address. `has_more` says whether a next page exists; the totals are in `GET /admin/summary`."
+    ),
+    responses=error_responses(401, 422),
+)
+async def bookings_list(
+    admin_id: AdminId,
+    session: SessionDep,
+    storage: StorageDep,
+    page: PageDep,
+    status: Annotated[BookingStatus | None, Query(description="Only bookings in this status.")] = None,
+) -> AdminBookingPage:
+    return await service.all_bookings(session, storage, status, page.limit, page.offset)

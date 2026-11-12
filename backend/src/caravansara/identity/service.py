@@ -24,9 +24,9 @@ from caravansara.core.storage import Storage
 from caravansara.core.timeutil import utcnow
 from caravansara.identity import repository as repo
 from caravansara.identity.models import AccountKind, User
-from caravansara.identity.schemas import AdminTokenOut, ProfileUpdate, TokensOut
+from caravansara.identity.schemas import AdminTokenOut, AdminUserOut, AdminUserPage, ProfileUpdate, TokensOut
 
-__all__ = ["AdminRefused", "PublicUser", "TooManyAttempts"]
+__all__ = ["AdminRefused", "PublicUser", "TooManyAttempts", "UserContact"]
 
 log = logging.getLogger(__name__)
 
@@ -313,6 +313,26 @@ async def get_public_user(session: AsyncSession, user_id: int) -> PublicUser:
 async def get_public_users(session: AsyncSession, user_ids: set[int]) -> dict[int, PublicUser]:
     users = await repo.get_users(session, user_ids)
     return {uid: PublicUser(u.id, u.full_name, u.avatar_url) for uid, u in users.items()}
+
+
+@dataclass(frozen=True)
+class UserContact:
+    """Name and email of a guest, for the admin's bookings list (feature 051)."""
+
+    id: int
+    full_name: str
+    email: str
+
+
+async def user_contacts(session: AsyncSession, user_ids: set[int]) -> dict[int, UserContact]:
+    users = await repo.get_users(session, user_ids)
+    return {uid: UserContact(u.id, u.full_name, u.email) for uid, u in users.items()}
+
+
+async def admin_users(session: AsyncSession, q: str | None, limit: int, offset: int) -> AdminUserPage:
+    """Every account, newest first; ``q`` matches any part of the email or the name (feature 051)."""
+    users, total = await repo.admin_users(session, q, limit, offset)
+    return AdminUserPage(items=[AdminUserOut.model_validate(u, from_attributes=True) for u in users], total=total)
 
 
 # ---- admin accounts (specs/backend (004)) --------------------------------------

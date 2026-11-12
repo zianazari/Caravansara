@@ -102,6 +102,8 @@ export function AdminReview({
       if (data) {
         toast.success(t(kind === "approve" ? "admin.approved" : "admin.rejected"));
         await client.invalidateQueries({ queryKey: ["admin", "queue"] });
+        // The queue's number on the panel's tab (feature 051) is one fewer now.
+        await client.invalidateQueries({ queryKey: ["admin", "summary"] });
         router.push("/admin");
         return;
       }

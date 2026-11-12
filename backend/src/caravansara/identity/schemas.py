@@ -2,6 +2,8 @@ from datetime import datetime
 
 from pydantic import AnyHttpUrl, BaseModel, ConfigDict, EmailStr, Field
 
+from caravansara.identity.models import AccountKind
+
 
 class RegisterIn(BaseModel):
     email: EmailStr
@@ -83,3 +85,19 @@ class ProfileUpdate(BaseModel):
             "that server who views your reviews. `PUT /me/avatar` and `DELETE /me/avatar` do the same."
         ),
     )
+
+
+class AdminUserOut(BaseModel):
+    """One account in the admin's users list (feature 051). Never the password hash."""
+
+    id: int
+    email: str
+    full_name: str
+    kind: AccountKind = Field(description="`member` (guest or host) or `admin`.")
+    created_at: datetime
+    disabled_at: datetime | None = Field(description="Set when an admin account was disabled.")
+
+
+class AdminUserPage(BaseModel):
+    items: list[AdminUserOut]
+    total: int

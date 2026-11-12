@@ -128,3 +128,8 @@ export function formatPinPrice(amount: string, currency: string, locale: string,
   }
   return `${new Intl.NumberFormat(tag, { maximumFractionDigits: 0 }).format(toman)} ${words.toman}`;
 }
+
+/** A count in the page's digits with thousands grouped, e.g. 2,317,433 bookings (feature 051). */
+export function formatCount(value: number, locale: string): string {
+  return new Intl.NumberFormat(TAG[locale] ?? locale).format(value);
+}

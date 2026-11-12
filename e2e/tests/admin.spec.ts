@@ -8,6 +8,7 @@ import {
   createAdmin,
   createListing,
   register,
+  reserve,
   sql,
   type User,
 } from "./helpers";
@@ -151,7 +152,7 @@ test("the panel's pages have no sideways scroll and no axe violation, in both la
   const listing = await pendingListing(request, "E2E panel look");
   await logIn(page);
   for (const locale of ["fa", "en"]) {
-    for (const p of ["/admin/login", "/admin", `/admin/listings/${listing.id}`]) {
+    for (const p of ["/admin/login", "/admin", "/admin?tab=bookings", "/admin?tab=users", `/admin/listings/${listing.id}`]) {
       await page.goto(`${ADMIN_WEB}/${locale}${p}`);
       await page.waitForLoadState("networkidle");
       for (const width of [320, 390, 1280]) {
@@ -176,6 +177,34 @@ test("the panel's pages have no sideways scroll and no axe violation, in both la
       expect(violations, `${locale}${p}`).toEqual([]);
     }
   }
+});
+
+test("the panel's tabs list bookings by status and find a user by part of the name (051)", async ({ page, request }) => {
+  const listing = await createListing(request, host, { title: "E2E panel booked" });
+  const guest = await register(request, "panelguest");
+  const hold = await reserve(request, guest, listing.id);
+  expect(hold.status()).toBe(201);
+  const booking = await hold.json();
+  await logIn(page);
+
+  await page.getByRole("tab", { name: /رزروها/ }).click();
+  await expect(page).toHaveURL(/\/fa\/admin\?tab=bookings$/);
+  await page.getByRole("navigation", { name: "وضعیت رزرو" }).getByRole("link", { name: /پرداخت‌نشده/ }).click();
+  await expect(page).toHaveURL(/status=pending/);
+  const row = page.getByRole("row").filter({ hasText: "E2E panel booked" }).first();
+  await expect(row).toBeVisible();
+  await expect(row).toContainText(guest.email);
+  await expect(row).toContainText("پرداخت‌نشده");
+  expect(booking.status).toBe("pending");
+
+  await page.getByRole("tab", { name: /کاربران/ }).click();
+  const box = page.getByLabel("جستجوی نام یا ایمیل");
+  await box.fill(guest.email.split("@")[0]);
+  await expect(page).toHaveURL(/tab=users&q=/);
+  await expect(page.getByRole("row").filter({ hasText: guest.email })).toHaveCount(1);
+  await page.reload(); // the tab and the search are kept in the address
+  await expect(page.getByRole("tab", { name: /کاربران/, selected: true })).toBeVisible();
+  await expect(page.getByRole("row").filter({ hasText: guest.email })).toHaveCount(1);
 });
 
 test("an expired admin token is renewed with the refresh cookie, without a new log-in (011)", async ({ page }) => {

@@ -294,6 +294,20 @@ async def listing_bookings(
     return await _render_page(session, storage, bookings, total, user_id)
 
 
+async def admin_bookings(
+    session: AsyncSession, storage: Storage, status: BookingStatus | None, limit: int, offset: int
+) -> tuple[list[BookingOut], bool]:
+    """Every booking, newest first, as the admin sees it (feature 051): no address, since the admin is
+    neither the guest nor the host. Also returns whether a next page exists."""
+    bookings, has_more = await repo.admin_bookings(session, status, limit, offset)
+    page = await _render_page(session, storage, bookings, 0, viewer_id=0)
+    return page.items, has_more
+
+
+async def status_counts(session: AsyncSession) -> dict[BookingStatus, int]:
+    return await repo.status_counts(session)
+
+
 # A year and a bit: enough for the calendar's furthest month, small enough to answer quickly.
 MAX_AVAILABILITY_DAYS = 400
 
