@@ -10,7 +10,7 @@ import { api, serverSkewMs } from "@/api/client";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useMoney } from "@/hooks/useMoney";
-import { Link } from "@/i18n/navigation";
+import { Link, useRouter } from "@/i18n/navigation";
 import { clearDraft } from "@/lib/bookingDraft";
 import { remainingMs } from "@/lib/bookingView";
 import { formatDate } from "@/lib/calendar";
@@ -40,6 +40,7 @@ export function TripDetail({
   const locale = useLocale();
   const money = useMoney();
   const queryClient = useQueryClient();
+  const router = useRouter();
   const [ended, setEnded] = useState(false);
   const [problem, setProblem] = useState<string | null>(null);
   const [paying, setPaying] = useState(false);
@@ -83,6 +84,8 @@ export function TripDetail({
       queryClient.setQueryData(["booking", bookingId], result.data);
       void queryClient.invalidateQueries({ queryKey: ["trips"] });
       toast.success(t("booking.paid"));
+      // Feature 047: the success page with the printable receipt.
+      router.push(`/trips/${bookingId}/receipt`);
     } else {
       if (errorCode(result.error) === "hold_expired") setEnded(true);
       setProblem(errorMessage(t as unknown as Translate, result.error));
@@ -115,6 +118,12 @@ export function TripDetail({
         checkIn={b.check_in}
         checkOut={b.check_out}
       />
+
+      {b.status === "confirmed" || b.status === "completed" ? (
+        <Button asChild variant="soft" size="sm" className="justify-self-start">
+          <Link href={`/trips/${b.id}/receipt`}>{t("booking.receipt")}</Link>
+        </Button>
+      ) : null}
 
       {b.status === "pending" ? (
         holdOpen ? (

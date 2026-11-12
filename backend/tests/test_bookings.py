@@ -105,10 +105,13 @@ async def test_inactive_or_unknown_listing(client: AsyncClient, world: tuple[Use
 async def test_pay_confirms_and_reveals_the_address(client: AsyncClient, world: tuple[User, User, int]) -> None:
     host, guest, lid = world
     booking = (await reserve(client, guest, lid)).json()
+    assert booking["paid_at"] is None  # feature 047: not paid yet
     paid = await client.post(f"/bookings/{booking['id']}/pay", headers=guest.auth)
     assert paid.status_code == 200
     body = paid.json()
     assert (body["status"], body["hold_expires_at"]) == ("confirmed", None)
+    assert body["paid_at"] is not None  # the receipt's payment time (feature 047)
+    assert body["paid_at"] >= booking["created_at"]
     assert body["address"]["address"] == "12 Test Street, Amsterdam"
     assert body["address"]["check_in_time"] == "15:00"
     as_host = await client.get(f"/bookings/{booking['id']}", headers=host.auth)
@@ -116,6 +119,8 @@ async def test_pay_confirms_and_reveals_the_address(client: AsyncClient, world: 
 
     twice = await client.post(f"/bookings/{booking['id']}/pay", headers=guest.auth)
     assert twice.status_code == 409
+    again = (await client.get(f"/bookings/{booking['id']}", headers=guest.auth)).json()
+    assert again["paid_at"] == body["paid_at"]  # a refused second payment does not move it
     assert twice.json()["error"]["code"] == "invalid_booking_state"
     by_host = await client.post(f"/bookings/{booking['id']}/pay", headers=host.auth)
     assert by_host.status_code == 403

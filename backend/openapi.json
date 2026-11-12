@@ -4378,6 +4378,19 @@
             "format": "date-time",
             "title": "Created At"
           },
+          "paid_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Paid At",
+            "description": "When the guest paid; null before payment (feature 047)."
+          },
           "address": {
             "anyOf": [
               {
@@ -4415,6 +4428,7 @@
           "currency",
           "hold_expires_at",
           "created_at",
+          "paid_at",
           "address"
         ],
         "title": "BookingOut"

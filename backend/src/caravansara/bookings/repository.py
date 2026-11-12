@@ -38,7 +38,7 @@ async def confirm_if_payable(session: AsyncSession, booking_id: int, guest_id: i
             Booking.status == S.pending,
             Booking.hold_expires_at > now,
         )
-        .values(status=S.confirmed, hold_expires_at=None)
+        .values(status=S.confirmed, hold_expires_at=None, paid_at=now)  # paid_at: the receipt's time (047)
         .returning(Booking.id)
         .execution_options(synchronize_session=False)
     )

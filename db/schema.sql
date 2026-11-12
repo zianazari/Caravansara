@@ -235,6 +235,7 @@ CREATE TABLE bookings (
 
     status           booking_status NOT NULL DEFAULT 'pending',
     hold_expires_at  TIMESTAMPTZ,                   -- pending hold while the guest pays (~15 min)
+    paid_at          TIMESTAMPTZ,                   -- when the guest paid; the receipt's time (047, migration 0010)
     idempotency_key  UUID           NOT NULL UNIQUE, -- a retried "Reserve" click can't book twice
     created_at       TIMESTAMPTZ    NOT NULL DEFAULT now(),
 

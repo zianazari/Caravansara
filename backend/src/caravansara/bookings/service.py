@@ -241,6 +241,7 @@ def to_out(booking: Booking, info: ListingInfo, cover_url: str | None, viewer_id
         currency=booking.currency,
         hold_expires_at=booking.hold_expires_at,
         created_at=booking.created_at,
+        paid_at=booking.paid_at,
         address=(
             BookingAddress(
                 address=info.address,

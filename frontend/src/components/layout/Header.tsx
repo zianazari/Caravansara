@@ -1,7 +1,7 @@
 "use client";
 
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { LogOutIcon, MenuIcon } from "lucide-react";
+import { HeartIcon, LogOutIcon, LuggageIcon, MenuIcon, UserRoundIcon } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { Suspense } from "react";
 import { api } from "@/api/client";
@@ -73,7 +73,7 @@ function SiteHeader() {
     router.replace("/");
   }
   return (
-    <header className="sticky top-0 z-40 border-b bg-background/95 backdrop-blur">
+    <header className="no-print sticky top-0 z-40 border-b bg-background/95 backdrop-blur">
       <a
         href="#main"
         className="sr-only focus:not-sr-only focus:absolute focus:start-2 focus:top-2 focus:rounded focus:bg-card focus:p-2"
@@ -104,7 +104,8 @@ function SiteHeader() {
         {state === "signedOut" ? (
           <Link
             href={{ pathname: "/login", query: { returnTo: pathname } }}
-            className="inline-flex h-9 items-center rounded-full bg-primary px-4 text-sm font-semibold text-primary-foreground shadow-sm transition-[transform,background-color,box-shadow] duration-200 hover:-translate-y-0.5 hover:bg-primary/90 hover:shadow-md"
+            // Feature 046 (owner's request): a larger, wider log-in button, the main action for a visitor.
+            className="inline-flex h-11 min-w-28 items-center justify-center rounded-full bg-primary px-8 text-base font-semibold text-primary-foreground shadow-sm transition-[transform,background-color,box-shadow] duration-200 hover:-translate-y-0.5 hover:bg-primary/90 hover:shadow-md"
           >
             {t("nav.login")}
           </Link>
@@ -129,14 +130,24 @@ function SiteHeader() {
                   <Link href={host.href}>{t(`nav.${host.label}`)}</Link>
                 </DropdownMenuItem>
               ) : null}
+              {/* Feature 046: each item has the icon the phone's bottom bar uses for the same page. */}
               <DropdownMenuItem asChild>
-                <Link href="/wishlists">{t("nav.wishlists")}</Link>
+                <Link href="/wishlists">
+                  <HeartIcon aria-hidden />
+                  {t("nav.wishlists")}
+                </Link>
               </DropdownMenuItem>
               <DropdownMenuItem asChild>
-                <Link href="/trips">{t("nav.trips")}</Link>
+                <Link href="/trips">
+                  <LuggageIcon aria-hidden />
+                  {t("nav.trips")}
+                </Link>
               </DropdownMenuItem>
               <DropdownMenuItem asChild>
-                <Link href="/account">{t("nav.account")}</Link>
+                <Link href="/account">
+                  <UserRoundIcon aria-hidden />
+                  {t("nav.account")}
+                </Link>
               </DropdownMenuItem>
               <DropdownMenuSeparator className="md:hidden" />
               <Suspense>
