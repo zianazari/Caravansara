@@ -1,4 +1,5 @@
 import {
+  formatPinPrice,
   add,
   formatMoney,
   multiply,
@@ -63,5 +64,31 @@ describe("money", () => {
     expect(tomanToRial("0.05")).toBe("0.50");
     expect(tomanToRial("100000000")).toBe("1000000000.00");
     expect(tomanToRial("100000000.01")).toBeNull(); // over 1,000,000,000 rial
+  });
+});
+
+describe("formatPinPrice (feature 048)", () => {
+  const fa = {
+    thousand: (n: string) => `${n} هزار تومان`,
+    million: (n: string) => `${n} میلیون تومان`,
+    toman: "تومان",
+  };
+  const en = {
+    thousand: (n: string) => `${n}k toman`,
+    million: (n: string) => `${n}M toman`,
+    toman: "toman",
+  };
+
+  it("shows rial as thousands or millions of toman, in Persian digits", () => {
+    expect(formatPinPrice("45000000.00", "IRR", "fa", fa)).toBe("۴٫۵ میلیون تومان"); // 4,500,000 toman
+    expect(formatPinPrice("60000000.00", "IRR", "fa", fa)).toBe("۶ میلیون تومان");
+    expect(formatPinPrice("4500000.00", "IRR", "fa", fa)).toBe("۴۵۰ هزار تومان");
+    expect(formatPinPrice("5000.00", "IRR", "fa", fa)).toBe("۵۰۰ تومان");
+    expect(formatPinPrice("45000000.00", "IRR", "en", en)).toBe("4.5M toman");
+  });
+
+  it("rounds other currencies to whole units", () => {
+    expect(formatPinPrice("191.00", "EUR", "en", en)).toBe("€191");
+    expect(formatPinPrice("190.60", "EUR", "en", en)).toBe("€191");
   });
 });

@@ -118,6 +118,8 @@
     "clear": "Clear dates"
   },
   "search": {
+    "pinThousand": "{n}k toman",
+    "pinMillion": "{n}M toman",
     "where": "Where",
     "when": "When",
     "wherePlaceholder": "City name",

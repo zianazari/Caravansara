@@ -68,7 +68,8 @@ export function ResultsMap({
         link.href = pin.href;
         link.textContent = pin.label;
         link.className =
-          "rounded-full bg-card px-2.5 py-1 text-xs font-bold text-foreground shadow-md ring-1 ring-copper hover:bg-primary hover:text-primary-foreground focus-visible:bg-primary focus-visible:text-primary-foreground";
+          // Larger and bolder since feature 048, so the short price reads at a glance on a busy map.
+          "whitespace-nowrap rounded-full bg-card px-3 py-1.5 text-[0.9375rem] font-extrabold text-foreground shadow-md ring-1 ring-copper transition-transform hover:z-10 hover:scale-110 hover:bg-primary hover:text-primary-foreground focus-visible:bg-primary focus-visible:text-primary-foreground";
         // Visual only: every pin's link is also a result card beside the map, so the pins stay out of the tab
         // order and away from screen readers. Dense pins overlap, below the 24 px target size, which WCAG
         // 2.5.8 allows when the same link is available elsewhere; MapLibre also names each pin "Map marker",

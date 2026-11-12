@@ -124,6 +124,9 @@ M = {
   "clear": ("پاک کردن تاریخ‌ها", "Clear dates"),
  },
  "search": {
+  # 048: short prices on map pins
+  "pinThousand": ("{n} هزار تومان", "{n}k toman"),
+  "pinMillion": ("{n} میلیون تومان", "{n}M toman"),
   "where": ("کجا", "Where"),
   "when": ("چه زمانی", "When"),
   "wherePlaceholder": ("نام شهر", "City name"),
