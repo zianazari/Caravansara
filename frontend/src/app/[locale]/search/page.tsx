@@ -12,7 +12,7 @@ import { Link } from "@/i18n/navigation";
 import { daysBetween } from "@/lib/calendar";
 import { todayInZone } from "@/lib/cityTime";
 import { errorCode } from "@/lib/errors";
-import { formatMoney } from "@/lib/money";
+import { formatPinPrice } from "@/lib/money";
 import { cityName } from "@/lib/names";
 import { PAGE_SIZE, hasArea, parseSearch, stayQuery, toApiQuery, toQuery } from "@/lib/searchParams";
 
@@ -53,11 +53,17 @@ export default async function SearchPage({ params, searchParams }: Props) {
   const nights = state.check_in && state.check_out ? daysBetween(state.check_in, state.check_out) : undefined;
   const stay = stayQuery(state).toString();
   const lang = await getLocale();
+  const pinWords = {
+    thousand: (n: string) => t("search.pinThousand", { n }),
+    million: (n: string) => t("search.pinMillion", { n }),
+    toman: t("common.toman"),
+  };
   const pins = (page?.items ?? []).map((r) => ({
     id: r.id,
     lat: r.pin.lat,
     lng: r.pin.lng,
-    label: formatMoney(r.price_per_night, r.currency, lang, t("common.toman")),
+    // Feature 048: a short price on the pin (thousands or millions of toman); the card keeps the exact one.
+    label: formatPinPrice(r.price_per_night, r.currency, lang, pinWords),
     href: `/${locale}/listings/${r.id}${stay ? `?${stay}` : ""}`,
   }));
   const first = page?.items[0];
@@ -86,7 +92,9 @@ export default async function SearchPage({ params, searchParams }: Props) {
         </p>
       ) : null}
       {page ? (
-        <div className="grid gap-6 lg:grid-cols-[minmax(0,3fr)_minmax(0,2fr)] 2xl:grid-cols-[minmax(0,2fr)_minmax(0,1fr)]">
+        // Feature 048 (owner's request): a larger map, half the page beside the results from lg up, and at most
+        // three columns of cards (two beside the map, three on the widest screens).
+        <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)] 2xl:grid-cols-[minmax(0,3fr)_minmax(0,2fr)]">
           <section aria-labelledby="results-heading" className="grid content-start gap-4">
             <h1 id="results-heading" className="text-xl font-bold" aria-live="polite">
               {t("search.results", { count: page.total })}
@@ -97,7 +105,7 @@ export default async function SearchPage({ params, searchParams }: Props) {
                 <p className="text-muted-foreground">{t("search.emptyHint")}</p>
               </div>
             ) : (
-              <ul className="grid [&>li]:min-w-0 grid-cols-2 gap-x-4 gap-y-6 md:grid-cols-3 lg:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4">
+              <ul className="grid [&>li]:min-w-0 grid-cols-2 gap-x-4 gap-y-6 md:grid-cols-3 lg:grid-cols-2 2xl:grid-cols-3">
                 {page.items.map((result) => (
                   <li key={result.id}>
                     <ResultCard result={result} nights={nights} stay={stay} />
