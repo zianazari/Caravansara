@@ -51,9 +51,7 @@ async def test_user_search_finds_any_part_of_an_email_or_a_name(client: AsyncCli
     assert short.status_code == 422
 
 
-async def test_bookings_newest_first_by_status_with_the_guest(
-    client: AsyncClient, factory: Factory
-) -> None:
+async def test_bookings_newest_first_by_status_with_the_guest(client: AsyncClient, factory: Factory) -> None:
     admin = await factory.admin()
     guest = await factory.user("traveller")
     old = await factory.booking(status="completed", check_in=-10, check_out=-7, guest=guest)
