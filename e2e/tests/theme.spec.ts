@@ -205,8 +205,12 @@ test.describe("Caravansara theme in a real browser", () => {
       expect((await hero.boundingBox())!.height, `strip height at ${width}px`).toBeLessThanOrEqual(180);
       await page.evaluate(() => window.scrollTo(0, document.documentElement.scrollHeight / 2));
       const scrolled = (await hero.boundingBox())!;
-      expect(scrolled.y, `strip stays under the header at ${width}px`).toBeGreaterThanOrEqual(0);
-      expect(scrolled.y, `strip stays under the header at ${width}px`).toBeLessThan(80);
+      // Pinned just under the header: since 044 a band in the page colour fills the gap above it (so listings
+      // never show there), so the strip sits a little below the header's edge rather than right at it.
+      const header = (await page.locator("header").first().boundingBox())!;
+      const below = scrolled.y - (header.y + header.height);
+      expect(below, `strip stays under the header at ${width}px`).toBeGreaterThanOrEqual(-1);
+      expect(below, `strip stays right under the header at ${width}px`).toBeLessThan(40);
     }
   });
 
