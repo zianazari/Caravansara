@@ -222,6 +222,7 @@ Table bookings [headercolor: #D9822B] {
   currency char(3) [not null]
   status booking_status [not null, default: 'pending']
   hold_expires_at timestamptz [note: 'pending hold while paying']
+  paid_at timestamptz [note: 'when the guest paid; the receipt (047)']
   idempotency_key uuid [not null, unique]
   created_at timestamptz [not null, default: `now()`]
 

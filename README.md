@@ -5,8 +5,8 @@
 <p align="center">
   <a href="https://github.com/zianazari/Caravansara/actions/workflows/ci.yml"><img src="https://github.com/zianazari/Caravansara/actions/workflows/ci.yml/badge.svg" alt="CI"></a>
   <img src="https://img.shields.io/badge/tests-399%20%C2%B7%2097.3%25%20coverage-b5651d" alt="399 backend tests, 97.3% coverage">
-  <img src="https://img.shields.io/badge/web-442%20Vitest%20tests-6E9F18" alt="442 Vitest tests for the web site">
-  <img src="https://img.shields.io/badge/e2e-120%20Playwright%20tests-2EAD33" alt="120 Playwright tests">
+  <img src="https://img.shields.io/badge/web-450%20Vitest%20tests-6E9F18" alt="450 Vitest tests for the web site">
+  <img src="https://img.shields.io/badge/e2e-121%20Playwright%20tests-2EAD33" alt="121 Playwright tests">
 </p>
 
 A *caravansara* (کاروانسرا) was a roadside inn on the Silk Road: travellers arrived at dusk, took a room for the night and moved on at dawn. **Caravansara** is the same idea for today: an Airbnb-like site where guests find a place, hold it, pay, save favourites and leave a review, and hosts list their homes.
@@ -43,7 +43,7 @@ This repository holds the **backend**, the **database design** and the **web sit
 | Data | PostgreSQL 16 with PostGIS, SQLAlchemy 2 (async) with asyncpg, Alembic |
 | Security | argon2 password hashing, JWT access tokens with rotating refresh tokens |
 | Files | S3 API with presigned uploads; MinIO in development and tests |
-| Quality | pytest with testcontainers, Vitest with axe,120 Playwright tests against the stack, Ruff, mypy (strict), import-linter, ESLint, Prettier |
+| Quality | pytest with testcontainers, Vitest with axe,121 Playwright tests against the stack, Ruff, mypy (strict), import-linter, ESLint, Prettier |
 | Monitoring | Prometheus with alert rules, Grafana, Loki for logs, Tempo for traces, OpenTelemetry, Grafana Alloy as the collector |
 | Delivery | uv, Docker and Docker Compose, GitHub Actions |
 
@@ -223,7 +223,7 @@ Two layers, because each one catches what the other can't:
 
 The web site has its own Vitest suite in `frontend/` (412 tests): every rule (Jalali calendar for every day of 1400–1410, city time zones on clock-change days, toman with exact decimals, the session lock across tabs), every acceptance scenario in Persian and English, and axe accessibility checks.
 
-CI runs every Playwright test against the compose stack on each pull request, and keeps the report, traces and screenshots of a failure. Most120 Playwright tests use its `request` fixture and need no browser. `theme.spec.ts` opens every guest page and the host pages in a real Chrome, at five widths from 320 px and in both languages, and checks for sideways scroll and for accessibility problems with axe, colour contrast included. Some highlights:
+CI runs every Playwright test against the compose stack on each pull request, and keeps the report, traces and screenshots of a failure. Most121 Playwright tests use its `request` fixture and need no browser. `theme.spec.ts` opens every guest page and the host pages in a real Chrome, at five widths from 320 px and in both languages, and checks for sideways scroll and for accessibility problems with axe, colour contrast included. Some highlights:
 
 - 🏠 **A host in the browser:** `host.spec.ts` makes a listing through the eight steps with three photos, then changes the price (no review) and the title (with the warning), the cover, off and on, and a rejection sent again.
 - 🛡️ **The admin panel:** `admin.spec.ts` checks that the panel exists only on its own host, that the admin token sits in an HttpOnly cookie, that every view of an exact address is recorded, and that a host's change during review is caught (409) instead of approved unseen.
@@ -273,7 +273,7 @@ The same description is committed as [`backend/openapi.json`](backend/openapi.js
 ```
 frontend/    Next.js web site for guests and hosts, Persian and English, Vitest tests  → frontend/README.md
 backend/     FastAPI app, Alembic migrations, tests  → backend/README.md
-e2e/        120 Playwright tests against the running stack (120 tests)  → e2e/README.md
+e2e/        121 Playwright tests against the running stack (120 tests)  → e2e/README.md
 postman/     Postman collection of all endpoints, with saved ids and tokens
 observability/  Alloy, Loki, Tempo, Prometheus (alerts + rule tests), Grafana dashboard  → observability/README.md
 .specify/    GitHub Spec Kit: constitution, templates, scripts (commands in .claude/skills/)
