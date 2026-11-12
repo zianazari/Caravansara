@@ -68,6 +68,7 @@ class BookingOut(BaseModel):
     currency: str
     hold_expires_at: datetime | None = Field(description="Pay before this time, or the hold expires.")
     created_at: datetime
+    paid_at: datetime | None = Field(description="When the guest paid; null before payment (feature 047).")
     address: BookingAddress | None
     has_review: bool = Field(
         default=False,

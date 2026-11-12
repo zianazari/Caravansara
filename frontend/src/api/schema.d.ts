@@ -1142,6 +1142,11 @@ export interface components {
        * Format: date-time
        */
       created_at: string;
+      /**
+       * Paid At
+       * @description When the guest paid; null before payment (feature 047).
+       */
+      paid_at: string | null;
       address: components["schemas"]["BookingAddress"] | null;
       /**
        * Has Review
