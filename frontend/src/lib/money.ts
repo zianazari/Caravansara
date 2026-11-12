@@ -99,3 +99,32 @@ export function tomanToRial(toman: string): string | null {
 export function formatInteger(value: number, locale: string): string {
   return new Intl.NumberFormat(TAG[locale] ?? locale, { useGrouping: false }).format(value);
 }
+
+/** Words for the short rial price on a map pin, from the messages: "{n} هزار تومان", "{n} میلیون تومان". */
+export type PinWords = { thousand: (n: string) => string; million: (n: string) => string; toman: string };
+
+/**
+ * A short price for a map pin (feature 048, owner's request): rial in thousands or millions of toman
+ * ("۴۵۰ هزار تومان", "۴٫۵ میلیون تومان"), so a crowded map stays readable; millions keep one decimal when it is
+ * not zero, thousands none. Below a thousand toman the whole number is shown. Other currencies round to whole
+ * units ("€191"); a pin is a guide, and the card and the booking show the exact price.
+ */
+export function formatPinPrice(amount: string, currency: string, locale: string, words: PinWords): string {
+  const tag = TAG[locale] ?? locale;
+  if (currency !== "IRR") {
+    return new Intl.NumberFormat(tag, { style: "currency", currency, maximumFractionDigits: 0 }).format(
+      Math.round(Number(decimal(toHundredths(amount), 2))),
+    );
+  }
+  const toman = Number(rialToToman(amount));
+  if (toman >= 1_000_000) {
+    const millions = Math.round(toman / 100_000) / 10; // one decimal
+    return words.million(new Intl.NumberFormat(tag, { maximumFractionDigits: 1 }).format(millions));
+  }
+  if (toman >= 1_000) {
+    return words.thousand(
+      new Intl.NumberFormat(tag, { maximumFractionDigits: 0 }).format(Math.round(toman / 1_000)),
+    );
+  }
+  return `${new Intl.NumberFormat(tag, { maximumFractionDigits: 0 }).format(toman)} ${words.toman}`;
+}

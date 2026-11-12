@@ -118,6 +118,8 @@
     "clear": "پاک کردن تاریخ‌ها"
   },
   "search": {
+    "pinThousand": "{n} هزار تومان",
+    "pinMillion": "{n} میلیون تومان",
     "where": "کجا",
     "when": "چه زمانی",
     "wherePlaceholder": "نام شهر",
