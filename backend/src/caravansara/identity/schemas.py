@@ -1,4 +1,5 @@
 from datetime import datetime
+from typing import Literal
 
 from pydantic import AnyHttpUrl, BaseModel, ConfigDict, EmailStr, Field
 
@@ -101,3 +102,6 @@ class AdminUserOut(BaseModel):
 class AdminUserPage(BaseModel):
     items: list[AdminUserOut]
     total: int
+
+
+AdminUserSort = Literal["full_name", "email", "kind", "created_at"]

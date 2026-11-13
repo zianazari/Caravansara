@@ -151,7 +151,7 @@ async def test_the_host_sees_the_review_state_and_others_do_not(
 
 
 async def test_the_queue_is_oldest_or_newest_first(client: AsyncClient, db: AsyncEngine, factory: Factory) -> None:
-    """US1/AC4; `sort=newest` since feature 025."""
+    """Newest by default, with old bookmarks and explicit oldest/newest still supported."""
     admin = await factory.admin()
     host = await factory.user("host")
     ids = [int((await factory.listing(host, approved=False, title=t))["id"]) for t in ("A", "B", "C")]
@@ -167,7 +167,7 @@ async def test_the_queue_is_oldest_or_newest_first(client: AsyncClient, db: Asyn
     r = await client.get("/admin/listings/pending", headers=admin.auth)
     assert r.status_code == 200, r.text
     body = r.json()
-    assert [i["title"] for i in body["items"]] == ["B", "C", "A"]
+    assert [i["title"] for i in body["items"]] == ["A", "C", "B"]
     assert body["total"] == 3
     item = body["items"][0]
     assert item["review_version"] == 0
@@ -184,6 +184,12 @@ async def test_the_queue_is_oldest_or_newest_first(client: AsyncClient, db: Asyn
         "/admin/listings/pending", params={"sort": "newest", "limit": 1, "offset": 2}, headers=admin.auth
     )
     assert [i["title"] for i in page.json()["items"]] == ["B"]
+    oldest = await client.get("/admin/listings/pending", params={"sort": "oldest"}, headers=admin.auth)
+    assert [i["title"] for i in oldest.json()["items"]] == ["B", "C", "A"]
+    override = await client.get(
+        "/admin/listings/pending", params={"sort": "oldest", "order": "desc"}, headers=admin.auth
+    )
+    assert [i["title"] for i in override.json()["items"]] == ["A", "C", "B"]
     wrong = await client.get("/admin/listings/pending", params={"sort": "random"}, headers=admin.auth)
     assert wrong.status_code == 422
 
@@ -352,7 +358,7 @@ async def test_rejection_keeps_the_listing_hidden_and_tells_the_host_why(
 async def test_a_rejected_listing_can_be_fixed_and_sent_again(
     client: AsyncClient, db: AsyncEngine, factory: Factory, pending: dict[str, Any]
 ) -> None:
-    """US2/AC3, AC4: the edit is saved, the listing stays rejected until resubmitted, then goes last."""
+    """US2/AC3, AC4: the edit is saved, the listing stays rejected until resubmitted with a new queue time."""
     admin, host = await factory.admin(), pending["host"]
     await reject(client, admin, pending["id"])
     edited = await client.patch(f"/listings/{pending['id']}", json={"title": "Real photos now"}, headers=host.auth)
@@ -369,7 +375,7 @@ async def test_a_rejected_listing_can_be_fixed_and_sent_again(
         "submitted_at": r.json()["review"]["submitted_at"],
     }
     queue = (await client.get("/admin/listings/pending", headers=admin.auth)).json()["items"]
-    assert [i["id"] for i in queue] == [other["id"], pending["id"]]
+    assert [i["id"] for i in queue] == [pending["id"], other["id"]]
     version = (await state(db, pending["id"]))[3]
     assert (await history(db, pending["id"]))[-1] == ("resubmitted", host.id, version, None)
     assert events("submitted") == before + 1

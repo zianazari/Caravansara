@@ -1,4 +1,8 @@
 erDiagram
+    COUNTRIES ||--o{ HOLIDAYS : "calendar"
+    USERS ||--o{ WISHLIST_ITEMS : "saves"
+    LISTINGS ||--o{ WISHLIST_ITEMS : "saved by"
+    USERS ||--o{ EMAIL_OUTBOX : "receives"
     USERS ||--o{ LISTINGS : "hosts"
     USERS ||--o{ BOOKINGS : "books"
     USERS ||--o{ REFRESH_TOKENS : "signs in with"
@@ -71,6 +75,7 @@ erDiagram
         numeric bathrooms
         numeric price_per_night
         numeric cleaning_fee
+        jsonb pricing_policy "custom dates > holiday > weekend > base"
         char currency
         time check_in_time
         time check_out_time
@@ -137,6 +142,7 @@ erDiagram
         numeric nightly_price "snapshot"
         numeric cleaning_fee
         numeric total_price
+        jsonb nightly_prices "immutable daily snapshots"
         char currency
         booking_status status "pending | confirmed | cancelled | expired | completed"
         timestamptz hold_expires_at
@@ -158,4 +164,28 @@ erDiagram
         smallint value_rating
         text comment
         timestamptz created_at
+    }
+
+    HOLIDAYS {
+        char country_code PK, FK
+        date day PK
+        text name
+    }
+    WISHLIST_ITEMS {
+        bigint user_id PK, FK
+        bigint listing_id PK, FK
+        timestamptz saved_at
+    }
+    EMAIL_OUTBOX {
+        bigint id PK
+        text kind
+        bigint user_id FK
+        text subject
+        text body
+        timestamptz created_at
+        timestamptz next_attempt_at
+        smallint attempts
+        timestamptz sent_at
+        timestamptz failed_at
+        text last_error
     }

@@ -1,5 +1,5 @@
 // Caravansara (Airbnb-like place reservation site) — paste into https://dbdiagram.io
-// Mirrors db/schema.sql (updated 2026-11-07: listing review, migration 0006). EXCLUDE, triggers, partial/GiST indexes and
+// Mirrors db/schema.sql (updated 2026-11-13 through migration 0012; 17 application tables). EXCLUDE, triggers, partial/GiST indexes and
 // DEFERRABLE can't be drawn in DBML; they are written in the notes.
 
 Project caravansara {
@@ -149,6 +149,7 @@ Table listings [headercolor: #1F6FEB] {
   price_per_night "numeric(14,2)" [not null]
   cleaning_fee "numeric(14,2)" [not null, default: 0]
   currency char(3) [not null, default: 'EUR']
+  pricing_policy jsonb [not null, default: `'{}'::jsonb`, note: 'Host policy: custom dates, shared holidays, weekend, base; percentages do not stack.']
   check_in_time time [not null, default: '15:00']
   check_out_time time [not null, default: '11:00']
   avg_rating "numeric(3,2)" [note: 'rank, cached by trigger on reviews']
@@ -220,6 +221,7 @@ Table bookings [headercolor: #D9822B] {
   nightly_price "numeric(14,2)" [not null, note: 'price snapshot']
   cleaning_fee "numeric(14,2)" [not null, default: 0]
   total_price "numeric(14,2)" [not null]
+  nightly_prices jsonb [not null, default: `'[]'::jsonb`, note: 'Saved per-night price, source, percentage and label; never recalculated.']
   currency char(3) [not null]
   status booking_status [not null, default: 'pending']
   hold_expires_at timestamptz [note: 'pending hold while paying']
@@ -293,3 +295,36 @@ Table admin_address_views [headercolor: #1A7F37] {
 
 // Composite FK: the review's listing and guest must be the booking's
 Ref review_belongs_to_booking: reviews.(booking_id, listing_id, guest_id) > bookings.(id, listing_id, guest_id)
+
+Table holidays [headercolor: #1F6FEB] {
+  country_code char(2) [not null, ref: > countries.code]
+  day date [not null]
+  name text [not null, note: 'Trimmed length 1 to 100; managed by active admins.']
+  indexes { (country_code, day) [pk] }
+}
+
+Table wishlist_items [headercolor: #D9822B] {
+  user_id bigint [not null, ref: > users.id]
+  listing_id bigint [not null, ref: > listings.id]
+  saved_at timestamptz [not null, default: `now()`]
+  indexes {
+    (user_id, listing_id) [pk]
+    (user_id, saved_at, listing_id) [note: 'saved_at DESC in PostgreSQL']
+  }
+  Note: 'Both foreign keys use ON DELETE CASCADE; at most 500 saves per member in the service.'
+}
+
+Table email_outbox [headercolor: #1A7F37] {
+  id bigint [pk, increment]
+  kind text [not null, note: 'listing_approved, listing_rejected, booking_confirmed_guest or booking_confirmed_host']
+  user_id bigint [not null, ref: > users.id]
+  subject text [not null]
+  body text [not null]
+  created_at timestamptz [not null, default: `now()`]
+  next_attempt_at timestamptz [not null, default: `now()`]
+  attempts smallint [not null, default: 0]
+  sent_at timestamptz
+  failed_at timestamptz
+  last_error text
+  Note: 'Transactional outbox; recipient FK cascades. Partial due index: next_attempt_at WHERE sent_at IS NULL AND failed_at IS NULL. Sent and failed cannot both be set.'
+}

@@ -12,6 +12,8 @@
 --   + users.kind, users.disabled_at; auth_attempts allows 'admin_login'
 --   + listings.review_status, submitted_at, rejection_reason, review_version
 --   + listing_review_events, admin_address_views (two new tables)
+-- Updated 2026-11-13 through migration 0012: 17 application tables, shared holidays,
+-- per-listing pricing_policy and saved booking nightly_prices; wishlists/outbox included.
 -- Alembic migrations in backend/migrations are the source of truth; 0001 is
 -- this file, and this file is kept in sync with later migrations.
 -- =====================================================================
@@ -119,6 +121,7 @@ CREATE TABLE listings (
     price_per_night  NUMERIC(14,2) NOT NULL CHECK (price_per_night > 0),
     cleaning_fee     NUMERIC(14,2) NOT NULL DEFAULT 0 CHECK (cleaning_fee >= 0),
     currency         CHAR(3)       NOT NULL DEFAULT 'EUR',
+    pricing_policy   JSONB         NOT NULL DEFAULT '{}'::jsonb, -- host rules; one rule per night
     check_in_time    TIME          NOT NULL DEFAULT '15:00',
     check_out_time   TIME          NOT NULL DEFAULT '11:00',
 
@@ -234,6 +237,7 @@ CREATE TABLE bookings (
     nightly_price    NUMERIC(14,2)  NOT NULL,
     cleaning_fee     NUMERIC(14,2)  NOT NULL DEFAULT 0,
     total_price      NUMERIC(14,2)  NOT NULL,
+    nightly_prices   JSONB         NOT NULL DEFAULT '[]'::jsonb, -- immutable per-night booking snapshot
     currency         CHAR(3)        NOT NULL,
 
     status           booking_status NOT NULL DEFAULT 'pending',
@@ -328,3 +332,37 @@ END $$;
 CREATE TRIGGER listing_review_events_append_only
 BEFORE UPDATE OR DELETE ON listing_review_events
 FOR EACH ROW EXECUTE FUNCTION listing_review_events_refuse_change();
+
+-- ---------- Shared country holiday calendar (0012) --------------------
+CREATE TABLE holidays (
+    country_code CHAR(2) NOT NULL REFERENCES countries(code),
+    day          DATE NOT NULL,
+    name         TEXT NOT NULL CHECK (length(trim(name)) BETWEEN 1 AND 100),
+    PRIMARY KEY (country_code, day)
+);
+
+-- ---------- Saved listings (0007) ------------------------------------
+CREATE TABLE wishlist_items (
+    user_id    BIGINT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    listing_id BIGINT NOT NULL REFERENCES listings(id) ON DELETE CASCADE,
+    saved_at   TIMESTAMPTZ NOT NULL DEFAULT now(),
+    PRIMARY KEY (user_id, listing_id)
+);
+CREATE INDEX wishlist_items_user_saved_idx ON wishlist_items (user_id, saved_at DESC, listing_id);
+
+-- ---------- Transactional email outbox (0008 / 0009) ------------------
+CREATE TABLE email_outbox (
+    id              BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    kind            TEXT NOT NULL CHECK (kind IN ('listing_approved', 'listing_rejected', 'booking_confirmed_guest', 'booking_confirmed_host')),
+    user_id         BIGINT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    subject         TEXT NOT NULL CHECK (length(subject) BETWEEN 1 AND 300),
+    body            TEXT NOT NULL CHECK (length(body) >= 1),
+    created_at      TIMESTAMPTZ NOT NULL DEFAULT now(),
+    next_attempt_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+    attempts        SMALLINT NOT NULL DEFAULT 0 CHECK (attempts >= 0),
+    sent_at         TIMESTAMPTZ,
+    failed_at       TIMESTAMPTZ,
+    last_error      TEXT,
+    CHECK (sent_at IS NULL OR failed_at IS NULL)
+);
+CREATE INDEX email_outbox_due_idx ON email_outbox (next_attempt_at) WHERE sent_at IS NULL AND failed_at IS NULL;

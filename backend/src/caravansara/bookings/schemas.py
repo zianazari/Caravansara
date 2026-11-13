@@ -4,9 +4,16 @@ from decimal import Decimal
 from pydantic import BaseModel, ConfigDict, Field
 
 from caravansara.bookings.models import BookingStatus
+from caravansara.listings.schemas import NightlyPrice
 
 
 class BookingCreate(BaseModel):
+    expected_currency: str | None = Field(
+        default=None, pattern=r"^[A-Z]{3}$", description="Currency of the displayed quote."
+    )
+    expected_total: Decimal | None = Field(
+        default=None, ge=0, description="Quote total; a changed price returns 409 price_changed."
+    )
     listing_id: int
     check_in: date
     check_out: date
@@ -50,6 +57,9 @@ class BookingAddress(BaseModel):
 
 
 class BookingOut(BaseModel):
+    nightly_prices: list[NightlyPrice] = Field(
+        default_factory=list, description="Saved at booking time; never recalculated."
+    )
     id: int
     status: BookingStatus
     listing: BookingListing

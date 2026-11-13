@@ -151,7 +151,7 @@ describe("listing page", () => {
     expect(screen.getByText("ورود از ۱۵:۰۰ به وقت تهران")).toBeInTheDocument();
     // 007: the price is in the booking box and, for phones, in the fixed booking bar (FR-007).
     expect(
-      within(screen.getByRole("complementary", { name: "قیمت" })).getByText("۵٬۰۰۰٬۰۰۰ تومان هر شب"),
+      within(screen.getByRole("complementary", { name: "قیمت" })).getByText("۵٬۰۰۰٬۰۰۰ تومان"),
     ).toBeInTheDocument();
     expect(screen.getByRole("link", { name: "رزرو" })).toHaveAttribute("href", "#booking");
     expect(screen.getByText("Lovely stay.")).toBeInTheDocument();
@@ -170,7 +170,7 @@ describe("listing page", () => {
   it("shows a reviewer's outside picture as the default avatar instead (FR-041)", async () => {
     answer();
     await show("en");
-    expect(screen.queryByRole("img", { name: "Omar Haddad" })).toHaveTextContent("O");
+    expect(screen.getByRole("img", { name: "Omar Haddad" }).querySelector("svg")).toBeInTheDocument();
     expect(document.body.innerHTML).not.toContain("example.com");
   });
 

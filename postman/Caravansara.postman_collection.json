@@ -123,6 +123,16 @@
       "key": "adminRefreshToken",
       "value": "",
       "type": "string"
+    },
+    {
+      "key": "pricingCountry",
+      "value": "IR",
+      "type": "string"
+    },
+    {
+      "key": "holidayDate",
+      "value": "2027-01-01",
+      "type": "string"
     }
   ],
   "item": [
@@ -1991,7 +2001,7 @@
               }
             ],
             "url": {
-              "raw": "{{baseUrl}}/api/v1/admin/listings/pending",
+              "raw": "{{baseUrl}}/api/v1/admin/listings/pending?sort_by=submitted_at&order=desc&limit=20&offset=0",
               "host": [
                 "{{baseUrl}}"
               ],
@@ -2001,9 +2011,27 @@
                 "admin",
                 "listings",
                 "pending"
+              ],
+              "query": [
+                {
+                  "key": "sort_by",
+                  "value": "submitted_at"
+                },
+                {
+                  "key": "order",
+                  "value": "desc"
+                },
+                {
+                  "key": "limit",
+                  "value": "20"
+                },
+                {
+                  "key": "offset",
+                  "value": "0"
+                }
               ]
             },
-            "description": "Listings waiting for review, oldest first. Each has the `review_version` to decide on.",
+            "description": "Listings waiting for review, newest submission first by default. sort_by: submitted_at, title, city, host. order: asc or desc. Sorting is global before pagination; ID breaks ties. Legacy sort=oldest|newest is supported when order is omitted. Each item has the review_version to decide on.",
             "auth": {
               "type": "bearer",
               "bearer": [
@@ -2163,6 +2191,276 @@
                 }
               }
             },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{adminToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "List admin users",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{adminToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/admin/users?sort_by=created_at&order=desc&limit=20&offset=0",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "admin",
+                "users"
+              ],
+              "query": [
+                {
+                  "key": "sort_by",
+                  "value": "created_at",
+                  "description": "full_name, email, kind, created_at"
+                },
+                {
+                  "key": "order",
+                  "value": "desc",
+                  "description": "asc or desc"
+                },
+                {
+                  "key": "limit",
+                  "value": "20"
+                },
+                {
+                  "key": "offset",
+                  "value": "0"
+                }
+              ]
+            },
+            "description": "Sorting applies to all matching records before pagination, with ID breaking ties in the same direction. Search with q (at least 3 characters). Names and email ignore case; roles order member then admin."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Admin list succeeds\", () => pm.response.to.have.status(200));",
+                  "pm.test(\"Contains a page of items\", () => pm.expect(pm.response.json().items).to.be.an(\"array\"));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "List admin bookings",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{adminToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/admin/bookings?sort_by=id&order=desc&limit=20&offset=0",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "admin",
+                "bookings"
+              ],
+              "query": [
+                {
+                  "key": "sort_by",
+                  "value": "id",
+                  "description": "id, listing, guest, dates, total_price, status, created_at"
+                },
+                {
+                  "key": "order",
+                  "value": "desc",
+                  "description": "asc or desc"
+                },
+                {
+                  "key": "limit",
+                  "value": "20"
+                },
+                {
+                  "key": "offset",
+                  "value": "0"
+                }
+              ]
+            },
+            "description": "Sorting applies to all matching records before pagination, with ID breaking ties in the same direction. Optional status filter. Dates use check-in then check-out; guest uses name then email. Totals group by currency without conversion. Status order is pending, confirmed, completed, cancelled, expired. Exact addresses are never included."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Admin list succeeds\", () => pm.response.to.have.status(200));",
+                  "pm.test(\"Contains a page of items\", () => pm.expect(pm.response.json().items).to.be.an(\"array\"));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Shared holiday calendar",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/admin/holidays?country={{pricingCountry}}&start={{checkIn}}&end={{checkOut}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "admin",
+                "holidays"
+              ],
+              "query": [
+                {
+                  "key": "country",
+                  "value": "{{pricingCountry}}"
+                },
+                {
+                  "key": "start",
+                  "value": "{{checkIn}}"
+                },
+                {
+                  "key": "end",
+                  "value": "{{checkOut}}"
+                }
+              ]
+            },
+            "description": "Admin calendar. Dates are maintained by admins per country, not automatically imported.",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{adminToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Add or rename a holiday",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/admin/holidays/{{pricingCountry}}/{{holidayDate}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "admin",
+                "holidays",
+                "{{pricingCountry}}",
+                "{{holidayDate}}"
+              ]
+            },
+            "description": "Upsert one country/date. Affects new price quotes; saved bookings are unchanged.",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{adminToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Holiday name\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "Remove a holiday",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/admin/holidays/{{pricingCountry}}/{{holidayDate}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "admin",
+                "holidays",
+                "{{pricingCountry}}",
+                "{{holidayDate}}"
+              ]
+            },
+            "description": "Remove only this country/date from the shared calendar.",
             "auth": {
               "type": "bearer",
               "bearer": [
@@ -2345,6 +2643,143 @@
               ]
             },
             "description": "Removing one that is not saved is not an error."
+          }
+        }
+      ]
+    },
+    {
+      "name": "Dynamic pricing",
+      "item": [
+        {
+          "name": "Read my pricing rules",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/listings/{{listingId}}/pricing",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "listings",
+                "{{listingId}}",
+                "pricing"
+              ]
+            },
+            "description": "Host only. Each listing has independent percentages and ranges.",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{hostToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Save my pricing rules",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/listings/{{listingId}}/pricing",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "listings",
+                "{{listingId}}",
+                "pricing"
+              ]
+            },
+            "description": "Replace the policy. Percentage applies to base price; custom ranges override shared holidays, holidays override weekends. Active custom ranges cannot overlap; range end is inclusive. Disabled rules are retained.",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{hostToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"weekend_enabled\": true,\n  \"weekend_days\": [\n    3,\n    4\n  ],\n  \"weekend_percent\": \"30\",\n  \"holiday_enabled\": true,\n  \"holiday_percent\": \"100\",\n  \"ranges\": []\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "Get the nightly quote",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/listings/{{listingId}}/pricing/quote?check_in={{checkIn}}&check_out={{checkOut}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "listings",
+                "{{listingId}}",
+                "pricing",
+                "quote"
+              ],
+              "query": [
+                {
+                  "key": "check_in",
+                  "value": "{{checkIn}}"
+                },
+                {
+                  "key": "check_out",
+                  "value": "{{checkOut}}"
+                }
+              ]
+            },
+            "description": "Public listing or its host. Checkout excluded. Each night is rounded to two decimal places, then summed, with cleaning charged once. Does not hold availability. Send total_price as expected_total and currency as expected_currency to POST /bookings; a changed amount or currency returns 409 price_changed. The booking saves nightly_prices for later receipts.",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{hostToken}}",
+                  "type": "string"
+                }
+              ]
+            }
           }
         }
       ]

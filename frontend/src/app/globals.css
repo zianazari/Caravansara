@@ -418,3 +418,93 @@ html {
 [data-home-search][data-compact="true"] .home-search-mobile .text-xs {
   display: none;
 }
+
+/* Optional cinematic deployment: selected per server, leaving the default site unchanged. */
+:root[data-design="cinematic"] {
+  color-scheme: dark;
+  --background: #111b1d;
+  --surface: #1b282a;
+  --card: #182426;
+  --foreground: #f2f4f0;
+  --muted: #263638;
+  --muted-foreground: #b8c6c4;
+  --border: #3e5152;
+  --primary: #ff8b50;
+  --primary-foreground: #111b1d;
+  --accent: #263638;
+  --ring: #ff8b50;
+  --copper: #ff8b50;
+  --amber: #ffae72;
+  --gold: #f6d8bc;
+  --sand-strong: #74918e;
+  --hero-shade: #091315;
+  --night: #0c1517;
+  --on-dark: #f2f4f0;
+  --on-dark-muted: #b8c6c4;
+  --destructive: #ffa793;
+}
+[data-design="cinematic"] footer {
+  background-color: var(--night);
+}
+[data-design="cinematic"] main:has(.cinematic-home) {
+  max-width: 1920px;
+}
+.cinematic-cover {
+  margin: -1.5rem -1rem 0;
+}
+.cinematic-scrim {
+  background:
+    linear-gradient(90deg, rgb(9 19 21 / 0.02) 15%, rgb(9 19 21 / 0.7) 70%, rgb(9 19 21 / 0.9)),
+    linear-gradient(0deg, var(--background), transparent 20%);
+}
+[dir="ltr"] .cinematic-scrim {
+  background:
+    linear-gradient(90deg, rgb(9 19 21 / 0.9), rgb(9 19 21 / 0.7) 35%, rgb(9 19 21 / 0.02)),
+    linear-gradient(0deg, var(--background), transparent 20%);
+}
+[data-design="cinematic"] .boutique-search .search-pill {
+  border-radius: 1rem;
+  box-shadow: none;
+}
+[data-design="cinematic"] [data-home-search][data-compact="false"] .search-pill > button[type="submit"] {
+  width: 7rem;
+  border-radius: 0.75rem;
+  gap: 0.5rem;
+}
+[data-design="cinematic"]
+  [data-home-search][data-compact="false"]
+  .search-pill
+  > button[type="submit"]
+  .sr-only {
+  position: static;
+  width: auto;
+  height: auto;
+  padding: 0;
+  margin: 0;
+  overflow: visible;
+  clip: auto;
+  clip-path: none;
+  white-space: normal;
+}
+@media (min-width: 768px) {
+  .cinematic-cover {
+    margin-inline: -1.5rem;
+  }
+}
+@media (min-width: 1024px) {
+  .cinematic-cover {
+    margin-inline: -2.5rem;
+  }
+  [data-design="cinematic"] [data-home-search][data-compact="false"] .search-pill > button[type="submit"] {
+    width: 9rem;
+  }
+}
+
+[data-design="cinematic"] .home-search-mobile {
+  border-radius: 1rem;
+  box-shadow: none;
+}
+
+.search-pill > div {
+  cursor: pointer;
+}

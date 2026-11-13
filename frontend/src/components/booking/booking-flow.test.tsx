@@ -6,12 +6,17 @@ import { expectAccessible, renderIn } from "@/test/render";
 
 const GET = vi.fn();
 const POST = vi.fn();
+const QUOTE = vi.fn();
 const push = vi.fn();
 const replace = vi.fn();
 let me: { id: number; full_name?: string } | undefined;
 let skew = 0;
 vi.mock("@/api/client", () => ({
-  api: { GET: (...a: unknown[]) => GET(...a), POST: (...a: unknown[]) => POST(...a) },
+  api: {
+    GET: (path: string, ...args: unknown[]) =>
+      path.endsWith("/pricing/quote") ? QUOTE(path, ...args) : GET(path, ...args),
+    POST: (...a: unknown[]) => POST(...a),
+  },
   serverSkewMs: () => skew,
 }));
 vi.mock("@/hooks/useAuth", () => ({ useMe: () => ({ data: me }) }));
@@ -57,6 +62,17 @@ const stay = {
   infants: 0,
   pets: 0,
 };
+const quote = {
+  listing_id: 5,
+  check_in: stay.check_in,
+  check_out: stay.check_out,
+  base_price: "120.00",
+  cleaning_fee: "30.00",
+  currency: "EUR",
+  stay_total: "360.00",
+  total_price: "390.00",
+  nights: [{ date: stay.check_in, amount: "120.00", percent: "0", source: "base" as const, label: null }],
+};
 const bookingListing = {
   id: 5,
   title: "Canal flat",
@@ -89,7 +105,8 @@ const booking = (over: Record<string, unknown> = {}) => ({
 });
 
 beforeEach(() => {
-  [GET, POST, push, replace].forEach((m) => m.mockReset());
+  [GET, POST, QUOTE, push, replace].forEach((m) => m.mockReset());
+  QUOTE.mockResolvedValue({ data: quote });
   sessionStorage.clear();
   me = { id: 9 };
   skew = 0;
@@ -99,7 +116,7 @@ beforeEach(() => {
 describe("BookingBox (US3, FR-023, FR-024)", () => {
   it("shows the total from the search's dates and saves a draft before going to book", async () => {
     renderIn("en", <Box />);
-    expect(screen.getByText("€390.00")).toBeInTheDocument();
+    expect(await screen.findByText("€390.00")).toBeInTheDocument();
     await userEvent.click(screen.getByRole("button", { name: "Reserve" }));
     expect(push).toHaveBeenCalledWith("/book/5");
     expect(readDraft()).toMatchObject(stay);
@@ -108,6 +125,7 @@ describe("BookingBox (US3, FR-023, FR-024)", () => {
   it("stops more guests than the place allows before asking the API (US3/AC6)", async () => {
     search = new URLSearchParams("check_in=2027-01-10&check_out=2027-01-13&adults=3");
     renderIn("fa", <Box />);
+    await waitFor(() => expect(screen.getByRole("button", { name: "رزرو" })).toBeEnabled());
     await userEvent.click(screen.getByRole("button", { name: "رزرو" }));
     expect(screen.getByRole("alert")).toHaveTextContent("تعداد مهمان‌ها از ظرفیت این اقامتگاه بیشتر است.");
     expect(push).not.toHaveBeenCalled();
@@ -163,7 +181,7 @@ describe("ConfirmBooking (US3/AC1, AC4, AC5)", () => {
     await waitFor(() => expect(replace).toHaveBeenCalledWith("/trips/77"));
     expect(POST).toHaveBeenCalledWith("/api/v1/bookings", {
       params: { header: { "Idempotency-Key": draft.idempotency_key } },
-      body: stay,
+      body: { ...stay, expected_total: "390.00", expected_currency: "EUR" },
     });
     expect(readDraft()?.booking_id).toBe(77);
   });
@@ -202,6 +220,22 @@ describe("ConfirmBooking (US3/AC1, AC4, AC5)", () => {
   it("explains when there is no booking in progress", () => {
     renderIn("en", <ConfirmBooking listingId={5} />);
     expect(screen.getByRole("status")).toHaveTextContent("There is no booking in progress.");
+  });
+
+  it("requires a new confirmation when the displayed quote changes", async () => {
+    draftFor(stay);
+    GET.mockResolvedValue({ data: listingOut });
+    QUOTE.mockResolvedValueOnce({ data: quote }).mockResolvedValue({
+      data: { ...quote, total_price: "450.00", stay_total: "420.00" },
+    });
+    POST.mockResolvedValue({ error: { error: { code: "price_changed" } } });
+    renderIn("en", <ConfirmBooking listingId={5} />);
+    await screen.findByText("€390.00");
+    await userEvent.click(screen.getByRole("button", { name: "Hold these dates" }));
+    expect(await screen.findByRole("alert")).toHaveTextContent("The price changed");
+    expect(await screen.findByText("€450.00")).toBeInTheDocument();
+    expect(POST).toHaveBeenCalledTimes(1);
+    expect(replace).not.toHaveBeenCalled();
   });
 });
 

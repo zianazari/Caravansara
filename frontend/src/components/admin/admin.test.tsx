@@ -99,7 +99,7 @@ describe("admin panel (feature 009)", () => {
     version = 2;
   });
 
-  type QueueQuery = { params: { query: { offset: number; limit: number; sort: string } } };
+  type QueueQuery = { params: { query: { offset: number; limit: number; sort_by: string; order: string } } };
   const queueOf = (total: number) =>
     GET.mockImplementation((_p: string, o: QueueQuery) =>
       Promise.resolve(ok({ items: [item(o.params.query.offset + 1)], total })),
@@ -117,7 +117,7 @@ describe("admin panel (feature 009)", () => {
       "/admin/listings/1",
     );
     expect(GET).toHaveBeenCalledWith("/api/v1/admin/listings/pending", {
-      params: { query: { limit: 20, offset: 0, sort: "oldest" } },
+      params: { query: { limit: 20, offset: 0, sort_by: "submitted_at", order: "desc" } },
     });
     expect(screen.queryByRole("navigation", { name: "صفحه‌ها" })).toBeNull(); // one page: no pager
     await expectAccessible(document.body);
@@ -143,32 +143,52 @@ describe("admin panel (feature 009)", () => {
     await expectAccessible(document.body);
   });
 
-  it("sorts newest first on request and keeps the order in the page links (feature 025)", async () => {
+  it("defaults to newest and toggles direction with sorting preserved across pages", async () => {
     queueOf(45);
     const { unmount } = renderIn("en", <AdminQueue />);
     await screen.findByText("Listing 1");
-    await userEvent.click(screen.getByRole("combobox", { name: "Order" }));
-    await userEvent.click(await screen.findByRole("option", { name: "Newest first" }));
-    expect(push).toHaveBeenCalledWith("/admin?sort=newest");
+    expect(screen.getByRole("combobox", { name: "Order" })).toHaveTextContent("Submission time");
+    await userEvent.click(
+      screen.getByRole("button", { name: "Newest first: Sort Submission time ascending" }),
+    );
+    expect(push).toHaveBeenCalledWith("/admin?sort_by=submitted_at&order=asc");
     unmount();
 
-    query = "sort=newest&page=2";
+    query = "sort_by=title&order=asc&page=2";
     renderIn("en", <AdminQueue />);
     expect(await screen.findByText("Listing 21")).toBeInTheDocument();
     expect(GET).toHaveBeenLastCalledWith("/api/v1/admin/listings/pending", {
-      params: { query: { limit: 20, offset: 20, sort: "newest" } },
+      params: { query: { limit: 20, offset: 20, sort_by: "title", order: "asc" } },
     });
-    expect(screen.getByRole("combobox", { name: "Order" })).toHaveTextContent("Newest first");
+    expect(screen.getByRole("combobox", { name: "Order" })).toHaveTextContent("Listing title");
     const pager = screen.getByRole("navigation", { name: "Pages" });
     expect(within(pager).getByRole("link", { name: "Page 3" })).toHaveAttribute(
       "href",
-      "/admin?sort=newest&page=3",
+      "/admin?sort_by=title&order=asc&page=3",
     );
-    expect(within(pager).getByRole("link", { name: "Page 1" })).toHaveAttribute("href", "/admin?sort=newest");
-    expect(within(pager).getByRole("link", { name: "Next" })).toHaveAttribute(
+    expect(within(pager).getByRole("link", { name: "Page 1" })).toHaveAttribute(
       "href",
-      "/admin?sort=newest&page=3",
+      "/admin?sort_by=title&order=asc",
     );
+    await userEvent.click(screen.getByRole("button", { name: "Ascending: Sort Listing title descending" }));
+    expect(push).toHaveBeenLastCalledWith("/admin?sort_by=title&order=desc");
+    await userEvent.click(screen.getByRole("combobox", { name: "Order" }));
+    await userEvent.click(await screen.findByRole("option", { name: "City" }));
+    expect(push).toHaveBeenLastCalledWith("/admin?sort_by=city&order=asc");
+    await expectAccessible(document.body);
+  });
+
+  it("still opens older queue bookmarks in ascending order", async () => {
+    query = "sort=oldest&page=2";
+    queueOf(45);
+    renderIn("en", <AdminQueue />);
+    await screen.findByText("Listing 21");
+    expect(GET).toHaveBeenLastCalledWith("/api/v1/admin/listings/pending", {
+      params: { query: { limit: 20, offset: 20, sort_by: "submitted_at", order: "asc" } },
+    });
+    expect(
+      screen.getByRole("button", { name: "Oldest first: Sort Submission time descending" }),
+    ).toHaveTextContent("Oldest first");
   });
 
   it("moves to the new last page when the queue has shrunk past the page (feature 025)", async () => {

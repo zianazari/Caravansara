@@ -34,6 +34,12 @@ docker compose run --rm migrate caravansara measure-queries --only search_city_l
 
 `db/bulk/queries/` holds the important queries the app sends: `catalog.json` (name, code source, endpoint, parameters, target), one `<name>.sql` each, and `params.sql`, which picks representative values from the data (the busiest listing, the London centre, ...). Each query gets 1 warm-up run and the median of 5 `EXPLAIN (ANALYZE, BUFFERS)` runs, each in its own connection and in a transaction that is rolled back, so nothing changes. A test keeps the catalog equal to the code. Results of the index review: [specs/backend/measurements.md (003)](../../specs/backend/measurements.md).
 
+The query catalog also includes representative admin title-sort queries (`admin_bookings_title_page` and
+`review_queue_title_page`). Their targets are budgets, not a claim of newly measured bulk results. Bounded
+primary-key page fetches and the small country/date holiday calendar are excluded with explicit reasons.
+Bulk listings use disabled/empty price policies by default; guest search prices are adjusted in the service
+for the returned page, so SQL timing alone does not measure daily-rule calculation cost.
+
 ## Safety locks
 
 The command refuses, and changes nothing, when:

@@ -15,7 +15,7 @@ export function AdminHeader() {
   const pathname = usePathname();
   const onLogin = pathname.startsWith("/admin/login");
   return (
-    <header className="sticky top-0 z-40 border-b bg-night text-on-dark">
+    <header className="sticky top-0 z-40 border-b bg-background/95 text-foreground backdrop-blur-md">
       <a
         href="#main"
         className="sr-only focus:not-sr-only focus:absolute focus:start-2 focus:top-2 focus:rounded focus:bg-card focus:p-2 focus:text-foreground"
@@ -27,7 +27,7 @@ export function AdminHeader() {
         className="mx-auto flex max-w-7xl items-center gap-3 px-4 py-3 md:px-6"
       >
         <Link href="/admin" className="me-auto flex min-w-0 items-center gap-3 rounded-lg">
-          <Logo onDark />
+          <Logo />
           {/* Words only from 640 px: at 320 px the logo, the language and log-out fill the bar. The nav keeps the name. */}
           <span className="hidden text-sm font-semibold text-on-dark-muted sm:inline">
             {t("admin.title")}

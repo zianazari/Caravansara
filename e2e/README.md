@@ -1,6 +1,6 @@
 # API tests with Playwright
 
-End-to-end tests for all 45 endpoints of the Caravansara API and for the web site's wiring, run with
+End-to-end tests for the versioned endpoints of the Caravansara API and for the web site's wiring, run with
 Playwright's `request` fixture against the real `docker compose` stack: web site, API, worker,
 PostgreSQL + PostGIS and MinIO.
 
@@ -12,7 +12,7 @@ presigned photo upload to MinIO, and HTTP from outside.
 
 ```bash
 # from the repo root: start the stack with higher per-IP limits (each test registers its own users)
-docker compose -f docker-compose.yml -f e2e/compose.e2e.yml up -d --build
+docker compose -f docker-compose.yml -f docker-compose.cinematic.yml -f e2e/compose.e2e.yml up -d --build --wait
 
 cd e2e
 npm ci
@@ -55,3 +55,21 @@ search and book public listings; pass `{ approved: false }` to keep a listing pe
 therefore need the `docker` CLI and the compose stack on the same machine.
 
 `tests/admin.spec.ts` opens the admin panel at `http://admin.localhost:3001` (the `ADMIN_HOST` of the `web` service; set `ADMIN_WEB_URL` for another address). Browsers send `*.localhost` to this machine, so no DNS entry is needed.
+
+## Pricing and frontend variants
+
+The suite currently collects 138 tests. `cinematic-home.spec.ts` targets port 3011 by default, so start the
+cinematic compose service when running the entire suite, including in CI. Both frontends share the API/database.
+
+`dynamic-pricing.spec.ts` exercises host rule editing, shared holiday add/remove, exact daily guest quotes,
+reservation and receipt snapshots, and Persian/English responsive accessibility. Holiday fixtures restore any
+previous entry in a `finally` block. Test accounts/listings follow the existing retained-fixture convention.
+
+```bash
+npx playwright test tests/admin.spec.ts tests/host.spec.ts tests/dynamic-pricing.spec.ts --workers=1
+WEB_URL=http://localhost:3011 ADMIN_WEB_URL=http://admin.localhost:3011 npx playwright test tests/dynamic-pricing.spec.ts
+```
+
+`CINEMATIC_WEB` overrides the cinematic home origin; `WEB_URL` and `ADMIN_WEB_URL` choose the origins for host/admin
+flows. `PRICING_SHOTS=1` saves pricing/workspace screenshots under `/private/tmp` during a local run. After testing,
+restore normal API rate limits with `docker compose -f docker-compose.yml -f docker-compose.cinematic.yml up -d --no-deps --wait api`.

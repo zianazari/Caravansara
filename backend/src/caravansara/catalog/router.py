@@ -1,14 +1,23 @@
+from datetime import date
 from typing import Annotated, Literal
 
 from fastapi import APIRouter, Query
 
 from caravansara.catalog import service
-from caravansara.catalog.schemas import AmenityCategoryOut, CityOut, CountryOut
+from caravansara.catalog.schemas import AmenityCategoryOut, CityOut, CountryOut, HolidayOut
 from caravansara.core.db import SessionDep
 from caravansara.core.errors import error_responses
 from caravansara.search import service as search
 
 router = APIRouter(tags=["Catalog"])
+
+
+@router.get("/holidays", summary="Shared holiday calendar", responses=error_responses(422))
+async def list_holidays(
+    session: SessionDep, start: date, end: date, country: Annotated[str, Query(min_length=2, max_length=2)] = "IR"
+) -> list[HolidayOut]:
+    return await service.holidays(session, country, start, end)
+
 
 # `popular` (feature 030): the counts come from search, which reads across listings and bookings.
 CitySort = Literal["name", "popular"]

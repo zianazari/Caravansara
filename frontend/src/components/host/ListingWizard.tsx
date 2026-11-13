@@ -1,6 +1,7 @@
 "use client";
 
-import { ArrowLeftIcon, ArrowRightIcon } from "lucide-react";
+import { ArrowLeftIcon, ArrowRightIcon, CheckIcon, HouseIcon, SaveIcon } from "lucide-react";
+import { cn } from "@/lib/cn";
 import { useSearchParams } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { useEffect, useRef, useState } from "react";
@@ -177,76 +178,134 @@ export function ListingWizard({ loadMap }: { loadMap?: () => Promise<typeof impo
   const last = step === STEP_COUNT;
   const fewPhotos = photos.length < MIN_PHOTOS;
   return (
-    <div className="mx-auto grid max-w-2xl gap-6 pb-24 md:pb-0">
-      <header className="grid gap-3">
-        <p className="text-sm text-muted-foreground">{t("wizard.stepOf", { step, total: STEP_COUNT })}</p>
+    <div
+      className="mx-auto grid max-w-6xl gap-6 pb-24 md:pb-0 lg:grid-cols-[15rem_minmax(0,1fr)]"
+      data-listing-studio
+    >
+      <div className="relative overflow-hidden rounded-3xl border bg-card p-5 sm:p-8 lg:col-span-2">
         <div
-          role="progressbar"
-          aria-label={t("wizard.title")}
-          aria-valuemin={1}
-          aria-valuemax={STEP_COUNT}
-          aria-valuenow={step}
-          className="h-1.5 overflow-hidden rounded-full bg-muted"
-        >
-          <span
-            className="block h-full bg-primary transition-[width]"
-            style={{ width: `${(step / STEP_COUNT) * 100}%` }}
-          />
-        </div>
-        <h1 ref={heading} tabIndex={-1} className="text-2xl font-bold outline-none">
-          {t(`wizard.step_${name}`)}
-        </h1>
-      </header>
-
-      {topError ? (
-        <p
-          role="alert"
-          className="rounded-xl border border-destructive/40 bg-destructive/5 p-3 text-sm text-destructive"
-        >
-          {topError}
+          className="pointer-events-none absolute -end-16 -top-24 size-72 rounded-full bg-primary/10 blur-3xl"
+          aria-hidden
+        />
+        <p className="mb-3 flex items-center gap-2 text-sm font-semibold text-primary">
+          <HouseIcon className="size-4" aria-hidden />
+          {t("wizard.title")}
         </p>
-      ) : null}
+        <p className="relative text-2xl font-bold sm:text-3xl">{t("wizard.intro")}</p>
+        <p className="relative mt-3 max-w-2xl text-sm leading-7 text-muted-foreground">
+          {t("wizard.introText")}
+        </p>
+      </div>
+      <aside className="hidden self-start rounded-3xl border bg-card p-4 lg:sticky lg:top-24 lg:block">
+        <nav aria-label={t("wizard.title")}>
+          <ol className="grid gap-1.5">
+            {STEPS.map((key, i) => {
+              const current = i + 1 === step;
+              const complete = i + 1 < (firstInvalidStep(draft) ?? STEP_COUNT);
+              return (
+                <li key={key}>
+                  <button
+                    type="button"
+                    disabled={sending || i + 1 > (firstInvalidStep(draft) ?? STEP_COUNT)}
+                    aria-current={current ? "step" : undefined}
+                    onClick={() => go(i + 1)}
+                    className={cn(
+                      "flex w-full items-center gap-3 rounded-xl p-3 text-start text-sm transition-colors disabled:opacity-40",
+                      current ? "bg-primary/10 font-semibold text-primary" : "hover:bg-muted",
+                    )}
+                  >
+                    <span
+                      className={cn(
+                        "grid size-7 shrink-0 place-items-center rounded-lg border text-xs tabular-nums",
+                        current && "border-primary/40",
+                        complete && "border-primary/30 bg-primary/10 text-primary",
+                      )}
+                    >
+                      {complete ? <CheckIcon className="size-3.5" aria-hidden /> : i + 1}
+                    </span>
+                    {t(`wizard.step_${key}`)}
+                  </button>
+                </li>
+              );
+            })}
+          </ol>
+        </nav>
+        <p className="mt-4 flex items-start gap-2 border-t pt-4 text-xs leading-6 text-muted-foreground">
+          <SaveIcon className="mt-1 size-3.5 shrink-0" aria-hidden />
+          {t("wizard.draftSaved")}
+        </p>
+      </aside>
+      <div className="grid min-w-0 gap-6 rounded-3xl border bg-card p-5 sm:p-8">
+        <header className="grid gap-3">
+          <p className="text-sm text-muted-foreground">{t("wizard.stepOf", { step, total: STEP_COUNT })}</p>
+          <div
+            role="progressbar"
+            aria-label={t("wizard.title")}
+            aria-valuemin={1}
+            aria-valuemax={STEP_COUNT}
+            aria-valuenow={step}
+            className="h-1.5 overflow-hidden rounded-full bg-muted"
+          >
+            <span
+              className="block h-full bg-primary transition-[width]"
+              style={{ width: `${(step / STEP_COUNT) * 100}%` }}
+            />
+          </div>
+          <h1 ref={heading} tabIndex={-1} className="text-2xl font-bold outline-none sm:text-3xl">
+            {t(`wizard.step_${name}`)}
+          </h1>
+        </header>
 
-      <form
-        noValidate
-        onSubmit={(event) => {
-          event.preventDefault();
-          if (last) void submit();
-          else next();
-        }}
-        className="grid gap-6"
-      >
-        {name === "type" ? <TypeStep {...stepProps} /> : null}
-        {name === "location" ? <LocationStep {...stepProps} loadMap={loadMap} /> : null}
-        {name === "capacity" ? <CapacityStep {...stepProps} /> : null}
-        {name === "amenities" ? <AmenitiesStep {...stepProps} /> : null}
-        {name === "description" ? <DescriptionStep {...stepProps} /> : null}
-        {name === "price" ? <PriceStep {...stepProps} /> : null}
-        {name === "times" ? <TimesStep {...stepProps} /> : null}
-        {name === "photos" ? (
-          <PhotosStep
-            items={photos}
-            onItems={setPhotos}
-            onRetry={sending ? undefined : () => void submit()}
-          />
+        {topError ? (
+          <p
+            role="alert"
+            className="rounded-xl border border-destructive/40 bg-destructive/5 p-3 text-sm text-destructive"
+          >
+            {topError}
+          </p>
         ) : null}
 
-        <div className="fixed inset-x-0 bottom-0 z-40 flex items-center gap-3 border-t bg-card px-4 py-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] md:static md:border-0 md:bg-transparent md:p-0">
-          {step > 1 ? (
-            <Button type="button" variant="outline" className="rounded-full" onClick={() => go(step - 1)}>
-              <ArrowRightIcon className="ltr:rotate-180" aria-hidden />
-              {t("wizard.back")}
-            </Button>
+        <form
+          noValidate
+          onSubmit={(event) => {
+            event.preventDefault();
+            if (last) void submit();
+            else next();
+          }}
+          className="grid gap-6"
+        >
+          {name === "type" ? <TypeStep {...stepProps} /> : null}
+          {name === "location" ? <LocationStep {...stepProps} loadMap={loadMap} /> : null}
+          {name === "capacity" ? <CapacityStep {...stepProps} /> : null}
+          {name === "amenities" ? <AmenitiesStep {...stepProps} /> : null}
+          {name === "description" ? <DescriptionStep {...stepProps} /> : null}
+          {name === "price" ? <PriceStep {...stepProps} /> : null}
+          {name === "times" ? <TimesStep {...stepProps} /> : null}
+          {name === "photos" ? (
+            <PhotosStep
+              items={photos}
+              onItems={setPhotos}
+              onRetry={sending ? undefined : () => void submit()}
+            />
           ) : null}
-          <Button type="button" variant="ghost" className="me-auto rounded-full" onClick={startOver}>
-            {t("wizard.startOver")}
-          </Button>
-          <Button type="submit" className="rounded-full" disabled={sending || (last && fewPhotos)}>
-            {last ? (sending ? t("wizard.submitting") : t("wizard.submit")) : t("wizard.next")}
-            {last ? null : <ArrowLeftIcon className="ltr:rotate-180" aria-hidden />}
-          </Button>
-        </div>
-      </form>
+
+          <div className="fixed inset-x-0 bottom-0 z-40 flex items-center gap-3 border-t bg-card px-4 py-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] md:static md:border-0 md:bg-transparent md:p-0">
+            {step > 1 ? (
+              <Button type="button" variant="outline" className="rounded-full" onClick={() => go(step - 1)}>
+                <ArrowRightIcon className="ltr:rotate-180" aria-hidden />
+                {t("wizard.back")}
+              </Button>
+            ) : null}
+            <Button type="button" variant="ghost" className="me-auto rounded-full" onClick={startOver}>
+              {t("wizard.startOver")}
+            </Button>
+            <Button type="submit" className="rounded-full" disabled={sending || (last && fewPhotos)}>
+              {last ? (sending ? t("wizard.submitting") : t("wizard.submit")) : t("wizard.next")}
+              {last ? null : <ArrowLeftIcon className="ltr:rotate-180" aria-hidden />}
+            </Button>
+          </div>
+        </form>
+      </div>
     </div>
   );
 }

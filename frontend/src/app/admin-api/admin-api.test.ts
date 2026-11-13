@@ -9,7 +9,7 @@ vi.mock("next/headers", () => ({
   }),
 }));
 
-import { GET, POST } from "./api/v1/admin/[...path]/route";
+import { DELETE, GET, POST, PUT } from "./api/v1/admin/[...path]/route";
 import { POST as login } from "./login/route";
 import { POST as logout } from "./logout/route";
 
@@ -96,6 +96,33 @@ describe("admin panel handlers (feature 009)", () => {
     const [url, init] = fetchMock.mock.calls[0]!;
     expect(url).toBe("http://api:8000/api/v1/admin/listings/pending?limit=20");
     expect((init.headers as Headers).get("authorization")).toBe("Bearer admin-secret");
+  });
+
+  it("forwards holiday updates and deletions only from the admin's own site", async () => {
+    jar.set("cv_admin", { value: "admin-secret", options: {} });
+    fetchMock.mockResolvedValue(Response.json({ name: "Holiday" }));
+    const url = "/admin-api/api/v1/admin/holidays/IR/2027-01-01";
+    for (const [method, handler] of [
+      ["PUT", PUT],
+      ["DELETE", DELETE],
+    ] as const) {
+      const body = method === "PUT" ? { name: "Holiday" } : undefined;
+      expect(
+        (
+          await handler(
+            request(url, method, body, "https://evil.example"),
+            params("holidays", "IR", "2027-01-01"),
+          )
+        ).status,
+      ).toBe(403);
+      const res = await handler(request(url, method, body), params("holidays", "IR", "2027-01-01"));
+      expect(res.status).toBe(200);
+      const [target, init] = fetchMock.mock.calls.at(-1)!;
+      expect(target).toBe("http://api:8000/api/v1/admin/holidays/IR/2027-01-01");
+      expect(init.method).toBe(method);
+      expect(init.headers.get("authorization")).toBe("Bearer admin-secret");
+    }
+    expect(fetchMock).toHaveBeenCalledTimes(2);
   });
 
   it("answers 401 without a session, and never forwards admin log-in", async () => {

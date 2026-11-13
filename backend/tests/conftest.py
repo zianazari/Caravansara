@@ -31,7 +31,8 @@ MINIO_PASSWORD = "caravansara-secret"
 _MINIO_READY_LINE = b"MinIO setup finished"  # logged by the bitnami image before its final start
 
 DATA_TABLES = (
-    "admin_address_views, listing_review_events, reviews, bookings, listing_amenities, listing_photos, listings, "
+    "holidays, admin_address_views, listing_review_events, reviews, bookings, "
+    "listing_amenities, listing_photos, listings, "
     "auth_attempts, refresh_tokens, users"
 )
 

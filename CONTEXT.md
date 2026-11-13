@@ -1,110 +1,115 @@
 # Caravansara: project context
 
-Caravansara (کاروانسرا) is an Airbnb-like place reservation site. It was called "Airbnb-style" until 2026-11-02.
+Last updated: 2026-11-13 (Europe/Helsinki).
 
-Handoff file for continuing this project in a new session.
-To resume: read this file first, then `/Users/zia/Caravansara/db/README.md`.
-Last updated: 2026-11-05.
+Caravansara (کاروانسرا) is a Persian/English place reservation site. This is the handoff for continuing work
+in `/Users/zia/Caravansara`. Read `README.md`, `docs/backend-design.md` and `docs/dynamic-pricing.md` for current
+behavior. `specs/` records historical features 001–008; its old scope/defaults are not the current specification.
 
-## Goal
+## Current application
 
-An Airbnb-like place reservation site. The database design and the FastAPI
-backend v1 (`backend/`) are done. Requirements came from Airbnb screenshots:
+- Next.js 16 / React 19 / TypeScript / Tailwind / next-intl. Persian RTL with local Vazirmatn; English at `/en`.
+- FastAPI / Python 3.13 / SQLAlchemy async / PostgreSQL 16 + PostGIS. API contract: `backend/openapi.json`.
+- Object storage through S3 APIs (MinIO locally). Listing photos upload directly; profile pictures go through
+  the API for validation. Mailpit receives development email; the outbox commits with its business event.
+- A member can host and travel. Admins are separate account kinds created only by `caravansara create-admin`.
+- Guests search by city or public map area, choose dates/guests, reserve a 15-minute hold, pay through the
+  simulated flow, view receipts and trips, save favourites and review completed stays.
+- Hosts create a listing through eight steps, upload at least five photos, manage its status/photos/bookings,
+  and set prices independently for each listing. Descriptive edits need review; price changes do not.
+- Admins review listings (exact address access is recorded), manage users/bookings lists and the shared holiday
+  calendar. Every table column sorts across all matching records before pagination. Review queue sorting
+  supports submission time, title, city and host; newest submissions are the default.
 
-- Search by **Where** (country → city), **When** (check-in/out), **Who**
-  (adults, children, infants, pets). Infants don't count toward max guests.
-- Listings shown on a **map**.
-- Each listing has **photos**, **amenities** (Wifi, Kitchen, Microwave …),
-  a **star rating** and **reviews**.
-- **Two users must never be able to book the same place for overlapping nights.**
+## Local frontends
 
-## Decisions made
+- Default boutique site (ivory/olive): `http://localhost:3001/fa`; admin: `http://admin.localhost:3001`.
+- Cinematic site (dark/orange): `http://localhost:3011/fa`; admin: `http://admin.localhost:3011`.
+- The admin host always uses the cinematic palette. The public default site retains the boutique palette.
+- `docker-compose.cinematic.yml` creates a separate frontend image/container. Both variants share API, database,
+  accounts, photos, reservations and pricing rules. `CARAVANSARA_DESIGN=cinematic` selects the alternative home.
+- User menus show full names. Default avatars use a user icon; house markers are shared across listing, host
+  and admin maps. Map price hover preserves marker positioning. Search segments respond across their area,
+  and category navigation preserves scroll position. Generated home/destination images are decorative.
 
-| Topic | Decision |
-| --- | --- |
-| "Rank" | Star rating 1–5 plus six sub-ratings, cached on the listing (`avg_rating`, `review_count`) |
-| "Comments" | Review text only: no host replies, no guest-host messaging |
-| Scope | Simple: no payments, wishlists, messages, destinations, calendar table |
-| Database | PostgreSQL 13+ (tested on 16) |
-| Table name | Keep `listings` (it's the offer/ad, Airbnb's own term), not `places` |
-| Map | Radial search with PostGIS. Real `latitude` / `longitude` stay private; a stored, fuzzed `public_location geography(Point, 4326)` with a GiST index serves search, distance and the pin, so shrinking the radius can't reveal the address. See `docs/backend-design.md` |
-| Photos | Files in object storage (S3/R2/GCS) behind a CDN; DB stores `storage_key`, `width`, `height`, `sort_order` (0 = cover), `room_tag` |
-| Amenity icons | `amenities.icon` holds a key like `wifi`; the frontend maps it to an icon. Making it NOT NULL was offered and **declined: leave as is** |
-| Pets | Not an amenity: `listings.pets_allowed` / `max_pets` |
-| Double booking | `EXCLUDE USING gist (listing_id WITH =, stay WITH &&)` on active bookings; half-open `[check_in, check_out)` |
-| Left to the app | Guest count ≤ `max_guests`; a job expiring unpaid `pending` holds; fuzzing the map pin |
+```bash
+docker compose -f docker-compose.yml -f docker-compose.cinematic.yml up -d --build --wait
+```
 
-## Schema (12 tables, 4 modules; updated 2026-11-02)
+For an existing stack after API/schema changes, build the API image, apply migrations with
+`docker compose run --rm --no-deps api caravansara migrate`, then recreate API/frontends. Never reset the database.
 
-- **Identity:** `users`, `refresh_tokens` (new), `auth_attempts` (new)
-- **Catalog:** `countries`, `cities` (+ `timezone`), `amenity_categories`, `amenities`
-- **Listings:** `listings` (+ `public_location` PostGIS), `listing_photos`, `listing_amenities`
-- **Bookings & reviews:** `bookings`, `reviews`
+## Dynamic pricing (migration 0012)
 
-Also in the schema: unique `lower(email)`, `DEFERRABLE` photo order, partial index on pending `hold_expires_at`.
-`search_query.sql` does city or radial search and returns only the public pin. All tested on PostgreSQL 16 + PostGIS 3.4.
+See `docs/dynamic-pricing.md` for the full contract and endpoint list.
 
-Rules enforced by the database (tested):
+- Each listing owns a JSONB `pricing_policy`; enabled weekend/holiday rules and up to 100 named date ranges.
+- Percentages apply to base price, -99% through +1000%, at most two decimal places. Weekend days are selectable
+  with Monday=0 through Sunday=6. Defaults are disabled, with +30% weekend and +100% holiday values ready to enable.
+- Per-night priority is **custom date range → shared holiday → selected weekend → base**. Rules do not stack.
+  Custom range endpoints are inclusive; active custom ranges cannot overlap. Disabled rules are retained.
+- `holidays` is a shared country/date calendar maintained manually in the admin's Holidays & pricing tab.
+  The host chooses the holiday percentage; holiday data is not imported automatically.
+- Quotes exclude checkout, round each night with decimal half-up rounding, and charge cleaning once. Search
+  totals, listing/checkout quotes and reservations use the same calculation.
+- Reservation creation locks the listing against concurrent edits and checks optional `expected_total` and
+  `expected_currency`; mismatches are `409 price_changed`. Browser checkout refreshes and requires confirmation.
+- `bookings.nightly_prices` saves each night's price, source, percentage and label. Trips and receipts use this
+  snapshot. Old bookings keep their totals and have an empty snapshot. Idempotent replay returns the saved booking.
+- Host editor has a Pricing & calendar tab with localized monthly prices and marked unsaved edits. The wizard
+  can set recurring rules; custom date ranges are managed after creating the listing.
 
-- No overlapping active bookings per listing: 20 concurrent requests gave exactly 1 booking.
-- Same-day turnover is allowed, and cancelling a booking frees its dates.
-- `bookings.idempotency_key` is UNIQUE, so a retried "Reserve" can't double-book.
-- A review needs a `completed` booking (trigger), at most one review per booking.
-- A composite FK makes the review's listing and guest match its booking.
-- A trigger keeps `avg_rating` and `review_count` in sync.
-- `CHECK (pets_allowed OR max_pets = 0)`.
+## Data and invariants
 
-Amenity seed: 12 categories, 31 amenities. Search uses AND logic for amenity filters.
-
-## Files (on Zia's Mac)
-
-`/Users/zia/Caravansara/` (a **git repo**; commit changes there)
-- `db/README.md`: overview, rules table, how to run
-- `db/schema.sql`: PostgreSQL schema (source of truth)
-- `db/seed_amenities.sql`: amenity catalog
-- `db/seed_locations.sql`: 7 countries and 9 cities (NL, PT, DK, SE, GB, US, IR; with timezones). `caravansara seed` adds only missing rows, so it is safe on a database with data
-- `db/seed_demo.sql`: demo data generated by `db/demo/build_demo_seed.py` from Inside Airbnb (CC BY 4.0, six cities) plus `db/demo/fa_listings.json` (50 hand-written Persian listings in Tehran, Isfahan, Shiraz, priced in IRR); 800 listings, 3–8 synthetic photos each (`db/demo/photos/`, uploaded by `seed-demo`), nine edge cases (two for listing review) and the demo admin `admin@example.com`, listed with ids in `db/demo/README.md` and `db/demo/edge_cases.json`. Raw downloads live in the git-ignored `.cache/insideairbnb/`
-- `db/bulk/`: `city_profiles.json` (statistics of six cities) and its builder; `caravansara seed-bulk` (code in `backend/src/caravansara/devdata/`) loads 100,000 listings and about 3 million bookings into the separate database `caravansara_bulk`, never the configured one
-- `backend/tests/factories.py`: `Factory` (fixture `factory`) makes users, listings and bookings in any state; tests must use it instead of SQL for booking states
-- `db/search_query.sql`: Where/When/Who + map + multi-amenity search, plus filter counts
-- `db/schema.dbml`: paste into dbdiagram.io
-- `db/erd.mmd`, `db/erd.png`: Mermaid ERD (full columns)
-- `docs/Caravansara Database - Design Overview.md`: overview of the final DB design (matches the online doc)
-- `docs/ERD-demo-fa.html`: the Persian ERD demo deck as one self-contained HTML file (17 slides; keys: arrows/space to move, `n` speaker notes, `f` fullscreen). Use it instead of a PowerPoint export, which loses RTL
-- `screenshots/`: the three Airbnb screenshots the requirements came from
-- `CONTEXT.md`: this file
-- `docs/backend-design.md`: **source of truth** for the backend requirements and design (decided 2026-11-01); diagrams in `docs/images/`
-- `docs/backend-design.pdf`: PDF export of that file; regenerate after changes
-- `.specify/memory/constitution.md`: the project's rules (v2.0.0). `.specify/` templates and `.claude/skills/speckit-*` are GitHub Spec Kit, used for features 001 to 008 only; `specs/NNN-name/` holds those features' spec, plan and tasks, as history; the four finished backend features (001 to 004) were merged on 2026-11-09 into `specs/backend/`, one file per kind (spec, plan, research, data-model, contracts, tasks, quickstart, measurements, checklists) with a section per feature and the measurement JSON in `specs/backend/data/`; `.github/pull_request_template.md` has the checklist
-- `docs/future-work.md`: planned work in order of importance and dependency: the host pages (008) and the admin panel (009) of the web site, the few leftovers of the guest part, Playwright browser tests, email (review results first), Redis caching, microservices. It lists only unstarted work; finished work goes into the design docs
-- `frontend/`: the web site, guest part (`specs/005-frontend-guest/`), in the caravansara theme (`specs/007-caravansara-theme/`: warm README palette as tokens in `globals.css`, the pointed arch as a CSS mask, Airbnb-like layout, a bottom bar on phones): Next.js 16 App Router, React 19, TypeScript 5.9 strict, Tailwind 4, shadcn-style components on `radix-ui`, next-intl (Persian RTL with Vazirmatn by default at `/fa`, English at `/en`), TanStack Query, `openapi-fetch` with `src/api/schema.d.ts` generated from `backend/openapi.json` (`npm run gen:api`), MapLibre with OSM raster tiles. Messages are generated by `scripts/messages_source.py` (one entry, both languages). Rules live in `src/lib` (90% coverage gate). Exact package versions, at least two weeks old; eslint stays at 9 until `eslint-config-next`'s plugins accept 10. How to run: `frontend/README.md`
-- Web session rules (research R3, R4): the refresh token is only in the HttpOnly `cv_refresh` cookie set by `src/app/session/*`; the access token only in memory (`src/lib/session.ts`); refreshing runs under the `navigator.locks` lock `cv-refresh`, because the API ends every session when a refresh token is used twice. The site forwards `/api/v1` itself (`src/app/api/v1/[...path]/route.ts`) and refuses `/api/v1/auth/*` in `src/proxy.ts` (Next.js 16's name for middleware), which also sets the CSP nonce
-- `backend/`: FastAPI app, Alembic migrations, tests; how to run in `backend/README.md`. Swagger UI at `/docs` (a requirement); the API contract is `backend/openapi.json`, checked by a test, rewritten with `caravansara export-openapi`
-- `e2e/`: Playwright tests (57) against the running `docker compose` stack, including `web.spec.ts` for the site's wiring; `helpers.ts` makes its admin with `docker compose exec api caravansara create-admin`, so it needs the docker CLI; `e2e/compose.e2e.yml` raises the per-IP register/login limits; test users are `e2e.*@caravansara.example.com`, password `E2e-Pass-2026!`, and are never deleted
-- `postman/`: Postman collection of all endpoints (import into Postman or the VS Code extension) and `sample-photo.jpg` for the upload request
-- `observability/`: monitoring as a compose profile (`docker compose --profile observability up`): Alloy collects logs and traces, Loki, Tempo, Prometheus with `alerts.yml` and rule tests, Grafana with the provisioned Caravansara dashboard (http://localhost:3000, `admin` / `caravansara`)
-- `docker-compose.yml`: db, MinIO (`bitnamilegacy/minio:2025.4.22`, since MinIO stopped publishing images), migrate, API, worker, web (port 3001, fixed address `172.28.0.250` that the API trusts for `X-Forwarded-For`; the subnet is set by `CARAVANSARA_APP_SUBNET`). `db/bulk/compose.bulk.yml` points the API at `caravansara_bulk` for measuring pages. `caravansara_demo` is still at migration `0001`
-- Avatars (`identity`, `specs/006-avatar-upload-via-api/`): `PUT /me/avatar` with the picture itself as the body, and `DELETE /me/avatar`; PNG or JPEG up to 5 MB (`CARAVANSARA_MAX_AVATAR_BYTES`), checked before anything is stored (413 over the limit without reading further, 415 another type, 422 not a real PNG or JPEG, 503 storage down), the format taken from the content, the change made under a lock on the user's row; the site's `/api/v1` proxy streams bodies and caps them at 5 MB + 64 KB; `PATCH /me` takes only the user's own storage address (`invalid_avatar_url`)
-- `.github/workflows/ci.yml`: ruff, mypy, import-linter, tests (coverage ≥ 90%), Docker builds of the API and the site, and the `frontend` job (API client in sync, ESLint, Prettier, `tsc`, Vitest with coverage, `next build`)
-
-## Online artifacts (claude.ai)
-
-- Design overview doc: https://claude.ai/artifact/Sodin9aFXeXpNtwByq9Eaj
-- Persian ERD demo deck (17 slides, Vazirmatn): https://claude.ai/artifact/9aT5rXEGMY6FqEj4XNGukS
-  - Persian text is wrapped in U+202B…U+202C (RLE…PDF) because the slide format has no RTL support. It shows the older 10-table design; `docs/ERD-demo-fa.html` is the maintained copy.
-
-## Status and next step
-
-- Done: database design, backend design, demo data, backend v1 (all 8 steps of `docs/backend-design.md`; 124 tests, 97.8% coverage) and the backend test gaps (recorded in the test strategy of `docs/backend-design.md`; now 142 tests, 98.3% coverage) and monitoring (logs, metrics, traces, dashboard and alerts; `observability/README.md`; 161 tests, 98.3% coverage) and more test and mock data, the first Spec Kit feature (`specs/backend/` (001): demo in 9 cities with photos, Persian content and edge cases, `seed-bulk`, the test factory; 202 tests, 98.0% coverage) and wider price columns for rials, the second Spec Kit feature (`specs/backend/` (002): migration `0002` to `NUMERIC(14,2)`, a price limit of 1,000,000,000 in every currency, `amount_too_large` instead of a 500, market-level Iranian demo prices; 216 tests, 98.0% coverage) and the index review, the third Spec Kit feature (`specs/backend/` (003): `measure-queries` and the query catalog in `db/bulk/queries/`, `pg_stat_statements` with a Grafana panel, three measured indexes on `bookings` in migrations `0004`/`0005`, the search SQL rewrite, the bounded completion job; 241 tests, 97.3% coverage) and listing approval, the fourth Spec Kit feature (`specs/backend/` (004): migration `0006` with `review_status`, `review_version`, `users.kind`, the append-only `listing_review_events` and `admin_address_views`; the `moderation` module with admin login, queue, details, approve and reject; `resubmit`; `create-admin`/`disable-admin`; worker gauges for the queue; `ANALYZE` in the migration after it showed the planner needs the new column's statistics; 342 tests, 97.6% coverage, 51 e2e tests) and the guest part of the web site, the fifth Spec Kit feature (`specs/005-frontend-guest/`: `frontend/` with search, map, listing, account with default and uploaded avatar, booking with the 15-minute countdown, trips, cancel and review, in Persian and English; three avatar endpoints and the narrower `PATCH /me`; the `web` service; 351 backend tests, 97.6% coverage, 185 Vitest tests, 57 e2e tests). The caravansara theme (feature 007, 2026-11-09): the site in the owner-approved look, no API change; 258 Vitest tests, 85 Playwright tests including every guest page in a real Chrome. Profile pictures through the API (feature 006, 2026-11-10, after constitution 1.4.0): a bad file never reaches storage; `POST /me/avatar/upload-url` removed (38 operations); 362 backend tests, 97.4% coverage, 266 Vitest tests, 85 e2e tests. The host pages (feature 008, 2026-11-10, the last one with Spec Kit): «Become a host», the eight-step listing form with at least three photos (a site-only rule), My listings with status, edits with the review warning, photos, off and on, bookings and reviews; no API change; 365 Vitest tests, 97 e2e tests. The admin panel (feature 009, 2026-11-10, the first without Spec Kit): the same Next.js app, only on `ADMIN_HOST` (`admin.localhost:3001` in compose; 404 for the panel on the public host and for the site on the admin host), the admin token in the HttpOnly `cv_admin` cookie with a forwarder to `/api/v1/admin/*`, queue, review with exact address and map, approve, reject with reason, 409 on a host's change; Persian and English; no API change; 381 Vitest tests, 103 e2e tests. The three-photo rule in the API (feature 010): approving a listing with fewer than 3 photos and removing one of the last 3 are `409 too_few_photos` (the removal locks the listing row); the panel disables approve for such a listing; the test factory gives a waiting listing 3 photo rows and the e2e `createListing` uploads 3 before approving; 365 backend tests, 382 Vitest tests, 103 e2e tests. Admin refresh (feature 011): `POST /admin/auth/login` also returns a rotating `refresh_token` and `session_expires_in`; `POST /admin/auth/refresh` keeps the session's end (8 hours after log-in, `admin_session_hours`), only for an active admin, reuse revokes all; `POST /admin/auth/logout`; member and admin refresh tokens never cross; `disable-admin` revokes its tokens; the panel keeps the refresh token in the HttpOnly `cv_admin_refresh` cookie and the forwarder renews once per refresh token (in-process); no migration; 40 operations; 371 backend tests, 384 Vitest tests, 104 e2e tests. Wishlists (feature 012): migration `0007` adds `wishlist_items` (PK user+listing, cascades, index on user and saved_at); module `wishlists` with `GET /me/wishlist` (unavailable listings stay as `available: false`), `GET /me/wishlist/ids`, `PUT` and `DELETE /me/wishlist/{listing_id}`, at most 500 per user under the user row lock (`409 wishlist_full`); the heart on cards and the listing page, `/wishlists`, and the fourth bottom-bar item; 44 operations; 377 backend tests, 390 Vitest tests, 109 e2e tests. Review-result emails (feature 013): migration `0008` adds `email_outbox`, written in the decision's transaction; module `notifications`; the worker sends one email per transaction with `SKIP LOCKED`, waits 1, 2, 4… min (max 1 h) and gives up after 8 attempts; recipient by `user_id` (address read at send time, never logged); one language per email from the currency (rial: Persian, any other: English; for a review result the listing's currency), with the link in that language; `core/email.py` (`SmtpSender` on `smtplib`, `MemorySender`); Mailpit in compose (:8025); metrics `caravansara_emails_total`, outbox gauges, alerts `EmailQueueStuck` and `EmailsGivenUp`, three Grafana panels; no API change; 384 backend tests, 111 e2e tests. E2E in CI (feature 014): a job `e2e` builds the compose stack (`up --build --wait`, with `e2e/compose.e2e.yml`), adds `admin.localhost` to `/etc/hosts`, runs every Playwright test, and on failure prints the service logs and keeps the report, traces and screenshots for 7 days; the hold-length check now uses only server times (Docker on macOS drifts). API leftovers (feature 015): `property_type` filter on `GET /search/listings` and `/search/filters` (site: three place-type categories, `property_type` in the search address), `has_review` on `BookingOut` (filled in the bookings router through `reviews.service.reviewed`, so the modules do not import each other; the site's `canReview` reads it), `photo_count` on `ListingSummary` (the host card no longer reads each listing); no migration; 387 backend tests, 393 Vitest tests, 112 e2e tests. Booking confirmation emails (feature 016): the payment's transaction writes two outbox rows (`booking_confirmed_guest`, `booking_confirmed_host`; migration `0009` widens the `kind` check); language from the booking's currency, Persian with Solar Hijri dates and toman (`notifications/formats.py`, `to_jalali` without a library); no exact address in email (the trip page shows it); 392 backend tests, 113 e2e tests. Denser home page (feature 017, owner's request with a reference picture): listing photos are plain rounded rectangles everywhere (`ArchFrame` soft = `rounded-2xl`, `.arch-soft` removed; the tall `.arch` stays for decoration), badge top-start and heart top-end; `HomeCard` and one sideways-scrolling row of 12 per city (about 2 on a phone, up to 7 wide) with ‹ › buttons; the list pages (home, search, wishlists, my listings; `data-wide`) and their header widen to 1920 px, with denser grids of smaller cards (2 columns on a phone); 397 Vitest tests. Listing icons (feature 018): line icons from Lucide (not Airbnb's, which are that company's artwork) for capacity, every amenity (`lib/amenityIcons.ts`, keyed by the API's `icon`, check mark for unknown) and check-in/out times. Availability calendar (feature 019): `GET /listings/{id}/availability?start&end` returns only taken nights (confirmed, completed, running holds; same rule as search; no guest data; default a year, max 400 days); the listing page is `data-wide`, with a two-month `AvailabilityCalendar` (taken nights struck through, Solar Hijri in Persian) that shares `StayDatesProvider` with the booking box; `lib/availability.ts` (arrive on a free night, leave up to the morning of the first taken night); 45 operations; 396 backend tests, 406 Vitest tests, 114 e2e tests. Default listing picture (feature 020): `DefaultListingPhoto` (the owner's living-room photo, rights confirmed 2026-11-10, bundled as `src/assets/listing-default.jpg`, with a «sample picture» label) shown by `ArchFrame` when there is no photo or the file fails to load (`onError`); `HomeCard` uses `ArchFrame`; 406 Vitest tests. Gallery and the 5-photo rule (feature 021): `MIN_PHOTOS` is 5 in the API and the site (approve, removal, wizard, cards, panel); the listing page shows a mosaic from 768 px (cover large, four in a 2×2 grid, «show all photos» opening a dialog), the swipe carousel on phones, and the sample picture in empty tiles of older listings; the e2e `createListing` uploads 5 photos; 409 Vitest tests. Trips to listings (feature 022): each trip page shows the booked listing's gallery and a «view the listing» link (`TripListing`, read with the guest's session, so a live booking still sees a hidden listing), and each row of «my trips» has the link; no API change; 411 Vitest tests, 115 e2e tests. AVIF listing photos (feature 023): `image/avif` in `ImageType` and `.avif` keys; the browser check reads the ftyp box's brands (avif or avis, so HEIC is refused); profile pictures stay PNG or JPEG; `e2e/fixtures/sample-photo.avif`; 397 backend tests, 412 Vitest tests, 116 e2e tests. Log-out in the account menu (feature 024): the last item of the header's account menu; the account page no longer has its own log-out button; the menu is controlled and closes on any of its links. Review queue order and pages (feature 025): `sort=oldest|newest` on `GET /admin/listings/pending` (oldest stays the default; newest reads the same index backwards); the panel has numbered pages (page 1, the last page and at most 10 between) instead of "more", with the order and page in the address; 397 backend tests, 421 Vitest tests, 117 e2e tests. New logo and hero photo (feature 027): the logo is two nested pointed arches in lines on a base line (owner's choice "ب", after the first mockup's logo), also the favicon, gold on the admin's dark header; the hero's doorway holds the owner's courtyard photo from the README banner instead of the drawn glow; 423 Vitest tests. Persian city search (feature 028): the city field matches Persian typing (Arabic yeh/kaf, alef forms and half-spaces made equal) against the site's Persian city names in `src/lib/city-names-fa.json` (generated by `scripts/messages_source.py`) and fetches each match from `GET /cities` by its English name; no API change; 430 Vitest tests, 118 e2e tests. Popular cities (feature 030): `GET /cities?sort=popular` orders cities by confirmed and completed bookings made in the last 90 days on public listings (counted by the search module, kept 10 minutes per API process; median 166 ms on the bulk data, `popular_cities` in the query catalog); an empty city field shows up to 6 of them, the Persian site with Iran's cities first (a second request with `country=IR`); 432 Vitest tests, 120 e2e tests. A livelier look (feature 031, on top of 026): text tokens grow (`text-sm` 15 px, `text-xs` 13 px, taller lines); short soft motion (hero rise and photo drift, saved-heart pop, loading shimmer, sections that rise on scroll with `animation-timeline: view()`, moving only, never fading, to keep contrast); hover on every clickable thing (cards lift and zoom their photo, `Button` rises and presses); underlined text actions became `soft` pill buttons; the listing page has tiles, three amenity columns and review cards; all off under `prefers-reduced-motion`. Listing page sections (feature 032, on top of 031): new `GET /listings/{id}/reviews/summary` (star counts and six category averages over every review); the page follows a booking site's room page in order (share/save, a sticky section bar, type-in-city and facts line, rating link, host, up to three true highlights, description with show-more, where you sleep, ten amenities plus a dialog of all, calendar, then full width: reviews with star bars and category icons, an approximate-area map circle, meet the host with this place's numbers only, things to know); Persian uses «،» between numbers because «·» looks like a Persian zero; 399 backend tests, 432 Vitest tests, 119 e2e tests. Listing page width (feature 034): the listing page is no longer data-wide; its column is at most 1152 px (max-w-6xl), centred, so text does not stretch; the section bar is fixed (a hidden sticky bar left a gap) and aligned with that column; the lists stay wide. The home page's decorative arcade band (ArcadeBand) is removed (feature 035, owner's request: it served no purpose). New logo everywhere (feature 036): LogoMark (the two line arches, tones light/dark/muted) is split from Logo and used above the log-in and sign-up forms, on the error and not-found pages (in place of the old filled arch) and in the footer; map pins, the phone's bottom bar and the hero doorway keep their working arches. Search pill and category sizes (feature 039, owner's reference image): pill titles 17 px semibold (shared class field-label), values 16 px, taller sections, a 64 px search button; category names 16 px with 28 px icons, spacing reduced so all 12 fit at 1280 px. Weekly day off in red (feature 038): isWeeklyHoliday in lib/calendar.ts (Friday on the Jalali calendar, Sunday on the Gregorian one) colours that column and its days with the theme's destructive red in both calendars; other public holidays are not marked. Hero car story (feature 041): the hero is a short strip (128 px phone, 176 px desktop) with no visible text (the h1 is sr-only), pinned under the header for the whole page with sticky (a direct child of the page grid); HeroJourney, an SVG road scene, drives a car with three passengers past six places (garden, villa, caravansara with the courtyard photo, apartment, forest cabin, eco-lodge) as the whole page scrolls (lib/heroJourney.ts: an equal share per place, half driving, half parked, and a camera that follows the car); the place being visited lights up; requestAnimationFrame moves it by SVG attributes; the car bobs while idle; daytime on the page's own background (a sun, drifting clouds, light sand hills; a thin border and soft shadow, 041d); right to left on the Persian site; on a phone the scene fills its box (slice); still under reduced motion; decorative tokens --leaf and --water; the search pill sits just below the strip; it replaced the photo doorway and the row of arches. Account menu icons, language flags and a larger log-in button (feature 046): heart, luggage and user icons (the bottom bar's) beside wishlists, trips and my account; the flag of the target language beside the language switch (Iran beside «فارسی», the UK beside «English»; SVGs from flag-icons, MIT, since emoji flags show as letters on Windows); the log-in button is 44 px tall and wider. The listing page's amenities button reads «سایر امکانات» / "Other amenities" (feature 040), without the count. Payment success page and printable receipt (feature 047): bookings.paid_at (migration 0010, nullable, set by the payment's conditional update, in BookingOut); after paying the guest lands on /trips/{id}/receipt with a success message and a receipt card (CRV- number, paid time, guest, place and exact address, stay, guests, amounts, a simulated-payment note); Print receipt uses the browser's print, and the header, footer, bottom bar, toasts and buttons are no-print; the trip page links to the receipt once paid. Commons photos for the demo's popular listings (feature 043): 24 hand-picked, freely licensed Wikimedia Commons photos in db/demo/commons (manifest.json, CREDITS.md); the development-only command `caravansara demo-commons-photos` uploads them under the photo keys of each city's top 12 public listings (the home rows' order) by room, and sets the caption to the author and licence; nothing is added or deleted; rerun after seed-demo --photos-only. Search pill icons (feature 045, owner's request): each pill section title starts with a copper Lucide icon (pin, calendar, two people; class field-icon, shown only inside .search-pill) that grows a little with a slight spring under the pointer or while its section is in use, like the Mac Dock; the small icons inside the fields are hidden in the pill so none repeats; the Persian «کی» became «چه زمانی». Opaque band behind the hero (feature 044, owner's request: listings must not show under the animation): the sticky part is now a band in the page's background colour around the strip, running to the screen edges through the page padding, covering the gap above the strip, and (with ::before) the space behind the see-through header; the strip inside it is relative, so the scene stays in its rounded frame; the strip's border and shadow are gone, so the scene blends into the page. Map prices and search layout (feature 048): formatPinPrice gives map pins a short price (rial as «… هزار/میلیون تومان», other currencies whole units), pins are 15 px extra-bold; the map takes half the search page from lg, and cards are at most three columns.Hero start (feature 049): a small departure house with trees behind the car's start and trees between the places, so the strip's start (its right edge in Persian) no longer looks unfinished.Toasts at the top (feature 050): sonner toasts show at the top centre just under the header (offset 76 px, 72 on phones), larger and bolder, with richColors; still no-print. Admin panel tabs (feature 051): /admin is three tabs (review queue, bookings, users) with counts from GET /admin/summary (asked once, kept a minute); GET /admin/bookings?status= lists newest first with the guest's name and email and has_more instead of a count; GET /admin/users?q= finds any part of an email or a name (3+ letters); migration 0011 adds pg_trgm, users_search_trgm_idx and bookings_status_id_idx. Map pin font (feature 052): pins set font-sans font-bold themselves, since MapLibre's CSS puts Helvetica/Arial on the whole map; prices now show in Vazirmatn Bold.
-- Spec Kit is set up and the constitution written (2026-11-05). Constitution v1.1.0 (2026-11-05) adds rules for tooling packages (Principle II) and for hand-measured timing criteria (Principle IV). v1.2.0 (2026-11-06) adds workflow rules: research checks assumptions against the real source, tasks for one file are grouped, converge reports Converged before the PR, branches are made by hand (no Spec Kit git extension). v1.3.0 (2026-11-06) widens Principle V for listing approval: the system admin sees the exact address while reviewing (each view recorded), and admin tools may be public on their own subdomain with no link from the main site, every action behind an admin account that only a server command creates. v1.4.0 (2026-11-10) lets profile pictures go through the API, which checks size, type and content before storing, so a bad file is never stored (feature 006); listing photos still upload directly with presigned POST. v2.0.0 (2026-11-10) drops the Spec Kit workflow from feature 009 on (see Decisions).
-- Next: `docs/future-work.md`: the small front-end leftovers (most need an API change), then Playwright coverage, email, Redis, microservices, all without Spec Kit (constitution 2.0.0). The guest part of the site is built: its decisions and the reason for every new construct are in `docs/backend-design.md`, section «فرانت‌اند وب». Finished work is recorded in `docs/backend-design.md` (test strategy, implementation steps), not in future work.
+- Current schema is Alembic head `0012`: **17 application tables**, excluding PostGIS/Alembic system tables.
+- `db/schema.sql`, `db/schema.dbml`, `db/erd.mmd` and `db/erd.png` are maintained reference snapshots; migrations
+  are authoritative. Migration 0001 is an embedded historical copy, not a live read of `db/schema.sql`.
+- PostgreSQL excludes overlapping active booking ranges `[check_in, check_out)` and uniquely stores idempotency
+  keys. City time zones govern booking dates, cancellation and completion.
+- Search uses stored fuzzed public locations. Exact addresses are only for hosts, confirmed/completed guests
+  and authenticated admins reviewing a listing; admin views are recorded.
+- Reviews require completed bookings and one review per booking; triggers keep rating aggregates in sync.
+- `db/seed_locations.sql` has seven countries and nine cities. Demo/bulk recipes and counts live in their own
+  READMEs; never infer the current developer database size from a seed recipe.
+- Bulk performance data lives in its separate `_bulk` database. Do not run replacement/reset commands against
+  the application's configured database. Query coverage is tracked in `db/bulk/queries/catalog.json`.
 
 ## Working conventions
 
-- **Document every new construct (decided 2026-11-07):** every new column, table, setting, mechanism or behaviour change gets why it exists and what it affects: in `docs/future-work.md` at plan time, then in `docs/backend-design.md` and a short code comment when built.
-- **No Spec Kit from feature 009 (decided 2026-11-10, constitution 2.0.0):** features 001 to 008 used Spec Kit; its documents cost more tokens and upkeep than they returned. Now: a short plan in the conversation (what, which files, open decisions with reasons), questions only for scope, security or what users see, assumptions checked against the real source, tests before or with the code, lint, types and e2e on the stack before the PR, each new construct's reason and effect in `docs/future-work.md` then `docs/backend-design.md` and a code comment.
-- Save every project file into `/Users/zia/Caravansara` on Zia's Mac (DB design, backend docs and code all live there).
-- Test SQL on a real PostgreSQL before saving; re-render Mermaid and re-parse DBML after schema changes.
-- Keep `schema.sql`, `schema.dbml`, `erd.mmd`/`erd.png`, `db/README.md` and the docs in sync.
-- Save files only after edits finish, and re-read files before editing: other sessions may work on the repo at the same time.
-- Zia prefers concise answers with real company examples. Conversation may be in Persian or English.
+- Never add a Codex attribution/signature to git commits, PRs, issues or comments.
+- Preserve existing local work. Use the current feature branch; do not merge or rewrite remote history without
+  authorization. This session uses `052-map-pin-font` on `github.com/zianazari/Caravansara`.
+- No Spec Kit workflow from feature 009 onward. Record current constructs, reasons and effects in design docs;
+  preserve historical specs as history. Maintain Markdown/PDF and database diagrams together.
+- Modules reach other modules through services/schema contracts, not their ORM models/repositories; import-linter
+  enforces this. Admin/search cross-module reads use fixed SQL with bound values and allowlisted ordering.
+- Read `frontend/AGENTS.md` and relevant locally installed Next.js docs before frontend changes.
+- Edit `frontend/scripts/messages_source.py`, then run it to regenerate messages; do not edit translations alone.
+- Regenerate `backend/openapi.json` after API changes, then run `npm run gen:api` in `frontend/`.
+- Access tokens are in browser memory; refresh tokens are HttpOnly cookies. Admin tokens stay entirely in
+  HttpOnly cookies under `/admin-api`; non-GET admin forwarding checks same origin, including PUT/DELETE.
+- Keep monetary arithmetic exact (Decimal on the server, BigInt hundredths in frontend calculations). Rial is
+  stored in the API/database and displayed/entered as toman where appropriate.
+- Run checks appropriate to the change; avoid repeating broad suites after they pass unless new edits justify it.
+
+## Validation and tools
+
+- Backend: `uv run pytest --cov`, `uv run ruff check src tests migrations`, `uv run ruff format --check src tests migrations`,
+  `uv run mypy`, `uv run lint-imports`. Tests start isolated PostgreSQL/PostGIS and MinIO containers.
+- Frontend: `npm run gen:api`, lint, format check, typecheck, `npm test -- --coverage`, build. Coverage gates apply
+  to rules/API, not every component. The current frontend suite has 463 tests; the backend suite has 415.
+- E2E: 138 tests collected. Start base + cinematic + `e2e/compose.e2e.yml` so both sites exist and fixture account
+  creation uses test rate limits. See `e2e/README.md`. Restore normal API settings after verification.
+- Latest application verification: backend suite and migration/query catalog corrections, all 463 frontend tests
+  with coverage, lint/types/builds, 19 admin/host/pricing browser checks on port 3001 and both pricing/layout
+  checks on port 3011. Persian/English mobile widths and axe passed. This does not claim the entire E2E suite
+  was rerun in that verification.
+- Test accounts are `e2e.*@caravansara.example.com`; retained fixtures are the E2E convention. Holiday fixtures
+  restore previous values in `finally`. Use unique temporary report directories when running Playwright.
+
+## Next work
+
+`docs/future-work.md` tracks remaining work: server-side listing drafts, optional property categories,
+additional error/race browser coverage, account email verification/password reset, measured caching and only
+then any evidence-based service split. Real payments/refunds, host blackout dates and reservation date edits
+remain outside the implemented flow. Current pricing and modern workspaces are complete, not future work.

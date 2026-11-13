@@ -36,3 +36,5 @@ async function forward(request: Request, { params }: { params: Promise<{ path: s
 
 export const GET = forward;
 export const POST = forward;
+export const PUT = forward;
+export const DELETE = forward;

@@ -199,3 +199,13 @@ async def review_queue_stats(session: AsyncSession) -> tuple[int, datetime | Non
         )
     ).one()
     return int(row[0]), row[1]
+
+
+async def pending_by_ids(session: AsyncSession, ids: list[int]) -> list[Listing]:
+    if not ids:
+        return []
+    rows = await session.execute(
+        select(Listing).where(Listing.id.in_(ids), Listing.review_status == ReviewStatus.pending)
+    )
+    by_id = {listing.id: listing for listing in rows.scalars()}
+    return [by_id[listing_id] for listing_id in ids if listing_id in by_id]

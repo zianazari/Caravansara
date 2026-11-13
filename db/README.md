@@ -1,8 +1,11 @@
 # Caravansara: ERD
 
-Decisions: **rank** = star rating · **comments** = review text only · **scope** = simple (no payments, wishlists, messages).
-Updated 2026-11-07 (listing review); first written 2026-11-02 to match `Caravansara/docs/backend-design.md` (the backend design is the source of truth; once the
-backend exists, Alembic migrations are, and these files follow them).
+Current reference snapshot: **2026-11-13, Alembic head 0012, 17 application tables** (excluding PostGIS/Alembic tables).
+Migrations in `backend/migrations/` are authoritative; `schema.sql`, DBML and the ERD mirror the current design.
+The original 12-table schema is embedded in migration 0001 and remains historical.
+
+Scope includes simulated payment, wishlists, moderation, transactional email, shared holidays and dynamic
+per-listing pricing. Guest/host messages and host replies remain outside the implemented flow.
 
 ![ERD](erd.png)
 
@@ -10,13 +13,27 @@ backend exists, Alembic migrations are, and these files follow them).
 
 | File | What it is |
 | --- | --- |
-| `schema.sql` | PostgreSQL 16 + PostGIS schema: 14 tables, the no-double-booking constraint, review triggers, the append-only review history |
+| `schema.sql` | PostgreSQL 16 + PostGIS schema: 17 tables, the no-double-booking constraint, review triggers, the append-only review history |
 | `seed_amenities.sql` | 12 amenity categories and 31 amenities (Wifi, Kitchen, Microwave …) |
 | `seed_locations.sql` | 7 countries and 9 cities with IANA timezones (Amsterdam, Lisbon, Copenhagen, Stockholm, London, New York City, Tehran, Isfahan, Shiraz). Adds only missing rows, so `caravansara seed` is safe on a database with data |
-| `seed_demo.sql` | Demo data from Inside Airbnb, **generated**: 200 listings, 598 users, 1,793 bookings, 1,491 reviews. See [`demo/README.md`](demo/README.md) |
+| `seed_demo.sql` | Demo data from Inside Airbnb plus Persian examples, **generated**; see the maintained recipe/counts below. See [`demo/README.md`](demo/README.md) |
 | `search_query.sql` | City **or** radial (centre + 1–100 km) search + When + Who + multi-amenity filter (must have ALL), sort by rating or distance; plus filter-panel counts |
 | `schema.dbml` | Paste into [dbdiagram.io](https://dbdiagram.io) |
 | `erd.mmd` | Mermaid source (also below; GitHub and VS Code render it) |
+
+## Current changes through 0012
+
+- `0007`: `wishlist_items`, keyed by member/listing, with cascading foreign keys and saved-date ordering.
+- `0008`/`0009`: `email_outbox` for listing-review and booking-confirmation messages in the event transaction.
+- `0010`: `bookings.paid_at`; `0011`: admin user-search and booking-status indexes.
+- `0012`: JSONB `listings.pricing_policy`, JSONB `bookings.nightly_prices`, and `holidays` keyed by country/date.
+  Host rules use custom range → holiday → weekend → base priority. Active custom ranges cannot overlap;
+  booking totals and nightly amounts are saved, not recomputed after rule changes. Calendar writes are admin-only.
+- The review queue now defaults to newest submissions and supports ascending/descending title, city, host or
+  submission-time sorting. Users/bookings tables also sort globally before pagination.
+
+See [dynamic pricing](../docs/dynamic-pricing.md) for boundaries, rounding, permissions and quote/booking behavior.
+The dated change sections below record earlier decisions; their original defaults may have been superseded.
 
 ## Changes on 2026-11-02
 
@@ -129,6 +146,10 @@ psql -d caravansara -f search_query.sql
 
 ```mermaid
 erDiagram
+    COUNTRIES ||--o{ HOLIDAYS : "calendar"
+    USERS ||--o{ WISHLIST_ITEMS : "saves"
+    LISTINGS ||--o{ WISHLIST_ITEMS : "saved by"
+    USERS ||--o{ EMAIL_OUTBOX : "receives"
     USERS ||--o{ LISTINGS : "hosts"
     USERS ||--o{ BOOKINGS : "books"
     USERS ||--o{ REFRESH_TOKENS : "signs in with"
@@ -201,6 +222,7 @@ erDiagram
         numeric bathrooms
         numeric price_per_night
         numeric cleaning_fee
+        jsonb pricing_policy "custom dates > holiday > weekend > base"
         char currency
         time check_in_time
         time check_out_time
@@ -267,9 +289,11 @@ erDiagram
         numeric nightly_price "snapshot"
         numeric cleaning_fee
         numeric total_price
+        jsonb nightly_prices "immutable daily snapshots"
         char currency
         booking_status status "pending | confirmed | cancelled | expired | completed"
         timestamptz hold_expires_at
+        timestamptz paid_at
         uuid idempotency_key UK
         timestamptz created_at
     }
@@ -287,5 +311,29 @@ erDiagram
         smallint value_rating
         text comment
         timestamptz created_at
+    }
+
+    HOLIDAYS {
+        char country_code PK, FK
+        date day PK
+        text name
+    }
+    WISHLIST_ITEMS {
+        bigint user_id PK, FK
+        bigint listing_id PK, FK
+        timestamptz saved_at
+    }
+    EMAIL_OUTBOX {
+        bigint id PK
+        text kind
+        bigint user_id FK
+        text subject
+        text body
+        timestamptz created_at
+        timestamptz next_attempt_at
+        smallint attempts
+        timestamptz sent_at
+        timestamptz failed_at
+        text last_error
     }
 ```

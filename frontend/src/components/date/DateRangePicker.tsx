@@ -34,6 +34,7 @@ export function DateRangePicker({
   maxDaysAhead = 365,
   label,
   booked,
+  single = false,
 }: {
   value: Range;
   onChange: (range: Range) => void;
@@ -42,6 +43,7 @@ export function DateRangePicker({
   label?: string;
   /** A listing's taken nights (feature 019): struck through, and no stay may cross one. */
   booked?: ReadonlySet<string>;
+  single?: boolean;
 }) {
   const t = useTranslations("dates");
   const locale = useLocale();
@@ -49,8 +51,10 @@ export function DateRangePicker({
   const rtl = locale === "fa";
   const max = addDays(min, maxDaysAhead);
   const [open, setOpen] = useState(false);
-  const [focused, setFocused] = useState(value.checkIn ?? min);
-  const [month, setMonth] = useState(() => monthOf(calendar, value.checkIn ?? min));
+  const today = new Date().toISOString().slice(0, 10);
+  const initial = value.checkIn ?? (single ? (today < min ? min : today > max ? max : today) : min);
+  const [focused, setFocused] = useState(initial);
+  const [month, setMonth] = useState(() => monthOf(calendar, initial));
   const grid = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -59,12 +63,17 @@ export function DateRangePicker({
   }, [open, focused, month]);
 
   const taken = booked ?? new Set<string>();
-  const choosingOut = Boolean(value.checkIn && !value.checkOut);
+  const choosingOut = !single && Boolean(value.checkIn && !value.checkOut);
   const canIn = (iso: string) => iso >= min && iso <= max && canCheckIn(iso, taken, min);
   const canOut = (iso: string) => choosingOut && iso <= max && canCheckOut(value.checkIn!, iso, taken);
   const inRange = (iso: string) => canIn(iso) || canOut(iso);
 
   function pick(iso: string) {
+    if (single && canIn(iso)) {
+      onChange({ checkIn: iso });
+      setOpen(false);
+      return;
+    }
     if (canOut(iso)) {
       onChange({ checkIn: value.checkIn, checkOut: iso });
       setOpen(false);
@@ -107,11 +116,13 @@ export function DateRangePicker({
 
   const weeks = monthGrid(calendar, month.year, month.month);
   const shown =
-    value.checkIn && value.checkOut
-      ? `${formatDate(value.checkIn, locale)} – ${formatDate(value.checkOut, locale)}`
-      : value.checkIn
-        ? `${formatDate(value.checkIn, locale)} – ${t("chooseCheckOut")}`
-        : t("anyDates");
+    single && value.checkIn
+      ? formatDate(value.checkIn, locale)
+      : value.checkIn && value.checkOut
+        ? `${formatDate(value.checkIn, locale)} – ${formatDate(value.checkOut, locale)}`
+        : value.checkIn
+          ? `${formatDate(value.checkIn, locale)} – ${t("chooseCheckOut")}`
+          : t("anyDates");
   const PrevIcon = rtl ? ChevronRightIcon : ChevronLeftIcon;
   const NextIcon = rtl ? ChevronLeftIcon : ChevronRightIcon;
   // The second week of a month is always full, so it gives the weekday of every column.

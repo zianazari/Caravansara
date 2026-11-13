@@ -15,6 +15,8 @@ import { formatDate } from "@/lib/calendar";
 import { cn } from "@/lib/cn";
 import { lastPage, parsePage } from "@/lib/pageWindow";
 import { adminHref } from "./adminHref";
+import { AdminSortHeader } from "./AdminSortHeader";
+import { USER_SORTS, readAdminSort, sortValues } from "./adminSort";
 import { AdminRequestError, useAdminGate } from "./useAdminGate";
 
 type UserPage = components["schemas"]["AdminUserPage"];
@@ -34,23 +36,28 @@ export function AdminUsers() {
   const params = useSearchParams();
   const q = (params.get("q") ?? "").trim();
   const page = parsePage(params.get("page"));
+  const { sortBy, order, hasSort } = readAdminSort(params, USER_SORTS, "created_at");
+  const sorting = sortValues(sortBy, order, hasSort);
   const [text, setText] = useState(q);
   const typed = text.trim();
   const tooShort = typed.length > 0 && typed.length < MIN_SEARCH;
 
   useEffect(() => {
     if (tooShort || typed === q) return;
-    const timer = setTimeout(() => router.replace(adminHref("users", { q: typed })), 350);
+    const timer = setTimeout(
+      () => router.replace(adminHref("users", { q: typed, ...sortValues(sortBy, order, hasSort) })),
+      350,
+    );
     return () => clearTimeout(timer);
-  }, [typed, q, tooShort, router]);
+  }, [typed, q, tooShort, router, sortBy, order, hasSort]);
 
   const list = useQuery({
-    queryKey: ["admin", "users", q, page],
+    queryKey: ["admin", "users", q, page, sortBy, order],
     retry: false,
     placeholderData: keepPreviousData,
     queryFn: async (): Promise<UserPage> => {
       const { data, error, response } = await adminApi.GET("/api/v1/admin/users", {
-        params: { query: { limit: PAGE, offset: (page - 1) * PAGE, ...(q ? { q } : {}) } },
+        params: { query: { limit: PAGE, offset: (page - 1) * PAGE, ...(q ? { q } : {}), ...sorting } },
       });
       if (!data) throw new AdminRequestError(response.status, error);
       return data;
@@ -102,10 +109,26 @@ export function AdminUsers() {
           <table className="w-full text-sm">
             <thead className="bg-muted/60 text-xs text-muted-foreground">
               <tr>
-                <th className="px-3 py-2 text-start font-medium">{t("admin.colName")}</th>
-                <th className="px-3 py-2 text-start font-medium">{t("admin.colEmail")}</th>
-                <th className="px-3 py-2 text-start font-medium">{t("admin.colKind")}</th>
-                <th className="px-3 py-2 text-start font-medium">{t("admin.colJoined")}</th>
+                {(
+                  [
+                    ["full_name", "colName"],
+                    ["email", "colEmail"],
+                    ["kind", "colKind"],
+                    ["created_at", "colJoined"],
+                  ] as const
+                ).map(([column, label]) => (
+                  <AdminSortHeader
+                    key={column}
+                    column={column}
+                    label={t(`admin.${label}`)}
+                    sortBy={sortBy}
+                    order={order}
+                    href={adminHref("users", {
+                      q: q || undefined,
+                      ...sortValues(column, sortBy === column && order === "asc" ? "desc" : "asc"),
+                    })}
+                  />
+                ))}
               </tr>
             </thead>
             <tbody className="divide-y">
@@ -141,7 +164,7 @@ export function AdminUsers() {
         <Pager
           page={page}
           last={Math.max(lastPage(list.data.total, PAGE), 1)}
-          hrefFor={(n) => adminHref("users", { q: q || undefined, page: n })}
+          hrefFor={(n) => adminHref("users", { q: q || undefined, ...sorting, page: n })}
         />
       ) : null}
     </div>

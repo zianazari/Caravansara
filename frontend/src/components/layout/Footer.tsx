@@ -4,8 +4,18 @@ import { LogoMark } from "@/components/brand/Logo";
 import { Link } from "@/i18n/navigation";
 
 /** A quiet travel sign-off with real guest and host destinations, in both reading directions. */
-export function Footer() {
+export function Footer({ admin = false }: { admin?: boolean }) {
   const t = useTranslations();
+  if (admin) {
+    return (
+      <footer className="no-print border-t bg-background px-4 py-5 text-center text-sm text-muted-foreground">
+        <p>
+          {t("common.siteName")} · {t("admin.title")}
+        </p>
+      </footer>
+    );
+  }
+
   return (
     <footer className="no-print border-t border-copper/30 bg-foreground text-on-dark-muted">
       <div className="mx-auto max-w-[1600px] px-6 pt-12 pb-6 md:px-10 md:pt-16">

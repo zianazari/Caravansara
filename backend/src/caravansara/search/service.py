@@ -5,10 +5,13 @@ from datetime import date, timedelta
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from caravansara.catalog import service as catalog
 from caravansara.core.config import Settings
 from caravansara.core.errors import Unprocessable
 from caravansara.core.storage import Storage
 from caravansara.core.timeutil import utcnow
+from caravansara.listings import service as listings
+from caravansara.listings.schemas import PricingPolicy
 from caravansara.search import repository as repo
 from caravansara.search.repository import Criteria
 from caravansara.search.schemas import AmenityCount, FilterCounts, SearchPage, SearchPin, SearchResult
@@ -64,6 +67,24 @@ async def search(
     if sort == "distance" and not criteria.radial:
         raise Unprocessable("invalid_search_area", "sort=distance needs lat, lng and radius_km.")
     rows, total = await repo.search(session, criteria, sort, limit, offset)
+    if criteria.check_in and criteria.check_out:
+        calendars = {
+            country: {
+                h.day: h.name for h in await catalog.holidays(session, country, criteria.check_in, criteria.check_out)
+            }
+            for country in {r["country_code"] for r in rows}
+        }
+        for row in rows:
+            row["total_price"] = listings.calculate_quote(
+                row["id"],
+                row["price_per_night"],
+                row["cleaning_fee"],
+                row["currency"],
+                PricingPolicy.model_validate(row["pricing_policy"]),
+                criteria.check_in,
+                criteria.check_out,
+                calendars[row["country_code"]],
+            ).total_price
     items = [
         SearchResult(
             id=r["id"],

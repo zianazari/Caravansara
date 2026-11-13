@@ -125,7 +125,7 @@ async def search(
                ST_X(l.public_location::geometry) AS pin_lng,
                ROUND((ST_Distance(l.public_location, p.center) / 1000)::numeric, 1) AS distance_km,
                l.avg_rating, l.review_count, l.max_guests,
-               l.price_per_night, l.cleaning_fee, l.currency,
+               l.price_per_night, l.cleaning_fee, l.currency, l.pricing_policy,
                {nights} * l.price_per_night + l.cleaning_fee AS total_price,
                (SELECT ph.storage_key FROM listing_photos ph
                 WHERE ph.listing_id = l.id ORDER BY ph.sort_order LIMIT 1) AS cover_key,

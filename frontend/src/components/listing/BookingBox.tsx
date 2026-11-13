@@ -10,6 +10,7 @@ import { PriceBreakdown } from "@/components/booking/PriceBreakdown";
 import { GuestPicker, type Guests } from "@/components/search/GuestPicker";
 import { Button } from "@/components/ui/button";
 import { useMe } from "@/hooks/useAuth";
+import { usePriceQuote } from "@/hooks/usePriceQuote";
 import { useMoney } from "@/hooks/useMoney";
 import { useRouter } from "@/i18n/navigation";
 import { draftFor } from "@/lib/bookingDraft";
@@ -50,6 +51,7 @@ export function BookingBox({ listing }: { listing: BookingBoxListing }) {
   });
   const [problem, setProblem] = useState<string | null>(null);
   const own = me.data?.id === listing.host_id;
+  const quote = usePriceQuote(listing.id, dates.checkIn, dates.checkOut);
 
   function reserve() {
     if (!dates.checkIn || !dates.checkOut) {
@@ -77,7 +79,8 @@ export function BookingBox({ listing }: { listing: BookingBoxListing }) {
       className="grid gap-4 rounded-2xl border bg-card p-5 shadow-xl shadow-foreground/10"
     >
       <p className="text-lg font-semibold">
-        {t("listing.perNight", { price: money(listing.price_per_night, listing.currency) })}
+        <span className="mb-1 block text-sm font-normal text-muted-foreground">{t("pricing.base")}</span>
+        {money(listing.price_per_night, listing.currency)}
       </p>
       <DateRangePicker
         value={dates}
@@ -90,13 +93,29 @@ export function BookingBox({ listing }: { listing: BookingBoxListing }) {
       />
       <GuestPicker value={guests} onChange={setGuests} />
       {dates.checkIn && dates.checkOut ? (
-        <PriceBreakdown
-          pricePerNight={listing.price_per_night}
-          cleaningFee={listing.cleaning_fee}
-          currency={listing.currency}
-          checkIn={dates.checkIn}
-          checkOut={dates.checkOut}
-        />
+        quote.data ? (
+          <PriceBreakdown
+            pricePerNight={listing.price_per_night}
+            cleaningFee={listing.cleaning_fee}
+            currency={listing.currency}
+            checkIn={dates.checkIn}
+            checkOut={dates.checkOut}
+            quote={quote.data}
+          />
+        ) : quote.isError ? (
+          <div className="grid gap-2">
+            <p role="alert" className="text-sm text-destructive">
+              {t("pricing.quoteError")}
+            </p>
+            <Button variant="soft" onClick={() => void quote.refetch()}>
+              {t("pricing.retry")}
+            </Button>
+          </div>
+        ) : (
+          <p role="status" className="text-sm text-muted-foreground">
+            {t("pricing.loading")}
+          </p>
+        )
       ) : (
         <p className="text-sm text-muted-foreground">{t("listing.chooseDates")}</p>
       )}
@@ -108,7 +127,12 @@ export function BookingBox({ listing }: { listing: BookingBoxListing }) {
       {own ? (
         <p className="text-sm text-muted-foreground">{t("booking.ownListing")}</p>
       ) : (
-        <Button size="lg" className="rounded-full" onClick={reserve}>
+        <Button
+          size="lg"
+          className="rounded-full"
+          onClick={reserve}
+          disabled={Boolean(dates.checkIn && dates.checkOut && (!quote.data || quote.isFetching))}
+        >
           {t("booking.reserve")}
         </Button>
       )}

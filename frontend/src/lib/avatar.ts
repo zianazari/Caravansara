@@ -4,7 +4,7 @@ import { checkImageFile, type ImageProblem } from "./imageCheck";
 /**
  * Profile pictures (FR-037 to FR-041, research R20; data-model, "Avatar").
  *
- * A user without an uploaded picture gets a default avatar: the first letter of their name on a colour fixed
+ * A user without an uploaded picture gets a default avatar: a user icon on a colour fixed
  * by their id. It is drawn on the site and never stored, so it needs no storage and no migration.
  */
 export const MAX_AVATAR_BYTES = 5 * 1024 * 1024; // owner decision, 2026-11-08 (5 MB)

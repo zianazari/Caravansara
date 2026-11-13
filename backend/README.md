@@ -64,7 +64,24 @@ The collector, dashboards and alerts live in [`observability/`](../observability
 
 ### API contract
 
+Dynamic pricing, the shared holiday calendar, reservation snapshots and their API guarantees are described
+in [dynamic-pricing.md](../docs/dynamic-pricing.md). Migration `0012` introduces the supporting data.
+
 [`openapi.json`](openapi.json) is the API contract, committed next to the code. The web site (`frontend/`) builds its typed client from this file with `npm run gen:api`, and its CI job fails when the generated file and this one disagree. `tests/test_openapi_contract.py` fails when the code and the file disagree, so no endpoint, field or error changes by accident. After an intended change, run `uv run caravansara export-openapi` and commit the new file. The contract diff then shows up in the pull request, where it can be reviewed.
+
+Admin lists accept `sort_by` and `order=asc|desc` before `limit`/`offset`, across all matching records.
+`GET /admin/users` supports `full_name`, `email`, `kind`, and `created_at` (default descending), alongside `q`.
+Names/emails ignore case; roles order member then admin. `GET /admin/bookings` supports `id` (default descending),
+`listing`, `guest`, `dates`, `total_price`, `status`, and `created_at`, alongside `status`.
+Dates compare check-in then check-out; guests compare name then email; totals compare currency then numeric amount
+without currency conversion. Status follows pending, confirmed, completed, cancelled, expired.
+ID breaks ties in the chosen direction. Invalid columns/orders return 422. Sorted bookings still omit exact addresses.
+The saved Postman admin requests include these parameters.
+
+`GET /admin/listings/pending` defaults to newest submissions (`sort_by=submitted_at`, `order=desc`).
+It also supports `title`, `city` (catalog name), and `host` (full name), in either direction before pagination,
+with case-insensitive text ordering and ID breaking ties. Legacy `sort=oldest|newest` is still accepted;
+an explicit `order` takes precedence. Approved/rejected listings and private addresses are excluded.
 
 ## Checks
 
@@ -84,14 +101,14 @@ src/caravansara/
   core/       settings, database, errors, security, storage
   identity/   users, JWT access + rotating refresh tokens, rate limit, profile pictures (PNG or JPEG up to 5 MB,
               checked again by size and first bytes; specs/005-frontend-guest)
-  catalog/    countries, cities, amenities (read-only)
-  listings/   listings, public pin, photos, amenities
-  bookings/   hold, payment, cancellation, worker queries
+  catalog/    countries, cities, amenities; shared holiday calendar
+  listings/   listings, public pin, photos, amenities, per-listing pricing policies
+  bookings/   hold, payment, cancellation, saved daily prices, worker queries
   reviews/    reviews and the rating cache
   search/     city or radial search and filter counts
   jobs/       the worker loop
 migrations/   Alembic; 0001 is db/schema.sql, 0002 widens the price columns for rials, 0003 adds pg_stat_statements,
-              0004 and 0005 add the measured indexes (CONCURRENTLY; specs/backend)
+              0004/0005 and 0011 add measured indexes; 0012 adds dynamic prices and holidays
 tests/
 ```
 

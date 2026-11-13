@@ -1,6 +1,7 @@
 import { getTranslations, setRequestLocale } from "next-intl/server";
 import { Suspense } from "react";
 import { ArrowUpLeftIcon, HouseIcon, DoorOpenIcon, PawPrintIcon } from "lucide-react";
+import { CinematicHome } from "@/components/home/CinematicHome";
 import { Hero } from "@/components/brand/Hero";
 import { HeroJourney } from "@/components/brand/HeroJourney";
 import { HomeRows } from "@/components/home/HomeRows";
@@ -11,6 +12,7 @@ import { todayInZone } from "@/lib/cityTime";
 export default async function HomePage({ params }: { params: Promise<{ locale: string }> }) {
   const { locale } = await params;
   setRequestLocale(locale);
+  if (process.env.CARAVANSARA_DESIGN === "cinematic") return <CinematicHome today={todayInZone("UTC")} />;
   const t = await getTranslations({ locale, namespace: "home" });
   const collections = [
     { key: "entire_place", title: "stayEntire", note: "stayEntireNote", Icon: HouseIcon },

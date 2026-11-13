@@ -1,11 +1,38 @@
 """Read-only catalog of destinations and amenities. It changes only through the seed command."""
 
+from datetime import date
+
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from caravansara.catalog import repository as repo
 from caravansara.catalog.models import City, Country
-from caravansara.catalog.schemas import AmenityCategoryOut, AmenityOut, CityOut, CountryOut
+from caravansara.catalog.schemas import AmenityCategoryOut, AmenityOut, CityOut, CountryOut, HolidayOut
 from caravansara.core.errors import Unprocessable
+
+
+async def holidays(session: AsyncSession, country: str, start: date, end: date) -> list[HolidayOut]:
+    if end <= start or (end - start).days > 732:
+        raise Unprocessable("invalid_dates", "Choose a holiday calendar window of up to two years.")
+    return [
+        HolidayOut(country_code=h.country_code, day=h.day, name=h.name)
+        for h in await repo.holidays(session, country.upper(), start, end)
+    ]
+
+
+async def save_holiday(session: AsyncSession, country: str, day: date, name: str) -> HolidayOut:
+    country, name = country.upper(), name.strip()
+    if not await repo.country_exists(session, country):
+        raise Unprocessable("unknown_country", "Choose a country from the catalog.")
+    if not name:
+        raise Unprocessable("validation_error", "Write the holiday name.")
+    await repo.save_holiday(session, country, day, name)
+    await session.commit()
+    return HolidayOut(country_code=country, day=day, name=name)
+
+
+async def delete_holiday(session: AsyncSession, country: str, day: date) -> None:
+    await repo.delete_holiday(session, country.upper(), day)
+    await session.commit()
 
 
 async def list_countries(session: AsyncSession) -> list[CountryOut]:

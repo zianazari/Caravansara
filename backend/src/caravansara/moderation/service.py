@@ -9,13 +9,21 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from caravansara.bookings import service as bookings
 from caravansara.bookings.service import BookingStatus
 from caravansara.core.config import Settings
+from caravansara.core.pagination import SortOrder
 from caravansara.core.storage import Storage
 from caravansara.identity import service as identity
-from caravansara.identity.schemas import AdminTokenOut, AdminUserPage
+from caravansara.identity.schemas import AdminTokenOut, AdminUserPage, AdminUserSort
 from caravansara.listings import service as listings
 from caravansara.listings.schemas import AdminListingOut, AdminQueuePage
 from caravansara.moderation import repository as repo
-from caravansara.moderation.schemas import AdminBookingOut, AdminBookingPage, AdminSummary, BookingCounts
+from caravansara.moderation.schemas import (
+    AdminBookingOut,
+    AdminBookingPage,
+    AdminBookingSort,
+    AdminQueueSort,
+    AdminSummary,
+    BookingCounts,
+)
 
 
 async def login(session: AsyncSession, settings: Settings, *, email: str, password: str, ip: str) -> AdminTokenOut:
@@ -31,9 +39,19 @@ async def logout(session: AsyncSession, refresh_token: str) -> None:
 
 
 async def queue(
-    session: AsyncSession, storage: Storage, limit: int, offset: int, *, newest_first: bool = False
+    session: AsyncSession,
+    storage: Storage,
+    limit: int,
+    offset: int,
+    *,
+    sort_by: AdminQueueSort = "submitted_at",
+    order: SortOrder = "desc",
 ) -> AdminQueuePage:
-    return await listings.review_queue(session, storage, limit, offset, newest_first=newest_first)
+    if sort_by == "submitted_at":
+        return await listings.review_queue(session, storage, limit, offset, newest_first=order == "desc")
+    ids = await repo.sorted_queue_ids(session, limit, offset, sort_by=sort_by, order=order)
+    total, _ = await listings.review_queue_stats(session)
+    return await listings.review_queue_by_ids(session, storage, ids, total)
 
 
 async def detail(session: AsyncSession, storage: Storage, listing_id: int, admin_id: int) -> AdminListingOut:
@@ -65,14 +83,33 @@ async def reject(
 # ---- the panel's lists (feature 051) ---------------------------------------------
 
 
-async def users(session: AsyncSession, q: str | None, limit: int, offset: int) -> AdminUserPage:
-    return await identity.admin_users(session, q, limit, offset)
+async def users(
+    session: AsyncSession,
+    q: str | None,
+    limit: int,
+    offset: int,
+    *,
+    sort_by: AdminUserSort = "created_at",
+    order: SortOrder = "desc",
+) -> AdminUserPage:
+    return await identity.admin_users(session, q, limit, offset, sort_by=sort_by, order=order)
 
 
 async def all_bookings(
-    session: AsyncSession, storage: Storage, status: BookingStatus | None, limit: int, offset: int
+    session: AsyncSession,
+    storage: Storage,
+    status: BookingStatus | None,
+    limit: int,
+    offset: int,
+    *,
+    sort_by: AdminBookingSort = "id",
+    order: SortOrder = "desc",
 ) -> AdminBookingPage:
-    items, has_more = await bookings.admin_bookings(session, storage, status, limit, offset)
+    if sort_by == "id":
+        items, has_more = await bookings.admin_bookings(session, storage, status, limit, offset, order=order)
+    else:
+        ids, has_more = await repo.sorted_booking_ids(session, status, limit, offset, sort_by=sort_by, order=order)
+        items = await bookings.admin_bookings_by_ids(session, storage, ids)
     guests = await identity.user_contacts(session, {b.guest_id for b in items})
     return AdminBookingPage(
         items=[

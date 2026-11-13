@@ -1,6 +1,7 @@
 "use client";
 
 import { useTranslations } from "next-intl";
+import { CalendarRangeIcon, Settings2Icon } from "lucide-react";
 import type { components } from "@/api/schema";
 import { ArchFrame } from "@/components/brand/ArchFrame";
 import { Button } from "@/components/ui/button";
@@ -23,25 +24,39 @@ export function HostListingCard({ listing }: { listing: Summary }) {
   const few = (listing.photo_count ?? 0) < MIN_PHOTOS;
   const href = `/host/listings/${listing.id}`;
   return (
-    <article className="grid min-w-0 grid-cols-1 gap-3">
+    <article className="grid min-w-0 grid-cols-1 overflow-hidden rounded-3xl border bg-card shadow-sm transition-shadow hover:shadow-lg">
       <Link href={href} className="group rounded-2xl" aria-label={listing.title}>
         <ArchFrame
           src={listing.cover_url}
           alt=""
           sizes="(min-width: 1024px) 25vw, (min-width: 640px) 50vw, 100vw"
-          className="aspect-[1/0.96] w-full transition-[transform,box-shadow] duration-300 ease-(--ease-soft) group-hover:-translate-y-1 group-hover:shadow-[0_18px_32px_-18px_color-mix(in_srgb,var(--foreground)_45%,transparent)]"
+          className="aspect-[16/10] w-full rounded-none"
         />
       </Link>
-      <div className="grid min-w-0 gap-1">
+      <div className="grid min-w-0 gap-3 p-5">
         <div className="flex flex-wrap gap-1.5">
           <StatusBadge status={statusOf({ ...listing, photos: [] })} />
           {few ? <FewPhotosBadge /> : null}
         </div>
-        <Link href={href} className="truncate font-semibold transition-colors hover:text-primary">
+        <Link href={href} className="truncate text-xl font-bold transition-colors hover:text-primary">
           {listing.title}
         </Link>
         <p className="text-sm text-muted-foreground">{cityName(t, listing.city.name)}</p>
-        <p className="text-sm">{money(listing.price_per_night, listing.currency)}</p>
+        <p className="text-lg font-semibold">{money(listing.price_per_night, listing.currency)}</p>
+        <div className="mt-1 flex flex-wrap gap-2 border-t pt-4">
+          <Button asChild variant="outline" size="sm">
+            <Link href={href}>
+              <Settings2Icon aria-hidden />
+              {t("host.manage")}
+            </Link>
+          </Button>
+          <Button asChild variant="soft" size="sm">
+            <Link href={`${href}?tab=pricing`}>
+              <CalendarRangeIcon aria-hidden />
+              {t("host.pricingAction")}
+            </Link>
+          </Button>
+        </div>
         {few ? (
           <Button asChild variant="soft" size="sm" className="justify-self-start">
             <Link href={`${href}?tab=photos`}>{t("host.completePhotos")}</Link>

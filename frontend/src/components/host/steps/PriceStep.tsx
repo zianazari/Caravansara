@@ -5,6 +5,8 @@ import { Field } from "@/components/ui/field";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { CURRENCIES, currencyFor } from "@/lib/listingForm";
 import { MoneyInput } from "../MoneyInput";
+import { PricingPolicyFields } from "../PricingPolicyFields";
+import { pricingDefaults } from "@/lib/pricing";
 import type { StepProps } from "./types";
 
 /**
@@ -15,7 +17,7 @@ export function PriceStep({ draft, onChange, errors }: StepProps) {
   const t = useTranslations("wizard");
   const currency = draft.currency ?? currencyFor(draft.country_code);
   return (
-    <div className="grid gap-5">
+    <div id="pricing-base" className="grid gap-5">
       <Field label={t("currency")} error={errors.currency}>
         {(props) => (
           <Select value={currency} onValueChange={(value) => onChange({ currency: value })}>
@@ -46,6 +48,18 @@ export function PriceStep({ draft, onChange, errors }: StepProps) {
         onChange={(text) => onChange({ cleaning_fee: text, currency })}
         error={errors.cleaning_fee}
       />
+      <p className="rounded-2xl bg-muted/50 p-4 text-sm leading-7 text-muted-foreground">
+        {t("dynamicHint")}
+      </p>
+      <PricingPolicyFields
+        value={pricingDefaults(draft.pricing_policy, draft.country_code)}
+        onChange={(pricing_policy) => onChange({ pricing_policy })}
+      />
+      {errors.pricing_policy ? (
+        <p role="alert" className="text-sm text-destructive">
+          {errors.pricing_policy}
+        </p>
+      ) : null}
     </div>
   );
 }

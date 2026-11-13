@@ -4,18 +4,23 @@
 
 <p align="center">
   <a href="https://github.com/zianazari/Caravansara/actions/workflows/ci.yml"><img src="https://github.com/zianazari/Caravansara/actions/workflows/ci.yml/badge.svg" alt="CI"></a>
-  <img src="https://img.shields.io/badge/tests-408%20%C2%B7%2097.3%25%20coverage-b5651d" alt="408 backend tests, 97.3% coverage">
-  <img src="https://img.shields.io/badge/web-457%20Vitest%20tests-6E9F18" alt="457 Vitest tests for the web site">
-  <img src="https://img.shields.io/badge/e2e-123%20Playwright%20tests-2EAD33" alt="123 Playwright tests">
+  <img src="https://img.shields.io/badge/tests-415%20backend-b5651d" alt="415 backend tests">
+  <img src="https://img.shields.io/badge/web-463%20Vitest%20tests-6E9F18" alt="463 Vitest tests for the web site">
+  <img src="https://img.shields.io/badge/e2e-138%20Playwright%20tests-2EAD33" alt="138 Playwright tests">
 </p>
 
 A *caravansara* (کاروانسرا) was a roadside inn on the Silk Road: travellers arrived at dusk, took a room for the night and moved on at dawn. **Caravansara** is the same idea for today: an Airbnb-like site where guests find a place, hold it, pay, save favourites and leave a review, and hosts list their homes.
 
-This repository holds the **backend**, the **database design** and the **web site for guests and hosts**, with an **admin panel** on its own subdomain. The site wears a caravansara theme: the warm colours of the diagrams below and the pointed arch of a caravansara's gateway (in the logo and the decoration), laid out the way people know from Airbnb (search pill, rows of rounded photo cards, a bottom bar on phones). Hosts make and keep their listings on the site, and the system admin reviews them in the panel.
+This repository holds the **backend**, the **database design** and the **web site for guests and hosts**, with an **admin panel** on its own subdomain. The site wears a caravansara theme: the warm colours of the diagrams below and the pointed arch of a caravansara's gateway (in the logo and the decoration), with Persian and English layouts, rounded photo cards and a compact search bar that stays available while scrolling. The default site uses an ivory/olive boutique design; the separate cinematic version and admin panel use a dark/orange palette. Hosts manage listings, daily prices and reservations, while admins review listings, sort account/booking tables and maintain the shared holiday calendar.
 
-<p align="center">
-  <img src="docs/images/readme/site-home.jpg" alt="The home page on a desktop and on a phone: a night-blue hero with a lit caravansara doorway, the search pill, categories and rows of places in arch-shaped frames" width="100%">
-</p>
+## Current local versions
+
+- Default site: [localhost:3001/fa](http://localhost:3001/fa); admin: [admin.localhost:3001](http://admin.localhost:3001).
+- Cinematic site: [localhost:3011/fa](http://localhost:3011/fa); admin: [admin.localhost:3011](http://admin.localhost:3011).
+- Both frontends share the API, database, accounts and bookings. See [the preview setup](frontend/README.md#separate-cinematic-preview-on-port-3011).
+- Each host's listing has a **Pricing & calendar** tab. Custom date ranges override shared holidays, which
+  override selected weekend days, then base price. Percentages never stack. Quotes, search totals and saved
+  booking/receipt prices use the same calculation; see [dynamic pricing](docs/dynamic-pricing.md).
 
 ## Technology
 
@@ -43,7 +48,7 @@ This repository holds the **backend**, the **database design** and the **web sit
 | Data | PostgreSQL 16 with PostGIS, SQLAlchemy 2 (async) with asyncpg, Alembic |
 | Security | argon2 password hashing, JWT access tokens with rotating refresh tokens |
 | Files | S3 API with presigned uploads; MinIO in development and tests |
-| Quality | pytest with testcontainers, Vitest with axe, 123 Playwright tests against the stack, Ruff, mypy (strict), import-linter, ESLint, Prettier |
+| Quality | pytest with testcontainers, Vitest with axe, 138 Playwright tests against the stack, Ruff, mypy (strict), import-linter, ESLint, Prettier |
 | Monitoring | Prometheus with alert rules, Grafana, Loki for logs, Tempo for traces, OpenTelemetry, Grafana Alloy as the collector |
 | Delivery | uv, Docker and Docker Compose, GitHub Actions |
 
@@ -55,8 +60,9 @@ This repository holds the **backend**, the **database design** and the **web sit
 | ⏳ **Reserve** | A 15-minute hold on the dates, then a simulated payment. Retrying with the same `Idempotency-Key` never books twice. |
 | 🛡️ **No double booking** | Two guests can never hold the same night. PostgreSQL enforces it with an `EXCLUDE` constraint, so no race in app code can break it. |
 | 📍 **Privacy** | Search and the map use a pin moved 100–500 m from the real address. The exact address appears only after payment, and to an admin reviewing the listing, each such view recorded. |
-| 🏠 **Hosts** | Create and edit listings, upload photos straight to object storage, pick amenities, see bookings. |
+| 🏠 **Hosts** | Create listings in a responsive eight-step wizard, upload photos, manage bookings and set independent pricing rules for each property. |
 | ✅ **Listing review** | A new listing goes public only after a system admin approves it; so does a listing whose description changes. A rejection carries a written reason, and the host fixes it and sends it again. Bookings of a hidden listing keep working. |
+| 💰 **Daily pricing** | Host-selected weekend days, shared country holidays and custom date ranges with percentage increases or discounts; per-night quotes and immutable booking amounts. |
 | ⭐ **Reviews** | One per completed stay, within 14 days, never edited. The listing's rating updates itself. |
 | 🕰️ **City time** | "Today", cancellation and the end of a stay follow the listing's time zone, not the server's. |
 
@@ -90,13 +96,13 @@ Caravansara is a **modular monolith**: one FastAPI codebase and one PostgreSQL d
 | --- | --- | --- |
 | `core` | settings, DB sessions, error shape, JWT, storage client | nothing; the base layer |
 | `identity` | `users` (members and admins), `refresh_tokens`, `auth_attempts` | `core` |
-| `catalog` | `countries`, `cities`, `amenities` (read-only) | `core` |
-| `listings` | `listings` with their review state, photos, amenities per listing, fuzzed pin, `listing_review_events` | `catalog`, `identity`, `notifications` |
-| `bookings` | `bookings`: hold, pay, cancel, worker queries | `listings` |
+| `catalog` | `countries`, `cities`, `amenities`; admin-managed `holidays` | `core` |
+| `listings` | `listings` with their review state, photos, amenities per listing, fuzzed pin, `listing_review_events`, per-listing pricing policy | `catalog`, `identity`, `notifications` |
+| `bookings` | `bookings`: hold, pay, cancel, saved nightly price snapshots, worker queries | `listings` |
 | `reviews` | `reviews`, rating cache | `bookings`, `listings`, `identity` |
-| `search` | read-only search queries | `listings` (types only) |
+| `search` | read-only search queries | `listings`, `catalog` (daily price calculation and holiday dates) |
 | `jobs` | the worker loop, the review-queue and outbox gauges | `bookings`, `listings`, `notifications` |
-| `moderation` | admin endpoints for listing review, `admin_address_views` | `identity`, `listings` |
+| `moderation` | admin endpoints for listing review, sorted lists and shared holidays; `admin_address_views` | `identity`, `listings`, `bookings`, `catalog` |
 | `wishlists` | `wishlist_items`: the listings a member saved | `identity`, `listings` |
 | `notifications` | `email_outbox`: emails written with their event, sent by the worker | `identity` |
 
@@ -132,7 +138,7 @@ models.py      tables          schemas.py  request and response shapes
 1. `POST /bookings` arrives with a JWT and an `Idempotency-Key`.
 2. **router** validates the body and the token.
 3. **bookings.service** returns the earlier booking if this key was already used; otherwise it asks `listings.service` for the listing and checks capacity, dates (city time) and that the guest isn't the host.
-4. In **one transaction**, it expires stale holds on that listing and inserts a `pending` row with a 15-minute `hold_expires_at`.
+4. It locks the listing against concurrent edits, calculates each night, checks `expected_total` / `expected_currency` when supplied (409 `price_changed` on a mismatch), expires stale holds and saves the nightly price snapshot in a `pending` row with a 15-minute deadline, in one transaction.
 5. **PostgreSQL** saves it (201) or rejects an overlap with error `23P01` (409 `dates_unavailable`).
 
 #### A booking's life
@@ -164,10 +170,10 @@ A test fires 20 such requests at once and checks that exactly one wins.
 ### Data model
 
 <p align="center">
-  <img src="docs/images/readme/data-model.svg" alt="Data model: 11 tables and their relations" width="100%">
+  <img src="db/erd.png" alt="Current database model: 17 application tables and their relations" width="100%">
 </p>
 
-12 tables; `auth_attempts`, the rate-limit log, is left out of the diagram because nothing references it. The full schema with every rule is in [`db/schema.sql`](db/schema.sql); the design and its reasons are in [`docs/backend-design.md`](docs/backend-design.md) (Persian).
+17 application tables through migration `0012`, including the shared holiday calendar, pricing policies, booking snapshots, wishlists and the email outbox. The full schema with every rule is in [`db/schema.sql`](db/schema.sql); the design and its reasons are in [`docs/backend-design.md`](docs/backend-design.md) (Persian).
 
 ## Try it
 
@@ -180,7 +186,7 @@ docker compose exec -e CARAVANSARA_ADMIN_PASSWORD=… api caravansara create-adm
 docker compose run --rm migrate caravansara seed-bulk   # optional: 100,000 listings in their own database, for measuring
 ```
 
-Emails the system sends (a host hears the result of a review; guest and host get a booking confirmation) land in Mailpit at **http://localhost:8025**. Open **http://localhost:3001** for the site (Persian at `/fa`, English at `/en`): search, open a listing, sign up, book and pay (payment is simulated), see your trips, cancel and review. Hosts choose «Become a host», make a listing in eight steps with at least three photos, and manage it under «My listings». Or open **http://localhost:8000/docs**, log in with `POST /auth/login` as `guest@example.com` / `caravansara-demo`, press **Authorize**, paste the `access_token`, and every endpoint is ready to try. To review listings, open **http://admin.localhost:3001** (the admin panel, only on that host) and log in as `admin@example.com` (demo) or the admin you created. Through Swagger: log in with `POST /admin/auth/login` as `admin@example.com` (demo) or the admin you created, and paste that token under **AdminBearer**. Admin accounts exist only through `caravansara create-admin`; `seed-demo` refuses to run in production, because its passwords are public.
+Emails the system sends (a host hears the result of a review; guest and host get a booking confirmation) land in Mailpit at **http://localhost:8025**. Open **http://localhost:3001** for the site (Persian at `/fa`, English at `/en`): search, open a listing, sign up, book and pay (payment is simulated), see your trips, cancel and review. Hosts choose «Become a host», make a listing in eight steps with at least five photos, and manage it under «My listings». Or open **http://localhost:8000/docs**, log in with `POST /auth/login` as `guest@example.com` / `caravansara-demo`, press **Authorize**, paste the `access_token`, and every endpoint is ready to try. To review listings, open **http://admin.localhost:3001** (the admin panel, only on that host) and log in as `admin@example.com` (demo) or the admin you created. Through Swagger: log in with `POST /admin/auth/login` as `admin@example.com` (demo) or the admin you created, and paste that token under **AdminBearer**. Admin accounts exist only through `caravansara create-admin`; `seed-demo` refuses to run in production, because its passwords are public.
 
 The demo data comes from [Inside Airbnb](https://insideairbnb.com/) (CC BY 4.0): real titles, prices, amenities and review text from Amsterdam, Lisbon, Copenhagen, Stockholm, London and New York City, plus 40 hand-written Persian listings in Tehran, Isfahan and Shiraz priced in rials. People, addresses, bookings and photos are synthetic. It also holds nine edge cases, such as a listing waiting for review, a rejected one, a hold that expires four minutes after loading and a 365-night stay, each listed with its id. See [`db/demo/README.md`](db/demo/README.md).
 
@@ -218,15 +224,16 @@ Two layers, because each one catches what the other can't:
 | | pytest (`backend/tests`) | Playwright (`e2e/`) |
 | --- | --- | --- |
 | **Runs against** | PostgreSQL + PostGIS and MinIO that testcontainers starts for each run | The real `docker compose` stack, from outside, over HTTP |
-| **Proves** | Every rule in each module, exact race moments, DST, migrations, the API contract | The built image, real settings and wiring: all 45 endpoints, listing photo upload to MinIO, profile pictures through the API (bad files refused), an admin made with `create-admin` reviewing listings, the whole host and guest story, and the web site's proxy, session cookie, rate limit by visitor address and CSP |
-| **Size** | 397 tests, 97.1% coverage | 116 tests, under a minute |
+| **Proves** | Every rule in each module, exact race moments, DST, migrations, the API contract | The built image, real settings and wiring: the versioned API, including dynamic pricing and shared holidays, listing photo upload to MinIO, profile pictures through the API (bad files refused), an admin made with `create-admin` reviewing listings, the whole host and guest story, and the web site's proxy, session cookie, rate limit by visitor address and CSP |
+| **Size** | 415 tests; PostgreSQL/PostGIS and MinIO | 138 collected tests; default and cinematic frontends |
 
-The web site has its own Vitest suite in `frontend/` (412 tests): every rule (Jalali calendar for every day of 1400–1410, city time zones on clock-change days, toman with exact decimals, the session lock across tabs), every acceptance scenario in Persian and English, and axe accessibility checks.
+The web site has its own Vitest suite in `frontend/` (463 tests): every rule (Jalali calendar for every day of 1400–1410, city time zones on clock-change days, toman with exact decimals, the session lock across tabs), every acceptance scenario in Persian and English, and axe accessibility checks.
 
-CI runs every Playwright test against the compose stack on each pull request, and keeps the report, traces and screenshots of a failure. Most121 Playwright tests use its `request` fixture and need no browser. `theme.spec.ts` opens every guest page and the host pages in a real Chrome, at five widths from 320 px and in both languages, and checks for sideways scroll and for accessibility problems with axe, colour contrast included. Some highlights:
+CI starts both frontend variants and runs the Playwright suite against the compose stack on each pull request, and keeps the report, traces and screenshots of a failure. API-focused Playwright tests use its `request` fixture and need no browser. `theme.spec.ts` opens every guest page and the host pages in a real Chrome, at five widths from 320 px and in both languages, and checks for sideways scroll and for accessibility problems with axe, colour contrast included. Some highlights:
 
-- 🏠 **A host in the browser:** `host.spec.ts` makes a listing through the eight steps with three photos, then changes the price (no review) and the title (with the warning), the cover, off and on, and a rejection sent again.
+- 🏠 **A host in the browser:** `host.spec.ts` makes a listing through the eight steps with five photos, then changes the price (no review) and the title (with the warning), the cover, off and on, and a rejection sent again.
 - 🛡️ **The admin panel:** `admin.spec.ts` checks that the panel exists only on its own host, that the admin token sits in an HttpOnly cookie, that every view of an exact address is recorded, and that a host's change during review is caught (409) instead of approved unseen.
+- 💰 **Dynamic pricing:** `dynamic-pricing.spec.ts` edits host rules, registers/deletes shared holidays, verifies guest quote → reservation → receipt amounts, and checks both languages at 320/390/1440 px.
 - 🏁 **Booking race:** six guests reserve the same nights at the same moment, and exactly one wins (the others get `409 dates_unavailable`).
 - 🔁 **Idempotency:** a retried reservation with the same `Idempotency-Key` returns the same booking.
 - 🔐 **Privacy:** the real address appears only after payment; a reused refresh token revokes every session of that user.
@@ -236,7 +243,7 @@ CI runs every Playwright test against the compose stack on each pull request, an
 Each test creates its own users and listings, so the tests run in parallel and never depend on each other. The data is kept, so it can be inspected in the database afterwards.
 
 ```bash
-docker compose -f docker-compose.yml -f e2e/compose.e2e.yml up -d --build   # higher per-IP limits for the run
+docker compose -f docker-compose.yml -f docker-compose.cinematic.yml -f e2e/compose.e2e.yml up -d --build --wait
 cd e2e && npm ci && npx playwright test
 npx playwright show-report                                                   # HTML report, traces of failures
 ```
@@ -260,6 +267,9 @@ All paths start with `/api/v1`. Every error has the same shape, with a stable co
 | **Photos** | `POST`<br>`POST`<br>`PATCH`<br>`DELETE`<br>`PUT` | `/listings/{id}/photos/upload-url`<br>`/listings/{id}/photos`<br>`/listings/{id}/photos/{photo_id}`<br>`/listings/{id}/photos/{photo_id}`<br>`/listings/{id}/photos/order` | Host<br>Host<br>Host<br>Host<br>Host |
 | **Bookings** | `POST`<br>`GET`<br>`GET`<br>`POST`<br>`POST` | `/bookings`<br>`/me/bookings`<br>`/bookings/{id}`<br>`/bookings/{id}/pay`<br>`/bookings/{id}/cancel` | User<br>User<br>Guest or host<br>Guest<br>Guest or host |
 | **Reviews** | `POST`<br>`GET` | `/bookings/{id}/review`<br>`/listings/{id}/reviews` | Guest<br>Public |
+| **Dynamic pricing** | `GET`<br>`PUT`<br>`GET` | `/listings/{id}/pricing`<br>`/listings/{id}/pricing`<br>`/listings/{id}/pricing/quote?check_in=&check_out=` | Host<br>Host<br>Whoever may see the listing |
+| **Shared holidays** | `GET`<br>`GET`<br>`PUT`<br>`DELETE` | `/holidays?country=&start=&end=`<br>`/admin/holidays?country=&start=&end=`<br>`/admin/holidays/{country}/{day}`<br>`/admin/holidays/{country}/{day}` | Public<br>Admin<br>Admin<br>Admin |
+| **Admin overview** | `GET`<br>`GET`<br>`GET`<br>`GET` | `/admin/summary`<br>`/admin/users`<br>`/admin/bookings`<br>`/admin/countries` | Admin (list sorting: `sort_by` / `order`) |
 | **Availability** | `GET` | `/listings/{id}/availability` | Whoever may see the listing (taken nights only) |
 | **Wishlist** | `GET`<br>`GET`<br>`PUT`<br>`DELETE` | `/me/wishlist`<br>`/me/wishlist/ids`<br>`/me/wishlist/{listing_id}`<br>`/me/wishlist/{listing_id}` | User<br>User<br>User (public listings, at most 500)<br>User |
 | **Listing review** | `POST`<br>`POST`<br>`POST`<br>`POST`<br>`GET`<br>`GET`<br>`POST`<br>`POST` | `/listings/{id}/resubmit`<br>`/admin/auth/login`<br>`/admin/auth/refresh`<br>`/admin/auth/logout`<br>`/admin/listings/pending`<br>`/admin/listings/{id}`<br>`/admin/listings/{id}/approve`<br>`/admin/listings/{id}/reject` | Host<br>Admin account<br>Admin refresh token (session ends 8 h after log-in)<br>Admin refresh token<br>Admin<br>Admin (each view recorded)<br>Admin<br>Admin |
@@ -273,7 +283,7 @@ The same description is committed as [`backend/openapi.json`](backend/openapi.js
 ```
 frontend/    Next.js web site for guests and hosts, Persian and English, Vitest tests  → frontend/README.md
 backend/     FastAPI app, Alembic migrations, tests  → backend/README.md
-e2e/        121 Playwright tests against the running stack (120 tests)  → e2e/README.md
+e2e/        138 Playwright tests for the API and both frontend variants  → e2e/README.md
 postman/     Postman collection of all endpoints, with saved ids and tokens
 observability/  Alloy, Loki, Tempo, Prometheus (alerts + rule tests), Grafana dashboard  → observability/README.md
 .specify/    GitHub Spec Kit: constitution, templates, scripts (commands in .claude/skills/)

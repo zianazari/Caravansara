@@ -3,6 +3,7 @@
 import "maplibre-gl/dist/maplibre-gl.css";
 import { useTranslations } from "next-intl";
 import { useEffect, useRef, useState } from "react";
+import { createHouseMarker } from "@/lib/mapMarker";
 import { mapStyle, osmAttribution } from "@/lib/mapStyle";
 
 /**
@@ -37,9 +38,7 @@ export function ExactMap({
           attributionControl: { compact: false },
         });
         map.addControl(new maplibre.NavigationControl({ showCompass: false }));
-        const element = document.createElement("span");
-        element.className = "arch block h-9 w-7 bg-primary shadow-md";
-        element.setAttribute("aria-hidden", "true");
+        const element = createHouseMarker();
         new maplibre.Marker({ element, anchor: "bottom" }).setLngLat([longitude, latitude]).addTo(map);
       })
       .catch(() => setFailed(true));

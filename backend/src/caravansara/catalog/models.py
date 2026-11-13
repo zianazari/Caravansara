@@ -1,3 +1,5 @@
+from datetime import date
+
 from sqlalchemy import CHAR, ForeignKey, Identity, Integer, SmallInteger, Text
 from sqlalchemy.orm import Mapped, mapped_column
 
@@ -9,6 +11,13 @@ class Country(Base):
 
     id: Mapped[int] = mapped_column(SmallInteger, Identity(always=True), primary_key=True)
     code: Mapped[str] = mapped_column(CHAR(2))
+    name: Mapped[str] = mapped_column(Text)
+
+
+class Holiday(Base):
+    __tablename__ = "holidays"
+    country_code: Mapped[str] = mapped_column(CHAR(2), ForeignKey("countries.code"), primary_key=True)
+    day: Mapped[date] = mapped_column(primary_key=True)
     name: Mapped[str] = mapped_column(Text)
 
 

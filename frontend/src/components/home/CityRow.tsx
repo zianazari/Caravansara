@@ -1,6 +1,6 @@
 "use client";
 
-import { useQuery } from "@tanstack/react-query";
+import { keepPreviousData, useQuery } from "@tanstack/react-query";
 import { useLocale, useTranslations } from "next-intl";
 import { useEffect, useRef, useState } from "react";
 import { api } from "@/api/client";
@@ -65,6 +65,8 @@ export function CityRow({
   const cityId = found.data?.id;
   const places = useQuery({
     queryKey: ["home-row", cityId, filter],
+    // Keep the row height during a filter request so the browser does not clamp the page scroll.
+    placeholderData: keepPreviousData,
     enabled: cityId !== undefined,
     staleTime: FIVE_MINUTES,
     queryFn: async () => {
@@ -103,7 +105,12 @@ export function CityRow({
   const Next = locale === "fa" ? ChevronLeftIcon : ChevronRightIcon;
 
   return (
-    <section ref={ref} aria-labelledby={`row-${city}`} className="reveal grid min-w-0 gap-5 pb-12 last:pb-0">
+    <section
+      ref={ref}
+      aria-labelledby={`row-${city}`}
+      aria-busy={places.isPlaceholderData}
+      className="reveal grid min-w-0 gap-5 pb-12 last:pb-0"
+    >
       <div className="flex items-center justify-between gap-4">
         <h2 id={`row-${city}`} className="flex items-center gap-2 text-xl font-semibold md:text-2xl">
           <Link

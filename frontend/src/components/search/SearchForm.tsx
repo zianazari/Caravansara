@@ -2,7 +2,7 @@
 
 import { CalendarDaysIcon, SearchIcon } from "lucide-react";
 import { useTranslations } from "next-intl";
-import { useState, type FormEvent } from "react";
+import { useState, type FormEvent, type MouseEvent } from "react";
 import { DateRangePicker } from "@/components/date/DateRangePicker";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
@@ -104,9 +104,22 @@ function SearchFields({
     router.push(`/search?${toQuery(state).toString()}`);
   }
 
+  // Forward clicks on a section's padding, caption or icon to its real, keyboard-accessible control.
+  function activateSection(event: MouseEvent<HTMLFormElement>) {
+    const target = event.target;
+    if (!(target instanceof Element) || target.closest("button, input, [role='option']")) return;
+    const section = target.closest(".search-pill > div");
+    const control = section?.querySelector<HTMLInputElement | HTMLButtonElement>(
+      "input, button[aria-haspopup]",
+    );
+    if (control instanceof HTMLInputElement) control.focus();
+    else control?.click();
+  }
+
   return (
     <form
       onSubmit={submit}
+      onClick={activateSection}
       role="search"
       className={cn(
         stacked
@@ -128,6 +141,7 @@ function SearchFields({
       </div>
       <div className="grid gap-1.5">
         <span className="field-label inline-flex items-center gap-2 text-sm font-medium">
+          {" "}
           <CalendarDaysIcon aria-hidden className="field-icon" />
           {t("when")}
         </span>

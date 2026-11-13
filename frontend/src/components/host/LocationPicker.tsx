@@ -8,6 +8,7 @@ import { useEffect, useRef, useState } from "react";
 import { api } from "@/api/client";
 import { Field } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
+import { createHouseMarker } from "@/lib/mapMarker";
 import { mapStyle, osmAttribution } from "@/lib/mapStyle";
 
 export type Point = { latitude?: number; longitude?: number };
@@ -68,11 +69,9 @@ export function LocationPicker({
           attributionControl: { compact: false },
         });
         instance.addControl(new maplibre.NavigationControl({ showCompass: false }));
-        // The theme's copper arch as the pin (colours stay in globals.css). Decorative: the number fields below
+        // The shared house marker is decorative: the number fields below
         // are the accessible way to set the same point.
-        const element = document.createElement("span");
-        element.className = "arch block h-9 w-7 cursor-grab bg-primary shadow-md";
-        element.setAttribute("aria-hidden", "true");
+        const element = createHouseMarker({ draggable: true });
         const pin = new maplibre.Marker({ element, draggable: true, anchor: "bottom" });
         pin.on("dragend", () => {
           const at = pin.getLngLat();

@@ -2,8 +2,10 @@ import enum
 import uuid
 from datetime import date, datetime
 from decimal import Decimal
+from typing import Any
 
 from sqlalchemy import CHAR, BigInteger, Enum, ForeignKey, Identity, Numeric, SmallInteger, Uuid, func
+from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import Mapped, mapped_column
 
 from caravansara.core.db import Base
@@ -33,6 +35,7 @@ class Booking(Base):
     nightly_price: Mapped[Decimal] = mapped_column(Numeric(14, 2))
     cleaning_fee: Mapped[Decimal] = mapped_column(Numeric(14, 2))
     total_price: Mapped[Decimal] = mapped_column(Numeric(14, 2))
+    nightly_prices: Mapped[list[dict[str, Any]]] = mapped_column(JSONB, server_default="[]")
     currency: Mapped[str] = mapped_column(CHAR(3))
     status: Mapped[BookingStatus] = mapped_column(
         Enum(BookingStatus, name="booking_status", create_type=False, values_callable=lambda e: [m.value for m in e])
