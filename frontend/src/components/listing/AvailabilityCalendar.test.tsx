@@ -67,18 +67,18 @@ describe("AvailabilityCalendar (feature 019)", () => {
     expect(taken).toHaveClass("line-through");
     expect(taken).toBeDisabled();
     expect(screen.getByRole("grid", { name: "January 2027" })).toBeInTheDocument();
-    await waitFor(() => expect(day(/^8 January 2027$/)).toHaveAccessibleDescription("€120.00 · Base"));
+    await waitFor(() => expect(day(/· 8 January 2027$/)).toHaveAccessibleDescription("€120.00 · Base"));
   });
 
   it("picks a stay, lets it end the morning a booking starts, and never across it", async () => {
     setup();
     await screen.findByRole("button", { name: /10 January 2027, booked/ });
-    await userEvent.click(day(/^8 January 2027$/));
+    await userEvent.click(day(/· 8 January 2027$/));
     expect(screen.getByRole("heading", { level: 2 })).toHaveTextContent("Choose check-out");
     // The 12th would cross the 10th and 11th: a click there starts a new stay instead of ending this one.
-    await userEvent.click(day(/^12 January 2027$/));
+    await userEvent.click(day(/· 12 January 2027$/));
     expect(screen.getByTestId("dates")).toHaveTextContent('{"checkIn":"2027-01-12"}');
-    await userEvent.click(day(/^8 January 2027$/));
+    await userEvent.click(day(/· 8 January 2027$/));
     await userEvent.click(day(/10 January 2027, booked/)); // leave that morning: allowed
     expect(screen.getByTestId("dates")).toHaveTextContent('{"checkIn":"2027-01-08","checkOut":"2027-01-10"}');
     expect(screen.getByRole("heading", { level: 2 })).toHaveTextContent("2 nights in Helsinki");

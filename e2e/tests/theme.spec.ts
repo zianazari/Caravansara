@@ -194,23 +194,18 @@ test.describe("Caravansara theme in a real browser", () => {
     expect(footer).toBe("none");
   });
 
-  test("the hero is a short strip with no visible text, always at the top while the page scrolls (041)", async ({ page }) => {
+  test("the boutique cover has a visible heading and yields to compact search while scrolling", async ({ page }) => {
     for (const width of WIDTHS) {
       await page.setViewportSize({ width, height: 900 });
       await page.goto(`${WEB}/fa`, { waitUntil: "networkidle" });
       const hero = page.locator("section[aria-labelledby='hero-title']");
-      // The page keeps its main heading for screen readers only; nothing in the strip is visible text.
-      await expect(page.getByRole("heading", { level: 1 })).toHaveClass(/sr-only/);
-      expect(await hero.locator("svg text").count()).toBe(0);
-      expect((await hero.boundingBox())!.height, `strip height at ${width}px`).toBeLessThanOrEqual(180);
-      await page.evaluate(() => window.scrollTo(0, document.documentElement.scrollHeight / 2));
-      const scrolled = (await hero.boundingBox())!;
-      // Pinned just under the header: since 044 a band in the page colour fills the gap above it (so listings
-      // never show there), so the strip sits a little below the header's edge rather than right at it.
-      const header = (await page.locator("header").first().boundingBox())!;
-      const below = scrolled.y - (header.y + header.height);
-      expect(below, `strip stays under the header at ${width}px`).toBeGreaterThanOrEqual(-1);
-      expect(below, `strip stays right under the header at ${width}px`).toBeLessThan(40);
+      await expect(page.getByRole("heading", { level: 1 })).toBeVisible();
+      await expect(page.getByRole("heading", { level: 1 })).not.toHaveClass(/sr-only/);
+      await expect(hero.locator("img")).toHaveJSProperty("complete", true);
+      expect((await hero.boundingBox())!.height).toBeGreaterThanOrEqual(440);
+      await page.evaluate(() => window.scrollTo({ top: 1200, behavior: "instant" }));
+      await expect(page.locator("[data-home-search]")).toHaveAttribute("data-compact", "true");
+      await expect(hero).not.toBeInViewport();
     }
   });
 
@@ -219,14 +214,14 @@ test.describe("Caravansara theme in a real browser", () => {
     await page.goto(`${WEB}/fa`, { waitUntil: "networkidle" });
     const scene = page.locator("svg[data-hero='scene']");
     await expect(scene.locator("[data-stop]")).toHaveCount(6);
-    // The trip follows the scroll of the whole page; let the rows load so the page has its full length.
-    await page.waitForTimeout(1500);
-    const room = await page.evaluate(() => document.documentElement.scrollHeight - window.innerHeight);
+    // Lazy city rows can change the document height; target the current scroll range on every poll.
     for (const [index, kind] of [[2, "caravansara"], [5, "ecolodge"]] as const) {
-      await page.evaluate((y) => window.scrollTo(0, y), ((index + 0.75) / 6) * room);
-      await expect.poll(() => scene.locator(`[data-stop='${kind}']`).getAttribute("data-active")).toBe("true");
+      await expect.poll(async () => {
+        await page.evaluate(progress => window.scrollTo({ top: progress * (document.documentElement.scrollHeight - window.innerHeight), behavior: "instant" }), (index + 0.75) / 6);
+        return scene.locator(`[data-stop='${kind}']`).getAttribute("data-active");
+      }).toBe("true");
     }
-    await page.evaluate(() => window.scrollTo(0, 0));
+    await page.evaluate(() => window.scrollTo({ top: 0, behavior: "instant" }));
     await expect.poll(() => scene.locator("[data-active='true']").count()).toBe(0);
   });
 

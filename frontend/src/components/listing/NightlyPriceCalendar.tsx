@@ -224,6 +224,21 @@ export function NightlyPriceCalendar({
                       const weekday = new Date(`${iso}T00:00:00Z`).getUTCDay();
                       const iranianWeekend = listing.countryCode === "IR" && (weekday === 4 || weekday === 5);
                       const priced = !taken && iso >= today && iso <= max && night;
+                      const dayLabel = formatDay(iso, locale);
+                      const priceLabel = checkout
+                        ? t("booking.checkOut")
+                        : taken || iso < today || iso > max
+                          ? "—"
+                          : priced
+                            ? formatCalendarPrice(
+                                night.amount,
+                                listing.price_per_night,
+                                listing.currency,
+                                locale,
+                              )
+                            : quote.isError
+                              ? "—"
+                              : "…";
                       const description = checkout
                         ? t("priceCalendar.checkoutNote")
                         : taken
@@ -250,7 +265,7 @@ export function NightlyPriceCalendar({
                             tabIndex={iso === tabbable ? 0 : -1}
                             onFocus={() => setFocused(iso)}
                             disabled={!canIn(iso) && !canOut(iso)}
-                            aria-label={`${formatDate(iso, locale, "long")}${taken ? `${locale === "fa" ? "، " : ", "}${t("listing.taken")}` : ""}`}
+                            aria-label={`${dayLabel} ${priceLabel} · ${formatDate(iso, locale, "long")}${taken ? `${locale === "fa" ? "، " : ", "}${t("listing.taken")}` : ""}`}
                             aria-describedby={description ? `${id}-${iso}` : undefined}
                             title={`${formatDate(iso, locale)}${description ? ` · ${description}` : ""}`}
                             onClick={() => {
@@ -264,7 +279,7 @@ export function NightlyPriceCalendar({
                                 "bg-primary text-primary-foreground hover:bg-primary disabled:bg-primary disabled:text-primary-foreground disabled:hover:bg-primary",
                             )}
                           >
-                            <span className="text-base font-semibold">{formatDay(iso, locale)}</span>
+                            <span className="text-base font-semibold">{dayLabel}</span>{" "}
                             <span
                               aria-hidden
                               data-day-price
@@ -279,24 +294,7 @@ export function NightlyPriceCalendar({
                                   "text-primary",
                               )}
                             >
-                              {checkout ? (
-                                t("booking.checkOut")
-                              ) : taken || iso < today || iso > max ? (
-                                "—"
-                              ) : priced ? (
-                                <bdi>
-                                  {formatCalendarPrice(
-                                    night.amount,
-                                    listing.price_per_night,
-                                    listing.currency,
-                                    locale,
-                                  )}
-                                </bdi>
-                              ) : quote.isError ? (
-                                "—"
-                              ) : (
-                                "…"
-                              )}
+                              <bdi>{priceLabel}</bdi>
                             </span>
                             {!ends && priced && night.source === "holiday" ? (
                               <span

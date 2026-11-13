@@ -85,7 +85,7 @@ test("guests compare nightly prices, confirm exact totals and leave on a booked 
         await page.setViewportSize({ width, height: 1000 });
         const errors = await page.evaluate(async () => {
           // @ts-expect-error axe is injected above
-          const result = await window.axe.run(document, { runOnly: { type: "tag", values: ["wcag2a", "wcag2aa", "wcag21aa", "wcag22aa"] } });
+          const result = await window.axe.run(document, { runOnly: { type: "tag", values: ["wcag2a", "wcag2aa", "wcag21a", "wcag21aa", "wcag22aa"] } });
           return result.violations.map((v: { id: string; nodes: { target: string[] }[] }) => ({ id: v.id, nodes: v.nodes.map(n => n.target) }));
         });
         expect(errors, `${origin}/${locale} at ${width}`).toEqual([]);

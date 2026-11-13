@@ -125,6 +125,7 @@ test("the queue defaults to newest and sorts each field in both directions", asy
   const old = await pendingListing(request, "E2E queue oldest");
   const recent = await pendingListing(request, "E2E queue newest");
   await sql("UPDATE listings SET submitted_at = '2000-01-01' WHERE id = $1", [old.id]);
+  await sql("UPDATE listings SET submitted_at = '2099-01-01' WHERE id = $1", [recent.id]);
   await logIn(page);
   const firstTitle = page.locator("main article h2").first();
   await expect(firstTitle).toHaveText("E2E queue newest");
