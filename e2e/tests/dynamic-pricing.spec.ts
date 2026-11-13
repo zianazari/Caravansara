@@ -46,7 +46,38 @@ test("the host saves rules and the guest books the exact daily quote", async ({ 
     expect((await request.put(`${API}/admin/holidays/NL/${holiday}`, { headers: adminHeaders, data: { name: "E2E holiday" } })).status()).toBe(200);
     expect((await request.put(`${API}/listings/${listingId}/pricing`, { headers: auth(host), data: { weekend_enabled: true, weekend_days: [0, 1, 2, 3, 4, 5, 6], weekend_percent: 30, holiday_enabled: true, holiday_percent: 100 } })).status()).toBe(200);
     await login(page, host);
-    await page.goto(`${WEB}/en/host/listings/${listingId}?tab=pricing`);
+    for (const locale of ["fa", "en"]) {
+      await page.goto(`${WEB}/${locale}/host/listings/${listingId}?tab=pricing`);
+      const fields = page.locator('input[inputmode="decimal"][dir="ltr"]');
+      await expect(fields).toHaveCount(2);
+      await page.evaluate(() => document.fonts.ready);
+      for (const width of [320, 1440]) {
+        await page.setViewportSize({ width, height: 1000 });
+        for (const field of await fields.all()) {
+          const original = await field.inputValue();
+          for (const value of ["100", "1000", "-99.99"]) {
+            await field.fill(value);
+            const bounds = await field.evaluate((input: HTMLInputElement) => {
+              const box = input.getBoundingClientRect();
+              const icon = input.parentElement!.querySelector("svg")!.getBoundingClientRect();
+              const style = getComputedStyle(input);
+              const canvas = document.createElement("canvas").getContext("2d")!;
+              canvas.font = style.font;
+              return {
+                textEnd: box.left + parseFloat(style.borderLeftWidth) + parseFloat(style.paddingLeft) + canvas.measureText(input.value).width,
+                iconLeft: icon.left,
+                reservedStart: box.right - parseFloat(style.paddingRight),
+                centerOffset: Math.abs((icon.top + icon.bottom - box.top - box.bottom) / 2),
+              };
+            });
+            expect(bounds.iconLeft, `${locale} at ${width}: ${value}`).toBeGreaterThan(bounds.textEnd + 8);
+            expect(bounds.iconLeft).toBeGreaterThanOrEqual(bounds.reservedStart);
+            expect(bounds.centerOffset).toBeLessThanOrEqual(1);
+          }
+          await field.fill(original);
+        }
+      }
+    }
     await expect(page.getByRole("heading", { name: "Nightly price calendar" })).toBeVisible();
     await expect(page.getByRole("checkbox", { name: "Weekend pricing" })).toBeChecked();
     await page.getByLabel("Price adjustment (%)", { exact: true }).nth(0).fill("40");

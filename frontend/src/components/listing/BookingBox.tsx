@@ -3,7 +3,7 @@
 import { useTranslations } from "next-intl";
 import { useSearchParams } from "next/navigation";
 import { useState } from "react";
-import { DateRangePicker } from "@/components/date/DateRangePicker";
+import { BookingDatePicker } from "./BookingDatePicker";
 import { stayIsFree } from "@/lib/availability";
 import { useStayDates } from "./StayDates";
 import { PriceBreakdown } from "@/components/booking/PriceBreakdown";
@@ -15,7 +15,6 @@ import { useMoney } from "@/hooks/useMoney";
 import { useRouter } from "@/i18n/navigation";
 import { draftFor } from "@/lib/bookingDraft";
 import { preCheck } from "@/lib/bookingView";
-import { todayInZone } from "@/lib/cityTime";
 import { parseSearch } from "@/lib/searchParams";
 
 export type BookingBoxListing = {
@@ -28,6 +27,7 @@ export type BookingBoxListing = {
   pets_allowed: boolean;
   max_pets: number;
   timezone: string;
+  countryCode?: string;
 };
 
 /**
@@ -42,7 +42,7 @@ export function BookingBox({ listing }: { listing: BookingBoxListing }) {
   const me = useMe();
   const initial = parseSearch(useSearchParams());
   // The page's calendar and this box share the dates (feature 019).
-  const { dates, setDates, booked } = useStayDates();
+  const { dates, booked } = useStayDates();
   const [guests, setGuests] = useState<Guests>({
     adults: initial.adults,
     children: initial.children,
@@ -82,15 +82,7 @@ export function BookingBox({ listing }: { listing: BookingBoxListing }) {
         <span className="mb-1 block text-sm font-normal text-muted-foreground">{t("pricing.base")}</span>
         {money(listing.price_per_night, listing.currency)}
       </p>
-      <DateRangePicker
-        value={dates}
-        onChange={(next) => {
-          setDates(next);
-          setProblem(null);
-        }}
-        min={todayInZone(listing.timezone)}
-        booked={booked}
-      />
+      <BookingDatePicker listing={listing} onConfirm={() => setProblem(null)} />
       <GuestPicker value={guests} onChange={setGuests} />
       {dates.checkIn && dates.checkOut ? (
         quote.data ? (

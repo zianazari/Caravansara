@@ -45,7 +45,7 @@ export function PricingPolicyFields({
             <>
               <Field label={t("percent")} hint={t("percentHint")}>
                 {(props) => (
-                  <div className="relative max-w-64">
+                  <div className="relative max-w-64" dir="ltr">
                     <Input
                       {...props}
                       value={value[`${kind}_percent`]}
@@ -57,7 +57,7 @@ export function PricingPolicyFields({
                       className="pe-10"
                     />
                     <PercentIcon
-                      className="pointer-events-none absolute end-3 top-3 size-4 text-muted-foreground"
+                      className="pointer-events-none absolute end-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground"
                       aria-hidden
                     />
                   </div>

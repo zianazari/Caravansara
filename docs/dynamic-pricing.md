@@ -1,7 +1,8 @@
 # Dynamic pricing and host workspace
 
 Each listing has its own base nightly price, cleaning fee and optional percentage rules. A new policy is
-disabled until its host enables it. Weekend days are selectable (Monday=0 through Sunday=6). Percentages
+disabled until its host enables it. Weekend days are selectable (Monday=0 through Sunday=6); Iran defaults
+to Thursday and Friday (`[3, 4]`). Percentages
 range from -99 to +1000, with up to two decimal places; every adjustment applies to the base price.
 
 For each night the server chooses one rule, in this order:
@@ -29,6 +30,25 @@ Holidays are maintained manually, not inferred from weekends or imported from an
 and month selectors, localized dates, and deletion controls are provided. Public calendar reads contain only
 holiday country, date and name. Administrative writes require an active admin session and same-origin requests
 through the admin frontend.
+
+## Guest date selection
+
+Both listing-page availability calendars and the booking date dialog show the server's nightly prices
+under each available date. Weekend/custom rules use the brand accent; holidays have a gold marker.
+Iranian Thursday/Friday prices also use the accent when their rate adjustment is disabled: calendar
+weekend identification is independent of the applied price rule and does not change the amount.
+Booked nights are struck through and show no price, but leaving on the first booked date remains possible. A
+selected checkout date is labelled as checkout and is never included in the nightly charge.
+
+The dialog edits a local selection. Confirming applies it to the booking box; closing discards unconfirmed
+changes. The summary uses an exact quote for the chosen range, including the cleaning fee once. Price
+errors offer a retry and prevent confirming a priced stay until its quote is available. Month prices are
+loaded from the existing quote endpoint; no holiday/weekend arithmetic is duplicated in the browser.
+
+Calendar amounts are compact guides, with one captioned unit per property: million/thousand toman or
+toman for IRR, and the property's own currency otherwise. Accessible descriptions and the summary show
+exact amounts. Persian uses Jalali dates; English uses Gregorian dates. The same rules work on both local
+designs and phone layouts. Keyboard navigation includes arrows, Home/End and Page Up/Down.
 
 ## API and reservation amounts
 

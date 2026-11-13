@@ -47,6 +47,10 @@ See `docs/dynamic-pricing.md` for the full contract and endpoint list.
 - Percentages apply to base price, -99% through +1000%, at most two decimal places. Weekend days are selectable
   with Monday=0 through Sunday=6. Defaults are disabled, with +30% weekend and +100% holiday values ready to enable.
 - Per-night priority is **custom date range → shared holiday → selected weekend → base**. Rules do not stack.
+  On 2026-11-13, all 56 Iranian listings in the local database were set to Thursday/Friday (`[3, 4]`), preserving
+  enabled flags, percentages and other rules. Iranian new-listing defaults already use those days.
+  Later that day, at the owner's request, weekend pricing was enabled for all 57 existing Iranian listings
+  (all currently +30%). Other policies/countries and 11,688 saved booking price snapshots were verified unchanged.
   Custom range endpoints are inclusive; active custom ranges cannot overlap. Disabled rules are retained.
 - `holidays` is a shared country/date calendar maintained manually in the admin's Holidays & pricing tab.
   The host chooses the holiday percentage; holiday data is not imported automatically.
@@ -60,6 +64,13 @@ See `docs/dynamic-pricing.md` for the full contract and endpoint list.
   can set recurring rules; custom date ranges are managed after creating the listing.
 
 ## Data and invariants
+
+Guest calendars now show nightly guide prices from the existing quote endpoint. `NightlyPriceCalendar`
+is shared by inline availability and `BookingDatePicker`. The dialog stages dates until confirmation,
+shows an exact range quote, and preserves checkout on the first booked date without charging that night.
+IRR calendar cells use one captioned toman unit; exact money remains in summaries and accessible descriptions.
+Iranian Thursday/Friday price text is accented even with weekend adjustments disabled, based on the
+listing's country code rather than page language or currency. Calendar identification does not reprice stays.
 
 - Current schema is Alembic head `0012`: **17 application tables**, excluding PostGIS/Alembic system tables.
 - `db/schema.sql`, `db/schema.dbml`, `db/erd.mmd` and `db/erd.png` are maintained reference snapshots; migrations
@@ -97,10 +108,10 @@ See `docs/dynamic-pricing.md` for the full contract and endpoint list.
 - Backend: `uv run pytest --cov`, `uv run ruff check src tests migrations`, `uv run ruff format --check src tests migrations`,
   `uv run mypy`, `uv run lint-imports`. Tests start isolated PostgreSQL/PostGIS and MinIO containers.
 - Frontend: `npm run gen:api`, lint, format check, typecheck, `npm test -- --coverage`, build. Coverage gates apply
-  to rules/API, not every component. The current frontend suite has 463 tests; the backend suite has 415.
-- E2E: 138 tests collected. Start base + cinematic + `e2e/compose.e2e.yml` so both sites exist and fixture account
+  to rules/API, not every component. The current frontend suite has 478 tests; the backend suite has 415.
+- E2E: 139 tests collected. Start base + cinematic + `e2e/compose.e2e.yml` so both sites exist and fixture account
   creation uses test rate limits. See `e2e/README.md`. Restore normal API settings after verification.
-- Latest application verification: backend suite and migration/query catalog corrections, all 463 frontend tests
+- Latest application verification: backend suite and migration/query catalog corrections, all 478 frontend tests
   with coverage, lint/types/builds, 19 admin/host/pricing browser checks on port 3001 and both pricing/layout
   checks on port 3011. Persian/English mobile widths and axe passed. This does not claim the entire E2E suite
   was rerun in that verification.

@@ -113,6 +113,16 @@ wizard uses a desktop step sidebar, a focused form card and responsive navigatio
 summary cards and a shared holiday-calendar tab. See [dynamic pricing](../docs/dynamic-pricing.md) for the
 per-listing rules, saved booking prices and guest quote flow.
 
+## Guest priced calendars
+
+Guest listing calendars and the booking date dialog show prices beneath each available day, read from
+the same server quote used for reservations. `NightlyPriceCalendar` is shared by the inline view and
+`BookingDatePicker`; the dialog stages dates until confirmation and shows exact totals beside the calendar
+(below it on phones). Compact IRR guide prices use a captioned toman unit; accessible descriptions retain
+exact amounts. Checkout is labelled separately, including when its night is already booked. Component tests
+cover cancellation, explicit clearing, quote errors/retry, keyboard navigation and both languages; the
+`priced-calendar.spec.ts` browser check covers both designs, 320–1440 px and axe contrast checks.
+
 ## Boutique home design
 
 The home page uses an atmospheric Persian courtyard cover, an overlapping search bar, olive actions and

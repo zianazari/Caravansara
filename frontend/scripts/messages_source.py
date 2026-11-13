@@ -309,6 +309,18 @@ M = {
   "cancelPaid": ("پرداخت در این نسخه شبیه‌سازی است و پولی جابه‌جا نمی‌شود.", "Payment is simulated in this version; no money moves."),
  },
  # 008, host pages (specs/008-host-pages)
+ "priceCalendar": {
+  "title": ("تاریخ سفرت را انتخاب کن", "Choose your stay dates"),
+  "perNight": ("قیمت هر شب · {unit}", "Price per night · {unit}"),
+  "millionToman": ("میلیون تومان", "million toman"),
+  "thousandToman": ("هزار تومان", "thousand toman"),
+  "toman": ("تومان", "toman"),
+  "compactHint": ("قیمت‌های روزها کوتاه شده‌اند؛ مبلغ دقیق و هزینهٔ نظافت در خلاصهٔ اقامت نمایش داده می‌شود.", "Calendar prices are shortened. Exact amounts and the cleaning fee appear in your stay summary."),
+  "checkoutNote": ("روز خروج جزو شب‌های اقامت حساب نمی‌شود.", "The check-out date is not charged as a night."),
+  "summary": ("خلاصهٔ اقامت", "Stay summary"),
+  "nights": ("{count, plural, one {# شب} other {# شب}}", "{count, plural, one {# night} other {# nights}}"),
+  "confirm": ("تأیید تاریخ‌ها", "Confirm dates"),
+ },
  "pricing": {
   "title": ("قیمت‌گذاری پویا", "Dynamic pricing"),
   "subtitle": ("قیمت مناسب، برای هر شب از تقویم شما", "The right price for every night"),

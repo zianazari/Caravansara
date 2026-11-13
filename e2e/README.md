@@ -26,17 +26,17 @@ npx playwright show-report   # HTML report; failed tests keep a trace
 
 ## What is covered
 
-| File | Endpoints |
-|---|---|
-| `system-catalog.spec.ts` | `/health`, Swagger and OpenAPI, countries, cities, amenities |
-| `auth.spec.ts` | register, login, refresh (rotation and reuse detection), logout, `GET/PATCH /me` (an outside picture address is refused) |
-| `listings.spec.ts` | create, details, my listings, edit and deactivate, amenities, the whole photo flow (upload URL → MinIO → register, edit, reorder, delete) |
-| `search.spec.ts` | radial and city search, dates, guests, pets, amenity AND filter, paging, filter counts, invalid input |
-| `bookings.spec.ts` | reserve, idempotent replay, overlap and a 6-way race (exactly one wins), booking rules, pay, expired hold, view, my trips, cancel, host's bookings |
-| `reviews.spec.ts` | review a completed stay, rating update, one review per stay, 14-day window, listing reviews |
-| `moderation.spec.ts` | admin login, review queue, listing details for review, approve, reject with a reason, resubmit; an admin token on member endpoints and a member on admin ones |
-| `scenario.spec.ts` | the whole story: host lists, guest searches, books, pays, both see it |
-| `web.spec.ts` | the web site (specs/005-frontend-guest): `/api/v1` forwarded and nothing else, the API's `auth/*` closed through the site, the refresh token in an HttpOnly `cv_refresh` cookie, `Origin` checked, login attempts counted by the visitor's address (and a forged address on port 8000 ignored), a fresh CSP nonce per page, and a profile picture uploaded straight to MinIO |
+| File                     | Endpoints                                                                                                                                                                                                                                                                                                                                                                    |
+| ------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `system-catalog.spec.ts` | `/health`, Swagger and OpenAPI, countries, cities, amenities                                                                                                                                                                                                                                                                                                                 |
+| `auth.spec.ts`           | register, login, refresh (rotation and reuse detection), logout, `GET/PATCH /me` (an outside picture address is refused)                                                                                                                                                                                                                                                     |
+| `listings.spec.ts`       | create, details, my listings, edit and deactivate, amenities, the whole photo flow (upload URL → MinIO → register, edit, reorder, delete)                                                                                                                                                                                                                                    |
+| `search.spec.ts`         | radial and city search, dates, guests, pets, amenity AND filter, paging, filter counts, invalid input                                                                                                                                                                                                                                                                        |
+| `bookings.spec.ts`       | reserve, idempotent replay, overlap and a 6-way race (exactly one wins), booking rules, pay, expired hold, view, my trips, cancel, host's bookings                                                                                                                                                                                                                           |
+| `reviews.spec.ts`        | review a completed stay, rating update, one review per stay, 14-day window, listing reviews                                                                                                                                                                                                                                                                                  |
+| `moderation.spec.ts`     | admin login, review queue, listing details for review, approve, reject with a reason, resubmit; an admin token on member endpoints and a member on admin ones                                                                                                                                                                                                                |
+| `scenario.spec.ts`       | the whole story: host lists, guest searches, books, pays, both see it                                                                                                                                                                                                                                                                                                        |
+| `web.spec.ts`            | the web site (specs/005-frontend-guest): `/api/v1` forwarded and nothing else, the API's `auth/*` closed through the site, the refresh token in an HttpOnly `cv_refresh` cookie, `Origin` checked, login attempts counted by the visitor's address (and a forged address on port 8000 ignored), a fresh CSP nonce per page, and a profile picture uploaded straight to MinIO |
 
 ## Test data
 
@@ -58,12 +58,16 @@ therefore need the `docker` CLI and the compose stack on the same machine.
 
 ## Pricing and frontend variants
 
-The suite currently collects 138 tests. `cinematic-home.spec.ts` targets port 3011 by default, so start the
+The suite currently collects 139 tests. `cinematic-home.spec.ts` targets port 3011 by default, so start the
 cinematic compose service when running the entire suite, including in CI. Both frontends share the API/database.
 
 `dynamic-pricing.spec.ts` exercises host rule editing, shared holiday add/remove, exact daily guest quotes,
 reservation and receipt snapshots, and Persian/English responsive accessibility. Holiday fixtures restore any
 previous entry in a `finally` block. Test accounts/listings follow the existing retained-fixture convention.
+
+`priced-calendar.spec.ts` checks guest nightly prices, staged date confirmation, exact IRR totals, checkout
+on a booked night, responsive layouts and accessibility in Persian/English on both ports 3001 and 3011.
+Set `PRICED_CALENDAR_SHOTS=1` to capture the calendar in `/private/tmp` and update its README image.
 
 ```bash
 npx playwright test tests/admin.spec.ts tests/host.spec.ts tests/dynamic-pricing.spec.ts --workers=1

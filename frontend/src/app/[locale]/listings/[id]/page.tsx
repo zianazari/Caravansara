@@ -154,7 +154,10 @@ export default async function ListingPage({ params }: Props) {
                 <AmenityPreview categories={listing.amenities} />
               </section>
 
-              <AvailabilityCalendar city={city} />
+              <AvailabilityCalendar
+                city={city}
+                listing={{ ...listing, countryCode: listing.city.country.code }}
+              />
             </div>
             <div id="booking" className="scroll-mt-24 lg:sticky lg:top-32 lg:self-start">
               <Suspense>
@@ -169,6 +172,7 @@ export default async function ListingPage({ params }: Props) {
                     pets_allowed: listing.pets_allowed,
                     max_pets: listing.max_pets,
                     timezone: listing.city.timezone,
+                    countryCode: listing.city.country.code,
                   }}
                 />
               </Suspense>

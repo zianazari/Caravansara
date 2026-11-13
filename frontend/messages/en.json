@@ -295,6 +295,18 @@
     "cancelRule": "You can cancel until the day before check-in ({city} time).",
     "cancelPaid": "Payment is simulated in this version; no money moves."
   },
+  "priceCalendar": {
+    "title": "Choose your stay dates",
+    "perNight": "Price per night · {unit}",
+    "millionToman": "million toman",
+    "thousandToman": "thousand toman",
+    "toman": "toman",
+    "compactHint": "Calendar prices are shortened. Exact amounts and the cleaning fee appear in your stay summary.",
+    "checkoutNote": "The check-out date is not charged as a night.",
+    "summary": "Stay summary",
+    "nights": "{count, plural, one {# night} other {# nights}}",
+    "confirm": "Confirm dates"
+  },
   "pricing": {
     "title": "Dynamic pricing",
     "subtitle": "The right price for every night",

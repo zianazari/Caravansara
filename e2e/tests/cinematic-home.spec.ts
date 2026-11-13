@@ -18,6 +18,7 @@ for (const locale of ["fa", "en"] as const) {
       locale === "fa" ? "کمی دورتر" : "A little further",
     );
     await page.setViewportSize({ width: 1440, height: 1000 });
+    await expect(page.locator('header a[href="#stays"]')).toHaveCount(0);
     const search = page.getByRole("search");
     await expect(search).toContainText(
       locale === "fa" ? "هر تاریخی" : "Any dates",
