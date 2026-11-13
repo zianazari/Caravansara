@@ -121,30 +121,38 @@ test("a host's change while the admin looks is caught, not approved unseen (409)
   expect((await reviewOf(request, listing.id)).status).toBe("approved");
 });
 
-test("the queue sorts oldest or newest first, and the order is kept in the address (025)", async ({ page, request }) => {
+test("the queue defaults to newest and sorts each field in both directions", async ({ page, request }) => {
   const old = await pendingListing(request, "E2E queue oldest");
   const recent = await pendingListing(request, "E2E queue newest");
-  // Only this test's own listing is moved back in time, so it is the oldest in the queue.
   await sql("UPDATE listings SET submitted_at = '2000-01-01' WHERE id = $1", [old.id]);
+  await sql("UPDATE listings SET submitted_at = '2099-01-01' WHERE id = $1", [recent.id]);
   await logIn(page);
-  const titles = () => page.locator("main article h2").allTextContents();
-  await expect.poll(async () => (await titles())[0]).toBe("E2E queue oldest");
-
-  // A shadcn/ui Select (feature 026): open the list, then choose the option.
-  await page.getByRole("combobox", { name: "ترتیب" }).click();
-  await page.getByRole("option", { name: "جدیدترین" }).click();
-  await page.waitForURL(/\/admin\?sort=newest$/);
-  // The previous order stays on screen until the new page arrives, so wait for the order itself.
-  await expect
-    .poll(async () => {
-      const newest = await titles();
-      const at = newest.indexOf("E2E queue oldest");
-      return newest.includes("E2E queue newest") && (at === -1 || at > newest.indexOf("E2E queue newest"));
-    })
-    .toBe(true);
-
+  const firstTitle = page.locator("main article h2").first();
+  await expect(firstTitle).toHaveText("E2E queue newest");
+  await expect(page.getByRole("button", { name: "جدیدترین: مرتب‌سازی زمان ارسال به صورت صعودی" })).toHaveText("جدیدترین");
+  await page.getByRole("button", { name: "جدیدترین: مرتب‌سازی زمان ارسال به صورت صعودی" }).click();
+  await expect(page).toHaveURL(/sort_by=submitted_at&order=asc$/);
+  await expect(firstTitle).toHaveText("E2E queue oldest");
   await page.reload();
-  await expect(page.getByRole("combobox", { name: "ترتیب" })).toHaveText("جدیدترین");
+  await expect(firstTitle).toHaveText("E2E queue oldest");
+
+  await page.goto(`${ADMIN_WEB}/en/admin`);
+  for (const [column, label] of [["title", "Listing title"], ["city", "City"], ["host", "Host name"]]) {
+    await page.getByRole("combobox", { name: "Order" }).click();
+    await page.getByRole("option", { name: label, exact: true }).click();
+    for (const order of ["asc", "desc"]) {
+      await expect(page).toHaveURL(new RegExp(`sort_by=${column}&order=${order}$`));
+      const response = await page.evaluate(async (url) => {
+        const res = await fetch(url);
+        return { status: res.status, body: await res.json() };
+      }, `/admin-api/api/v1/admin/listings/pending?sort_by=${column}&order=${order}&limit=20`);
+      expect(response.status).toBe(200);
+      await expect(firstTitle).toHaveText(response.body.items[0].title);
+      if (order === "asc") await page.getByRole("button", { name: `Ascending: Sort ${label} descending` }).click();
+    }
+  }
+  await page.goto(`${ADMIN_WEB}/en/admin?sort=oldest`);
+  await expect(firstTitle).toHaveText("E2E queue oldest");
   expect(recent.id).toBeGreaterThan(0);
 });
 
@@ -155,6 +163,7 @@ test("the panel's pages have no sideways scroll and no axe violation, in both la
     for (const p of ["/admin/login", "/admin", "/admin?tab=bookings", "/admin?tab=users", `/admin/listings/${listing.id}`]) {
       await page.goto(`${ADMIN_WEB}/${locale}${p}`);
       await page.waitForLoadState("networkidle");
+      await expect(page.locator("html")).toHaveAttribute("data-design", "cinematic");
       for (const width of [320, 390, 1280]) {
         await page.setViewportSize({ width, height: 900 });
         await page.waitForTimeout(100);
@@ -175,6 +184,9 @@ test("the panel's pages have no sideways scroll and no axe violation, in both la
         );
       });
       expect(violations, `${locale}${p}`).toEqual([]);
+      if (process.env.ADMIN_SHOTS && p === "/admin?tab=bookings") {
+        await page.screenshot({ path: `/private/tmp/admin-theme-${locale}-bookings.png` });
+      }
     }
   }
 });
@@ -207,6 +219,52 @@ test("the panel's tabs list bookings by status and find a user by part of the na
   await expect(page.getByRole("row").filter({ hasText: guest.email })).toHaveCount(1);
 });
 
+test("every table column toggles global sorting and keeps filters and pages", async ({ page, request }) => {
+  await page.setViewportSize({ width: 1440, height: 1000 });
+  const listing = await createListing(request, host, { title: "E2E sorting table" });
+  const guest = await register(request, "sortguest");
+  expect((await reserve(request, guest, listing.id)).status()).toBe(201);
+  await logIn(page);
+  for (const [tab, columns] of [
+    ["bookings", ["id", "listing", "guest", "dates", "total_price", "status", "created_at"]],
+    ["users", ["full_name", "email", "kind", "created_at"]],
+  ] as const) {
+    await page.goto(`${ADMIN_WEB}/en/admin?tab=${tab}`);
+    await expect(page.getByRole("columnheader")).toHaveCount(columns.length);
+    for (let i = 0; i < columns.length; i++) {
+      const heading = page.getByRole("columnheader").nth(i);
+      for (const order of ["asc", "desc"]) {
+        await heading.getByRole("link").click();
+        await expect(page).toHaveURL(new RegExp(`sort_by=${columns[i]}&order=${order}$`));
+        await expect(heading).toHaveAttribute("aria-sort", order === "asc" ? "ascending" : "descending");
+        // Cached sorts need no new UI request; compare the rendered first row with the real API.
+        const response = await page.evaluate(async (url) => {
+          const res = await fetch(url);
+          return { status: res.status, body: await res.json() };
+        }, `/admin-api/api/v1/admin/${tab}?sort_by=${columns[i]}&order=${order}&limit=20&offset=0`);
+        expect(response.status).toBe(200);
+        const first = response.body.items[0];
+        expect(first).toBeTruthy();
+        const row = page.locator("tbody tr").first();
+        if (tab === "bookings") {
+          await expect(row.locator("td").first()).toHaveText(String(first.id));
+        } else {
+          await expect(row.locator("td").nth(1)).toHaveText(first.email);
+        }
+      }
+    }
+  }
+  await page.goto(`${ADMIN_WEB}/fa/admin?tab=users&sort_by=email&order=asc&page=2`);
+  await expect(page.getByRole("columnheader").nth(1)).toHaveAttribute("aria-sort", "ascending");
+  const next = page.getByRole("link", { name: "صفحه‌ی ۳", exact: true });
+  await expect(next).toHaveAttribute("href", /sort_by=email&order=asc&page=3/);
+  await page.getByRole("searchbox").fill(guest.email.split("@")[0]);
+  await expect(page).toHaveURL(/q=.*sort_by=email&order=asc$/);
+  await expect(page.getByRole("row").filter({ hasText: guest.email })).toHaveCount(1);
+  await page.getByRole("columnheader").nth(1).getByRole("link").click();
+  await expect(page).toHaveURL(/q=.*sort_by=email&order=desc$/);
+});
+
 test("an expired admin token is renewed with the refresh cookie, without a new log-in (011)", async ({ page }) => {
   await logIn(page);
   const refresh = (await page.context().cookies()).find((c) => c.name === "cv_admin_refresh")!;
@@ -227,4 +285,19 @@ test("logging out ends the session", async ({ page }) => {
   await page.waitForURL(/\/fa\/admin\/login/);
   expect((await page.context().cookies()).find((c) => c.name === "cv_admin")).toBeUndefined();
   expect((await page.context().cookies()).find((c) => c.name === "cv_admin_refresh")).toBeUndefined();
+});
+
+test("shows a house marker on the listing review map", async ({
+  page,
+  request,
+}) => {
+  const listing = await createListing(
+    request,
+    host,
+    { title: "E2E admin house marker" },
+    { approved: false },
+  );
+  await logIn(page);
+  await page.goto(`${ADMIN_WEB}/fa/admin/listings/${listing.id}`);
+  await expect(page.locator('[data-map-marker="house"] svg')).toBeVisible();
 });

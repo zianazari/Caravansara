@@ -10,11 +10,23 @@ vi.mock("next/navigation", () => ({ useSearchParams: () => new URLSearchParams(q
 vi.mock("@/i18n/navigation", () => ({
   usePathname: () => "/admin",
   useRouter: () => ({ replace, push }),
-  Link: ({ href, children, ...rest }: { href: string; children: React.ReactNode }) => (
-    <a href={href} {...rest}>
-      {children}
-    </a>
-  ),
+  Link: ({
+    href,
+    children,
+    scroll: _scroll,
+    ...rest
+  }: {
+    href: string;
+    children: React.ReactNode;
+    scroll?: boolean;
+  }) => {
+    void _scroll;
+    return (
+      <a href={href} {...rest}>
+        {children}
+      </a>
+    );
+  },
 }));
 const GET = vi.fn();
 vi.mock("@/api/adminClient", () => ({ adminApi: { GET: (...a: unknown[]) => GET(...a) } }));
@@ -162,5 +174,65 @@ describe("admin panel tabs (feature 051)", () => {
     await userEvent.type(box, "i");
     await waitFor(() => expect(replace).toHaveBeenCalledWith("/admin?tab=users&q=ali"));
     await expectAccessible(document.body);
+  });
+
+  it("sorts bookings through the API and keeps the status and order across pages", async () => {
+    query = "tab=bookings&status=completed&page=2&sort_by=total_price&order=asc";
+    api({ bookings: [booking(7, "completed")], hasMore: true });
+    renderIn("en", <AdminPanel />);
+    expect(await screen.findByText("Place 7")).toBeInTheDocument();
+    expect(callsTo("/api/v1/admin/bookings")[0]).toEqual({
+      limit: 20,
+      offset: 20,
+      status: "completed",
+      sort_by: "total_price",
+      order: "asc",
+    });
+    const amount = screen.getByRole("columnheader", { name: /Total/ });
+    expect(amount).toHaveAttribute("aria-sort", "ascending");
+    expect(within(amount).getByRole("link")).toHaveAttribute(
+      "href",
+      "/admin?tab=bookings&status=completed&sort_by=total_price&order=desc",
+    );
+    expect(await screen.findByRole("link", { name: "Page 116" })).toHaveAttribute(
+      "href",
+      "/admin?tab=bookings&status=completed&sort_by=total_price&order=asc&page=116",
+    );
+    const filter = screen.getByRole("navigation", { name: "Booking status" });
+    expect(within(filter).getByRole("link", { name: /Confirmed/ })).toHaveAttribute(
+      "href",
+      "/admin?tab=bookings&status=confirmed&sort_by=total_price&order=asc",
+    );
+    expect(screen.getAllByRole("columnheader")).toHaveLength(7);
+    await expectAccessible(document.body);
+  });
+
+  it("keeps the user search when sorting and preserves the order when searching or paging", async () => {
+    query = "tab=users&q=user&page=2&sort_by=full_name&order=desc";
+    api({ users: [user(21)], total: 45 });
+    renderIn("en", <AdminPanel />);
+    expect(await screen.findByText("User 21")).toBeInTheDocument();
+    expect(callsTo("/api/v1/admin/users")[0]).toEqual({
+      limit: 20,
+      offset: 20,
+      q: "user",
+      sort_by: "full_name",
+      order: "desc",
+    });
+    const name = screen.getByRole("columnheader", { name: /Name/ });
+    expect(name).toHaveAttribute("aria-sort", "descending");
+    expect(within(name).getByRole("link")).toHaveAttribute(
+      "href",
+      "/admin?tab=users&q=user&sort_by=full_name&order=asc",
+    );
+    expect(screen.getByRole("link", { name: "Page 3" })).toHaveAttribute(
+      "href",
+      "/admin?tab=users&q=user&sort_by=full_name&order=desc&page=3",
+    );
+    expect(screen.getAllByRole("columnheader")).toHaveLength(4);
+    await userEvent.type(screen.getByRole("searchbox"), "z");
+    await waitFor(() =>
+      expect(replace).toHaveBeenCalledWith("/admin?tab=users&q=userz&sort_by=full_name&order=desc"),
+    );
   });
 });

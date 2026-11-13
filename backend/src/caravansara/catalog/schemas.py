@@ -1,4 +1,15 @@
-from pydantic import BaseModel
+from datetime import date
+
+from pydantic import BaseModel, Field
+
+
+class HolidayIn(BaseModel):
+    name: str = Field(min_length=1, max_length=100)
+
+
+class HolidayOut(HolidayIn):
+    country_code: str
+    day: date
 
 
 class CountryOut(BaseModel):

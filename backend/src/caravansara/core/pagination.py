@@ -1,6 +1,6 @@
 """limit/offset paging shared by list endpoints."""
 
-from typing import Annotated
+from typing import Annotated, Literal
 
 from fastapi import Depends, Query
 from pydantic import BaseModel
@@ -25,3 +25,6 @@ class PageInfo(BaseModel):
     total: int
     limit: int
     offset: int
+
+
+SortOrder = Literal["asc", "desc"]

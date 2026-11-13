@@ -1,7 +1,38 @@
-from sqlalchemy import select
+from datetime import date
+
+from sqlalchemy import delete, select
+from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from caravansara.catalog.models import Amenity, AmenityCategory, City, Country
+from caravansara.catalog.models import Amenity, AmenityCategory, City, Country, Holiday
+
+
+async def holidays(session: AsyncSession, country: str, start: date, end: date) -> list[Holiday]:
+    return list(
+        (
+            await session.execute(
+                select(Holiday)
+                .where(Holiday.country_code == country, Holiday.day >= start, Holiday.day < end)
+                .order_by(Holiday.day)
+            )
+        ).scalars()
+    )
+
+
+async def save_holiday(session: AsyncSession, country: str, day: date, name: str) -> None:
+    await session.execute(
+        insert(Holiday)
+        .values(country_code=country, day=day, name=name)
+        .on_conflict_do_update(index_elements=[Holiday.country_code, Holiday.day], set_={"name": name})
+    )
+
+
+async def delete_holiday(session: AsyncSession, country: str, day: date) -> None:
+    await session.execute(delete(Holiday).where(Holiday.country_code == country, Holiday.day == day))
+
+
+async def country_exists(session: AsyncSession, code: str) -> bool:
+    return (await session.execute(select(Country.id).where(Country.code == code))).scalar_one_or_none() is not None
 
 
 async def list_countries(session: AsyncSession) -> list[Country]:

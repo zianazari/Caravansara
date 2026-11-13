@@ -6,6 +6,9 @@ from pydantic import BaseModel, ConfigDict, Field, model_validator
 
 from caravansara.catalog.schemas import AmenityCategoryOut, CityOut
 from caravansara.listings.models import PropertyType, ReviewStatus
+from caravansara.listings.pricing import NightlyPrice, PriceQuote, PricingPolicy
+
+__all__ = ["NightlyPrice", "PriceQuote", "PricingPolicy"]
 
 # Nightly price and cleaning fee, in every currency (specs/backend (002), owner's choice
 # on 2026-11-05): ten times today's top Tehran price, so rial inflation has room. With 365 nights
@@ -40,6 +43,7 @@ class _ListingFields(BaseModel):
 
 
 class ListingCreate(_ListingFields):
+    pricing_policy: PricingPolicy | None = None
     amenity_ids: list[int] = Field(default_factory=list, max_length=100)
 
     @model_validator(mode="after")
@@ -75,6 +79,7 @@ class ListingCreate(_ListingFields):
 
 
 class ListingUpdate(BaseModel):
+    pricing_policy: PricingPolicy | None = None
     """Only the fields sent change. ``is_active: false`` hides the listing; it is never deleted."""
 
     title: str | None = Field(default=None, min_length=1, max_length=200)
@@ -158,6 +163,7 @@ class ListingReview(BaseModel):
 
 
 class ListingOut(BaseModel):
+    pricing_policy: PricingPolicy | None = Field(default=None, description="Host-only pricing configuration.")
     id: int
     title: str
     description: str | None

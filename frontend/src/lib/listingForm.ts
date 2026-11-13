@@ -2,6 +2,7 @@ import type { components } from "@/api/schema";
 import { errorCode, fieldErrors, type ApiErrorBody } from "./errors";
 import type { ListingDraft } from "./listingDraft";
 import { MAX_AMOUNT, parseAmountInput, toHundredths, tomanToRial } from "./money";
+import { pricingDefaults, pricingIssue } from "./pricing";
 
 type ListingCreate = components["schemas"]["ListingCreate"];
 
@@ -31,7 +32,7 @@ export const STEP_FIELDS: Record<StepName, string[]> = {
   capacity: ["max_guests", "bedrooms", "beds", "bathrooms", "pets_allowed", "max_pets"],
   amenities: ["amenity_ids"],
   description: ["title", "description"],
-  price: ["currency", "price_per_night", "cleaning_fee"],
+  price: ["currency", "price_per_night", "cleaning_fee", "pricing_policy"],
   times: ["check_in_time", "check_out_time"],
   photos: [],
 };
@@ -138,6 +139,8 @@ export function validateStep(step: StepName, d: ListingDraft): Record<string, Fi
       out.description = text(d.description, 5000, false);
       break;
     case "price": {
+      if (d.pricing_policy && pricingIssue(pricingDefaults(d.pricing_policy)))
+        out.pricing_policy = { key: "pricingInvalid" };
       const currency = d.currency ?? "";
       out.currency = /^[A-Z]{3}$/.test(currency) ? undefined : { key: "required" };
       const night = priceForApi(d.price_per_night, currency, true);
@@ -193,6 +196,7 @@ export function toListingCreate(d: ListingDraft): ListingCreate {
     currency,
     price_per_night: night.amount,
     cleaning_fee: fee.amount,
+    ...(d.pricing_policy ? { pricing_policy: d.pricing_policy } : {}),
     check_in_time: d.check_in_time!,
     check_out_time: d.check_out_time!,
   };

@@ -54,7 +54,7 @@ export function HostListings() {
           {t("newListing")}
         </Link>
       </Button>
-      <ul className="grid [&>li]:min-w-0 grid-cols-2 gap-x-4 gap-y-6 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6">
+      <ul className="grid grid-cols-1 gap-5 sm:grid-cols-2 xl:grid-cols-3 [&>li]:min-w-0">
         {all.map((listing) => (
           <li key={listing.id}>
             <HostListingCard listing={listing} />

@@ -129,6 +129,23 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  "/api/v1/holidays": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** Shared holiday calendar */
+    get: operations["list_holidays_api_v1_holidays_get"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   "/api/v1/countries": {
     parameters: {
       query?: never;
@@ -222,6 +239,47 @@ export interface paths {
      *     Counts over listings matching every filter except amenities.
      */
     get: operations["filters_api_v1_search_filters_get"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/listings/{listing_id}/pricing": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** My listing's pricing rules */
+    get: operations["get_pricing_api_v1_listings__listing_id__pricing_get"];
+    /**
+     * Replace my listing's pricing rules
+     * @description Percentages apply to base price. Priority: custom range, shared holiday, weekend, base. Custom range ends are inclusive. Active ranges cannot overlap. Does not send a listing back to review.
+     */
+    put: operations["put_pricing_api_v1_listings__listing_id__pricing_put"];
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/listings/{listing_id}/pricing/quote": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Daily price quote (checkout date excluded)
+     * @description Public listings or the host's own draft. Quotes do not hold availability. Returns each night's applied rule and rounded price; the cleaning fee is charged once. Maximum 365 nights.
+     */
+    get: operations["price_quote_api_v1_listings__listing_id__pricing_quote_get"];
     put?: never;
     post?: never;
     delete?: never;
@@ -616,6 +674,58 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  "/api/v1/admin/countries": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** Countries for the admin calendar */
+    get: operations["admin_countries_api_v1_admin_countries_get"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/admin/holidays": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** Holiday calendar for dynamic pricing */
+    get: operations["admin_holidays_api_v1_admin_holidays_get"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/admin/holidays/{country}/{day}": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    /** Add or rename a shared holiday */
+    put: operations["save_holiday_api_v1_admin_holidays__country___day__put"];
+    post?: never;
+    /** Remove a shared holiday */
+    delete: operations["delete_holiday_api_v1_admin_holidays__country___day__delete"];
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   "/api/v1/admin/auth/login": {
     parameters: {
       query?: never;
@@ -685,7 +795,7 @@ export interface paths {
     };
     /**
      * Review queue
-     * @description Listings waiting for review, oldest first (`sort=oldest`, the default) or newest first (`sort=newest`). Each has the `review_version` to decide on.
+     * @description Listings waiting for review, newest first by default. Sort all matching listings by submission time, title, city or host before pagination. Each has the `review_version` to decide on. Legacy `sort=oldest|newest` remains supported when `order` is omitted.
      */
     get: operations["review_queue_api_v1_admin_listings_pending_get"];
     put?: never;
@@ -912,6 +1022,11 @@ export interface components {
      *     guest is, so the admin can answer a question about it.
      */
     AdminBookingOut: {
+      /**
+       * Nightly Prices
+       * @description Saved at booking time; never recalculated.
+       */
+      nightly_prices?: components["schemas"]["NightlyPrice"][];
       /** Id */
       id: number;
       status: components["schemas"]["BookingStatus"];
@@ -990,6 +1105,8 @@ export interface components {
      * @description Everything the host sees, for a listing in any state, plus the version to decide on.
      */
     AdminListingOut: {
+      /** @description Host-only pricing configuration. */
+      pricing_policy?: components["schemas"]["PricingPolicy-Output"] | null;
       /** Id */
       id: number;
       /** Title */
@@ -1256,6 +1373,16 @@ export interface components {
      *     }
      */
     BookingCreate: {
+      /**
+       * Expected Currency
+       * @description Currency of the displayed quote.
+       */
+      expected_currency?: string | null;
+      /**
+       * Expected Total
+       * @description Quote total; a changed price returns 409 price_changed.
+       */
+      expected_total?: number | string | null;
       /** Listing Id */
       listing_id: number;
       /**
@@ -1307,6 +1434,11 @@ export interface components {
     };
     /** BookingOut */
     BookingOut: {
+      /**
+       * Nightly Prices
+       * @description Saved at booking time; never recalculated.
+       */
+      nightly_prices?: components["schemas"]["NightlyPrice"][];
       /** Id */
       id: number;
       status: components["schemas"]["BookingStatus"];
@@ -1444,6 +1576,23 @@ export interface components {
       status: string;
       /** Database */
       database: string;
+    };
+    /** HolidayIn */
+    HolidayIn: {
+      /** Name */
+      name: string;
+    };
+    /** HolidayOut */
+    HolidayOut: {
+      /** Name */
+      name: string;
+      /** Country Code */
+      country_code: string;
+      /**
+       * Day
+       * Format: date
+       */
+      day: string;
     };
     /** HostOut */
     HostOut: {
@@ -1605,11 +1754,14 @@ export interface components {
        * @default 11:00:00
        */
       check_out_time: string;
+      pricing_policy?: components["schemas"]["PricingPolicy-Input"] | null;
       /** Amenity Ids */
       amenity_ids?: number[];
     };
     /** ListingOut */
     ListingOut: {
+      /** @description Host-only pricing configuration. */
+      pricing_policy?: components["schemas"]["PricingPolicy-Output"] | null;
       /** Id */
       id: number;
       /** Title */
@@ -1722,11 +1874,9 @@ export interface components {
       photo_count: number;
       review?: components["schemas"]["ListingReview"] | null;
     };
-    /**
-     * ListingUpdate
-     * @description Only the fields sent change. ``is_active: false`` hides the listing; it is never deleted.
-     */
+    /** ListingUpdate */
     ListingUpdate: {
+      pricing_policy?: components["schemas"]["PricingPolicy-Input"] | null;
       /** Title */
       title?: string | null;
       /** Description */
@@ -1782,6 +1932,25 @@ export interface components {
       email: string;
       /** Password */
       password: string;
+    };
+    /** NightlyPrice */
+    NightlyPrice: {
+      /**
+       * Date
+       * Format: date
+       */
+      date: string;
+      /** Amount */
+      amount: string;
+      /** Percent */
+      percent: string;
+      /**
+       * Source
+       * @enum {string}
+       */
+      source: "base" | "weekend" | "holiday" | "custom";
+      /** Label */
+      label?: string | null;
     };
     /** PhotoCreate */
     PhotoCreate: {
@@ -1845,6 +2014,143 @@ export interface components {
       lat: number;
       /** Lng */
       lng: number;
+    };
+    /** PriceQuote */
+    PriceQuote: {
+      /** Listing Id */
+      listing_id: number;
+      /**
+       * Check In
+       * Format: date
+       */
+      check_in: string;
+      /**
+       * Check Out
+       * Format: date
+       */
+      check_out: string;
+      /** Currency */
+      currency: string;
+      /** Base Price */
+      base_price: string;
+      /** Cleaning Fee */
+      cleaning_fee: string;
+      /** Stay Total */
+      stay_total: string;
+      /** Total Price */
+      total_price: string;
+      /** Nights */
+      nights: components["schemas"]["NightlyPrice"][];
+    };
+    /** PriceRange */
+    "PriceRange-Input": {
+      /** Id */
+      id?: string;
+      /** Name */
+      name: string;
+      /**
+       * Start
+       * Format: date
+       */
+      start: string;
+      /**
+       * End
+       * Format: date
+       * @description Last night included in this rule (inclusive).
+       */
+      end: string;
+      /** Percent */
+      percent: number | string;
+      /**
+       * Enabled
+       * @default true
+       */
+      enabled: boolean;
+    };
+    /** PriceRange */
+    "PriceRange-Output": {
+      /** Id */
+      id?: string;
+      /** Name */
+      name: string;
+      /**
+       * Start
+       * Format: date
+       */
+      start: string;
+      /**
+       * End
+       * Format: date
+       * @description Last night included in this rule (inclusive).
+       */
+      end: string;
+      /** Percent */
+      percent: string;
+      /**
+       * Enabled
+       * @default true
+       */
+      enabled: boolean;
+    };
+    /** PricingPolicy */
+    "PricingPolicy-Input": {
+      /**
+       * Weekend Enabled
+       * @default false
+       */
+      weekend_enabled: boolean;
+      /**
+       * Weekend Days
+       * @description Monday=0 through Sunday=6; host-selectable.
+       */
+      weekend_days?: number[];
+      /**
+       * Weekend Percent
+       * @default 30
+       */
+      weekend_percent: number | string;
+      /**
+       * Holiday Enabled
+       * @default false
+       */
+      holiday_enabled: boolean;
+      /**
+       * Holiday Percent
+       * @default 100
+       */
+      holiday_percent: number | string;
+      /** Ranges */
+      ranges?: components["schemas"]["PriceRange-Input"][];
+    };
+    /** PricingPolicy */
+    "PricingPolicy-Output": {
+      /**
+       * Weekend Enabled
+       * @default false
+       */
+      weekend_enabled: boolean;
+      /**
+       * Weekend Days
+       * @description Monday=0 through Sunday=6; host-selectable.
+       */
+      weekend_days?: number[];
+      /**
+       * Weekend Percent
+       * @default 30
+       */
+      weekend_percent: string;
+      /**
+       * Holiday Enabled
+       * @default false
+       */
+      holiday_enabled: boolean;
+      /**
+       * Holiday Percent
+       * @default 100
+       */
+      holiday_percent: string;
+      /** Ranges */
+      ranges?: components["schemas"]["PriceRange-Output"][];
     };
     /** PrivateLocation */
     PrivateLocation: {
@@ -2605,6 +2911,39 @@ export interface operations {
       };
     };
   };
+  list_holidays_api_v1_holidays_get: {
+    parameters: {
+      query: {
+        start: string;
+        end: string;
+        country?: string;
+      };
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["HolidayOut"][];
+        };
+      };
+      /** @description Invalid input or a broken business rule */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+    };
+  };
   list_countries_api_v1_countries_get: {
     parameters: {
       query?: never;
@@ -2774,6 +3113,169 @@ export interface operations {
         };
         content: {
           "application/json": components["schemas"]["FilterCounts"];
+        };
+      };
+      /** @description Invalid input or a broken business rule */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+    };
+  };
+  get_pricing_api_v1_listings__listing_id__pricing_get: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        listing_id: number;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["PricingPolicy-Output"];
+        };
+      };
+      /** @description Missing, invalid or expired access token */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Not allowed */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Not found */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  put_pricing_api_v1_listings__listing_id__pricing_put: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        listing_id: number;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["PricingPolicy-Input"];
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["PricingPolicy-Output"];
+        };
+      };
+      /** @description Missing, invalid or expired access token */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Not allowed */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Not found */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Invalid input or a broken business rule */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+    };
+  };
+  price_quote_api_v1_listings__listing_id__pricing_quote_get: {
+    parameters: {
+      query: {
+        check_in: string;
+        check_out: string;
+      };
+      header?: never;
+      path: {
+        listing_id: number;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["PriceQuote"];
+        };
+      };
+      /** @description Not found */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
         };
       };
       /** @description Invalid input or a broken business rule */
@@ -4009,6 +4511,161 @@ export interface operations {
       };
     };
   };
+  admin_countries_api_v1_admin_countries_get: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["CountryOut"][];
+        };
+      };
+      /** @description Missing, invalid or expired access token */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+    };
+  };
+  admin_holidays_api_v1_admin_holidays_get: {
+    parameters: {
+      query: {
+        start: string;
+        end: string;
+        country?: string;
+      };
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["HolidayOut"][];
+        };
+      };
+      /** @description Missing, invalid or expired access token */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Invalid input or a broken business rule */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+    };
+  };
+  save_holiday_api_v1_admin_holidays__country___day__put: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        country: string;
+        day: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["HolidayIn"];
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["HolidayOut"];
+        };
+      };
+      /** @description Missing, invalid or expired access token */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Invalid input or a broken business rule */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+    };
+  };
+  delete_holiday_api_v1_admin_holidays__country___day__delete: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        country: string;
+        day: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      204: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Missing, invalid or expired access token */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Invalid input or a broken business rule */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+    };
+  };
   admin_login_api_v1_admin_auth_login_post: {
     parameters: {
       query?: never;
@@ -4136,8 +4793,15 @@ export interface operations {
   review_queue_api_v1_admin_listings_pending_get: {
     parameters: {
       query?: {
-        /** @description By the time the listing was sent for review: oldest or newest first. */
-        sort?: "oldest" | "newest";
+        /**
+         * @deprecated
+         * @description Legacy submission-time direction; explicit order takes precedence.
+         */
+        sort?: ("oldest" | "newest") | null;
+        /** @description Column to sort before pagination. Text ignores case; ID breaks ties in the same direction. */
+        sort_by?: "submitted_at" | "title" | "city" | "host";
+        /** @description asc or desc; defaults to desc (newest first). */
+        order?: ("asc" | "desc") | null;
         /** @description Items per page. */
         limit?: number;
         /** @description Items to skip. */
@@ -4383,6 +5047,10 @@ export interface operations {
   users_list_api_v1_admin_users_get: {
     parameters: {
       query?: {
+        /** @description Column to sort across the entire filtered result; ties use ID. */
+        sort_by?: "full_name" | "email" | "kind" | "created_at";
+        /** @description Ascending or descending; applied before pagination. */
+        order?: "asc" | "desc";
         /** @description Part of an email or a name, at least 3 characters. */
         q?: string | null;
         /** @description Items per page. */
@@ -4428,6 +5096,10 @@ export interface operations {
   bookings_list_api_v1_admin_bookings_get: {
     parameters: {
       query?: {
+        /** @description Column to sort before pagination. Dates use check-in then check-out; guests use name then email; totals are grouped by currency; status follows pending, confirmed, completed, cancelled, expired. Ties use ID. */
+        sort_by?: "id" | "listing" | "guest" | "dates" | "total_price" | "status" | "created_at";
+        /** @description Ascending or descending across all matching bookings. */
+        order?: "asc" | "desc";
         /** @description Only bookings in this status. */
         status?: components["schemas"]["BookingStatus"] | null;
         /** @description Items per page. */

@@ -26,6 +26,8 @@ export function Providers({ children, dir }: { children: ReactNode; dir: "rtl" |
         */}
         <Toaster
           className="no-print"
+          // Sonner sets its own system font; override it for every toast and its contents.
+          style={{ fontFamily: "var(--font-vazirmatn), ui-sans-serif, system-ui, sans-serif" }}
           dir={dir}
           position="top-center"
           offset={{ top: 76 }}

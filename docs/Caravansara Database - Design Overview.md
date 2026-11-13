@@ -1,19 +1,37 @@
 # Caravansara Database: Design Overview
 
-Nov 2, 2026 · Zia · Online version: https://claude.ai/artifact/Sodin9aFXeXpNtwByq9Eaj
+Updated November 13, 2026 · Zia
 
-Final database design as of November 2, 2026: 12 tables in four modules on PostgreSQL 16 with PostGIS, matching `db/schema.sql`. The backend design (`Caravansara/docs/backend-design.md`) is the source of truth for APIs and service rules; this page summarises the database.
+Current schema: **17 application tables** on PostgreSQL 16 with PostGIS, through Alembic migration `0012`.
+The authoritative history is `backend/migrations/`; `db/schema.sql`, `db/schema.dbml` and the ERD are reference
+snapshots. [Backend design](backend-design.md) and [dynamic pricing](dynamic-pricing.md) document API/service rules.
+The older online overview and Persian slide deck are historical artifacts, not the current schema.
 
 ## Domain map
 
-| Module | Tables | Role |
+| Domain | Tables | Role |
 | --- | --- | --- |
-| Identity | `users`, `refresh_tokens` (new), `auth_attempts` (new) | Accounts, sign-in, rate limiting |
-| Catalog | `countries`, `cities`, `amenity_categories`, `amenities` | Destinations and the amenity list |
-| Listings | `listings`, `listing_photos`, `listing_amenities` | The place, its photos and features |
-| Bookings & reviews | `bookings`, `reviews` | The no-overlap rule, stars and comments |
+| Identity | `users`, `refresh_tokens`, `auth_attempts` | Members/admins, sessions and rate limits |
+| Catalog | `countries`, `cities`, `amenity_categories`, `amenities`, `holidays` | Destinations, amenities and country holiday dates |
+| Listings | `listings`, `listing_photos`, `listing_amenities` | Properties, host pricing policy, photos and features |
+| Bookings & reviews | `bookings`, `reviews` | No-overlap guarantee, saved nightly prices and ratings |
+| Moderation | `listing_review_events`, `admin_address_views` | Append-only decisions and recorded exact-address access |
+| Saved places & email | `wishlist_items`, `email_outbox` | Member favourites and transactional delivery |
 
-The modules match the backend: identity, catalog, listings, and bookings with reviews. `refresh_tokens` and `auth_attempts` were added on November 2 for sign-in and rate limiting.
+## Daily prices and saved reservations
+
+`listings.pricing_policy` stores host-controlled weekend days/percentages, holiday percentages and named custom
+ranges. Only one rule applies per night: custom range, then shared holiday, then weekend, then base price.
+Custom range ends include that night; checkout dates do not. Active custom ranges cannot overlap. Disabled
+rules remain stored. The host's monthly price preview uses the same server calculation as search and checkout.
+
+`holidays` has compound key `(country_code, day)` and a non-empty name. Active admins manage it through the web
+panel. Country/amenity catalogs still use seeding; holidays are maintained manually rather than auto-imported.
+
+`bookings.nightly_prices` saves each date, price, source, percentage and label. Base price, cleaning fee, currency,
+total and payment time are also booking snapshots. Existing reservations retain their original amounts.
+Creation locks the listing against concurrent edits and rejects a supplied quote amount/currency mismatch with
+`409 price_changed`. Decimal half-up rounding happens per night before summing, with cleaning charged once.
 
 ## From the screenshots to the schema
 
@@ -92,72 +110,7 @@ Tested on PostgreSQL 16: 20 simultaneous requests for the same nights produced e
 
 Twelve tables. `listings` is the hub with five relationships; `bookings` carries the no-overlap constraint and `reviews` hangs off a completed booking.
 
-```mermaid
-erDiagram
-    USERS ||--o{ LISTINGS : "hosts"
-    USERS ||--o{ BOOKINGS : "books"
-    USERS ||--o{ REFRESH_TOKENS : "signs in with"
-    COUNTRIES ||--o{ CITIES : "has"
-    CITIES ||--o{ LISTINGS : "located in"
-    LISTINGS ||--o{ LISTING_PHOTOS : "has"
-    LISTINGS ||--o{ LISTING_AMENITIES : "offers"
-    AMENITIES ||--o{ LISTING_AMENITIES : "offered by"
-    AMENITY_CATEGORIES ||--o{ AMENITIES : "groups"
-    LISTINGS ||--o{ BOOKINGS : "reserved by"
-    BOOKINGS ||--o| REVIEWS : "reviewed in"
-    USERS { bigint id PK
-        text email UK
-        text full_name }
-    REFRESH_TOKENS { bigint id PK
-        bigint user_id FK
-        text token_hash UK
-        timestamptz expires_at
-        timestamptz revoked_at }
-    AUTH_ATTEMPTS { bigint id PK
-        text action
-        text identifier
-        timestamptz attempted_at }
-    COUNTRIES { smallint id PK
-        char code UK }
-    CITIES { int id PK
-        smallint country_id FK
-        text name
-        text timezone }
-    LISTINGS { bigint id PK
-        bigint host_id FK
-        int city_id FK
-        numeric latitude
-        numeric longitude
-        geography public_location
-        smallint max_guests
-        boolean pets_allowed
-        numeric price_per_night
-        numeric avg_rating }
-    LISTING_PHOTOS { bigint id PK
-        bigint listing_id FK
-        text storage_key UK
-        int width
-        int height
-        smallint sort_order }
-    AMENITY_CATEGORIES { smallint id PK
-        text name UK }
-    AMENITIES { smallint id PK
-        smallint category_id FK
-        text name UK }
-    LISTING_AMENITIES { bigint listing_id PK
-        smallint amenity_id PK }
-    BOOKINGS { bigint id PK
-        bigint listing_id FK
-        bigint guest_id FK
-        daterange stay
-        booking_status status
-        timestamptz hold_expires_at
-        uuid idempotency_key UK }
-    REVIEWS { bigint id PK
-        bigint booking_id FK
-        smallint rating
-        text comment }
-```
+![Current 17-table entity relationship diagram](../db/erd.png)
 
 The full column list is in `db/erd.mmd`, `db/schema.sql` and `db/schema.dbml` in `Caravansara`.
 
@@ -184,12 +137,12 @@ All tested on PostgreSQL 16 with PostGIS 3.4.
 
 - Real payments and refunds (payment is simulated)
 - Guest–host messages and host replies to reviews (wishlists were added later: `wishlist_items`, migration 0007, `docs/backend-design.md`)
-- Host date blocking and different prices per night
-- Changing booking dates (cancel and rebook instead), currency conversion, and editing catalogs from a panel (catalogs change only through seed data; the admin review panel for listings is planned work)
+- Host date blocking (per-night dynamic pricing is implemented)
+- Changing booking dates (cancel and rebook instead), currency conversion, and general destination/amenity editing in the admin panel (holidays are already admin-managed)
 
 ## Files
 
 - `Caravansara/db/`: `schema.sql`, `seed_amenities.sql`, `search_query.sql`, `schema.dbml` (for dbdiagram.io), `erd.mmd` and `erd.png`, and a README
 - `Caravansara/docs/backend-design.md`: backend requirements, API and service rules (source of truth)
-- `Caravansara/docs/future-work.md`: unstarted work only: the host pages and the admin panel of the web site, Playwright browser tests, email, Redis caching, microservices
-- `Caravansara/frontend/`: the web site (guest part: search, booking, trips, reviews, profile picture), Persian right-to-left and English
+- `Caravansara/docs/future-work.md`: remaining work: listing drafts, additional browser edge cases, account emails, measured caching and any justified service split
+- `Caravansara/frontend/`: the guest/host web site and admin workspace, Persian RTL and English, default and cinematic variants

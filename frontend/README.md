@@ -2,7 +2,7 @@
 
 The guest and host parts of the site (specs/005-frontend-guest, specs/008-host-pages). Guests can search by city
 or on the map, open a listing, sign up and log in, upload a profile picture, book and pay (payment is simulated),
-see their trips, cancel, and review. Hosts make a listing in eight steps with at least three photos, then keep it:
+see their trips, cancel, and review. Hosts make a listing in eight steps with at least five photos, then keep it:
 status and rejection reason, edits with a warning when an approved listing goes back to review, photos (order,
 cover, labels), off and on, bookings and reviews. The site is in Persian, right-to-left with Vazirmatn, at `/fa`
 (the default), and in English at `/en`. The admin panel (feature 009) is in the same app but answers only on the admin host (`ADMIN_HOST`, `admin.localhost:3001` in compose): the review queue, each listing with its exact address, approve, and reject with a reason.
@@ -92,11 +92,60 @@ src/
 - **Admin panel:** `proxy.ts` serves `/{locale}/admin…` and `/admin-api/…` only when the Host is `ADMIN_HOST`, and
   nothing else there; unset, there is no panel. The admin token never reaches page scripts. Every decision is
   sent with the `review_version` seen, so a host's change in the meantime gets 409 and the new version is shown.
+  All users/bookings column headings toggle ascending/descending sorting across the full filtered dataset.
+  The active heading shows an arrow and `aria-sort`; `sort_by`/`order` stay in the URL through pagination,
+  search and status filters. Changing the column or filter resets to page one. Amounts sort within currency.
+  The review queue has a sort-field selector (submission time, title, city, host) and an arrow button for
+  direction. It defaults to newest submissions; sorting persists in page links, including old queue bookmarks.
 - **Host pages:** a listing is created only at the last step, then its photos upload two at a time and are put
-  in order; the draft (answers only, not files) is in `sessionStorage` as `cv-listing-draft`. At least three
+  in order; the draft (answers only, not files) is in `sessionStorage` as `cv-listing-draft`. At least five
   photos is a rule of the site only (`MIN_PHOTOS`). Rial prices are typed in toman and sent ×10. The fields that
   send an approved listing back to review are listed once in `lib/reviewFields.ts`.
 - **Errors:** every API error code has a message in both languages. A test reads the codes from the backend
   source.
 - **Time:** dates that decide cancelling and reviewing are counted in the listing city's time zone, as the API
   counts them.
+
+## Host and admin workspaces
+
+The host workspace now has larger listing management cards and direct pricing/calendar links. The listing
+wizard uses a desktop step sidebar, a focused form card and responsive navigation. The admin overview has
+summary cards and a shared holiday-calendar tab. See [dynamic pricing](../docs/dynamic-pricing.md) for the
+per-listing rules, saved booking prices and guest quote flow.
+
+## Guest priced calendars
+
+Guest listing calendars and the booking date dialog show prices beneath each available day, read from
+the same server quote used for reservations. `NightlyPriceCalendar` is shared by the inline view and
+`BookingDatePicker`; the dialog stages dates until confirmation and shows exact totals beside the calendar
+(below it on phones). Compact IRR guide prices use a captioned toman unit; accessible descriptions retain
+exact amounts. Checkout is labelled separately, including when its night is already booked. Component tests
+cover cancellation, explicit clearing, quote errors/retry, keyboard navigation and both languages; the
+`priced-calendar.spec.ts` browser check covers both designs, 320–1440 px and axe contrast checks.
+
+## Boutique home design
+
+The home page uses an atmospheric Persian courtyard cover, an overlapping search bar, olive actions and
+ivory surfaces. The decorative cover (`src/assets/hero-boutique.jpg`) is AI-generated, not a photo of a
+bookable property. The original courtyard asset and animated travel scene remain in the project; the scene
+now sits below the city rows. Collection links use existing property-type and pets filters. Both Persian
+and English are supported. `e2e/tests/boutique-home.spec.ts` checks responsive widths, accessibility, mobile
+search and category navigation. Set `BOUTIQUE_WEB` to test an alternate local preview port.
+
+## Separate cinematic preview on port 3011
+
+With the main local stack already running:
+
+```bash
+docker compose -f docker-compose.yml -f docker-compose.cinematic.yml up -d --build --no-deps --wait web-cinematic
+```
+
+Open `http://localhost:3011/fa` (or `/en`); the companion admin host is `http://admin.localhost:3011`. This creates a separate image and container and leaves the
+original service on port 3001 running. `CARAVANSARA_DESIGN=cinematic` selects the dark theme and alternative
+home page at runtime. Search, dates, listings and booking use the existing API; this is a separate frontend,
+not a separate database. The generated cabin and coast images are decorative, not listing photographs.
+The destination cards load the three most popular Iranian cities from the catalog and open each city's real search results. City images are generated decorative illustrations, not listing photographs.
+Check the preview with `npx playwright test tests/cinematic-home.spec.ts` from `e2e/`.
+
+The configured admin host always uses the cinematic dark/orange palette, including its login page,
+review screens, booking and user tables. The public site on port 3001 retains its default palette.

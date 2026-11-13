@@ -136,6 +136,8 @@ export function Receipt({ bookingId }: { bookingId: number }) {
           ))}
         </dl>
         <PriceBreakdown
+          nightlyPrices={b.nightly_prices}
+          totalPrice={b.total_price}
           pricePerNight={b.nightly_price}
           cleaningFee={b.cleaning_fee}
           currency={b.currency}

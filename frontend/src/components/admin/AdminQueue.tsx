@@ -1,6 +1,7 @@
 "use client";
 
 import { keepPreviousData, useQuery } from "@tanstack/react-query";
+import { ArrowDownIcon, ArrowUpIcon } from "lucide-react";
 import { useSearchParams } from "next/navigation";
 import { useEffect, useId } from "react";
 import { useLocale, useTranslations } from "next-intl";
@@ -16,24 +17,31 @@ import { Link, useRouter } from "@/i18n/navigation";
 import { formatDate } from "@/lib/calendar";
 import { cityName } from "@/lib/names";
 import { lastPage, parsePage } from "@/lib/pageWindow";
+import { adminHref } from "./adminHref";
+import { QUEUE_SORTS, readAdminSort, type SortOrder } from "./adminSort";
 import { AdminRequestError, useAdminGate } from "./useAdminGate";
 
 type QueuePage = components["schemas"]["AdminQueuePage"];
-type Sort = "oldest" | "newest";
+type QueueSort = (typeof QUEUE_SORTS)[number];
 const PAGE = 20;
+const SORT_LABELS = {
+  submitted_at: "sortSubmitted",
+  title: "sortTitle",
+  city: "sortCity",
+  host: "sortHost",
+} as const;
 
-/** The address of one queue page; the defaults (oldest first, page 1) stay out of it. */
-function queueHref(sort: Sort, page: number): string {
-  const query = new URLSearchParams();
-  if (sort === "newest") query.set("sort", "newest");
-  if (page > 1) query.set("page", String(page));
-  const text = query.toString();
-  return text ? `/admin?${text}` : "/admin";
+/** Default is newest submissions; every other order stays in the address across pagination. */
+function queueHref(sortBy: QueueSort, order: SortOrder, page = 1): string {
+  return adminHref("queue", {
+    ...(sortBy === "submitted_at" && order === "desc" ? {} : { sort_by: sortBy, order }),
+    page,
+  });
 }
 
 /**
- * The review queue (feature 009): the listings waiting for a decision. Oldest first by default, so the
- * longest wait is decided first; newest first on request (feature 025). Numbered pages replace "more"
+ * The review queue (feature 009): listings waiting for a decision, newest first by default.
+ * Sort by submission, title, city or host. Numbered pages replace "more"
  * (feature 025): the page and the order are in the address bar, so reload and the back button keep them.
  * Since feature 051 it is the panel's first tab, with smaller rows so a page needs little scrolling.
  */
@@ -43,15 +51,29 @@ export function AdminQueue() {
   const router = useRouter();
   const sortId = useId();
   const params = useSearchParams();
-  const sort: Sort = params.get("sort") === "newest" ? "newest" : "oldest";
+  const { sortBy, order: selectedOrder, hasSort } = readAdminSort(params, QUEUE_SORTS, "submitted_at");
+  // Bookmarks from the old two-option selector still open in their original direction.
+  const order: SortOrder = !hasSort && params.get("sort") === "oldest" ? "asc" : selectedOrder;
+  const nextOrder = order === "asc" ? "desc" : "asc";
+  const SortIcon = order === "asc" ? ArrowUpIcon : ArrowDownIcon;
+  const sortLabel = t(`admin.${SORT_LABELS[sortBy]}`);
+  const directionLabel = t(
+    sortBy === "submitted_at"
+      ? order === "desc"
+        ? "admin.sortNewest"
+        : "admin.sortOldest"
+      : order === "asc"
+        ? "admin.ascending"
+        : "admin.descending",
+  );
   const page = parsePage(params.get("page"));
   const queue = useQuery({
-    queryKey: ["admin", "queue", sort, page],
+    queryKey: ["admin", "queue", sortBy, order, page],
     retry: false,
     placeholderData: keepPreviousData, // the old page stays on screen while the next one loads
     queryFn: async (): Promise<QueuePage> => {
       const { data, error, response } = await adminApi.GET("/api/v1/admin/listings/pending", {
-        params: { query: { limit: PAGE, offset: (page - 1) * PAGE, sort } },
+        params: { query: { limit: PAGE, offset: (page - 1) * PAGE, sort_by: sortBy, order } },
       });
       if (!data) throw new AdminRequestError(response.status, error);
       return data;
@@ -62,8 +84,8 @@ export function AdminQueue() {
   // After decisions the queue shrinks; a page past the end moves to the new last page.
   const pastTheEnd = !queue.isPlaceholderData && last !== undefined && page > last;
   useEffect(() => {
-    if (pastTheEnd && last !== undefined) router.replace(queueHref(sort, last));
-  }, [pastTheEnd, last, sort, router]);
+    if (pastTheEnd && last !== undefined) router.replace(queueHref(sortBy, order, last));
+  }, [pastTheEnd, last, sortBy, order, router]);
 
   if (queue.isError) {
     return (
@@ -79,19 +101,36 @@ export function AdminQueue() {
       <div className="flex flex-wrap items-baseline gap-3">
         <h2 className="text-lg font-bold">{t("admin.queueTitle")}</h2>
         <p className="text-muted-foreground">{t("admin.queueCount", { count: total })}</p>
-        <div className="flex items-center gap-2 sm:ms-auto">
+        <div className="flex flex-wrap items-center gap-2 sm:ms-auto">
           <Label htmlFor={sortId} className="font-normal">
             {t("admin.sortLabel")}
           </Label>
-          <Select value={sort} onValueChange={(value) => router.push(queueHref(value as Sort, 1))}>
+          <Select
+            value={sortBy}
+            onValueChange={(value) =>
+              router.push(queueHref(value as QueueSort, value === "submitted_at" ? "desc" : "asc"))
+            }
+          >
             <SelectTrigger id={sortId} className="w-auto min-w-40">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="oldest">{t("admin.sortOldest")}</SelectItem>
-              <SelectItem value="newest">{t("admin.sortNewest")}</SelectItem>
+              {QUEUE_SORTS.map((column) => (
+                <SelectItem key={column} value={column}>
+                  {t(`admin.${SORT_LABELS[column]}`)}
+                </SelectItem>
+              ))}
             </SelectContent>
           </Select>
+          <Button
+            variant="outline"
+            className="gap-1.5 text-primary"
+            aria-label={`${directionLabel}: ${t(nextOrder === "asc" ? "admin.sortAscending" : "admin.sortDescending", { column: sortLabel })}`}
+            onClick={() => router.push(queueHref(sortBy, nextOrder))}
+          >
+            <SortIcon className="size-4" aria-hidden />
+            {directionLabel}
+          </Button>
         </div>
       </div>
       {items.length === 0 ? (
@@ -126,7 +165,7 @@ export function AdminQueue() {
           ))}
         </ul>
       )}
-      <Pager page={Math.min(page, last)} last={last} hrefFor={(n) => queueHref(sort, n)} />
+      <Pager page={Math.min(page, last)} last={last} hrefFor={(n) => queueHref(sortBy, order, n)} />
     </div>
   );
 }

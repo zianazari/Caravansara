@@ -1,0 +1,26 @@
+# Separate local frontend: docker compose -f docker-compose.yml -f docker-compose.cinematic.yml up -d --build --no-deps --wait web-cinematic
+services:
+  web-cinematic:
+    image: caravansara-web-cinematic
+    build:
+      context: frontend
+      args:
+        NEXT_PUBLIC_MEDIA_BASE_URL: http://localhost:9000/caravansara-media
+        NEXT_PUBLIC_MAP_TILE_URL: https://tile.openstreetmap.org/{z}/{x}/{y}.png
+    environment:
+      API_INTERNAL_URL: http://api:8000
+      CARAVANSARA_DESIGN: cinematic
+      ADMIN_HOST: admin.localhost:3011
+    ports: ["3011:3001"]
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "node",
+          "-e",
+          "fetch('http://localhost:3001/fa').then(r=>process.exit(r.ok?0:1),()=>process.exit(1))",
+        ]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+    restart: unless-stopped

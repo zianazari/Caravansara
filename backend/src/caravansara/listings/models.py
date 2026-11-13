@@ -16,6 +16,7 @@ from sqlalchemy import (
     Text,
     func,
 )
+from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import Mapped, mapped_column
 
 from caravansara.core.db import Base
@@ -69,6 +70,7 @@ class Listing(Base):
     price_per_night: Mapped[Decimal] = mapped_column(Numeric(14, 2))
     cleaning_fee: Mapped[Decimal] = mapped_column(Numeric(14, 2))
     currency: Mapped[str] = mapped_column(CHAR(3))
+    pricing_policy: Mapped[dict[str, Any]] = mapped_column(JSONB, server_default="{}")
     check_in_time: Mapped[time]
     check_out_time: Mapped[time]
     avg_rating: Mapped[Decimal | None] = mapped_column(Numeric(3, 2))
@@ -80,7 +82,7 @@ class Listing(Base):
     review_status: Mapped[ReviewStatus] = mapped_column(
         _enum(ReviewStatus, "listing_review_status"), server_default="pending"
     )
-    # When it entered the queue; the queue is oldest first. A new value on every new entry.
+    # When it entered the queue; a new value on every new entry. Admin defaults to newest first.
     submitted_at: Mapped[datetime | None] = mapped_column(server_default=func.now())
     # The last rejection reason, only while rejected; the host reads it (FR-003).
     rejection_reason: Mapped[str | None] = mapped_column(Text)

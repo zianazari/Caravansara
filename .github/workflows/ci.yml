@@ -104,7 +104,7 @@ jobs:
         run: echo "127.0.0.1 admin.localhost" | sudo tee -a /etc/hosts
       - name: Start the stack
         working-directory: .
-        run: docker compose -f docker-compose.yml -f e2e/compose.e2e.yml up -d --build --wait --wait-timeout 600
+        run: docker compose -f docker-compose.yml -f docker-compose.cinematic.yml -f e2e/compose.e2e.yml up -d --build --wait --wait-timeout 600
       - name: Install
         run: |
           npm ci
@@ -116,7 +116,7 @@ jobs:
       - name: Service logs on failure
         if: failure()
         working-directory: .
-        run: docker compose logs --no-color --tail 300 api worker web migrate
+        run: docker compose -f docker-compose.yml -f docker-compose.cinematic.yml -f e2e/compose.e2e.yml logs --no-color --tail 300 api worker web web-cinematic migrate
       - uses: actions/upload-artifact@v4
         if: failure()
         with:

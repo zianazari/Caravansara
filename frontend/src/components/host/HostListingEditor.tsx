@@ -25,6 +25,7 @@ import { rialToToman } from "@/lib/money";
 import { cityName } from "@/lib/names";
 import { needsReview } from "@/lib/reviewFields";
 import { HostBookings } from "./HostBookings";
+import { HostPricingPanel } from "./HostPricingPanel";
 import { PhotoManager } from "./PhotoManager";
 import { ReviewWarningDialog } from "./ReviewWarningDialog";
 import { FewPhotosBadge, StatusBadge } from "./StatusBadge";
@@ -38,7 +39,7 @@ import { TypeStep } from "./steps/TypeStep";
 import { hostListingKey, useHostListing } from "./useHostListing";
 
 type Listing = components["schemas"]["ListingOut"];
-const TABS = ["details", "photos", "bookings", "reviews"] as const;
+const TABS = ["details", "pricing", "photos", "bookings", "reviews"] as const;
 type Tab = (typeof TABS)[number];
 
 /** A stored amount as the host types it: toman for rial, without trailing zeros (research R7). */
@@ -72,6 +73,7 @@ export function draftOf(l: Listing, cityLabel: string): ListingDraft {
     cleaning_fee: typed(l.cleaning_fee, l.currency),
     check_in_time: l.check_in_time.slice(0, 5),
     check_out_time: l.check_out_time.slice(0, 5),
+    ...(l.pricing_policy ? { pricing_policy: l.pricing_policy } : {}),
   };
 }
 
@@ -117,6 +119,9 @@ export function HostListingEditor({
     Promise.all([
       client.invalidateQueries({ queryKey: hostListingKey(id) }),
       client.invalidateQueries({ queryKey: ["me", "listings"] }),
+      client.invalidateQueries({ queryKey: ["host-pricing", id] }),
+      client.invalidateQueries({ queryKey: ["price-quote", id] }),
+      client.invalidateQueries({ queryKey: ["listing", id] }),
     ]);
 
   return (
@@ -147,6 +152,14 @@ export function HostListingEditor({
             photos={listing.photos}
             reviewStatus={listing.review?.status ?? "approved"}
             onChange={() => void refresh()}
+          />
+        </TabsContent>
+        <TabsContent value="pricing">
+          <HostPricingPanel
+            listingId={id}
+            basePrice={listing.price_per_night}
+            currency={listing.currency}
+            country={listing.city.country.code}
           />
         </TabsContent>
         <TabsContent value="bookings">
@@ -182,14 +195,14 @@ function ListingHeader({ listing, onSaved }: { listing: Listing; onSaved: () => 
   const path = { params: { path: { listing_id: listing.id } } };
 
   return (
-    <header className="grid gap-4 sm:grid-cols-[10rem_1fr] sm:items-start">
+    <header className="grid gap-5 rounded-3xl border bg-card p-5 sm:grid-cols-[10rem_1fr] sm:items-start sm:p-7">
       <ArchFrame src={listing.photos[0]?.url} alt="" sizes="160px" className="aspect-[4/5] w-32 sm:w-40" />
       <div className="grid gap-3">
         <div className="flex flex-wrap gap-1.5">
           <StatusBadge status={status} />
           {hasFewPhotos(listing) ? <FewPhotosBadge /> : null}
         </div>
-        <h1 className="text-2xl font-bold">{listing.title}</h1>
+        <h1 className="text-2xl font-bold sm:text-3xl">{listing.title}</h1>
         {status === "pending" ? (
           <p className="text-sm text-muted-foreground">{t("host.pendingNote")}</p>
         ) : null}

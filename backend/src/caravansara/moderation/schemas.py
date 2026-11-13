@@ -1,4 +1,4 @@
-from typing import Annotated
+from typing import Annotated, Literal
 
 from pydantic import BaseModel, ConfigDict, EmailStr, Field, StringConstraints
 
@@ -60,3 +60,7 @@ class AdminSummary(BaseModel):
     pending_listings: int = Field(description="Listings waiting for review.")
     users: int = Field(description="All accounts.")
     bookings: BookingCounts
+
+
+AdminBookingSort = Literal["id", "listing", "guest", "dates", "total_price", "status", "created_at"]
+AdminQueueSort = Literal["submitted_at", "title", "city", "host"]

@@ -6,21 +6,32 @@ database. Only after all three does a route look at a listing, so without an adm
 about any listing comes back, not even whether it exists (FR-020, research R13).
 """
 
+from datetime import date
 from typing import Annotated, Literal
 
 from fastapi import APIRouter, Depends, Query, Request, status
 
 from caravansara.bookings.service import BookingStatus
+from caravansara.catalog import service as catalog
+from caravansara.catalog.schemas import CountryOut, HolidayIn, HolidayOut
 from caravansara.core.db import SessionDep
 from caravansara.core.deps import ClientIp, StorageDep
 from caravansara.core.errors import NotFound, error_responses
-from caravansara.core.pagination import PageDep
+from caravansara.core.pagination import PageDep, SortOrder
 from caravansara.core.security import CurrentAdminId, SettingsDep
 from caravansara.identity import service as identity
-from caravansara.identity.schemas import AdminTokenOut, AdminUserPage, RefreshIn
+from caravansara.identity.schemas import AdminTokenOut, AdminUserPage, AdminUserSort, RefreshIn
 from caravansara.listings.schemas import AdminListingOut, AdminQueuePage
 from caravansara.moderation import service
-from caravansara.moderation.schemas import AdminBookingPage, AdminLoginIn, AdminSummary, DecisionIn, RejectIn
+from caravansara.moderation.schemas import (
+    AdminBookingPage,
+    AdminBookingSort,
+    AdminLoginIn,
+    AdminQueueSort,
+    AdminSummary,
+    DecisionIn,
+    RejectIn,
+)
 
 
 async def admin_host_guard(request: Request, settings: SettingsDep) -> None:
@@ -37,6 +48,34 @@ async def _admin_id(admin_id: CurrentAdminId, session: SessionDep) -> int:
 AdminId = Annotated[int, Depends(_admin_id)]
 
 router = APIRouter(prefix="/admin", tags=["Admin"], dependencies=[Depends(admin_host_guard)])
+
+
+@router.get("/countries", summary="Countries for the admin calendar", responses=error_responses(401))
+async def admin_countries(admin_id: AdminId, session: SessionDep) -> list[CountryOut]:
+    return await catalog.list_countries(session)
+
+
+@router.get("/holidays", summary="Holiday calendar for dynamic pricing", responses=error_responses(401, 422))
+async def admin_holidays(
+    admin_id: AdminId,
+    session: SessionDep,
+    start: date,
+    end: date,
+    country: Annotated[str, Query(min_length=2, max_length=2)] = "IR",
+) -> list[HolidayOut]:
+    return await catalog.holidays(session, country, start, end)
+
+
+@router.put("/holidays/{country}/{day}", summary="Add or rename a shared holiday", responses=error_responses(401, 422))
+async def save_holiday(country: str, day: date, body: HolidayIn, admin_id: AdminId, session: SessionDep) -> HolidayOut:
+    return await catalog.save_holiday(session, country, day, body.name)
+
+
+@router.delete(
+    "/holidays/{country}/{day}", status_code=204, summary="Remove a shared holiday", responses=error_responses(401, 422)
+)
+async def delete_holiday(country: str, day: date, admin_id: AdminId, session: SessionDep) -> None:
+    await catalog.delete_holiday(session, country, day)
 
 
 @router.post(
@@ -83,8 +122,9 @@ async def admin_logout(body: RefreshIn, session: SessionDep) -> None:
     "/listings/pending",
     summary="Review queue",
     description=(
-        "Listings waiting for review, oldest first (`sort=oldest`, the default) or newest first "
-        "(`sort=newest`). Each has the `review_version` to decide on."
+        "Listings waiting for review, newest first by default. Sort all matching listings by submission time, "
+        "title, city or host before pagination. Each has the `review_version` to decide on. "
+        "Legacy `sort=oldest|newest` remains supported when `order` is omitted."
     ),
     responses=error_responses(401, 422),
 )
@@ -94,11 +134,17 @@ async def review_queue(
     storage: StorageDep,
     page: PageDep,
     sort: Annotated[
-        Literal["oldest", "newest"],
-        Query(description="By the time the listing was sent for review: oldest or newest first."),
-    ] = "oldest",
+        Literal["oldest", "newest"] | None,
+        Query(description="Legacy submission-time direction; explicit order takes precedence.", deprecated=True),
+    ] = None,
+    sort_by: Annotated[
+        AdminQueueSort,
+        Query(description="Column to sort before pagination. Text ignores case; ID breaks ties in the same direction."),
+    ] = "submitted_at",
+    order: Annotated[SortOrder | None, Query(description="asc or desc; defaults to desc (newest first).")] = None,
 ) -> AdminQueuePage:
-    return await service.queue(session, storage, page.limit, page.offset, newest_first=sort == "newest")
+    direction: SortOrder = order or ("asc" if sort == "oldest" else "desc")
+    return await service.queue(session, storage, page.limit, page.offset, sort_by=sort_by, order=direction)
 
 
 @router.get(
@@ -179,12 +225,16 @@ async def users_list(
     admin_id: AdminId,
     session: SessionDep,
     page: PageDep,
+    sort_by: Annotated[
+        AdminUserSort, Query(description="Column to sort across the entire filtered result; ties use ID.")
+    ] = "created_at",
+    order: Annotated[SortOrder, Query(description="Ascending or descending; applied before pagination.")] = "desc",
     q: Annotated[
         str | None,
         Query(min_length=3, max_length=100, description="Part of an email or a name, at least 3 characters."),
     ] = None,
 ) -> AdminUserPage:
-    return await service.users(session, q.strip() if q else None, page.limit, page.offset)
+    return await service.users(session, q.strip() if q else None, page.limit, page.offset, sort_by=sort_by, order=order)
 
 
 @router.get(
@@ -202,6 +252,17 @@ async def bookings_list(
     session: SessionDep,
     storage: StorageDep,
     page: PageDep,
+    sort_by: Annotated[
+        AdminBookingSort,
+        Query(
+            description=(
+                "Column to sort before pagination. Dates use check-in then check-out; guests use name then email; "
+                "totals are grouped by currency; status follows pending, confirmed, completed, cancelled, expired. "
+                "Ties use ID."
+            )
+        ),
+    ] = "id",
+    order: Annotated[SortOrder, Query(description="Ascending or descending across all matching bookings.")] = "desc",
     status: Annotated[BookingStatus | None, Query(description="Only bookings in this status.")] = None,
 ) -> AdminBookingPage:
-    return await service.all_bookings(session, storage, status, page.limit, page.offset)
+    return await service.all_bookings(session, storage, status, page.limit, page.offset, sort_by=sort_by, order=order)

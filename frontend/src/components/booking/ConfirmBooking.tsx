@@ -13,6 +13,7 @@ import { readDraft, rememberBooking } from "@/lib/bookingDraft";
 import { formatDate } from "@/lib/calendar";
 import { errorCode, errorMessage, type Translate } from "@/lib/errors";
 import { stayQuery } from "@/lib/searchParams";
+import { usePriceQuote } from "@/hooks/usePriceQuote";
 
 /**
  * Holding the dates (US3/AC1, AC4 to AC6). The request carries the draft's idempotency key, so a second press
@@ -26,6 +27,7 @@ export function ConfirmBooking({ listingId }: { listingId: number }) {
   const [problem, setProblem] = useState<{ code: string; text: string } | null>(null);
   const [sending, setSending] = useState(false);
   const usable = draft && draft.listing_id === listingId ? draft : null;
+  const quote = usePriceQuote(listingId, usable?.check_in, usable?.check_out);
 
   const listing = useQuery({
     queryKey: ["listing", listingId],
@@ -52,20 +54,21 @@ export function ConfirmBooking({ listingId }: { listingId: number }) {
   if (!listing.data) return <Skeleton className="h-48 w-full" />;
 
   async function hold() {
-    if (sending || !usable) return;
+    if (sending || !usable || !quote.data || quote.isFetching) return;
     setSending(true);
     setProblem(null);
     const { idempotency_key, listing_id, check_in, check_out, adults, children, infants, pets } = usable;
     const stay = { listing_id, check_in, check_out, adults, children, infants, pets };
     const result = await api.POST("/api/v1/bookings", {
       params: { header: { "Idempotency-Key": idempotency_key } },
-      body: stay,
+      body: { ...stay, expected_total: quote.data.total_price, expected_currency: quote.data.currency },
     });
     setSending(false);
     if (result.data) {
       rememberBooking(result.data.id);
       router.replace(`/trips/${result.data.id}`);
     } else {
+      if (errorCode(result.error) === "price_changed") await quote.refetch();
       setProblem({
         code: errorCode(result.error),
         text: errorMessage(t as unknown as Translate, result.error),
@@ -93,13 +96,25 @@ export function ConfirmBooking({ listingId }: { listingId: number }) {
           </p>
         </div>
       </div>
-      <PriceBreakdown
-        pricePerNight={listing.data.price_per_night}
-        cleaningFee={listing.data.cleaning_fee}
-        currency={listing.data.currency}
-        checkIn={usable.check_in}
-        checkOut={usable.check_out}
-      />
+      {quote.data ? (
+        <PriceBreakdown
+          pricePerNight={listing.data.price_per_night}
+          cleaningFee={listing.data.cleaning_fee}
+          currency={listing.data.currency}
+          checkIn={usable.check_in}
+          checkOut={usable.check_out}
+          quote={quote.data}
+        />
+      ) : quote.isError ? (
+        <div className="grid gap-2">
+          <p role="alert">{t("pricing.quoteError")}</p>
+          <Button variant="soft" onClick={() => void quote.refetch()}>
+            {t("pricing.retry")}
+          </Button>
+        </div>
+      ) : (
+        <p role="status">{t("pricing.loading")}</p>
+      )}
       <p className="text-sm text-muted-foreground">{t("booking.holdNote")}</p>
       {problem ? (
         <div
@@ -114,7 +129,7 @@ export function ConfirmBooking({ listingId }: { listingId: number }) {
           ) : null}
         </div>
       ) : null}
-      <Button size="lg" onClick={hold} disabled={sending}>
+      <Button size="lg" onClick={hold} disabled={sending || !quote.data || quote.isFetching}>
         {sending ? t("booking.sending") : t("booking.confirm")}
       </Button>
     </div>

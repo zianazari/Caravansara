@@ -3,7 +3,9 @@ from datetime import datetime, timedelta
 from sqlalchemy import func, literal_column, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from caravansara.core.pagination import SortOrder
 from caravansara.identity.models import AccountKind, AuthAttempt, RefreshToken, User
+from caravansara.identity.schemas import AdminUserSort
 
 
 async def get_user(session: AsyncSession, user_id: int) -> User | None:
@@ -43,11 +45,27 @@ def _like_pattern(q: str) -> str:
     return f"%{escaped}%"
 
 
-async def admin_users(session: AsyncSession, q: str | None, limit: int, offset: int) -> tuple[list[User], int]:
-    """Newest accounts first, on the primary key; with ``q``, on users_search_trgm_idx (feature 051)."""
+async def admin_users(
+    session: AsyncSession,
+    q: str | None,
+    limit: int,
+    offset: int,
+    *,
+    sort_by: AdminUserSort = "created_at",
+    order: SortOrder = "desc",
+) -> tuple[list[User], int]:
+    """Sort all matching accounts before pagination; the ID breaks ties consistently."""
     where = [_SEARCH_TEXT.like(_like_pattern(q))] if q else []
     total = (await session.execute(select(func.count()).select_from(User).where(*where))).scalar_one()
-    rows = await session.execute(select(User).where(*where).order_by(User.id.desc()).limit(limit).offset(offset))
+    column = {
+        "full_name": func.lower(User.full_name),
+        "email": func.lower(User.email),
+        "kind": User.kind,
+        "created_at": User.created_at,
+    }[sort_by]
+    ordered = column.asc() if order == "asc" else column.desc()
+    tie = User.id.asc() if order == "asc" else User.id.desc()
+    rows = await session.execute(select(User).where(*where).order_by(ordered, tie).limit(limit).offset(offset))
     return list(rows.scalars()), int(total)
 
 

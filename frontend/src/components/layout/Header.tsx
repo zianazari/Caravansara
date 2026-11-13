@@ -83,7 +83,7 @@ function SiteHeader() {
       <nav
         aria-label={t("nav.mainMenu")}
         // The list pages are wider since feature 017; the header lines up with them.
-        className={`mx-auto flex items-center gap-3 px-4 py-3 md:px-6 ${WIDE.has(pathname) || pathname.startsWith("/listings/") ? "max-w-[1920px] lg:px-10" : "max-w-7xl"}`}
+        className={`mx-auto flex flex-wrap items-center gap-3 px-4 py-3 md:px-6 ${WIDE.has(pathname) || pathname.startsWith("/listings/") ? "max-w-[1920px] lg:px-10" : "max-w-7xl"}`}
       >
         <Link href="/" className="me-auto rounded-lg" aria-label={t("common.siteName")}>
           <Logo />
@@ -114,10 +114,15 @@ function SiteHeader() {
           // and choosing an item closes it by itself.
           <DropdownMenu>
             <DropdownMenuTrigger
-              className="flex items-center gap-2 rounded-full border bg-card py-1 ps-3 pe-1 shadow-sm hover:shadow-md"
-              aria-label={t("nav.account")}
+              className="flex max-w-full min-w-0 items-center gap-2 rounded-2xl border bg-card py-1 ps-3 pe-1 shadow-sm hover:shadow-md md:max-w-sm"
+              aria-label={me.data ? `${t("nav.account")}: ${me.data.full_name}` : t("nav.account")}
             >
-              <MenuIcon className="size-4" aria-hidden />
+              <MenuIcon className="size-4 shrink-0" aria-hidden />
+              {me.data ? (
+                <span className="min-w-0 text-start text-sm leading-relaxed font-semibold wrap-anywhere">
+                  <bdi>{me.data.full_name}</bdi>
+                </span>
+              ) : null}
               {me.data ? (
                 <UserAvatar user={me.data} size="sm" />
               ) : (

@@ -26,6 +26,7 @@ from caravansara.core.config import Settings
 from caravansara.core.db import constraint_name, sqlstate
 from caravansara.core.errors import Conflict, Forbidden, NotFound, Unprocessable
 from caravansara.core.metrics import BOOKING_CONFLICTS, BOOKING_EVENTS
+from caravansara.core.pagination import SortOrder
 from caravansara.core.storage import Storage
 from caravansara.core.timeutil import today_in, utcnow
 from caravansara.listings import service as listings
@@ -76,7 +77,7 @@ async def create_booking(
     if existing is not None:
         return _replay(existing, user_id, data), False
 
-    info = await listings.get_listing_info(session, data.listing_id)
+    info = await listings.get_listing_info(session, data.listing_id, lock=True)
     # Only a public listing (active and approved) takes new bookings. Existing bookings of a listing
     # that becomes hidden keep working: pay, cancel and the jobs do not look at this (FR-011).
     if not info.is_public:
@@ -99,8 +100,13 @@ async def create_booking(
         max_days_ahead=settings.max_days_ahead,
     )
 
-    total = rules.total_price(data.check_in, data.check_out, info.price_per_night, info.cleaning_fee)
+    quote = await listings.quote_info(session, info, data.check_in, data.check_out, max_nights=settings.max_nights)
+    total = quote.total_price
     rules.check_total(total)
+    if (data.expected_total is not None and data.expected_total != total) or (
+        data.expected_currency is not None and data.expected_currency != info.currency
+    ):
+        raise Conflict("price_changed", "The price changed. Review the updated quote before reserving.")
 
     now = utcnow()
     # Same transaction: an overdue hold must not block these dates until the worker runs.
@@ -117,6 +123,7 @@ async def create_booking(
         nightly_price=info.price_per_night,
         cleaning_fee=info.cleaning_fee,
         total_price=total,
+        nightly_prices=[night.model_dump(mode="json") for night in quote.nights],
         currency=info.currency,
         status=S.pending,
         hold_expires_at=now + timedelta(minutes=settings.hold_minutes),
@@ -238,6 +245,7 @@ def to_out(booking: Booking, info: ListingInfo, cover_url: str | None, viewer_id
         nightly_price=booking.nightly_price,
         cleaning_fee=booking.cleaning_fee,
         total_price=booking.total_price,
+        nightly_prices=booking.nightly_prices,
         currency=booking.currency,
         hold_expires_at=booking.hold_expires_at,
         created_at=booking.created_at,
@@ -295,11 +303,17 @@ async def listing_bookings(
 
 
 async def admin_bookings(
-    session: AsyncSession, storage: Storage, status: BookingStatus | None, limit: int, offset: int
+    session: AsyncSession,
+    storage: Storage,
+    status: BookingStatus | None,
+    limit: int,
+    offset: int,
+    *,
+    order: SortOrder = "desc",
 ) -> tuple[list[BookingOut], bool]:
     """Every booking, newest first, as the admin sees it (feature 051): no address, since the admin is
     neither the guest nor the host. Also returns whether a next page exists."""
-    bookings, has_more = await repo.admin_bookings(session, status, limit, offset)
+    bookings, has_more = await repo.admin_bookings(session, status, limit, offset, order=order)
     page = await _render_page(session, storage, bookings, 0, viewer_id=0)
     return page.items, has_more
 
@@ -364,3 +378,9 @@ async def complete_finished_stays(session: AsyncSession) -> int:
     await session.commit()
     BOOKING_EVENTS.labels("completed").inc(count)
     return count
+
+
+async def admin_bookings_by_ids(session: AsyncSession, storage: Storage, ids: list[int]) -> list[BookingOut]:
+    """Render an already ordered admin page without exposing exact addresses."""
+    rows = await repo.get_many(session, ids)
+    return (await _render_page(session, storage, rows, 0, viewer_id=0)).items

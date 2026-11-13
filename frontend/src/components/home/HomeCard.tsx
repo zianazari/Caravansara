@@ -30,17 +30,17 @@ export function HomeCard({ result }: { result: Result }) {
         )
       : null;
   return (
-    <article className="relative grid min-w-0 grid-cols-1 gap-1.5">
+    <article className="relative grid min-w-0 grid-cols-1 gap-2.5">
       <Link
         href={`/listings/${result.id}`}
-        className="group grid min-w-0 grid-cols-1 gap-1.5 rounded-2xl focus-visible:outline-2"
+        className="group grid min-w-0 grid-cols-1 gap-2.5 rounded-2xl focus-visible:outline-2"
       >
         {/* Default picture when there is no photo or its file is missing (feature 020). */}
         <ArchFrame
           src={result.cover_url}
           alt={result.cover_url ? "" : t("search.noPhoto")}
-          sizes="(min-width: 1536px) 14vw, (min-width: 1280px) 16vw, (min-width: 1024px) 19vw, (min-width: 768px) 24vw, 45vw"
-          className="aspect-[1/0.96] transition-[transform,box-shadow] duration-300 ease-(--ease-soft) group-hover:-translate-y-1 group-hover:shadow-[0_18px_32px_-18px_color-mix(in_srgb,var(--foreground)_45%,transparent)]"
+          sizes="(min-width: 1536px) 19vw, (min-width: 768px) 24vw, 45vw"
+          className="aspect-[4/3] transition-[transform,box-shadow] duration-300 ease-(--ease-soft) group-hover:-translate-y-1 group-hover:shadow-[0_18px_32px_-18px_color-mix(in_srgb,var(--foreground)_45%,transparent)]"
         >
           {badge ? (
             <span className="absolute start-2.5 top-2.5 max-w-[calc(100%-3.75rem)] truncate rounded-full bg-background px-2 py-0.5 text-[11px] font-bold text-foreground shadow-sm sm:start-3 sm:top-3 sm:px-2.5 sm:py-1 sm:text-xs">
@@ -48,7 +48,7 @@ export function HomeCard({ result }: { result: Result }) {
             </span>
           ) : null}
         </ArchFrame>
-        <h3 className="truncate text-sm font-bold">
+        <h3 className="truncate text-sm font-bold sm:text-base">
           {t("home.typeInCity", {
             type: t(`propertyTypes.${result.property_type}`),
             city: cityName(t, result.city),
@@ -57,7 +57,7 @@ export function HomeCard({ result }: { result: Result }) {
         <p className="truncate text-sm text-muted-foreground transition-colors group-hover:text-primary">
           {result.title}
         </p>
-        <p className="flex flex-wrap items-center gap-x-1.5 text-sm text-muted-foreground">
+        <p className="flex flex-wrap items-center gap-x-1.5 text-sm sm:text-base text-muted-foreground">
           <span>
             <span className="font-semibold text-foreground">
               {money(result.price_per_night, result.currency)}

@@ -1,3 +1,5 @@
+from datetime import date
+
 from fastapi import APIRouter, status
 
 from caravansara.core.db import SessionDep
@@ -16,12 +18,47 @@ from caravansara.listings.schemas import (
     PhotoOrderIn,
     PhotoOut,
     PhotoUpdate,
+    PriceQuote,
+    PricingPolicy,
     UploadUrlIn,
     UploadUrlOut,
 )
 
 router = APIRouter(tags=["Listings"])
 photos = APIRouter(tags=["Listing photos"])
+
+
+@router.get(
+    "/listings/{listing_id}/pricing", summary="My listing's pricing rules", responses=error_responses(401, 403, 404)
+)
+async def get_pricing(listing_id: int, user_id: CurrentUserId, session: SessionDep) -> PricingPolicy:
+    return await service.get_pricing(session, listing_id, user_id)
+
+
+@router.put(
+    "/listings/{listing_id}/pricing",
+    summary="Replace my listing's pricing rules",
+    description="Percentages apply to base price. Priority: custom range, shared holiday, weekend, base. "
+    "Custom range ends are inclusive. Active ranges cannot overlap. Does not send a listing back to review.",
+    responses=error_responses(401, 403, 404, 422),
+)
+async def put_pricing(
+    listing_id: int, body: PricingPolicy, user_id: CurrentUserId, session: SessionDep
+) -> PricingPolicy:
+    return await service.update_pricing(session, listing_id, user_id, body)
+
+
+@router.get(
+    "/listings/{listing_id}/pricing/quote",
+    summary="Daily price quote (checkout date excluded)",
+    description="Public listings or the host's own draft. Quotes do not hold availability. Returns each night's "
+    "applied rule and rounded price; the cleaning fee is charged once. Maximum 365 nights.",
+    responses=error_responses(404, 422),
+)
+async def price_quote(
+    listing_id: int, check_in: date, check_out: date, session: SessionDep, viewer_id: OptionalUserId
+) -> PriceQuote:
+    return await service.price_quote(session, listing_id, viewer_id, check_in, check_out)
 
 
 @router.post(

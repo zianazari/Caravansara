@@ -4,6 +4,7 @@ from sqlalchemy import func, select, text, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from caravansara.bookings.models import Booking, BookingStatus
+from caravansara.core.pagination import SortOrder
 
 S = BookingStatus
 
@@ -122,14 +123,18 @@ async def listing_bookings(
 
 
 async def admin_bookings(
-    session: AsyncSession, status: BookingStatus | None, limit: int, offset: int
+    session: AsyncSession, status: BookingStatus | None, limit: int, offset: int, *, order: SortOrder = "desc"
 ) -> tuple[list[Booking], bool]:
     """Newest bookings first, for the admin (feature 051): one status on bookings_status_id_idx, all of them
     on the primary key. No count: counting 2 million completed stays on every page took 200 ms; the page
     reads one extra row to know whether a next page exists, and the totals come from ``status_counts``."""
     where = [Booking.status == status] if status is not None else []
     rows = await session.execute(
-        select(Booking).where(*where).order_by(Booking.id.desc()).limit(limit + 1).offset(offset)
+        select(Booking)
+        .where(*where)
+        .order_by(Booking.id.asc() if order == "asc" else Booking.id.desc())
+        .limit(limit + 1)
+        .offset(offset)
     )
     bookings = list(rows.scalars())
     return bookings[:limit], len(bookings) > limit
@@ -160,3 +165,11 @@ async def booked_ranges(
         {"listing_id": listing_id, "start": start, "end": end, "now": now},
     )
     return [(row.check_in, row.check_out) for row in rows]
+
+
+async def get_many(session: AsyncSession, ids: list[int]) -> list[Booking]:
+    if not ids:
+        return []
+    rows = (await session.execute(select(Booking).where(Booking.id.in_(ids)))).scalars()
+    by_id = {row.id: row for row in rows}
+    return [by_id[booking_id] for booking_id in ids if booking_id in by_id]

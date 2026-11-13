@@ -137,6 +137,7 @@ export function CategoryBar({
                 <li key={category.key} className="snap-start">
                   <Link
                     href={hrefFor(category.key)}
+                    scroll={false}
                     aria-current={on ? "true" : undefined}
                     className={cn(
                       // Feature 039 (owner's reference): 16 px names and 28 px icons, easy to read and to hit.

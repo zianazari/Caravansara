@@ -483,6 +483,75 @@
         ]
       }
     },
+    "/api/v1/holidays": {
+      "get": {
+        "tags": [
+          "Catalog"
+        ],
+        "summary": "Shared holiday calendar",
+        "operationId": "list_holidays_api_v1_holidays_get",
+        "parameters": [
+          {
+            "name": "start",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "date",
+              "title": "Start"
+            }
+          },
+          {
+            "name": "end",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "date",
+              "title": "End"
+            }
+          },
+          {
+            "name": "country",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "minLength": 2,
+              "maxLength": 2,
+              "default": "IR",
+              "title": "Country"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/HolidayOut"
+                  },
+                  "title": "Response List Holidays Api V1 Holidays Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Invalid input or a broken business rule",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/countries": {
       "get": {
         "tags": [
@@ -1153,6 +1222,247 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/FilterCounts"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Invalid input or a broken business rule",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/listings/{listing_id}/pricing": {
+      "get": {
+        "tags": [
+          "Listings"
+        ],
+        "summary": "My listing's pricing rules",
+        "operationId": "get_pricing_api_v1_listings__listing_id__pricing_get",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "listing_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Listing Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PricingPolicy-Output"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, invalid or expired access token",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Not allowed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "Listings"
+        ],
+        "summary": "Replace my listing's pricing rules",
+        "description": "Percentages apply to base price. Priority: custom range, shared holiday, weekend, base. Custom range ends are inclusive. Active ranges cannot overlap. Does not send a listing back to review.",
+        "operationId": "put_pricing_api_v1_listings__listing_id__pricing_put",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "listing_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Listing Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PricingPolicy-Input"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PricingPolicy-Output"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, invalid or expired access token",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Not allowed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Invalid input or a broken business rule",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/listings/{listing_id}/pricing/quote": {
+      "get": {
+        "tags": [
+          "Listings"
+        ],
+        "summary": "Daily price quote (checkout date excluded)",
+        "description": "Public listings or the host's own draft. Quotes do not hold availability. Returns each night's applied rule and rounded price; the cleaning fee is charged once. Maximum 365 nights.",
+        "operationId": "price_quote_api_v1_listings__listing_id__pricing_quote_get",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "listing_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Listing Id"
+            }
+          },
+          {
+            "name": "check_in",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "date",
+              "title": "Check In"
+            }
+          },
+          {
+            "name": "check_out",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "date",
+              "title": "Check Out"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PriceQuote"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
                 }
               }
             }
@@ -3001,6 +3311,265 @@
         }
       }
     },
+    "/api/v1/admin/countries": {
+      "get": {
+        "tags": [
+          "Admin"
+        ],
+        "summary": "Countries for the admin calendar",
+        "operationId": "admin_countries_api_v1_admin_countries_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/CountryOut"
+                  },
+                  "type": "array",
+                  "title": "Response Admin Countries Api V1 Admin Countries Get"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, invalid or expired access token",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "AdminBearer": []
+          }
+        ]
+      }
+    },
+    "/api/v1/admin/holidays": {
+      "get": {
+        "tags": [
+          "Admin"
+        ],
+        "summary": "Holiday calendar for dynamic pricing",
+        "operationId": "admin_holidays_api_v1_admin_holidays_get",
+        "security": [
+          {
+            "AdminBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "start",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "date",
+              "title": "Start"
+            }
+          },
+          {
+            "name": "end",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "date",
+              "title": "End"
+            }
+          },
+          {
+            "name": "country",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "minLength": 2,
+              "maxLength": 2,
+              "default": "IR",
+              "title": "Country"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/HolidayOut"
+                  },
+                  "title": "Response Admin Holidays Api V1 Admin Holidays Get"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, invalid or expired access token",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Invalid input or a broken business rule",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/admin/holidays/{country}/{day}": {
+      "put": {
+        "tags": [
+          "Admin"
+        ],
+        "summary": "Add or rename a shared holiday",
+        "operationId": "save_holiday_api_v1_admin_holidays__country___day__put",
+        "security": [
+          {
+            "AdminBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "country",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Country"
+            }
+          },
+          {
+            "name": "day",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "date",
+              "title": "Day"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/HolidayIn"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HolidayOut"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, invalid or expired access token",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Invalid input or a broken business rule",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "Admin"
+        ],
+        "summary": "Remove a shared holiday",
+        "operationId": "delete_holiday_api_v1_admin_holidays__country___day__delete",
+        "security": [
+          {
+            "AdminBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "country",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Country"
+            }
+          },
+          {
+            "name": "day",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "date",
+              "title": "Day"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "401": {
+            "description": "Missing, invalid or expired access token",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Invalid input or a broken business rule",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/admin/auth/login": {
       "post": {
         "tags": [
@@ -3156,7 +3725,7 @@
           "Admin"
         ],
         "summary": "Review queue",
-        "description": "Listings waiting for review, oldest first (`sort=oldest`, the default) or newest first (`sort=newest`). Each has the `review_version` to decide on.",
+        "description": "Listings waiting for review, newest first by default. Sort all matching listings by submission time, title, city or host before pagination. Each has the `review_version` to decide on. Legacy `sort=oldest|newest` remains supported when `order` is omitted.",
         "operationId": "review_queue_api_v1_admin_listings_pending_get",
         "security": [
           {
@@ -3169,16 +3738,64 @@
             "in": "query",
             "required": false,
             "schema": {
-              "enum": [
-                "oldest",
-                "newest"
+              "anyOf": [
+                {
+                  "enum": [
+                    "oldest",
+                    "newest"
+                  ],
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
               ],
-              "type": "string",
-              "description": "By the time the listing was sent for review: oldest or newest first.",
-              "default": "oldest",
+              "description": "Legacy submission-time direction; explicit order takes precedence.",
+              "deprecated": true,
               "title": "Sort"
             },
-            "description": "By the time the listing was sent for review: oldest or newest first."
+            "description": "Legacy submission-time direction; explicit order takes precedence.",
+            "deprecated": true
+          },
+          {
+            "name": "sort_by",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "enum": [
+                "submitted_at",
+                "title",
+                "city",
+                "host"
+              ],
+              "type": "string",
+              "description": "Column to sort before pagination. Text ignores case; ID breaks ties in the same direction.",
+              "default": "submitted_at",
+              "title": "Sort By"
+            },
+            "description": "Column to sort before pagination. Text ignores case; ID breaks ties in the same direction."
+          },
+          {
+            "name": "order",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "enum": [
+                    "asc",
+                    "desc"
+                  ],
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "asc or desc; defaults to desc (newest first).",
+              "title": "Order"
+            },
+            "description": "asc or desc; defaults to desc (newest first)."
           },
           {
             "name": "limit",
@@ -3538,6 +4155,40 @@
         ],
         "parameters": [
           {
+            "name": "sort_by",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "enum": [
+                "full_name",
+                "email",
+                "kind",
+                "created_at"
+              ],
+              "type": "string",
+              "description": "Column to sort across the entire filtered result; ties use ID.",
+              "default": "created_at",
+              "title": "Sort By"
+            },
+            "description": "Column to sort across the entire filtered result; ties use ID."
+          },
+          {
+            "name": "order",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "enum": [
+                "asc",
+                "desc"
+              ],
+              "type": "string",
+              "description": "Ascending or descending; applied before pagination.",
+              "default": "desc",
+              "title": "Order"
+            },
+            "description": "Ascending or descending; applied before pagination."
+          },
+          {
             "name": "q",
             "in": "query",
             "required": false,
@@ -3633,6 +4284,43 @@
           }
         ],
         "parameters": [
+          {
+            "name": "sort_by",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "enum": [
+                "id",
+                "listing",
+                "guest",
+                "dates",
+                "total_price",
+                "status",
+                "created_at"
+              ],
+              "type": "string",
+              "description": "Column to sort before pagination. Dates use check-in then check-out; guests use name then email; totals are grouped by currency; status follows pending, confirmed, completed, cancelled, expired. Ties use ID.",
+              "default": "id",
+              "title": "Sort By"
+            },
+            "description": "Column to sort before pagination. Dates use check-in then check-out; guests use name then email; totals are grouped by currency; status follows pending, confirmed, completed, cancelled, expired. Ties use ID."
+          },
+          {
+            "name": "order",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "enum": [
+                "asc",
+                "desc"
+              ],
+              "type": "string",
+              "description": "Ascending or descending across all matching bookings.",
+              "default": "desc",
+              "title": "Order"
+            },
+            "description": "Ascending or descending across all matching bookings."
+          },
           {
             "name": "status",
             "in": "query",
@@ -3980,6 +4668,14 @@
       },
       "AdminBookingOut": {
         "properties": {
+          "nightly_prices": {
+            "items": {
+              "$ref": "#/components/schemas/NightlyPrice"
+            },
+            "type": "array",
+            "title": "Nightly Prices",
+            "description": "Saved at booking time; never recalculated."
+          },
           "id": {
             "type": "integer",
             "title": "Id"
@@ -4152,6 +4848,17 @@
       },
       "AdminListingOut": {
         "properties": {
+          "pricing_policy": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/PricingPolicy-Output"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Host-only pricing configuration."
+          },
           "id": {
             "type": "integer",
             "title": "Id"
@@ -4725,6 +5432,35 @@
       },
       "BookingCreate": {
         "properties": {
+          "expected_currency": {
+            "anyOf": [
+              {
+                "type": "string",
+                "pattern": "^[A-Z]{3}$"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Expected Currency",
+            "description": "Currency of the displayed quote."
+          },
+          "expected_total": {
+            "anyOf": [
+              {
+                "type": "number",
+                "minimum": 0.0
+              },
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Expected Total",
+            "description": "Quote total; a changed price returns 409 price_changed."
+          },
           "listing_id": {
             "type": "integer",
             "title": "Listing Id"
@@ -4833,6 +5569,14 @@
       },
       "BookingOut": {
         "properties": {
+          "nightly_prices": {
+            "items": {
+              "$ref": "#/components/schemas/NightlyPrice"
+            },
+            "type": "array",
+            "title": "Nightly Prices",
+            "description": "Saved at booking time; never recalculated."
+          },
           "id": {
             "type": "integer",
             "title": "Id"
@@ -5156,6 +5900,47 @@
         ],
         "title": "Health"
       },
+      "HolidayIn": {
+        "properties": {
+          "name": {
+            "type": "string",
+            "maxLength": 100,
+            "minLength": 1,
+            "title": "Name"
+          }
+        },
+        "type": "object",
+        "required": [
+          "name"
+        ],
+        "title": "HolidayIn"
+      },
+      "HolidayOut": {
+        "properties": {
+          "name": {
+            "type": "string",
+            "maxLength": 100,
+            "minLength": 1,
+            "title": "Name"
+          },
+          "country_code": {
+            "type": "string",
+            "title": "Country Code"
+          },
+          "day": {
+            "type": "string",
+            "format": "date",
+            "title": "Day"
+          }
+        },
+        "type": "object",
+        "required": [
+          "name",
+          "country_code",
+          "day"
+        ],
+        "title": "HolidayOut"
+      },
       "HostOut": {
         "properties": {
           "id": {
@@ -5434,6 +6219,16 @@
             "title": "Check Out Time",
             "default": "11:00:00"
           },
+          "pricing_policy": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/PricingPolicy-Input"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
           "amenity_ids": {
             "items": {
               "type": "integer"
@@ -5481,6 +6276,17 @@
       },
       "ListingOut": {
         "properties": {
+          "pricing_policy": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/PricingPolicy-Output"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Host-only pricing configuration."
+          },
           "id": {
             "type": "integer",
             "title": "Id"
@@ -5806,6 +6612,16 @@
       },
       "ListingUpdate": {
         "properties": {
+          "pricing_policy": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/PricingPolicy-Input"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
           "title": {
             "anyOf": [
               {
@@ -6064,8 +6880,7 @@
           }
         },
         "type": "object",
-        "title": "ListingUpdate",
-        "description": "Only the fields sent change. ``is_active: false`` hides the listing; it is never deleted."
+        "title": "ListingUpdate"
       },
       "LoginIn": {
         "properties": {
@@ -6091,6 +6906,52 @@
           "email": "guest@example.com",
           "password": "caravansara-demo"
         }
+      },
+      "NightlyPrice": {
+        "properties": {
+          "date": {
+            "type": "string",
+            "format": "date",
+            "title": "Date"
+          },
+          "amount": {
+            "type": "string",
+            "title": "Amount"
+          },
+          "percent": {
+            "type": "string",
+            "title": "Percent"
+          },
+          "source": {
+            "type": "string",
+            "enum": [
+              "base",
+              "weekend",
+              "holiday",
+              "custom"
+            ],
+            "title": "Source"
+          },
+          "label": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Label"
+          }
+        },
+        "type": "object",
+        "required": [
+          "date",
+          "amount",
+          "percent",
+          "source"
+        ],
+        "title": "NightlyPrice"
       },
       "PhotoCreate": {
         "properties": {
@@ -6276,6 +7137,273 @@
         ],
         "title": "Pin",
         "description": "Approximate public point (moved 100–500 m from the real one)."
+      },
+      "PriceQuote": {
+        "properties": {
+          "listing_id": {
+            "type": "integer",
+            "title": "Listing Id"
+          },
+          "check_in": {
+            "type": "string",
+            "format": "date",
+            "title": "Check In"
+          },
+          "check_out": {
+            "type": "string",
+            "format": "date",
+            "title": "Check Out"
+          },
+          "currency": {
+            "type": "string",
+            "title": "Currency"
+          },
+          "base_price": {
+            "type": "string",
+            "title": "Base Price"
+          },
+          "cleaning_fee": {
+            "type": "string",
+            "title": "Cleaning Fee"
+          },
+          "stay_total": {
+            "type": "string",
+            "title": "Stay Total"
+          },
+          "total_price": {
+            "type": "string",
+            "title": "Total Price"
+          },
+          "nights": {
+            "items": {
+              "$ref": "#/components/schemas/NightlyPrice"
+            },
+            "type": "array",
+            "title": "Nights"
+          }
+        },
+        "type": "object",
+        "required": [
+          "listing_id",
+          "check_in",
+          "check_out",
+          "currency",
+          "base_price",
+          "cleaning_fee",
+          "stay_total",
+          "total_price",
+          "nights"
+        ],
+        "title": "PriceQuote"
+      },
+      "PriceRange-Input": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "maxLength": 64,
+            "minLength": 1,
+            "title": "Id"
+          },
+          "name": {
+            "type": "string",
+            "maxLength": 100,
+            "minLength": 1,
+            "title": "Name"
+          },
+          "start": {
+            "type": "string",
+            "format": "date",
+            "title": "Start"
+          },
+          "end": {
+            "type": "string",
+            "format": "date",
+            "title": "End",
+            "description": "Last night included in this rule (inclusive)."
+          },
+          "percent": {
+            "anyOf": [
+              {
+                "type": "number",
+                "maximum": 1000.0,
+                "minimum": -99.0
+              },
+              {
+                "type": "string"
+              }
+            ],
+            "title": "Percent"
+          },
+          "enabled": {
+            "type": "boolean",
+            "title": "Enabled",
+            "default": true
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "name",
+          "start",
+          "end",
+          "percent"
+        ],
+        "title": "PriceRange"
+      },
+      "PriceRange-Output": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "maxLength": 64,
+            "minLength": 1,
+            "title": "Id"
+          },
+          "name": {
+            "type": "string",
+            "maxLength": 100,
+            "minLength": 1,
+            "title": "Name"
+          },
+          "start": {
+            "type": "string",
+            "format": "date",
+            "title": "Start"
+          },
+          "end": {
+            "type": "string",
+            "format": "date",
+            "title": "End",
+            "description": "Last night included in this rule (inclusive)."
+          },
+          "percent": {
+            "type": "string",
+            "title": "Percent"
+          },
+          "enabled": {
+            "type": "boolean",
+            "title": "Enabled",
+            "default": true
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "name",
+          "start",
+          "end",
+          "percent"
+        ],
+        "title": "PriceRange"
+      },
+      "PricingPolicy-Input": {
+        "properties": {
+          "weekend_enabled": {
+            "type": "boolean",
+            "title": "Weekend Enabled",
+            "default": false
+          },
+          "weekend_days": {
+            "items": {
+              "type": "integer",
+              "maximum": 6.0,
+              "minimum": 0.0
+            },
+            "type": "array",
+            "maxItems": 7,
+            "title": "Weekend Days",
+            "description": "Monday=0 through Sunday=6; host-selectable."
+          },
+          "weekend_percent": {
+            "anyOf": [
+              {
+                "type": "number",
+                "maximum": 1000.0,
+                "minimum": -99.0
+              },
+              {
+                "type": "string"
+              }
+            ],
+            "title": "Weekend Percent",
+            "default": "30"
+          },
+          "holiday_enabled": {
+            "type": "boolean",
+            "title": "Holiday Enabled",
+            "default": false
+          },
+          "holiday_percent": {
+            "anyOf": [
+              {
+                "type": "number",
+                "maximum": 1000.0,
+                "minimum": -99.0
+              },
+              {
+                "type": "string"
+              }
+            ],
+            "title": "Holiday Percent",
+            "default": "100"
+          },
+          "ranges": {
+            "items": {
+              "$ref": "#/components/schemas/PriceRange-Input"
+            },
+            "type": "array",
+            "maxItems": 100,
+            "title": "Ranges"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "title": "PricingPolicy"
+      },
+      "PricingPolicy-Output": {
+        "properties": {
+          "weekend_enabled": {
+            "type": "boolean",
+            "title": "Weekend Enabled",
+            "default": false
+          },
+          "weekend_days": {
+            "items": {
+              "type": "integer",
+              "maximum": 6.0,
+              "minimum": 0.0
+            },
+            "type": "array",
+            "maxItems": 7,
+            "title": "Weekend Days",
+            "description": "Monday=0 through Sunday=6; host-selectable."
+          },
+          "weekend_percent": {
+            "type": "string",
+            "title": "Weekend Percent",
+            "default": "30"
+          },
+          "holiday_enabled": {
+            "type": "boolean",
+            "title": "Holiday Enabled",
+            "default": false
+          },
+          "holiday_percent": {
+            "type": "string",
+            "title": "Holiday Percent",
+            "default": "100"
+          },
+          "ranges": {
+            "items": {
+              "$ref": "#/components/schemas/PriceRange-Output"
+            },
+            "type": "array",
+            "maxItems": 100,
+            "title": "Ranges"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "title": "PricingPolicy"
       },
       "PrivateLocation": {
         "properties": {

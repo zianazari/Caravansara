@@ -13,6 +13,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from caravansara.core.config import Settings
 from caravansara.core.errors import AppError, Conflict, NotFound, ServiceUnavailable, Unauthorized, Unprocessable
 from caravansara.core.metrics import RATE_LIMITED
+from caravansara.core.pagination import SortOrder
 from caravansara.core.security import (
     create_access_token,
     hash_password,
@@ -24,7 +25,14 @@ from caravansara.core.storage import Storage
 from caravansara.core.timeutil import utcnow
 from caravansara.identity import repository as repo
 from caravansara.identity.models import AccountKind, User
-from caravansara.identity.schemas import AdminTokenOut, AdminUserOut, AdminUserPage, ProfileUpdate, TokensOut
+from caravansara.identity.schemas import (
+    AdminTokenOut,
+    AdminUserOut,
+    AdminUserPage,
+    AdminUserSort,
+    ProfileUpdate,
+    TokensOut,
+)
 
 __all__ = ["AdminRefused", "PublicUser", "TooManyAttempts", "UserContact"]
 
@@ -329,9 +337,17 @@ async def user_contacts(session: AsyncSession, user_ids: set[int]) -> dict[int, 
     return {uid: UserContact(u.id, u.full_name, u.email) for uid, u in users.items()}
 
 
-async def admin_users(session: AsyncSession, q: str | None, limit: int, offset: int) -> AdminUserPage:
+async def admin_users(
+    session: AsyncSession,
+    q: str | None,
+    limit: int,
+    offset: int,
+    *,
+    sort_by: AdminUserSort = "created_at",
+    order: SortOrder = "desc",
+) -> AdminUserPage:
     """Every account, newest first; ``q`` matches any part of the email or the name (feature 051)."""
-    users, total = await repo.admin_users(session, q, limit, offset)
+    users, total = await repo.admin_users(session, q, limit, offset, sort_by=sort_by, order=order)
     return AdminUserPage(items=[AdminUserOut.model_validate(u, from_attributes=True) for u in users], total=total)
 
 

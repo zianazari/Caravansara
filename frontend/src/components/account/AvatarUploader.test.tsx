@@ -44,7 +44,7 @@ describe("AvatarUploader", () => {
 
   it("shows the default avatar first (FR-037)", () => {
     renderIn("fa", <AvatarUploader user={user} />);
-    expect(screen.getByRole("img", { name: "آرش رضایی" })).toHaveTextContent("آ");
+    expect(screen.getByRole("img", { name: "آرش رضایی" }).querySelector("svg[aria-hidden]")).not.toBeNull();
     expect(screen.queryByRole("button", { name: "حذف عکس" })).toBeNull();
   });
 

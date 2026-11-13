@@ -724,6 +724,28 @@
       "params": {},
       "target_ms": 500,
       "note": "one pass over every booking; asked once when the admin panel opens, not per page (feature 051)"
+    },
+    {
+      "name": "admin_bookings_title_page",
+      "source": "caravansara.moderation.repository:sorted_booking_ids",
+      "endpoint": "GET /admin/bookings?sort_by=listing&order=asc",
+      "kind": "read",
+      "params": {
+        "limit": 21,
+        "offset": 0
+      },
+      "target_ms": 1000
+    },
+    {
+      "name": "review_queue_title_page",
+      "source": "caravansara.moderation.repository:sorted_queue_ids",
+      "endpoint": "GET /admin/listings/pending?sort_by=title&order=asc",
+      "kind": "read",
+      "params": {
+        "limit": 20,
+        "offset": 0
+      },
+      "target_ms": 1000
     }
   ],
   "excluded": [
@@ -866,6 +888,30 @@
     {
       "source": "caravansara.bookings.repository:booked_ranges",
       "reason": "one listing's stays in at most 400 days, on the exclusion constraint's GiST index (listing_id, stay)"
+    },
+    {
+      "source": "caravansara.bookings.repository:get_many",
+      "reason": "One bounded admin page (at most 100 booking IDs), using the primary key; preserves the already sorted page order."
+    },
+    {
+      "source": "caravansara.listings.repository:pending_by_ids",
+      "reason": "One bounded admin page (at most 100 listing IDs), using the primary key; rechecks pending state after sorting."
+    },
+    {
+      "source": "caravansara.catalog.repository:country_exists",
+      "reason": "One fixed-catalog country by its unique code."
+    },
+    {
+      "source": "caravansara.catalog.repository:holidays",
+      "reason": "At most two years of one country calendar, range read on the (country_code, day) primary key."
+    },
+    {
+      "source": "caravansara.catalog.repository:save_holiday",
+      "reason": "One holiday INSERT/UPDATE on its compound primary key; admin-only."
+    },
+    {
+      "source": "caravansara.catalog.repository:delete_holiday",
+      "reason": "One holiday DELETE on its compound primary key; admin-only."
     }
   ]
 }

@@ -2,10 +2,10 @@
  * Addresses inside the admin panel (feature 051). The tab, its filter and its page live in the address bar, so a
  * reload and the back button keep them. Defaults (the queue tab, page 1, no filter) stay out of the address.
  */
-export type AdminTab = "queue" | "bookings" | "users";
+export type AdminTab = "queue" | "bookings" | "users" | "holidays";
 
 export function parseTab(raw: string | null): AdminTab {
-  return raw === "bookings" || raw === "users" ? raw : "queue";
+  return raw === "bookings" || raw === "users" || raw === "holidays" ? raw : "queue";
 }
 
 export function adminHref(tab: AdminTab, values: Record<string, string | number | undefined> = {}): string {

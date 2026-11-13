@@ -2,7 +2,7 @@
 
 import uuid
 from dataclasses import dataclass
-from datetime import datetime, time
+from datetime import date, datetime, time, timedelta
 from decimal import Decimal
 
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -18,6 +18,7 @@ from caravansara.identity import service as identity
 from caravansara.listings import geo
 from caravansara.listings import repository as repo
 from caravansara.listings.models import Listing, ListingPhoto, PropertyType, ReviewAction, ReviewStatus
+from caravansara.listings.pricing import PriceQuote, PricingPolicy, calculate_quote
 from caravansara.listings.schemas import (
     AdminListingOut,
     AdminQueueItem,
@@ -39,7 +40,7 @@ from caravansara.listings.schemas import (
 )
 from caravansara.notifications import service as notifications
 
-__all__ = ["ListingInfo", "PropertyType", "ReviewStatus"]
+__all__ = ["ListingInfo", "PropertyType", "ReviewStatus", "calculate_quote"]
 
 # AVIF since feature 023 (owner's request): smaller files than JPEG at the same quality.
 _EXTENSIONS = {"image/jpeg": "jpg", "image/png": "png", "image/webp": "webp", "image/avif": "avif"}
@@ -66,6 +67,7 @@ class ListingInfo:
     price_per_night: Decimal
     cleaning_fee: Decimal
     currency: str
+    pricing_policy: PricingPolicy
     check_in_time: time
     check_out_time: time
     address: str
@@ -168,6 +170,7 @@ async def _detail(session: AsyncSession, storage: Storage, listing: Listing, vie
             else None
         ),
         review=_review_out(listing) if is_host else None,
+        pricing_policy=PricingPolicy.model_validate(listing.pricing_policy) if is_host else None,
     )
 
 
@@ -220,7 +223,8 @@ async def create_listing(session: AsyncSession, storage: Storage, host_id: int, 
     await catalog.require_city(session, data.city_id)
     amenity_ids = set(data.amenity_ids)
     await catalog.require_amenities(session, amenity_ids)
-    fields = data.model_dump(exclude={"amenity_ids", "latitude", "longitude"})
+    fields = data.model_dump(exclude={"amenity_ids", "latitude", "longitude", "pricing_policy"})
+    fields["pricing_policy"] = (data.pricing_policy or PricingPolicy()).model_dump(mode="json")
     # review_status and submitted_at come from the database defaults: pending, now (FR-001).
     listing = Listing(host_id=host_id, **fields)
     _set_location(listing, data.latitude, data.longitude)
@@ -245,6 +249,9 @@ async def update_listing(
 ) -> ListingOut:
     listing = await _get_owned(session, listing_id, user_id)
     changes = data.model_dump(exclude_unset=True)
+    if "pricing_policy" in changes:
+        listing.pricing_policy = (data.pricing_policy or PricingPolicy()).model_dump(mode="json")
+        del changes["pricing_policy"]
     nulls = sorted(k for k, v in changes.items() if v is None and k in _REQUIRED | {"latitude", "longitude"})
     if nulls:
         raise Unprocessable("validation_error", "These fields cannot be null.", details={"fields": nulls})
@@ -422,8 +429,8 @@ async def reorder_photos(
 # ---- for other modules ----------------------------------------------------------------
 
 
-async def get_listing_info(session: AsyncSession, listing_id: int) -> ListingInfo:
-    listing = await _get(session, listing_id)
+async def get_listing_info(session: AsyncSession, listing_id: int, *, lock: bool = False) -> ListingInfo:
+    listing = await _get(session, listing_id, for_update=lock)
     city = await catalog.require_city(session, listing.city_id)
     return ListingInfo(
         id=listing.id,
@@ -438,6 +445,7 @@ async def get_listing_info(session: AsyncSession, listing_id: int) -> ListingInf
         price_per_night=listing.price_per_night,
         cleaning_fee=listing.cleaning_fee,
         currency=listing.currency,
+        pricing_policy=PricingPolicy.model_validate(listing.pricing_policy),
         check_in_time=listing.check_in_time,
         check_out_time=listing.check_out_time,
         address=listing.address,
@@ -445,6 +453,49 @@ async def get_listing_info(session: AsyncSession, listing_id: int) -> ListingInf
         longitude=float(listing.longitude),
         city=city,
     )
+
+
+async def get_pricing(session: AsyncSession, listing_id: int, user_id: int) -> PricingPolicy:
+    return PricingPolicy.model_validate((await _get_owned(session, listing_id, user_id)).pricing_policy)
+
+
+async def update_pricing(session: AsyncSession, listing_id: int, user_id: int, policy: PricingPolicy) -> PricingPolicy:
+    listing = await _get_owned(session, listing_id, user_id)
+    listing.pricing_policy = policy.model_dump(mode="json")
+    await session.commit()
+    return policy
+
+
+async def quote_info(
+    session: AsyncSession, info: ListingInfo, start: date, end: date, *, max_nights: int = 365
+) -> PriceQuote:
+    holidays: dict[date, str] = {}
+    if info.pricing_policy.holiday_enabled:
+        cursor = start
+        while cursor < end:
+            stop = min(end, cursor + timedelta(days=732))
+            holidays.update(
+                {h.day: h.name for h in await catalog.holidays(session, info.city.country.code, cursor, stop)}
+            )
+            cursor = stop
+    return calculate_quote(
+        info.id,
+        info.price_per_night,
+        info.cleaning_fee,
+        info.currency,
+        info.pricing_policy,
+        start,
+        end,
+        holidays,
+        max_nights=max_nights,
+    )
+
+
+async def price_quote(
+    session: AsyncSession, listing_id: int, viewer_id: int | None, start: date, end: date
+) -> PriceQuote:
+    await require_visible_listing(session, listing_id, viewer_id)
+    return await quote_info(session, await get_listing_info(session, listing_id), start, end)
 
 
 async def require_visible_listing(session: AsyncSession, listing_id: int, viewer_id: int | None) -> None:
@@ -491,6 +542,16 @@ async def review_queue(
     session: AsyncSession, storage: Storage, limit: int, offset: int, *, newest_first: bool = False
 ) -> AdminQueuePage:
     listings, total = await repo.review_queue(session, limit, offset, newest_first=newest_first)
+    return await _render_review_queue(session, storage, listings, total)
+
+
+async def review_queue_by_ids(session: AsyncSession, storage: Storage, ids: list[int], total: int) -> AdminQueuePage:
+    return await _render_review_queue(session, storage, await repo.pending_by_ids(session, ids), total)
+
+
+async def _render_review_queue(
+    session: AsyncSession, storage: Storage, listings: list[Listing], total: int
+) -> AdminQueuePage:
     covers = await repo.cover_keys(session, [listing.id for listing in listings])
     hosts = await identity.get_public_users(session, {listing.host_id for listing in listings})
     items = []

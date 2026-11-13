@@ -14,6 +14,8 @@ import { formatCount, formatInteger, formatMoney } from "@/lib/money";
 import { cityName } from "@/lib/names";
 import { lastPage, parsePage } from "@/lib/pageWindow";
 import { adminHref } from "./adminHref";
+import { AdminSortHeader } from "./AdminSortHeader";
+import { BOOKING_SORTS, readAdminSort, sortValues } from "./adminSort";
 import { AdminRequestError, useAdminGate } from "./useAdminGate";
 import { useAdminSummary } from "./useAdminSummary";
 
@@ -22,9 +24,9 @@ type Status = components["schemas"]["BookingStatus"];
 const STATUSES: Status[] = ["pending", "confirmed", "completed", "cancelled", "expired"];
 const PAGE = 20;
 
-/** Each status in its own tint of the theme's colours, so the list reads at a glance; the text stays dark. */
+/** Each status in its own tint of the theme's colours, so the list reads at a glance; the text follows the active theme. */
 const TONE: Record<Status, string> = {
-  pending: "bg-gold/50 text-foreground",
+  pending: "bg-gold/20 text-foreground",
   confirmed: "bg-leaf/20 text-foreground",
   completed: "bg-water/25 text-foreground",
   cancelled: "bg-muted text-muted-foreground",
@@ -45,14 +47,18 @@ export function AdminBookings() {
   const params = useSearchParams();
   const status = parseStatus(params.get("status"));
   const page = parsePage(params.get("page"));
+  const { sortBy, order, hasSort } = readAdminSort(params, BOOKING_SORTS, "id");
+  const sorting = sortValues(sortBy, order, hasSort);
   const summary = useAdminSummary();
   const list = useQuery({
-    queryKey: ["admin", "bookings", status ?? "all", page],
+    queryKey: ["admin", "bookings", status ?? "all", page, sortBy, order],
     retry: false,
     placeholderData: keepPreviousData,
     queryFn: async (): Promise<BookingPage> => {
       const { data, error, response } = await adminApi.GET("/api/v1/admin/bookings", {
-        params: { query: { limit: PAGE, offset: (page - 1) * PAGE, ...(status ? { status } : {}) } },
+        params: {
+          query: { limit: PAGE, offset: (page - 1) * PAGE, ...(status ? { status } : {}), ...sorting },
+        },
       });
       if (!data) throw new AdminRequestError(response.status, error);
       return data;
@@ -66,7 +72,7 @@ export function AdminBookings() {
   // Before the numbers arrive, the page knows only whether a next one exists.
   const last =
     total !== undefined ? Math.max(lastPage(total, PAGE), page) : list.data?.has_more ? page + 1 : page;
-  const href = (s: Status | undefined, n = 1) => adminHref("bookings", { status: s, page: n });
+  const href = (s: Status | undefined, n = 1) => adminHref("bookings", { status: s, ...sorting, page: n });
   const money = (amount: string, currency: string) =>
     formatMoney(amount, currency, locale, t("common.toman"));
   const day = (iso: string) => formatDate(iso.slice(0, 10), locale, "short");
@@ -108,15 +114,31 @@ export function AdminBookings() {
           <table className="w-full text-sm">
             <thead className="bg-muted/60 text-start text-xs text-muted-foreground">
               <tr>
-                <th className="px-3 py-2 text-start font-medium">{t("admin.colBooking")}</th>
-                <th className="px-3 py-2 text-start font-medium">{t("admin.colListing")}</th>
-                <th className="px-3 py-2 text-start font-medium">{t("admin.colGuest")}</th>
-                <th className="px-3 py-2 text-start font-medium">{t("admin.colDates")}</th>
-                <th className="px-3 py-2 text-start font-medium">{t("admin.colTotal")}</th>
-                <th className="px-3 py-2 text-start font-medium">{t("admin.colStatus")}</th>
-                <th className="hidden px-3 py-2 text-start font-medium lg:table-cell">
-                  {t("admin.colMade")}
-                </th>
+                {(
+                  [
+                    ["id", "colBooking"],
+                    ["listing", "colListing"],
+                    ["guest", "colGuest"],
+                    ["dates", "colDates"],
+                    ["total_price", "colTotal"],
+                    ["status", "colStatus"],
+                    ["created_at", "colMade"],
+                  ] as const
+                ).map(([column, label]) => (
+                  <AdminSortHeader
+                    key={column}
+                    column={column}
+                    label={t(`admin.${label}`)}
+                    sortBy={sortBy}
+                    order={order}
+                    href={adminHref("bookings", {
+                      status,
+                      ...sortValues(column, sortBy === column && order === "asc" ? "desc" : "asc"),
+                    })}
+                    className={column === "created_at" ? "hidden lg:table-cell" : undefined}
+                    hint={column === "total_price" ? t("admin.sortAmountsHint") : undefined}
+                  />
+                ))}
               </tr>
             </thead>
             <tbody className="divide-y">
