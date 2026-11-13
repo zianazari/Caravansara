@@ -164,12 +164,12 @@ for (const locale of ["fa", "en"] as const) {
 
 test("map prices keep their position and size on hover", async ({ page, request }) => {
   const host = await register(request, "maphover");
-  await createListing(request, host, { title: "E2E map hover place", city_id: 7, latitude: 35.72, longitude: 51.4, currency: "IRR" });
   await page.setViewportSize({ width: 1440, height: 1000 });
   const cities = await (
     await page.request.get(`${origin}/api/v1/cities?q=Tehran`)
   ).json();
   const city = cities.find((c: { name: string }) => c.name === "Tehran");
+  await createListing(request, host, { title: "E2E map hover place", city_id: city.id, latitude: 35.72, longitude: 51.4, currency: "IRR" });
   await page.goto(`${origin}/fa/search?city_id=${city.id}`);
   const pins = page.locator("a.maplibregl-marker");
   await expect(pins.last()).toBeVisible({ timeout: 20000 });
