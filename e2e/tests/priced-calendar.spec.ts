@@ -1,9 +1,9 @@
 import { expect, test, type Locator } from "@playwright/test";
 import path from "node:path";
-import { API, auth, createListing, day, register, reserve } from "./helpers";
+import { API, WEB, auth, createListing, day, register, reserve } from "./helpers";
 
 test.use({ extraHTTPHeaders: {} });
-test("guests compare nightly prices, confirm exact totals and leave on a booked date in both designs", async ({ page, request }) => {
+test("guests compare nightly prices, confirm exact totals and leave on a booked date in the unified design", async ({ page, request }) => {
   test.setTimeout(180_000);
   const host = await register(request, "pricedcalendarhost");
   const guest = await register(request, "pricedcalendarguest");
@@ -14,7 +14,7 @@ test("guests compare nightly prices, confirm exact totals and leave on a booked 
   const custom = day(startOffset + 1);
   const end = day(startOffset + 3);
   // Iran's calendar weekends stay visible even when the host has not enabled a rate adjustment.
-  for (const origin of ["http://localhost:3001", "http://localhost:3011"]) {
+  for (const origin of [WEB]) {
     for (const locale of ["fa", "en"]) {
       await page.setViewportSize({ width: 1440, height: 1000 });
       await page.goto(`${origin}/${locale}/listings/${listing.id}`);
@@ -52,7 +52,7 @@ test("guests compare nightly prices, confirm exact totals and leave on a booked 
     return dialog.locator(`[data-date="${iso}"]`);
   }
 
-  for (const origin of ["http://localhost:3001", "http://localhost:3011"]) {
+  for (const origin of [WEB]) {
     for (const locale of ["fa", "en"]) {
       await page.setViewportSize({ width: 1440, height: 1000 });
       await page.goto(`${origin}/${locale}/listings/${listing.id}`);
@@ -90,7 +90,7 @@ test("guests compare nightly prices, confirm exact totals and leave on a booked 
         });
         expect(errors, `${origin}/${locale} at ${width}`).toEqual([]);
       }
-      if (process.env.PRICED_CALENDAR_SHOTS && origin.endsWith("3011")) {
+      if (process.env.PRICED_CALENDAR_SHOTS) {
         await page.screenshot({ path: `/private/tmp/guest-price-calendar-${locale}-desktop.png` });
         if (locale === "fa") await dialog.screenshot({ path: path.resolve(__dirname, "../../docs/images/readme/guest-price-calendar.jpg"), type: "jpeg", quality: 90 });
         await page.setViewportSize({ width: 390, height: 1000 });

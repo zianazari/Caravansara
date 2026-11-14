@@ -12,7 +12,7 @@ presigned photo upload to MinIO, and HTTP from outside.
 
 ```bash
 # from the repo root: start the stack with higher per-IP limits (each test registers its own users)
-docker compose -f docker-compose.yml -f docker-compose.cinematic.yml -f e2e/compose.e2e.yml up -d --build --wait
+docker compose -f docker-compose.yml -f e2e/compose.e2e.yml up -d --build --wait
 
 cd e2e
 npm ci
@@ -56,24 +56,30 @@ therefore need the `docker` CLI and the compose stack on the same machine.
 
 `tests/admin.spec.ts` opens the admin panel at `http://admin.localhost:3001` (the `ADMIN_HOST` of the `web` service; set `ADMIN_WEB_URL` for another address). Browsers send `*.localhost` to this machine, so no DNS entry is needed.
 
-## Pricing and frontend variants
+## Pricing and unified frontend
 
-The suite currently collects 139 tests. `cinematic-home.spec.ts` targets port 3011 by default, so start the
-cinematic compose service when running the entire suite, including in CI. Both frontends share the API/database.
+The suite collects 142 tests against a single web service on port 3001. All browser
+suites use the shared `WEB_URL` (default `http://localhost:3001`) and admin uses
+`ADMIN_WEB_URL` (default `http://admin.localhost:3001`).
 
 `dynamic-pricing.spec.ts` exercises host rule editing, shared holiday add/remove, exact daily guest quotes,
 reservation and receipt snapshots, and Persian/English responsive accessibility. Holiday fixtures restore any
 previous entry in a `finally` block. Test accounts/listings follow the existing retained-fixture convention.
 
 `priced-calendar.spec.ts` checks guest nightly prices, staged date confirmation, exact IRR totals, checkout
-on a booked night, responsive layouts and accessibility in Persian/English on both ports 3001 and 3011.
+on a booked night, responsive layouts and accessibility in Persian/English on port 3001.
 Set `PRICED_CALENDAR_SHOTS=1` to capture the calendar in `/private/tmp` and update its README image.
 
 ```bash
 npx playwright test tests/admin.spec.ts tests/host.spec.ts tests/dynamic-pricing.spec.ts --workers=1
-WEB_URL=http://localhost:3011 ADMIN_WEB_URL=http://admin.localhost:3011 npx playwright test tests/dynamic-pricing.spec.ts
+WEB_URL=http://localhost:3001 ADMIN_WEB_URL=http://admin.localhost:3001 npx playwright test tests/dynamic-pricing.spec.ts
 ```
 
-`CINEMATIC_WEB` overrides the cinematic home origin; `WEB_URL` and `ADMIN_WEB_URL` choose the origins for host/admin
+`WEB_URL` and `ADMIN_WEB_URL` choose the origins for all public and host/admin
 flows. `PRICING_SHOTS=1` saves pricing/workspace screenshots under `/private/tmp` during a local run. After testing,
-restore normal API rate limits with `docker compose -f docker-compose.yml -f docker-compose.cinematic.yml up -d --no-deps --wait api`.
+restore normal API rate limits with `docker compose -f docker-compose.yml up -d --no-deps --wait api worker`.
+
+`admin-email-login.spec.ts` receives real login messages from Mailpit, enters
+five-digit codes in Persian/English, checks mobile layouts and axe, verifies
+HttpOnly admin cookies, and exercises automatic token renewal. It creates enabled
+admins through the existing CLI; no external email delivery is used in tests.

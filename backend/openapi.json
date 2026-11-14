@@ -6,6 +6,130 @@
     "version": "1.0.0"
   },
   "paths": {
+    "/api/v1/auth/email-code/request": {
+      "post": {
+        "tags": [
+          "Auth and profile"
+        ],
+        "summary": "Request a five-digit email sign-in code",
+        "description": "For existing members only. Always returns the same challenge shape, including unknown/admin addresses. Code expires in five minutes. Resend after sixty seconds, at most three per address in fifteen minutes. Delivery uses the configured SMTP server after the response; no code is returned or logged.",
+        "operationId": "request_email_code_api_v1_auth_email_code_request_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/EmailCodeRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EmailCodeChallenge"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Invalid input or a broken business rule",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too many attempts",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "A service the request needs is not reachable; nothing was changed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/auth/email-code/verify": {
+      "post": {
+        "tags": [
+          "Auth and profile"
+        ],
+        "summary": "Sign in with an email code",
+        "description": "Redeems a single-use five-digit code. Issues the same member session as password login. At most five failed checks per address in fifteen minutes, including across resends. Concurrent redemption cannot create two sessions from one code.",
+        "operationId": "verify_email_code_api_v1_auth_email_code_verify_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/EmailCodeVerify"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TokensOut"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, invalid or expired access token",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Invalid input or a broken business rule",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too many attempts",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/auth/register": {
       "post": {
         "tags": [
@@ -707,6 +831,180 @@
                   },
                   "type": "array",
                   "title": "Response List Amenities Api V1 Amenities Get"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/search/opportunities": {
+      "get": {
+        "tags": [
+          "Search"
+        ],
+        "summary": "Find travel opportunities within a total budget",
+        "description": "Up to three distinct public listings in one country and currency: cheapest, highest reviewed rating, and date-shift savings. Exact dynamic nightly prices plus cleaning must fit the budget. Checks full-stay availability and local booking dates. Savings compare the same listing on available preferred dates. Does not hold inventory or convert currencies.",
+        "operationId": "opportunities_api_v1_search_opportunities_get",
+        "parameters": [
+          {
+            "name": "budget",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "number",
+                  "maximum": 999999999999.99,
+                  "exclusiveMinimum": 0.0
+                },
+                {
+                  "type": "string"
+                }
+              ],
+              "title": "Budget"
+            }
+          },
+          {
+            "name": "currency",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^[A-Z]{3}$",
+              "title": "Currency"
+            }
+          },
+          {
+            "name": "country",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "pattern": "^[A-Z]{2}$",
+              "default": "IR",
+              "title": "Country"
+            }
+          },
+          {
+            "name": "city_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "integer",
+                  "exclusiveMinimum": 0
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "City Id"
+            }
+          },
+          {
+            "name": "preferred_check_in",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "date",
+              "title": "Preferred Check In"
+            }
+          },
+          {
+            "name": "nights",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 30,
+              "minimum": 1,
+              "default": 3,
+              "title": "Nights"
+            }
+          },
+          {
+            "name": "flex_days",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 7,
+              "minimum": 0,
+              "default": 3,
+              "title": "Flex Days"
+            }
+          },
+          {
+            "name": "adults",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 50,
+              "minimum": 1,
+              "default": 2,
+              "title": "Adults"
+            }
+          },
+          {
+            "name": "children",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 50,
+              "minimum": 0,
+              "default": 0,
+              "title": "Children"
+            }
+          },
+          {
+            "name": "infants",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 10,
+              "minimum": 0,
+              "description": "Accepted for the UI; infants don't count.",
+              "default": 0,
+              "title": "Infants"
+            },
+            "description": "Accepted for the UI; infants don't count."
+          },
+          {
+            "name": "pets",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 10,
+              "minimum": 0,
+              "default": 0,
+              "title": "Pets"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OpportunityPage"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Invalid input or a broken business rule",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
                 }
               }
             }
@@ -3311,6 +3609,130 @@
         }
       }
     },
+    "/api/v1/admin/auth/email-code/request": {
+      "post": {
+        "tags": [
+          "Admin"
+        ],
+        "summary": "Request a five-digit admin email sign-in code",
+        "description": "Sends only to enabled administrators created on the server. Unknown, member and disabled addresses receive the same challenge response without email. Codes expire after five minutes and are bound to admin sign-in. Resend after sixty seconds, at most three per address per fifteen minutes. Delivery uses the configured SMTP server after the response; codes are never returned or logged.",
+        "operationId": "request_admin_email_code_api_v1_admin_auth_email_code_request_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/EmailCodeRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EmailCodeChallenge"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Invalid input or a broken business rule",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too many attempts",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "A service the request needs is not reachable; nothing was changed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/admin/auth/email-code/verify": {
+      "post": {
+        "tags": [
+          "Admin"
+        ],
+        "summary": "Sign in to administration with an email code",
+        "description": "Redeems a single-use five-digit admin code. Member codes cannot be used here, and admin codes cannot create member sessions. Issues the existing fifteen-minute admin token and rotating refresh token with an eight-hour session end. At most five failed checks per address in fifteen minutes across resends. Disabled accounts are checked again before issuing a session.",
+        "operationId": "verify_admin_email_code_api_v1_admin_auth_email_code_verify_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/EmailCodeVerify"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AdminTokenOut"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, invalid or expired access token",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Invalid input or a broken business rule",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too many attempts",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/admin/countries": {
       "get": {
         "tags": [
@@ -5814,6 +6236,74 @@
           "review_version": 3
         }
       },
+      "EmailCodeChallenge": {
+        "properties": {
+          "challenge_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Challenge Id"
+          },
+          "expires_in": {
+            "type": "integer",
+            "title": "Expires In"
+          },
+          "resend_after": {
+            "type": "integer",
+            "title": "Resend After"
+          }
+        },
+        "type": "object",
+        "required": [
+          "challenge_id",
+          "expires_in",
+          "resend_after"
+        ],
+        "title": "EmailCodeChallenge"
+      },
+      "EmailCodeRequest": {
+        "properties": {
+          "email": {
+            "type": "string",
+            "format": "email",
+            "title": "Email"
+          },
+          "locale": {
+            "type": "string",
+            "enum": [
+              "fa",
+              "en"
+            ],
+            "title": "Locale",
+            "default": "fa"
+          }
+        },
+        "type": "object",
+        "required": [
+          "email"
+        ],
+        "title": "EmailCodeRequest"
+      },
+      "EmailCodeVerify": {
+        "properties": {
+          "challenge_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Challenge Id"
+          },
+          "code": {
+            "type": "string",
+            "pattern": "^[0-9]{5}$",
+            "title": "Code",
+            "description": "Exactly five digits, including leading zeros."
+          }
+        },
+        "type": "object",
+        "required": [
+          "challenge_id",
+          "code"
+        ],
+        "title": "EmailCodeVerify"
+      },
       "ErrorBody": {
         "properties": {
           "code": {
@@ -6952,6 +7442,27 @@
           "source"
         ],
         "title": "NightlyPrice"
+      },
+      "OpportunityPage": {
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/TravelOpportunity"
+            },
+            "type": "array",
+            "title": "Items"
+          },
+          "matched_listings": {
+            "type": "integer",
+            "title": "Matched Listings"
+          }
+        },
+        "type": "object",
+        "required": [
+          "items",
+          "matched_listings"
+        ],
+        "title": "OpportunityPage"
       },
       "PhotoCreate": {
         "properties": {
@@ -8150,6 +8661,88 @@
           "expires_in"
         ],
         "title": "TokensOut"
+      },
+      "TravelOpportunity": {
+        "properties": {
+          "kind": {
+            "type": "string",
+            "enum": [
+              "economical",
+              "experience",
+              "flexible",
+              "alternative"
+            ],
+            "title": "Kind"
+          },
+          "listing": {
+            "$ref": "#/components/schemas/SearchResult"
+          },
+          "check_in": {
+            "type": "string",
+            "format": "date",
+            "title": "Check In"
+          },
+          "check_out": {
+            "type": "string",
+            "format": "date",
+            "title": "Check Out"
+          },
+          "nights": {
+            "type": "integer",
+            "title": "Nights"
+          },
+          "stay_total": {
+            "type": "string",
+            "title": "Stay Total"
+          },
+          "cleaning_fee": {
+            "type": "string",
+            "title": "Cleaning Fee"
+          },
+          "total_price": {
+            "type": "string",
+            "title": "Total Price"
+          },
+          "shift_days": {
+            "type": "integer",
+            "title": "Shift Days"
+          },
+          "reference_total": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Reference Total"
+          },
+          "savings": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Savings"
+          }
+        },
+        "type": "object",
+        "required": [
+          "kind",
+          "listing",
+          "check_in",
+          "check_out",
+          "nights",
+          "stay_total",
+          "cleaning_fee",
+          "total_price",
+          "shift_days"
+        ],
+        "title": "TravelOpportunity"
       },
       "UploadUrlIn": {
         "properties": {

@@ -14,8 +14,10 @@
 --   + listing_review_events, admin_address_views (two new tables)
 -- Updated 2026-11-13 through migration 0012: 17 application tables, shared holidays,
 -- per-listing pricing_policy and saved booking nightly_prices; wishlists/outbox included.
--- Alembic migrations in backend/migrations are the source of truth; 0001 is
--- this file, and this file is kept in sync with later migrations.
+-- Updated 2026-11-14 through migration 0013: 18 application tables, including
+-- short-lived email login codes and separate email-code rate-limit actions.
+-- Alembic migrations are the source of truth; 0001 embeds the historical initial
+-- snapshot. This reference file reflects the current head.
 -- =====================================================================
 
 CREATE EXTENSION IF NOT EXISTS btree_gist;   -- lets "listing_id WITH =" join a GiST exclusion constraint
@@ -66,12 +68,26 @@ CREATE INDEX refresh_tokens_user_idx ON refresh_tokens (user_id) WHERE revoked_a
 -- Admin logins count apart ('admin_login'), so neither kind of login can lock the other out.
 CREATE TABLE auth_attempts (
     id            BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
-    action        TEXT        NOT NULL CHECK (action IN ('login', 'register', 'admin_login')),
-    identifier    TEXT        NOT NULL,                 -- lower(email) or client IP
+    action        TEXT        NOT NULL CHECK (action IN ('login', 'register', 'admin_login', 'email_code_request', 'email_code_verify')),
+    identifier    TEXT        NOT NULL,                 -- lower(email), IP or keyed address digest
     succeeded     BOOLEAN     NOT NULL,
     attempted_at  TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 CREATE INDEX auth_attempts_lookup_idx ON auth_attempts (action, identifier, attempted_at DESC);
+
+-- ---------- Short-lived email sign-in codes (0013) ------------------
+CREATE TABLE email_login_codes (
+        id UUID PRIMARY KEY,
+        email_digest TEXT NOT NULL CHECK (length(email_digest) = 64),
+        user_id BIGINT REFERENCES users(id) ON DELETE CASCADE,
+        code_hash TEXT NOT NULL CHECK (length(code_hash) = 64),
+        created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+        expires_at TIMESTAMPTZ NOT NULL CHECK (expires_at > created_at),
+        attempts SMALLINT NOT NULL DEFAULT 0 CHECK (attempts BETWEEN 0 AND 5),
+        consumed_at TIMESTAMPTZ
+    );
+CREATE INDEX email_login_codes_email_idx ON email_login_codes (email_digest, created_at DESC);
+CREATE INDEX email_login_codes_expires_idx ON email_login_codes (expires_at);
 
 -- ---------- Location ("Where") ---------------------------------------
 CREATE TABLE countries (

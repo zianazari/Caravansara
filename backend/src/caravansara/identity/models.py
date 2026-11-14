@@ -1,7 +1,8 @@
 import enum
 from datetime import datetime
+from uuid import UUID
 
-from sqlalchemy import BigInteger, Enum, ForeignKey, Identity, Text, func
+from sqlalchemy import BigInteger, Enum, ForeignKey, Identity, SmallInteger, Text, func
 from sqlalchemy.orm import Mapped, mapped_column
 
 from caravansara.core.db import Base
@@ -51,3 +52,16 @@ class AuthAttempt(Base):
     identifier: Mapped[str] = mapped_column(Text)
     succeeded: Mapped[bool]
     attempted_at: Mapped[datetime] = mapped_column(server_default=func.now())
+
+
+class EmailLoginCode(Base):
+    __tablename__ = "email_login_codes"
+
+    id: Mapped[UUID] = mapped_column(primary_key=True)
+    email_digest: Mapped[str] = mapped_column(Text)
+    user_id: Mapped[int | None] = mapped_column(BigInteger, ForeignKey("users.id", ondelete="CASCADE"))
+    code_hash: Mapped[str] = mapped_column(Text)
+    created_at: Mapped[datetime] = mapped_column(server_default=func.now())
+    expires_at: Mapped[datetime]
+    attempts: Mapped[int] = mapped_column(SmallInteger, server_default="0")
+    consumed_at: Mapped[datetime | None]

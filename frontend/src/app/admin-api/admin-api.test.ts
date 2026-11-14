@@ -12,6 +12,8 @@ vi.mock("next/headers", () => ({
 import { DELETE, GET, POST, PUT } from "./api/v1/admin/[...path]/route";
 import { POST as login } from "./login/route";
 import { POST as logout } from "./logout/route";
+import { POST as requestCode } from "./email-code/request/route";
+import { POST as verifyCode } from "./email-code/verify/route";
 
 const ADMIN = "http://admin.localhost:3001";
 const request = (path: string, method = "GET", body?: unknown, origin: string | null = ADMIN) =>
@@ -44,6 +46,48 @@ describe("admin panel handlers (feature 009)", () => {
   afterEach(() => {
     vi.unstubAllGlobals();
     vi.unstubAllEnvs();
+  });
+
+  it("requests an admin code without creating a session or returning secrets", async () => {
+    const challenge = { challenge_id: "id", expires_in: 300, resend_after: 60 };
+    fetchMock.mockResolvedValue(Response.json(challenge));
+    const res = await requestCode(
+      request("/admin-api/email-code/request", "POST", { email: "admin@example.com", locale: "fa" }),
+    );
+    expect(await res.json()).toEqual(challenge);
+    expect(res.headers.get("cache-control")).toBe("no-store");
+    expect(fetchMock.mock.calls[0]![0]).toBe("http://api:8000/api/v1/admin/auth/email-code/request");
+    expect(jar.size).toBe(0);
+  });
+
+  it("redeems an admin code into both HttpOnly cookies and exposes only the session end", async () => {
+    fetchMock.mockResolvedValue(Response.json(tokens()));
+    const res = await verifyCode(
+      request("/admin-api/email-code/verify", "POST", { challenge_id: "id", code: "00007" }),
+    );
+    expect(await res.json()).toEqual({ session_expires_in: 28800 });
+    expect(res.headers.get("cache-control")).toBe("no-store");
+    expect(fetchMock.mock.calls[0]![0]).toBe("http://api:8000/api/v1/admin/auth/email-code/verify");
+    expect(JSON.parse(fetchMock.mock.calls[0]![1].body)).toEqual({ challenge_id: "id", code: "00007" });
+    for (const name of ["cv_admin", "cv_admin_refresh"]) {
+      expect(jar.get(name)).toMatchObject({
+        options: { httpOnly: true, sameSite: "strict", path: "/admin-api" },
+      });
+    }
+  });
+
+  it.each([requestCode, verifyCode])("rejects cross-origin code operations", async (handler) => {
+    expect(
+      (await handler(request("/admin-api/email-code/verify", "POST", {}, "https://evil.example"))).status,
+    ).toBe(403);
+    expect(fetchMock).not.toHaveBeenCalled();
+    expect(jar.size).toBe(0);
+  });
+
+  it.each([requestCode, verifyCode])("preserves code errors without setting cookies", async (handler) => {
+    fetchMock.mockResolvedValue(Response.json({ error: { code: "too_many_attempts" } }, { status: 429 }));
+    expect((await handler(request("/admin-api/email-code/verify", "POST", {}))).status).toBe(429);
+    expect(jar.size).toBe(0);
   });
 
   it("logs in: both tokens go into HttpOnly cookies for /admin-api only, never into the body", async () => {

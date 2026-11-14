@@ -1,6 +1,9 @@
 """Registration, login, token rotation, profiles and admin accounts. Other modules may call this file only."""
 
+import hashlib
+import hmac
 import logging
+import secrets
 import uuid
 from collections.abc import AsyncIterator
 from dataclasses import dataclass
@@ -11,6 +14,7 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from caravansara.core.config import Settings
+from caravansara.core.email import EmailSender, OutgoingEmail
 from caravansara.core.errors import AppError, Conflict, NotFound, ServiceUnavailable, Unauthorized, Unprocessable
 from caravansara.core.metrics import RATE_LIMITED
 from caravansara.core.pagination import SortOrder
@@ -24,12 +28,13 @@ from caravansara.core.security import (
 from caravansara.core.storage import Storage
 from caravansara.core.timeutil import utcnow
 from caravansara.identity import repository as repo
-from caravansara.identity.models import AccountKind, User
+from caravansara.identity.models import AccountKind, EmailLoginCode, User
 from caravansara.identity.schemas import (
     AdminTokenOut,
     AdminUserOut,
     AdminUserPage,
     AdminUserSort,
+    EmailCodeChallenge,
     ProfileUpdate,
     TokensOut,
 )
@@ -141,6 +146,173 @@ async def logout(session: AsyncSession, refresh_token: str) -> None:
     row = await repo.get_refresh_token_for_update(session, hash_refresh_token(refresh_token))
     if row is not None and row.revoked_at is None:
         row.revoked_at = utcnow()
+    await session.commit()
+
+
+EMAIL_CODE_TTL = 300
+EMAIL_CODE_COOLDOWN = 60
+EMAIL_CODE_MAX_REQUESTS = 3
+EMAIL_CODE_MAX_FAILURES = 5
+EMAIL_CODE_WINDOW = 15
+
+
+def _email_hmac(settings: Settings, value: str) -> str:
+    return hmac.new(settings.jwt_secret.encode(), f"email-login:{value}".encode(), hashlib.sha256).hexdigest()
+
+
+def _email_code_hash(settings: Settings, challenge_id: uuid.UUID, code: str, kind: AccountKind) -> str:
+    # Preserve existing member challenges, while binding admin codes to their own purpose.
+    purpose = "admin:" if kind == AccountKind.admin else ""
+    return _email_hmac(settings, f"{purpose}code:{challenge_id}:{code}")
+
+
+async def request_email_code(
+    session: AsyncSession,
+    settings: Settings,
+    *,
+    email: str,
+    locale: str,
+    ip: str,
+    kind: AccountKind = AccountKind.member,
+) -> tuple[EmailCodeChallenge, OutgoingEmail | None]:
+    now = utcnow()
+    since = repo.window_start(now, EMAIL_CODE_WINDOW)
+    address = email.strip().lower()
+    purpose = "admin:" if kind == AccountKind.admin else ""
+    digest = _email_hmac(settings, f"{purpose}address:{address}")
+    ip_key = f"ip:{ip}"
+    email_key = f"email:{digest}"
+    # Same lock order in request and verify, including unknown addresses and challenges.
+    await repo.lock_email_auth(session, ip_key)
+    if await repo.count_attempts(session, "email_code_request", ip_key, since) >= settings.email_code_max_per_ip:
+        raise TooManyAttempts("email_code_request")
+    await repo.lock_email_auth(session, email_key)
+    latest = await repo.latest_email_code(session, digest)
+    if (latest and latest.created_at + timedelta(seconds=EMAIL_CODE_COOLDOWN) > now) or (
+        await repo.count_attempts(session, "email_code_request", email_key, since) >= EMAIL_CODE_MAX_REQUESTS
+    ):
+        raise TooManyAttempts("email_code_request")
+    await repo.record_attempt(session, "email_code_request", ip_key, succeeded=True)
+    await repo.record_attempt(session, "email_code_request", email_key, succeeded=True)
+    await repo.invalidate_email_codes(session, digest, now)
+    user = await repo.get_user_by_email(session, address, kind)
+    challenge_id = uuid.uuid4()
+    code = f"{secrets.randbelow(100000):05d}"
+    session.add(
+        EmailLoginCode(
+            id=challenge_id,
+            email_digest=digest,
+            user_id=user.id if user and user.disabled_at is None else None,
+            code_hash=_email_code_hash(settings, challenge_id, code, kind),
+            created_at=now,
+            expires_at=now + timedelta(seconds=EMAIL_CODE_TTL),
+            attempts=0,
+        )
+    )
+    await session.commit()
+    challenge = EmailCodeChallenge(
+        challenge_id=challenge_id, expires_in=EMAIL_CODE_TTL, resend_after=EMAIL_CODE_COOLDOWN
+    )
+    message = None
+    if user and user.disabled_at is None:
+        if locale == "fa":
+            subject = "کد ورود به مدیریت کاروانسرا" if kind == AccountKind.admin else "کد ورود به کاروانسرا"
+            body = (
+                f"کد ورود شما به کاروانسرا:\n\n{code}\n\n"
+                "این کد تا ۵ دقیقه معتبر است و فقط یک بار قابل استفاده است.\n"
+                "اگر شما درخواست ورود نداده‌اید، این پیام را نادیده بگیرید."
+            )
+        else:
+            subject = (
+                "Your Caravansara admin sign-in code" if kind == AccountKind.admin else "Your Caravansara sign-in code"
+            )
+            body = (
+                f"Your Caravansara sign-in code:\n\n{code}\n\n"
+                "This code expires in 5 minutes and can be used once.\n"
+                "If you did not request it, ignore this message."
+            )
+        message = OutgoingEmail(to=user.email, subject=subject, body=body)
+    return challenge, message
+
+
+async def send_email_code(sender: EmailSender, message: OutgoingEmail) -> None:
+    """After the generic response, never through the durable plaintext business outbox."""
+    try:
+        await sender.send(message)
+    except Exception:  # SMTP failure must not change the generic response or expose an address/code.
+        log.warning("login code delivery failed")
+
+
+async def request_admin_email_code(
+    session: AsyncSession, settings: Settings, *, email: str, locale: str, ip: str
+) -> tuple[EmailCodeChallenge, OutgoingEmail | None]:
+    return await request_email_code(session, settings, email=email, locale=locale, ip=ip, kind=AccountKind.admin)
+
+
+async def verify_email_code(
+    session: AsyncSession, settings: Settings, *, challenge_id: uuid.UUID, code: str, ip: str
+) -> TokensOut:
+    user = await _consume_email_code(
+        session, settings, challenge_id=challenge_id, code=code, ip=ip, kind=AccountKind.member
+    )
+    tokens = await _issue_tokens(session, settings, user.id)
+    await session.commit()
+    return tokens
+
+
+async def verify_admin_email_code(
+    session: AsyncSession, settings: Settings, *, challenge_id: uuid.UUID, code: str, ip: str
+) -> AdminTokenOut:
+    user = await _consume_email_code(
+        session, settings, challenge_id=challenge_id, code=code, ip=ip, kind=AccountKind.admin
+    )
+    ends = utcnow() + timedelta(hours=settings.admin_session_hours)
+    tokens = await _issue_admin_tokens(session, settings, user.id, ends)
+    await session.commit()
+    return tokens
+
+
+async def _consume_email_code(
+    session: AsyncSession, settings: Settings, *, challenge_id: uuid.UUID, code: str, ip: str, kind: AccountKind
+) -> User:
+    now = utcnow()
+    since = repo.window_start(now, EMAIL_CODE_WINDOW)
+    ip_key = f"ip:{ip}"
+    await repo.lock_email_auth(session, ip_key)
+    if await repo.count_attempts(session, "email_code_verify", ip_key, since) >= settings.login_max_per_ip:
+        raise TooManyAttempts("email_code_verify")
+    ip_attempt = await repo.record_attempt(session, "email_code_verify", ip_key, succeeded=False)
+    row = await repo.get_email_code(session, challenge_id)
+    if row is None:
+        await session.commit()
+        raise Unauthorized("The code is invalid or expired.", code="invalid_email_code")
+    email_key = f"email:{row.email_digest}"
+    await repo.lock_email_auth(session, email_key)
+    row = await repo.get_email_code(session, challenge_id, lock=True)
+    now = utcnow()
+    if (
+        await repo.count_attempts(session, "email_code_verify", email_key, since, failed_only=True)
+        >= EMAIL_CODE_MAX_FAILURES
+    ):
+        await session.commit()
+        raise TooManyAttempts("email_code_verify")
+    attempt = await repo.record_attempt(session, "email_code_verify", email_key, succeeded=False)
+    ok = row is not None and row.consumed_at is None and row.expires_at > now and row.attempts < EMAIL_CODE_MAX_FAILURES
+    if row is not None:
+        ok = hmac.compare_digest(row.code_hash, _email_code_hash(settings, challenge_id, code, kind)) and ok
+        if row.attempts < EMAIL_CODE_MAX_FAILURES:
+            row.attempts += 1
+    user = await repo.get_user(session, row.user_id) if row and row.user_id else None
+    if not ok or row is None or user is None or user.kind != kind or user.disabled_at is not None:
+        await session.commit()
+        raise Unauthorized("The code is invalid or expired.", code="invalid_email_code")
+    row.consumed_at = now
+    attempt.succeeded = ip_attempt.succeeded = True
+    return user
+
+
+async def cleanup_email_codes(session: AsyncSession) -> None:
+    await repo.delete_old_email_codes(session, utcnow() - timedelta(days=1))
     await session.commit()
 
 

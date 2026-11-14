@@ -4,6 +4,8 @@ from typing import Annotated
 
 from fastapi import Depends, Request
 
+from caravansara.core.email import EmailSender, sender_from_settings
+from caravansara.core.security import SettingsDep
 from caravansara.core.storage import Storage
 
 
@@ -20,3 +22,7 @@ def client_ip(request: Request) -> str:
 
 
 ClientIp = Annotated[str, Depends(client_ip)]
+
+
+def email_login_sender(settings: SettingsDep) -> EmailSender | None:
+    return sender_from_settings(settings)

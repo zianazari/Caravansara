@@ -44,6 +44,22 @@ describe("AuthForm", () => {
     expect(setSession).toHaveBeenCalledWith("acc", 900);
   });
 
+  it("offers email login beside password and keeps the return-to booking path", async () => {
+    search = new URLSearchParams("returnTo=/fa/book/5?adults=2");
+    fetchMock
+      .mockResolvedValueOnce(Response.json({ challenge_id: "code-id", expires_in: 300, resend_after: 60 }))
+      .mockResolvedValueOnce(Response.json({ access_token: "email-access", expires_in: 900 }));
+    renderIn("fa", <AuthForm mode="login" />);
+    await userEvent.click(screen.getByRole("button", { name: "ایمیل" }));
+    expect(screen.queryByLabelText("رمز")).not.toBeInTheDocument();
+    await fill({ ایمیل: "guest@example.com" });
+    await userEvent.click(screen.getByRole("button", { name: "ارسال کد ورود" }));
+    await userEvent.type(await screen.findByLabelText("کد ۵ رقمی"), "۰۰۰۰۷");
+    await userEvent.click(screen.getByRole("button", { name: "تأیید کد و ورود" }));
+    await waitFor(() => expect(replace).toHaveBeenCalledWith("/book/5?adults=2"));
+    expect(setSession).toHaveBeenCalledWith("email-access", 900);
+  });
+
   it("never follows a return address to another site", async () => {
     search = new URLSearchParams("returnTo=//evil.example");
     fetchMock.mockResolvedValue(Response.json({ access_token: "acc", expires_in: 900 }));

@@ -36,7 +36,7 @@ uv run caravansara serve --reload        # API on :8000
 uv run caravansara worker                # booking jobs every minute
 ```
 
-Settings come from `CARAVANSARA_*` environment variables; see `src/caravansara/core/config.py` and `.env.example`. Never commit real secrets. Email (feature 013): `CARAVANSARA_SMTP_HOST`, `_SMTP_PORT`, `_SMTP_FROM`, `_SMTP_USERNAME`, `_SMTP_PASSWORD`, `_SMTP_STARTTLS` and `CARAVANSARA_SITE_URL` for the links; without a host, emails wait in the outbox.
+Settings come from `CARAVANSARA_*` environment variables; see `src/caravansara/core/config.py` and `.env.example`. Never commit real secrets. Email (feature 013): `CARAVANSARA_SMTP_HOST`, `_SMTP_PORT`, `_SMTP_FROM`, `_SMTP_USERNAME`, `_SMTP_PASSWORD`, `_SMTP_STARTTLS` and `CARAVANSARA_SITE_URL` for the links; without a host, business emails wait in the outbox and email-code requests return 503.
 
 | Command | What it does |
 | --- | --- |
@@ -113,3 +113,16 @@ tests/
 ```
 
 Each module has `router`, `service`, `repository`, `models` and `schemas`. A module uses another module only through its `service`, and import-linter enforces that rule.
+
+## Email code sign-in (054)
+
+Members can use a five-digit email code beside password login. Migration `0013`
+adds short-lived HMAC challenges; the API sends codes as background tasks using the
+same SMTP settings as the worker. Local messages appear in Mailpit at
+<http://localhost:8025>. Missing SMTP returns 503; delivery failures permit a resend
+after sixty seconds. Business emails retain their durable outbox/retry flow.
+Admins use `/admin/auth/email-code/request` and `/verify` on the admin API host.
+Their codes are purpose-bound and issue the existing short admin token and
+eight-hour rotating session; member codes cannot enter the panel. This extension
+uses migration `0013` without a further schema change.
+See [email-login.md](../docs/email-login.md) for contracts, limits and retention.

@@ -121,31 +121,33 @@ the same server quote used for reservations. `NightlyPriceCalendar` is shared by
 (below it on phones). Compact IRR guide prices use a captioned toman unit; accessible descriptions retain
 exact amounts. Checkout is labelled separately, including when its night is already booked. Component tests
 cover cancellation, explicit clearing, quote errors/retry, keyboard navigation and both languages; the
-`priced-calendar.spec.ts` browser check covers both designs, 320–1440 px and axe contrast checks.
+`priced-calendar.spec.ts` browser check covers the main site, 320–1440 px and axe contrast checks.
 
-## Boutique home design
+## Unified site on port 3001
 
-The home page uses an atmospheric Persian courtyard cover, an overlapping search bar, olive actions and
-ivory surfaces. The decorative cover (`src/assets/hero-boutique.jpg`) is AI-generated, not a photo of a
-bookable property. The original courtyard asset and animated travel scene remain in the project; the scene
-now sits below the city rows. Collection links use existing property-type and pets filters. Both Persian
-and English are supported. `e2e/tests/boutique-home.spec.ts` checks responsive widths, accessibility, mobile
-search and category navigation. Set `BOUTIQUE_WEB` to test an alternate local preview port.
-
-## Separate cinematic preview on port 3011
-
-With the main local stack already running:
+The cinematic home, compact search, popular destinations and city rows use one
+layout and one dark/orange palette. Public, host and
+admin routes use the same application; `CARAVANSARA_DESIGN` is no longer used.
 
 ```bash
-docker compose -f docker-compose.yml -f docker-compose.cinematic.yml up -d --build --no-deps --wait web-cinematic
+docker compose up -d --build --no-deps --wait web
 ```
 
-Open `http://localhost:3011/fa` (or `/en`); the companion admin host is `http://admin.localhost:3011`. This creates a separate image and container and leaves the
-original service on port 3001 running. `CARAVANSARA_DESIGN=cinematic` selects the dark theme and alternative
-home page at runtime. Search, dates, listings and booking use the existing API; this is a separate frontend,
-not a separate database. The generated cabin and coast images are decorative, not listing photographs.
-The destination cards load the three most popular Iranian cities from the catalog and open each city's real search results. City images are generated decorative illustrations, not listing photographs.
-Check the preview with `npx playwright test tests/cinematic-home.spec.ts` from `e2e/`.
+Open `http://localhost:3001/fa` or `/en`; admin is at `http://admin.localhost:3001`.
+`npm run dev` uses the same design on port 3001 without extra configuration.
+Generated cover/destination photos are decorative, not listing photographs.
+Run `e2e/tests/home.spec.ts` and `cinematic-home.spec.ts` against `WEB_URL`.
 
-The configured admin host always uses the cinematic dark/orange palette, including its login page,
-review screens, booking and user tables. The public site on port 3001 retains its default palette.
+### Email-code sign-in
+
+The member login form offers password and email-code methods. `/session/email-code/request`
+forwards the normalized address and language; `/session/email-code/verify` stores
+the refresh token in the same HttpOnly cookie as password login. Persian/Arabic
+digits are normalized without losing leading zeroes. Return-to validation, refresh
+rotation and logout remain shared. See [the email login guide](../docs/email-login.md).
+
+Admin login defaults to the same five-cell email input, with a password option.
+`/admin-api/email-code/{request,verify}` uses the separate admin API; verification
+sets both HttpOnly panel cookies and returns only `session_expires_in`.
+`AuthPanel` and `AuthMethods` share the logo, card dimensions, typography, spacing
+and method selector between member and admin login.

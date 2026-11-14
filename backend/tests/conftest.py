@@ -33,7 +33,7 @@ _MINIO_READY_LINE = b"MinIO setup finished"  # logged by the bitnami image befor
 DATA_TABLES = (
     "holidays, admin_address_views, listing_review_events, reviews, bookings, "
     "listing_amenities, listing_photos, listings, "
-    "auth_attempts, refresh_tokens, users"
+    "auth_attempts, email_login_codes, refresh_tokens, users"
 )
 
 

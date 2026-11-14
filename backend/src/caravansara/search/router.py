@@ -10,12 +10,33 @@ from caravansara.core.pagination import PageDep
 from caravansara.core.security import SettingsDep
 from caravansara.listings.service import PropertyType
 from caravansara.search import service
+from caravansara.search.opportunities import find_opportunities
 from caravansara.search.repository import Criteria
-from caravansara.search.schemas import FilterCounts, SearchPage, SortBy
+from caravansara.search.schemas import FilterCounts, OpportunityPage, OpportunityQuery, SearchPage, SortBy
 
 router = APIRouter(prefix="/search", tags=["Search"])
 
 _AREA = "Send **either** `city_id` **or** `lat` + `lng` + `radius_km` (1–100 km)."
+
+
+@router.get(
+    "/opportunities",
+    summary="Find travel opportunities within a total budget",
+    description=(
+        "Up to three distinct public listings in one country and currency: cheapest, highest reviewed rating, "
+        "and date-shift savings. Exact dynamic nightly prices plus cleaning must fit the budget. "
+        "Checks full-stay availability and local booking dates. Savings compare the same listing on "
+        "available preferred dates. Does not hold inventory or convert currencies."
+    ),
+    responses=error_responses(422),
+)
+async def opportunities(
+    query: Annotated[OpportunityQuery, Query()],
+    session: SessionDep,
+    storage: StorageDep,
+    settings: SettingsDep,
+) -> OpportunityPage:
+    return await find_opportunities(session, storage, settings, query)
 
 
 def criteria(

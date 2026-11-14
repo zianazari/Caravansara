@@ -133,6 +133,24 @@
       "key": "holidayDate",
       "value": "2027-01-01",
       "type": "string"
+    },
+    {
+      "key": "emailChallengeId",
+      "value": "",
+      "description": "Set automatically by Request email sign-in code."
+    },
+    {
+      "key": "emailCode",
+      "value": "",
+      "description": "Latest five-digit code from your email/Mailpit. Never commit a real code."
+    },
+    {
+      "key": "adminEmailChallengeId",
+      "value": ""
+    },
+    {
+      "key": "adminEmailCode",
+      "value": ""
     }
   ],
   "item": [
@@ -441,6 +459,96 @@
               }
             }
           }
+        },
+        {
+          "name": "Request email sign-in code",
+          "request": {
+            "method": "POST",
+            "auth": {
+              "type": "noauth"
+            },
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/auth/email-code/request",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "auth",
+                "email-code",
+                "request"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{email}}\",\n  \"locale\": \"fa\"\n}"
+            },
+            "description": "Existing member accounts only. Same response for unknown/admin addresses. Five-digit code delivered through configured SMTP. Expires in five minutes; resend after sixty seconds. Local email viewer: http://localhost:8025."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Challenge accepted\", () => pm.response.to.have.status(200));",
+                  "if (pm.response.code === 200) { const body = pm.response.json(); pm.collectionVariables.set(\"emailChallengeId\", body.challenge_id); pm.test(\"No code or tokens in response\", () => { pm.expect(body).not.to.have.property(\"code\"); pm.expect(body).not.to.have.property(\"access_token\"); pm.expect(body.expires_in).to.eql(300); }); }"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Verify email sign-in code",
+          "request": {
+            "method": "POST",
+            "auth": {
+              "type": "noauth"
+            },
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/auth/email-code/verify",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "auth",
+                "email-code",
+                "verify"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"challenge_id\": \"{{emailChallengeId}}\",\n  \"code\": \"{{emailCode}}\"\n}"
+            },
+            "description": "Set emailCode from the latest received message. Exactly five digits, including leading zeros. Do not commit real codes. Success issues the ordinary member tokens; code can be redeemed once."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Signed in\", () => pm.response.to.have.status(200));",
+                  "if (pm.response.code === 200) { const body = pm.response.json(); pm.collectionVariables.set(\"accessToken\", body.access_token); pm.collectionVariables.set(\"refreshToken\", body.refresh_token); pm.collectionVariables.unset(\"emailCode\"); }"
+                ]
+              }
+            }
+          ]
         }
       ]
     },
@@ -967,6 +1075,72 @@
               "type": "noauth"
             }
           }
+        },
+        {
+          "name": "Travel opportunities within budget",
+          "request": {
+            "method": "GET",
+            "auth": {
+              "type": "noauth"
+            },
+            "description": "Read-only: up to three distinct public stays in IR/IRR, exact dynamic totals including cleaning within budget. Savings only against available preferred dates on the same property. No currency conversion or inventory hold.",
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/search/opportunities?country=IR&currency=IRR&budget=100000000&preferred_check_in={{checkIn}}&nights=3&flex_days=3&adults=2",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "search",
+                "opportunities"
+              ],
+              "query": [
+                {
+                  "key": "country",
+                  "value": "IR"
+                },
+                {
+                  "key": "currency",
+                  "value": "IRR"
+                },
+                {
+                  "key": "budget",
+                  "value": "100000000"
+                },
+                {
+                  "key": "preferred_check_in",
+                  "value": "{{checkIn}}"
+                },
+                {
+                  "key": "nights",
+                  "value": "3"
+                },
+                {
+                  "key": "flex_days",
+                  "value": "3"
+                },
+                {
+                  "key": "adults",
+                  "value": "2"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Success\", () => pm.response.to.have.status(200));",
+                  "const data = pm.response.json();",
+                  "pm.test(\"At most three distinct properties\", () => { pm.expect(data.items.length).to.be.at.most(3); pm.expect(new Set(data.items.map(i => i.listing.id)).size).to.eql(data.items.length); });",
+                  "pm.test(\"Exact totals stay within one currency budget\", () => data.items.forEach(i => { pm.expect(i.listing.currency).to.eql(\"IRR\"); pm.expect(Number(i.total_price)).to.be.at.most(100000000); pm.expect(i.total_price).to.eql(i.listing.total_price); }));"
+                ]
+              }
+            }
+          ]
         }
       ]
     },
@@ -1878,6 +2052,98 @@
       "name": "Admin (listing review)",
       "description": "An admin account exists only through `caravansara create-admin` on the server (or `admin@example.com` in the demo data). Admin endpoints use their own token; a member token is refused, and an admin token works on no member endpoint (specs/backend (004)).",
       "item": [
+        {
+          "name": "Request admin email sign-in code",
+          "request": {
+            "method": "POST",
+            "auth": {
+              "type": "noauth"
+            },
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/admin/auth/email-code/request",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "admin",
+                "auth",
+                "email-code",
+                "request"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{adminEmail}}\",\n  \"locale\": \"fa\"\n}"
+            },
+            "description": "Admin-only five-digit code, valid for five minutes. Separate purpose from member codes; same rate limits. Unknown/member/disabled addresses receive a generic challenge without mail. Use the admin API host when configured."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Challenge accepted\", () => pm.response.to.have.status(200));",
+                  "if (pm.response.code === 200) { const body = pm.response.json(); pm.collectionVariables.set(\"adminEmailChallengeId\", body.challenge_id); pm.test(\"No code or tokens in response\", () => { pm.expect(body).not.to.have.property(\"code\"); pm.expect(body).not.to.have.property(\"access_token\"); pm.expect(body.expires_in).to.eql(300); }); }"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Verify admin email sign-in code",
+          "request": {
+            "method": "POST",
+            "auth": {
+              "type": "noauth"
+            },
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/admin/auth/email-code/verify",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "admin",
+                "auth",
+                "email-code",
+                "verify"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"challenge_id\": \"{{adminEmailChallengeId}}\",\n  \"code\": \"{{adminEmailCode}}\"\n}"
+            },
+            "description": "Admin-only five-digit code, valid for five minutes. Separate purpose from member codes; same rate limits. Unknown/member/disabled addresses receive a generic challenge without mail. Use the admin API host when configured."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Signed in\", () => pm.response.to.have.status(200));",
+                  "if (pm.response.code === 200) { const body = pm.response.json(); pm.collectionVariables.set(\"adminToken\", body.access_token); pm.collectionVariables.set(\"adminRefreshToken\", body.refresh_token); pm.collectionVariables.unset(\"adminEmailCode\"); }"
+                ]
+              }
+            }
+          ]
+        },
         {
           "name": "Admin log in",
           "request": {

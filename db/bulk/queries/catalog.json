@@ -746,6 +746,23 @@
         "offset": 0
       },
       "target_ms": 1000
+    },
+    {
+      "name": "travel_opportunities_country",
+      "source": "caravansara.search.repository:opportunity_candidates",
+      "endpoint": "GET /search/opportunities",
+      "kind": "read",
+      "params": {
+        "country": "GB",
+        "currency": "GBP",
+        "city_id": null,
+        "guests": 2,
+        "pets": 0,
+        "budget": 1000,
+        "start": "@check_in",
+        "end": "@opportunity_end"
+      },
+      "target_ms": 200
     }
   ],
   "excluded": [
@@ -912,6 +929,26 @@
     {
       "source": "caravansara.catalog.repository:delete_holiday",
       "reason": "One holiday DELETE on its compound primary key; admin-only."
+    },
+    {
+      "source": "caravansara.identity.repository:lock_email_auth",
+      "reason": "One advisory transaction lock for a single rate-limit key; no table scan."
+    },
+    {
+      "source": "caravansara.identity.repository:latest_email_code",
+      "reason": "One address by email_login_codes_email_idx, newest first, LIMIT 1."
+    },
+    {
+      "source": "caravansara.identity.repository:invalidate_email_codes",
+      "reason": "One address by email_login_codes_email_idx; invalidates only previous unconsumed challenges."
+    },
+    {
+      "source": "caravansara.identity.repository:get_email_code",
+      "reason": "One random UUID by primary key, optionally FOR UPDATE for single use."
+    },
+    {
+      "source": "caravansara.identity.repository:delete_old_email_codes",
+      "reason": "Worker retention deletion on email_login_codes_expires_idx, after one day past expiry."
     }
   ]
 }

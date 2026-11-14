@@ -4,7 +4,6 @@ import { useQueryClient } from "@tanstack/react-query";
 import { useTranslations } from "next-intl";
 import { useSearchParams } from "next/navigation";
 import { useState, type FormEvent } from "react";
-import { LogoMark } from "@/components/brand/Logo";
 import { Button } from "@/components/ui/button";
 import { Field } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
@@ -12,6 +11,8 @@ import { Link, useRouter } from "@/i18n/navigation";
 import { errorMessage, fieldErrors, readError, type Translate } from "@/lib/errors";
 import { safeReturnTo } from "@/lib/returnTo";
 import { setSession } from "@/lib/session";
+import { EmailCodeForm } from "./EmailCodeForm";
+import { AuthMethods, AuthPanel } from "./AuthPanel";
 
 type Mode = "login" | "register";
 
@@ -30,6 +31,13 @@ export function AuthForm({ mode }: { mode: Mode }) {
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [problem, setProblem] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  const [method, setMethod] = useState<"password" | "email">("password");
+
+  async function complete(session: { access_token: string; expires_in: number }) {
+    setSession(session.access_token, session.expires_in);
+    await queryClient.invalidateQueries({ queryKey: ["me"] });
+    router.replace(safeReturnTo(returnTo));
+  }
 
   function check(): Record<string, string> {
     const found: Record<string, string> = {};
@@ -77,9 +85,7 @@ export function AuthForm({ mode }: { mode: Mode }) {
         return;
       }
       const session = (await response.json()) as { access_token: string; expires_in: number };
-      setSession(session.access_token, session.expires_in);
-      await queryClient.invalidateQueries({ queryKey: ["me"] });
-      router.replace(safeReturnTo(returnTo));
+      await complete(session);
     } catch {
       setProblem(t("errors.service_unavailable"));
     } finally {
@@ -92,55 +98,57 @@ export function AuthForm({ mode }: { mode: Mode }) {
   const other = mode === "login" ? "register" : "login";
 
   return (
-    <section className="mx-auto mt-4 grid w-full max-w-md gap-6 rounded-3xl border bg-card p-6 shadow-xl shadow-foreground/5 md:mt-8 md:p-8">
-      {/* The site's mark above the form (feature 036: the new logo everywhere). */}
-      <LogoMark className="mx-auto -mb-2 h-11 w-10" />
-      <h1 className="text-center text-2xl font-bold">
-        {t(mode === "login" ? "auth.loginTitle" : "auth.registerTitle")}
-      </h1>
-      <form onSubmit={submit} noValidate className="grid gap-4">
-        {problem ? (
-          <p role="alert" className="rounded-lg border border-destructive p-3 text-sm text-destructive">
-            {problem}
-          </p>
-        ) : null}
-        {mode === "register" ? (
-          <Field label={t("auth.fullName")} error={errors.full_name}>
-            {(p) => <Input {...p} autoComplete="name" value={values.full_name} onChange={set("full_name")} />}
+    <AuthPanel title={t(mode === "login" ? "auth.loginTitle" : "auth.registerTitle")}>
+      {mode === "login" ? <AuthMethods value={method} onChange={setMethod} /> : null}
+      {mode === "login" && method === "email" ? (
+        <EmailCodeForm onSuccess={complete} />
+      ) : (
+        <form onSubmit={submit} noValidate className="grid gap-4">
+          {problem ? (
+            <p role="alert" className="rounded-lg border border-destructive p-3 text-sm text-destructive">
+              {problem}
+            </p>
+          ) : null}
+          {mode === "register" ? (
+            <Field label={t("auth.fullName")} error={errors.full_name}>
+              {(p) => (
+                <Input {...p} autoComplete="name" value={values.full_name} onChange={set("full_name")} />
+              )}
+            </Field>
+          ) : null}
+          <Field label={t("auth.email")} error={errors.email}>
+            {(p) => (
+              <Input
+                {...p}
+                type="email"
+                autoComplete="email"
+                dir="ltr"
+                value={values.email}
+                onChange={set("email")}
+              />
+            )}
           </Field>
-        ) : null}
-        <Field label={t("auth.email")} error={errors.email}>
-          {(p) => (
-            <Input
-              {...p}
-              type="email"
-              autoComplete="email"
-              dir="ltr"
-              value={values.email}
-              onChange={set("email")}
-            />
-          )}
-        </Field>
-        <Field
-          label={t("auth.password")}
-          error={errors.password}
-          hint={mode === "register" ? t("auth.passwordHint") : undefined}
-        >
-          {(p) => (
-            <Input
-              {...p}
-              type="password"
-              dir="ltr"
-              autoComplete={mode === "login" ? "current-password" : "new-password"}
-              value={values.password}
-              onChange={set("password")}
-            />
-          )}
-        </Field>
-        <Button type="submit" size="lg" disabled={busy}>
-          {busy ? t("auth.working") : t(mode === "login" ? "auth.login" : "auth.register")}
-        </Button>
-      </form>
+          <Field
+            label={t("auth.password")}
+            error={errors.password}
+            hint={mode === "register" ? t("auth.passwordHint") : undefined}
+          >
+            {(p) => (
+              <Input
+                {...p}
+                type="password"
+                dir="ltr"
+                autoComplete={mode === "login" ? "current-password" : "new-password"}
+                value={values.password}
+                onChange={set("password")}
+              />
+            )}
+          </Field>
+          <Button type="submit" size="lg" disabled={busy}>
+            {busy ? t("auth.working") : t(mode === "login" ? "auth.login" : "auth.register")}
+          </Button>
+        </form>
+      )}
       <p className="flex flex-wrap items-center gap-2 text-sm">
         {t(mode === "login" ? "auth.noAccount" : "auth.haveAccount")}
         <Button asChild variant="soft" size="sm">
@@ -149,6 +157,6 @@ export function AuthForm({ mode }: { mode: Mode }) {
           </Link>
         </Button>
       </p>
-    </section>
+    </AuthPanel>
   );
 }

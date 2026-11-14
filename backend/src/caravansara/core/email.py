@@ -1,6 +1,6 @@
-"""Sending email (feature 013). The worker is the only sender; the API only writes the outbox.
+"""SMTP delivery shared by the business-email worker and short-lived API login messages.
 
-``EmailSender`` is what the worker needs. ``SmtpSender`` speaks SMTP with the standard library, in a thread so
+``EmailSender`` is the shared delivery interface. ``SmtpSender`` speaks SMTP with the standard library, in a thread so
 the worker's loop keeps running; no new dependency (principle VII). ``MemorySender`` keeps messages in a list,
 so tests never send real email.
 """
@@ -59,5 +59,5 @@ class MemorySender:
 
 
 def sender_from_settings(settings: Settings) -> EmailSender | None:
-    """No SMTP host: nothing is sent and the emails wait in the outbox (the queue alert then fires)."""
+    """No host: business mail stays queued; the login-code endpoint returns 503."""
     return SmtpSender(settings) if settings.smtp_host else None

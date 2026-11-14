@@ -1,6 +1,6 @@
 # Caravansara: ERD
 
-Current reference snapshot: **2026-11-13, Alembic head 0012, 17 application tables** (excluding PostGIS/Alembic tables).
+Current reference snapshot: **2026-11-14, Alembic head 0013, 18 application tables** (excluding PostGIS/Alembic tables).
 Migrations in `backend/migrations/` are authoritative; `schema.sql`, DBML and the ERD mirror the current design.
 The original 12-table schema is embedded in migration 0001 and remains historical.
 
@@ -13,7 +13,7 @@ per-listing pricing. Guest/host messages and host replies remain outside the imp
 
 | File | What it is |
 | --- | --- |
-| `schema.sql` | PostgreSQL 16 + PostGIS schema: 17 tables, the no-double-booking constraint, review triggers, the append-only review history |
+| `schema.sql` | PostgreSQL 16 + PostGIS schema: 18 tables, the no-double-booking constraint, review triggers, the append-only review history |
 | `seed_amenities.sql` | 12 amenity categories and 31 amenities (Wifi, Kitchen, Microwave …) |
 | `seed_locations.sql` | 7 countries and 9 cities with IANA timezones (Amsterdam, Lisbon, Copenhagen, Stockholm, London, New York City, Tehran, Isfahan, Shiraz). Adds only missing rows, so `caravansara seed` is safe on a database with data |
 | `seed_demo.sql` | Demo data from Inside Airbnb plus Persian examples, **generated**; see the maintained recipe/counts below. See [`demo/README.md`](demo/README.md) |
@@ -21,11 +21,12 @@ per-listing pricing. Guest/host messages and host replies remain outside the imp
 | `schema.dbml` | Paste into [dbdiagram.io](https://dbdiagram.io) |
 | `erd.mmd` | Mermaid source (also below; GitHub and VS Code render it) |
 
-## Current changes through 0012
+## Current changes through 0013
 
 - `0007`: `wishlist_items`, keyed by member/listing, with cascading foreign keys and saved-date ordering.
 - `0008`/`0009`: `email_outbox` for listing-review and booking-confirmation messages in the event transaction.
 - `0010`: `bookings.paid_at`; `0011`: admin user-search and booking-status indexes.
+- `0013`: short-lived HMAC email login challenges, single use and persistent rate-limit actions.
 - `0012`: JSONB `listings.pricing_policy`, JSONB `bookings.nightly_prices`, and `holidays` keyed by country/date.
   Host rules use custom range → holiday → weekend → base priority. Active custom ranges cannot overlap;
   booking totals and nightly amounts are saved, not recomputed after rule changes. Calendar writes are admin-only.
@@ -152,6 +153,7 @@ erDiagram
     USERS ||--o{ EMAIL_OUTBOX : "receives"
     USERS ||--o{ LISTINGS : "hosts"
     USERS ||--o{ BOOKINGS : "books"
+    USERS |o--o{ EMAIL_LOGIN_CODES : "email signs in"
     USERS ||--o{ REFRESH_TOKENS : "signs in with"
     COUNTRIES ||--o{ CITIES : "has"
     CITIES ||--o{ LISTINGS : "located in"
@@ -186,7 +188,7 @@ erDiagram
     }
     AUTH_ATTEMPTS {
         bigint id PK
-        text action "login | register | admin_login"
+        text action "login | register | admin_login | email_code_*"
         text identifier "email or IP"
         boolean succeeded
         timestamptz attempted_at
@@ -335,5 +337,16 @@ erDiagram
         timestamptz sent_at
         timestamptz failed_at
         text last_error
+    }
+
+    EMAIL_LOGIN_CODES {
+        uuid id PK
+        text email_digest "HMAC address"
+        bigint user_id FK "nullable"
+        text code_hash "keyed HMAC"
+        timestamptz created_at
+        timestamptz expires_at "5 minutes"
+        smallint attempts "0 to 5"
+        timestamptz consumed_at
     }
 ```

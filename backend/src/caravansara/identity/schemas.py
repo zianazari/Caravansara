@@ -1,5 +1,6 @@
 from datetime import datetime
 from typing import Literal
+from uuid import UUID
 
 from pydantic import AnyHttpUrl, BaseModel, ConfigDict, EmailStr, Field
 
@@ -29,6 +30,22 @@ class LoginIn(BaseModel):
 
 class RefreshIn(BaseModel):
     refresh_token: str = Field(min_length=1, max_length=200)
+
+
+class EmailCodeRequest(BaseModel):
+    email: EmailStr
+    locale: Literal["fa", "en"] = "fa"
+
+
+class EmailCodeChallenge(BaseModel):
+    challenge_id: UUID
+    expires_in: int
+    resend_after: int
+
+
+class EmailCodeVerify(BaseModel):
+    challenge_id: UUID
+    code: str = Field(pattern=r"^[0-9]{5}$", description="Exactly five digits, including leading zeros.")
 
 
 class TokensOut(BaseModel):

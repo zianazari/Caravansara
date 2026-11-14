@@ -32,6 +32,7 @@ from caravansara.core.metrics import (
 )
 from caravansara.core.telemetry import instrument_clients, shutdown
 from caravansara.core.timeutil import utcnow
+from caravansara.identity import service as identity
 from caravansara.listings import service as listings
 from caravansara.notifications import service as notifications
 
@@ -56,6 +57,8 @@ async def run_once(
         expired = await bookings.expire_overdue_holds(session)
     async with sessionmaker() as session:
         completed = await bookings.complete_finished_stays(session)
+    async with sessionmaker() as session:
+        await identity.cleanup_email_codes(session)
     async with sessionmaker() as session:
         queued, oldest = await listings.review_queue_stats(session)
     LISTING_REVIEW_QUEUE.set(queued)

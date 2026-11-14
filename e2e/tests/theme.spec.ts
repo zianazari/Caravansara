@@ -25,28 +25,65 @@ import {
 // Pages are opened by their full address on the site; the API helpers keep the API as their base.
 test.use({ extraHTTPHeaders: {} });
 
-const AXE = path.join(__dirname, "..", "node_modules", "axe-core", "axe.min.js");
-const SCREENS = path.join(__dirname, "..", "..", "specs", "007-caravansara-theme", "screens");
+const AXE = path.join(
+  __dirname,
+  "..",
+  "node_modules",
+  "axe-core",
+  "axe.min.js",
+);
+const SCREENS = path.join(
+  __dirname,
+  "..",
+  "..",
+  "specs",
+  "007-caravansara-theme",
+  "screens",
+);
 const WIDTHS = [320, 360, 390, 768, 1280];
 
-type World = { guest: User; host: User; listingId: number; tripId: number; reviewId: number };
+type World = {
+  guest: User;
+  host: User;
+  listingId: number;
+  tripId: number;
+  reviewId: number;
+};
 let world: World;
 
 test.beforeAll(async ({ request }) => {
   const host = await register(request, "themehost");
   const guest = await register(request, "themeguest");
-  const listing = await createListing(request, host, { title: "E2E theme courtyard house" });
+  const listing = await createListing(request, host, {
+    title: "E2E theme courtyard house",
+  });
   await addPhoto(request, host, listing.id);
   await addPhoto(request, host, listing.id, "Bedroom");
-  const trip = await (await reserve(request, guest, listing.id, day(60), day(63))).json();
+  const trip = await (
+    await reserve(request, guest, listing.id, day(60), day(63))
+  ).json();
   // A finished stay for the review form: paid, then moved into the past, as the review tests do.
-  const stay = await (await reserve(request, guest, listing.id, day(70), day(72))).json();
-  expect((await request.post(`${API}/bookings/${stay.id}/pay`, { headers: auth(guest) })).status()).toBe(200);
+  const stay = await (
+    await reserve(request, guest, listing.id, day(70), day(72))
+  ).json();
+  expect(
+    (
+      await request.post(`${API}/bookings/${stay.id}/pay`, {
+        headers: auth(guest),
+      })
+    ).status(),
+  ).toBe(200);
   await sql(
     "UPDATE bookings SET check_in = CURRENT_DATE - 3, check_out = CURRENT_DATE - 1, status = 'completed' WHERE id = $1",
     [stay.id],
   );
-  world = { guest, host, listingId: listing.id, tripId: trip.id, reviewId: stay.id };
+  world = {
+    guest,
+    host,
+    listingId: listing.id,
+    tripId: trip.id,
+    reviewId: stay.id,
+  };
 });
 
 /** A session in the browser, through the site's own login (the refresh cookie is HttpOnly). */
@@ -58,24 +95,53 @@ async function signIn(page: Page, who: User = world.guest) {
   expect(res.status(), await res.text()).toBe(200);
 }
 
-type PageCase = { name: string; path: () => string; signedIn?: boolean; asHost?: boolean; draft?: boolean };
+type PageCase = {
+  name: string;
+  path: () => string;
+  signedIn?: boolean;
+  asHost?: boolean;
+  draft?: boolean;
+};
 const PAGES: PageCase[] = [
   { name: "home", path: () => "/" },
-  { name: "search", path: () => `/search?city_id=1&check_in=${day(60)}&check_out=${day(63)}&adults=2` },
+  {
+    name: "search",
+    path: () =>
+      `/search?city_id=1&check_in=${day(60)}&check_out=${day(63)}&adults=2`,
+  },
   { name: "listing", path: () => `/listings/${world.listingId}` },
   { name: "login", path: () => "/login" },
   { name: "register", path: () => "/register" },
-  { name: "book", path: () => `/book/${world.listingId}`, signedIn: true, draft: true },
+  {
+    name: "book",
+    path: () => `/book/${world.listingId}`,
+    signedIn: true,
+    draft: true,
+  },
   { name: "trips", path: () => "/trips", signedIn: true },
   { name: "trip", path: () => `/trips/${world.tripId}`, signedIn: true },
-  { name: "review", path: () => `/trips/${world.reviewId}/review`, signedIn: true },
+  {
+    name: "review",
+    path: () => `/trips/${world.reviewId}/review`,
+    signedIn: true,
+  },
   { name: "account", path: () => "/account", signedIn: true },
   { name: "wishlists", path: () => "/wishlists", signedIn: true }, // feature 012
   { name: "not-found", path: () => "/no-such-page" },
   // The host pages (specs/008-host-pages, SC-004), as the listing's host.
   { name: "host", path: () => "/host", signedIn: true, asHost: true },
-  { name: "host-new", path: () => "/host/new?step=1", signedIn: true, asHost: true },
-  { name: "host-photos", path: () => `/host/listings/${world.listingId}?tab=photos`, signedIn: true, asHost: true },
+  {
+    name: "host-new",
+    path: () => "/host/new?step=1",
+    signedIn: true,
+    asHost: true,
+  },
+  {
+    name: "host-photos",
+    path: () => `/host/listings/${world.listingId}?tab=photos`,
+    signedIn: true,
+    asHost: true,
+  },
 ];
 
 async function open(page: Page, locale: "fa" | "en", c: PageCase) {
@@ -91,7 +157,10 @@ async function open(page: Page, locale: "fa" | "en", c: PageCase) {
       pets: 0,
       idempotency_key: randomUUID(),
     };
-    await page.addInitScript((d) => sessionStorage.setItem("cv-booking-draft", JSON.stringify(d)), draft);
+    await page.addInitScript(
+      (d) => sessionStorage.setItem("cv-booking-draft", JSON.stringify(d)),
+      draft,
+    );
   }
   await page.goto(`${WEB}/${locale}${c.path()}`);
   await page.waitForLoadState("networkidle");
@@ -111,11 +180,19 @@ async function axe(page: Page) {
   return page.evaluate(async () => {
     // @ts-expect-error axe is injected above
     const result = await window.axe.run(document, {
-      runOnly: { type: "tag", values: ["wcag2a", "wcag2aa", "wcag21a", "wcag21aa", "wcag22aa"] },
+      runOnly: {
+        type: "tag",
+        values: ["wcag2a", "wcag2aa", "wcag21a", "wcag21aa", "wcag22aa"],
+      },
     });
     const list = (items: { id: string; nodes: { target: string[] }[] }[]) =>
-      items.map((v) => `${v.id}: ${v.nodes.map((n) => n.target.join(" ")).join(", ")}`);
-    return { violations: list(result.violations), incomplete: list(result.incomplete) };
+      items.map(
+        (v) => `${v.id}: ${v.nodes.map((n) => n.target.join(" ")).join(", ")}`,
+      );
+    return {
+      violations: list(result.violations),
+      incomplete: list(result.incomplete),
+    };
   });
 }
 
@@ -138,24 +215,37 @@ test.describe("Caravansara theme in a real browser", () => {
           expect(scroll, `${c.name} at ${width}px`).toBeLessThanOrEqual(client);
         }
         await page.setViewportSize({ width: 390, height: 900 });
-        expect((await axe(page)).violations, `${c.name} on a phone`).toEqual([]);
+        expect((await axe(page)).violations, `${c.name} on a phone`).toEqual(
+          [],
+        );
         await page.setViewportSize({ width: 1280, height: 900 });
-        expect((await axe(page)).violations, `${c.name} on a desktop`).toEqual([]);
+        expect((await axe(page)).violations, `${c.name} on a desktop`).toEqual(
+          [],
+        );
       });
     }
   }
 
-  test("the listing page has the booking bar, not the bottom bar, on a phone (R7)", async ({ page }) => {
+  test("the listing page has the booking bar, not the bottom bar, on a phone (R7)", async ({
+    page,
+  }) => {
     await page.setViewportSize({ width: 390, height: 844 });
     await open(page, "fa", PAGES[2]!);
-    await expect(page.getByRole("navigation", { name: "ناوبری پایین" })).toHaveCount(0);
+    await expect(
+      page.getByRole("navigation", { name: "ناوبری پایین" }),
+    ).toHaveCount(0);
     await expect(page.getByRole("link", { name: "رزرو" })).toBeVisible();
     await page.goto(`${WEB}/fa`);
-    await expect(page.getByRole("navigation", { name: "ناوبری پایین" })).toBeVisible();
+    await expect(
+      page.getByRole("navigation", { name: "ناوبری پایین" }),
+    ).toBeVisible();
   });
 
   test("a swipe moves the gallery on a phone (FR-007)", async ({ browser }) => {
-    const context = await browser.newContext({ viewport: { width: 390, height: 844 }, hasTouch: true });
+    const context = await browser.newContext({
+      viewport: { width: 390, height: 844 },
+      hasTouch: true,
+    });
     const page = await context.newPage();
     await page.goto(`${WEB}/fa/listings/${world.listingId}`);
     const current = page.getByRole("button", { name: /^عکس ۱ از/ });
@@ -167,72 +257,87 @@ test.describe("Caravansara theme in a real browser", () => {
     await page.mouse.down();
     await page.mouse.move(box.x + 200, y, { steps: 5 });
     await page.mouse.up();
-    await expect(page.getByRole("button", { name: /^عکس ۲ از/ })).toHaveAttribute("aria-current", "true");
+    await expect(
+      page.getByRole("button", { name: /^عکس ۲ از/ }),
+    ).toHaveAttribute("aria-current", "true");
     await context.close();
   });
 
   test("decoration stops for reduced motion", async ({ page }) => {
     await page.emulateMedia({ reducedMotion: "reduce" });
     await page.goto(`${WEB}/fa`);
-    const running = await page.evaluate(() => document.getAnimations().filter((a) => a.playState === "running").length);
+    const running = await page.evaluate(
+      () =>
+        document.getAnimations().filter((a) => a.playState === "running")
+          .length,
+    );
     expect(running).toBe(0);
   });
 
-  test("a dark system theme keeps the light site and its form controls (edge case)", async ({ page }) => {
-    await page.emulateMedia({ colorScheme: "dark" });
-    for (const c of [PAGES[0]!, PAGES[1]!, PAGES[3]!]) {
-      await open(page, "fa", c);
-      expect(await page.evaluate(() => getComputedStyle(document.documentElement).colorScheme)).toBe("light");
-      expect((await axe(page)).violations, c.name).toEqual([]);
+  test("the cinematic site keeps dark controls under either system theme", async ({
+    page,
+  }) => {
+    for (const colorScheme of ["light", "dark"] as const) {
+      await page.emulateMedia({ colorScheme });
+      for (const c of [PAGES[0]!, PAGES[1]!, PAGES[3]!]) {
+        await open(page, "fa", c);
+        expect(
+          await page.evaluate(
+            () => getComputedStyle(document.documentElement).colorScheme,
+          ),
+        ).toBe("dark");
+        expect((await axe(page)).violations, c.name).toEqual([]);
+      }
     }
   });
 
   test("printing a trip has no dark surfaces (edge case)", async ({ page }) => {
     await open(page, "fa", PAGES[7]!);
     await page.emulateMedia({ media: "print" });
-    const footer = await page.locator("footer").evaluate((el) => getComputedStyle(el).display);
+    const footer = await page
+      .locator("footer")
+      .evaluate((el) => getComputedStyle(el).display);
     expect(footer).toBe("none");
   });
 
-  test("the boutique cover has a visible heading and yields to compact search while scrolling", async ({ page }) => {
+  test("the home cover has a visible heading and yields to compact search while scrolling", async ({
+    page,
+  }) => {
     for (const width of WIDTHS) {
       await page.setViewportSize({ width, height: 900 });
       await page.goto(`${WEB}/fa`, { waitUntil: "networkidle" });
       const hero = page.locator("section[aria-labelledby='hero-title']");
       await expect(page.getByRole("heading", { level: 1 })).toBeVisible();
-      await expect(page.getByRole("heading", { level: 1 })).not.toHaveClass(/sr-only/);
+      await expect(page.getByRole("heading", { level: 1 })).not.toHaveClass(
+        /sr-only/,
+      );
       await expect(hero.locator("img")).toHaveJSProperty("complete", true);
       expect((await hero.boundingBox())!.height).toBeGreaterThanOrEqual(440);
-      await page.evaluate(() => window.scrollTo({ top: 1200, behavior: "instant" }));
-      await expect(page.locator("[data-home-search]")).toHaveAttribute("data-compact", "true");
+      await page.evaluate(() =>
+        window.scrollTo({ top: 1200, behavior: "instant" }),
+      );
+      await expect(page.locator("[data-home-search]")).toHaveAttribute(
+        "data-compact",
+        "true",
+      );
       await expect(hero).not.toBeInViewport();
     }
   });
 
-  test("the hero's car stops at six places as the whole page scrolls, and drives back (041)", async ({ page }) => {
-    await page.setViewportSize({ width: 1280, height: 900 });
-    await page.goto(`${WEB}/fa`, { waitUntil: "networkidle" });
-    const scene = page.locator("svg[data-hero='scene']");
-    await expect(scene.locator("[data-stop]")).toHaveCount(6);
-    // Lazy city rows can change the document height; target the current scroll range on every poll.
-    for (const [index, kind] of [[2, "caravansara"], [5, "ecolodge"]] as const) {
-      await expect.poll(async () => {
-        await page.evaluate(progress => window.scrollTo({ top: progress * (document.documentElement.scrollHeight - window.innerHeight), behavior: "instant" }), (index + 0.75) / 6);
-        return scene.locator(`[data-stop='${kind}']`).getAttribute("data-active");
-      }).toBe("true");
-    }
-    await page.evaluate(() => window.scrollTo({ top: 0, behavior: "instant" }));
-    await expect.poll(() => scene.locator("[data-active='true']").count()).toBe(0);
-  });
-
   test("screenshots for the owner (SC-001)", async ({ page }) => {
-    test.skip(!process.env.SCREENSHOTS, "set SCREENSHOTS=1 to write specs/007-caravansara-theme/screens/");
+    test.skip(
+      !process.env.SCREENSHOTS,
+      "set SCREENSHOTS=1 to write specs/007-caravansara-theme/screens/",
+    );
     for (const c of PAGES) {
       for (const locale of ["fa", "en"] as const) {
         for (const width of [1280, 390]) {
           await page.setViewportSize({ width, height: 900 });
           await open(page, locale, c);
-          await page.screenshot({ path: path.join(SCREENS, `${c.name}-${width}-${locale}.png`), fullPage: true });
+          await page.screenshot({
+            path: path.join(SCREENS, `${c.name}-${width}-${locale}.png`),
+            fullPage: true,
+          });
         }
       }
     }

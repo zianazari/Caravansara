@@ -46,15 +46,9 @@ export default async function LocaleLayout({
   setRequestLocale(locale);
   const dir = direction[locale];
   const onAdminHost = isAdminRequest(await headers());
-  const cinematic = onAdminHost || process.env.CARAVANSARA_DESIGN === "cinematic";
 
   return (
-    <html
-      lang={locale}
-      dir={dir}
-      className={vazirmatn.variable}
-      data-design={cinematic ? "cinematic" : undefined}
-    >
+    <html lang={locale} dir={dir} className={vazirmatn.variable} data-design="cinematic">
       {/* On a phone a fixed bar sits at the bottom (BottomNav, or a listing's booking bar), so the page keeps
           room for it and nothing hides under it (specs/007-caravansara-theme, FR-008). */}
       <body className="flex min-h-dvh flex-col pb-[calc(4.5rem+env(safe-area-inset-bottom))] md:pb-0">
