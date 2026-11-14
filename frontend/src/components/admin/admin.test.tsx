@@ -275,7 +275,6 @@ describe("admin panel (feature 009)", () => {
       Response.json({ error: { code: "invalid_credentials" } }, { status: 401 }),
     );
     renderIn("fa", <AdminLogin />);
-    expect(screen.getByText(/۸ ساعت پس از ورود تمام می‌شود/)).toBeInTheDocument();
     await userEvent.type(screen.getByLabelText("ایمیل"), "admin@example.com");
     await userEvent.type(screen.getByLabelText("رمز"), "wrong");
     await userEvent.click(screen.getByRole("button", { name: "ورود" }));

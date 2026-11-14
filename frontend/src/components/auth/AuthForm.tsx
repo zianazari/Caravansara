@@ -4,7 +4,6 @@ import { useQueryClient } from "@tanstack/react-query";
 import { useTranslations } from "next-intl";
 import { useSearchParams } from "next/navigation";
 import { useState, type FormEvent } from "react";
-import { LogoMark } from "@/components/brand/Logo";
 import { Button } from "@/components/ui/button";
 import { Field } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
@@ -13,6 +12,7 @@ import { errorMessage, fieldErrors, readError, type Translate } from "@/lib/erro
 import { safeReturnTo } from "@/lib/returnTo";
 import { setSession } from "@/lib/session";
 import { EmailCodeForm } from "./EmailCodeForm";
+import { AuthMethods, AuthPanel } from "./AuthPanel";
 
 type Mode = "login" | "register";
 
@@ -98,36 +98,8 @@ export function AuthForm({ mode }: { mode: Mode }) {
   const other = mode === "login" ? "register" : "login";
 
   return (
-    <section className="mx-auto mt-4 grid w-full max-w-md gap-6 rounded-3xl border bg-card p-6 shadow-xl shadow-foreground/5 md:mt-8 md:p-8">
-      {/* The site's mark above the form (feature 036: the new logo everywhere). */}
-      <LogoMark className="mx-auto -mb-2 h-11 w-10" />
-      <h1 className="text-center text-2xl font-bold">
-        {t(mode === "login" ? "auth.loginTitle" : "auth.registerTitle")}
-      </h1>
-      {mode === "login" ? (
-        <div
-          role="group"
-          aria-label={t("emailLogin.chooseMethod")}
-          className="grid grid-cols-2 gap-2 rounded-2xl bg-surface p-1.5"
-        >
-          <Button
-            type="button"
-            variant={method === "password" ? "soft" : "ghost"}
-            aria-pressed={method === "password"}
-            onClick={() => setMethod("password")}
-          >
-            {t("emailLogin.passwordMethod")}
-          </Button>
-          <Button
-            type="button"
-            variant={method === "email" ? "soft" : "ghost"}
-            aria-pressed={method === "email"}
-            onClick={() => setMethod("email")}
-          >
-            {t("emailLogin.emailMethod")}
-          </Button>
-        </div>
-      ) : null}
+    <AuthPanel title={t(mode === "login" ? "auth.loginTitle" : "auth.registerTitle")}>
+      {mode === "login" ? <AuthMethods value={method} onChange={setMethod} /> : null}
       {mode === "login" && method === "email" ? (
         <EmailCodeForm onSuccess={complete} />
       ) : (
@@ -185,6 +157,6 @@ export function AuthForm({ mode }: { mode: Mode }) {
           </Link>
         </Button>
       </p>
-    </section>
+    </AuthPanel>
   );
 }

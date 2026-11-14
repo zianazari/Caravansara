@@ -145,3 +145,6 @@ forwards the normalized address and language; `/session/email-code/verify` store
 the refresh token in the same HttpOnly cookie as password login. Persian/Arabic
 digits are normalized without losing leading zeroes. Return-to validation, refresh
 rotation and logout remain shared. See [the email login guide](../docs/email-login.md).
+
+Member and administrator login forms share `AuthPanel` for the same logo, card
+dimensions, typography and spacing.
