@@ -43,7 +43,7 @@ const PAIRS: [fg: string, bg: string, min: number][] = [
   ["primary", "card", TEXT],
   ["primary", "muted", TEXT],
   ["primary-foreground", "primary", TEXT],
-  ["primary-foreground", "copper", NON_TEXT], // the search button's gradient starts at copper; its icon is white
+  ["primary-foreground", "copper", NON_TEXT], // the search button's gradient starts at copper; its icon uses primary-foreground
   ["destructive", "background", TEXT],
   ["destructive", "card", TEXT],
   ["copper", "background", NON_TEXT], // active category icon, map marker border
@@ -51,8 +51,8 @@ const PAIRS: [fg: string, bg: string, min: number][] = [
   ["ring", "card", NON_TEXT],
   ["on-dark", "night", TEXT], // hero title
   ["gold", "night", TEXT], // hero subtitle
-  ["on-dark-muted", "foreground", TEXT], // footer text
-  ["gold", "foreground", TEXT], // footer site name
+  ["on-dark-muted", "night", TEXT], // footer text
+  ["gold", "night", TEXT], // footer site name
   ["background", "foreground", TEXT], // gallery counter, dialog text over the dark overlay
 ];
 
@@ -61,21 +61,22 @@ describe("theme tokens", () => {
     expect(contrast(token(fg), token(bg))).toBeGreaterThanOrEqual(min);
   });
 
-  it("uses olive for buttons and keeps copper for decoration", () => {
-    expect(token("primary")).toBe("#43533b");
-    expect(contrast("#ffffff", "#b5651d")).toBeLessThan(TEXT);
+  it("uses the same orange and dark palette across the site", () => {
+    expect(token("primary")).toBe("#ff8b50");
+    expect(token("primary-foreground")).toBe("#111b1d");
+    expect(token("background")).toBe("#111b1d");
+    expect(token("foreground")).toBe("#f2f4f0");
+    expect(token("copper")).toBe("#ff8b50");
+    expect(token("amber")).toBe("#ffae72");
+    expect(token("night")).toBe("#0c1517");
   });
 
-  it("keeps the boutique palette and copper brand accents", () => {
-    expect(token("background")).toBe("#faf9f5");
-    expect(token("foreground")).toBe("#292e27");
-    expect(token("copper")).toBe("#b5651d");
-    expect(token("amber")).toBe("#e08a2e");
-    expect(token("night")).toBe("#07101e");
+  it("has no separate deployment palette", () => {
+    expect(css).not.toMatch(/:root\[data-design=/);
   });
 
-  it("asks the browser for light form controls, whatever the system theme (edge case: dark mode)", () => {
-    expect(root).toMatch(/color-scheme:\s*light/);
+  it("uses dark form controls regardless of the system theme", () => {
+    expect(root).toMatch(/color-scheme:\s*dark/);
   });
 
   it("defines the arch shape and switches decoration off for reduced motion", () => {

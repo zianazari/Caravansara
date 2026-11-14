@@ -9,9 +9,9 @@ RTL layouts, Jalali dates and English support.
 
 <p align="center">
   <a href="https://github.com/zianazari/Caravansara/actions/workflows/ci.yml"><img src="https://github.com/zianazari/Caravansara/actions/workflows/ci.yml/badge.svg" alt="CI"></a>
-  <img src="https://img.shields.io/badge/tests-415%20backend-b5651d" alt="415 backend tests">
-  <img src="https://img.shields.io/badge/web-478%20Vitest%20tests-6E9F18" alt="478 frontend tests">
-  <img src="https://img.shields.io/badge/e2e-139%20Playwright%20tests-2EAD33" alt="139 collected end-to-end tests">
+  <img src="https://img.shields.io/badge/tests-450%20backend-b5651d" alt="450 backend tests">
+  <img src="https://img.shields.io/badge/web-516%20Vitest%20tests-6E9F18" alt="516 frontend tests">
+  <img src="https://img.shields.io/badge/e2e-140%20Playwright%20tests-2EAD33" alt="140 collected end-to-end tests">
 </p>
 
 [Features](#features) · [Screenshots](#screenshots) · [Run locally](#run-locally) ·
@@ -21,6 +21,8 @@ RTL layouts, Jalali dates and English support.
 
 ### For guests
 
+- Sign in with your password or a five-digit email code, valid for five minutes and delivered through the configured SMTP server.
+- Discover [travel opportunities](docs/travel-opportunities.md) by total budget, nights and flexible dates: up to three distinct stays, exact dynamic prices including cleaning, ratings and verifiable date-shift savings. Existing search remains available.
 - Search by city or map area, with dates, guest counts, property types, amenities, reviews and photo-count filters.
 - Explore photo galleries, approximate map locations, ratings and saved favourites.
 - Keep search available in a compact form while scrolling, with full-area clickable search segments.
@@ -50,19 +52,18 @@ See the [dynamic pricing guide](docs/dynamic-pricing.md).
 - Maintain shared holidays by country and date; hosts choose the adjustment for their own properties.
 - Work in a dark/orange panel on a separate admin host, with overview counts and recorded exact-address views.
 
-Both public designs share these features: the default **boutique** palette uses ivory/olive; the
-**cinematic** preview uses dark surfaces and orange accents. Account menus show full names and user-icon
+The unified site uses dark surfaces and orange accents for public, host and admin pages. Account menus show full names and user-icon
 avatars, Persian notifications use Vazirmatn, and map price markers keep their position on hover.
 
 ## Screenshots
 
-All application screenshots were captured on **13 November 2026**, at **1440 px desktop** and **390 px
+All application screenshots were captured on **13–14 November 2026**, at **1440 px desktop** and **390 px
 mobile** widths. Host/admin screens use development demo accounts;
 the pricing rules and sample holiday are demonstration settings. Home covers are generated decorative
 illustrations. [Demo data and image provenance](db/demo/README.md); map data ©
 [OpenStreetMap contributors](https://www.openstreetmap.org/copyright).
 
-### Cinematic home
+### Unified home
 
 <p align="center">
   <img src="docs/images/readme/site-cinematic.jpg" alt="Cinematic Persian home with a forest cabin cover, orange search action and popular destinations" width="100%">
@@ -87,6 +88,28 @@ nightly charge, and the selected dates are applied only after confirmation.
 
 <p align="center">
   <img src="docs/images/readme/guest-price-calendar.jpg" alt="Persian guest booking calendar with prices below each day, a selected date range and an exact nightly subtotal, cleaning fee and total" width="100%">
+</p>
+
+</details>
+
+<details>
+<summary>Password or five-digit email-code sign-in</summary>
+
+The email method uses the existing SMTP configuration and the same protected session as password login. Codes expire after five minutes and are single use.
+
+<p align="center">
+  <img src="docs/images/readme/email-code-login.jpg" alt="Persian email-code login with method selection, a five-digit input, expiry hint and resend countdown" width="100%">
+</p>
+
+</details>
+
+<details>
+<summary>Travel opportunities by budget and flexible dates</summary>
+
+An optional discovery page compares available stays in one country and currency. Each suggestion carries its dates and guests into the existing booking flow.
+
+<p align="center">
+  <img src="docs/images/readme/travel-opportunities.jpg" alt="Persian travel opportunities with a total budget, flexible arrival dates and three real Isfahan accommodation suggestions" width="100%">
 </p>
 
 </details>
@@ -117,12 +140,11 @@ Overview counts and country/month controls for the shared calendar.
 </details>
 
 <details>
-<summary>Mobile boutique and cinematic homes</summary>
+<summary>Mobile home</summary>
 
-Compact search and bottom navigation in both designs.
+Compact search and bottom navigation on the unified site.
 
 <p align="center">
-  <img src="docs/images/readme/site-home-mobile.jpg" alt="Boutique home on a phone with courtyard cover, compact search and bottom navigation" width="38%">
   <img src="docs/images/readme/site-cinematic-mobile.jpg" alt="Cinematic home on a phone with cabin cover, compact search and bottom navigation" width="38%">
 </p>
 
@@ -130,7 +152,7 @@ Compact search and bottom navigation in both designs.
 
 ## Run locally
 
-### Start the default site
+### Start the site
 
 Requires Docker with Docker Compose. Run from the repository root:
 
@@ -171,19 +193,11 @@ Demo data combines [Inside Airbnb](https://insideairbnb.com/) snapshots under CC
 hand-written Persian listings. People, addresses, bookings and demo photos are synthetic. Details and
 edge cases are documented in [db/demo/README.md](db/demo/README.md).
 
-### Add the cinematic preview
+### One web service
 
-With the default stack running:
-
-```bash
-docker compose -f docker-compose.yml -f docker-compose.cinematic.yml \
-  up -d --build --no-deps --wait web-cinematic
-```
-
-Open [localhost:3011/fa](http://localhost:3011/fa) or [localhost:3011/en](http://localhost:3011/en).
-Its admin panel is at [admin.localhost:3011/fa/admin](http://admin.localhost:3011/fa/admin).
-Both frontends share the same API, database, accounts, media and bookings. See the
-[frontend setup guide](frontend/README.md#separate-cinematic-preview-on-port-3011).
+The cinematic version previously on port 3011 is now the main site on port 3001.
+There is one `web` container for the site and its admin host. No additional frontend or
+design-selection environment variable is required.
 
 ### Enable monitoring
 
@@ -205,7 +219,7 @@ completes stays and delivers emails from a transactional outbox.
 | -------------- | ------------------------------------------------------------------------------------------ |
 | Web            | Next.js 16, React 19, TypeScript, Tailwind CSS, Radix, next-intl, TanStack Query, MapLibre |
 | API            | Python 3.13, FastAPI, Pydantic v2, SQLAlchemy 2, asyncpg                                   |
-| Data           | PostgreSQL 16, PostGIS, Alembic; 17 application tables through migration `0012`            |
+| Data           | PostgreSQL 16, PostGIS, Alembic; 18 application tables through migration `0013`            |
 | Media          | S3-compatible storage; MinIO locally                                                       |
 | Authentication | Argon2 passwords, JWT access tokens and rotating refresh tokens                            |
 | Monitoring     | Prometheus, Grafana, Loki, Tempo, OpenTelemetry, Grafana Alloy                             |
@@ -223,18 +237,18 @@ and [design decisions](docs/backend-design.md).
 
 ## Testing
 
-- **Backend:** 415 pytest tests against real PostgreSQL/PostGIS and MinIO using testcontainers.
-- **Frontend:** 478 Vitest tests covering rules, components, Persian/English layouts and axe accessibility.
-- **End to end:** 139 collected Playwright tests for API behavior and browser journeys on the running stack.
+- **Backend:** 450 pytest tests against real PostgreSQL/PostGIS and MinIO using testcontainers.
+- **Frontend:** 516 Vitest tests covering rules, components, Persian/English layouts and axe accessibility.
+- **End to end:** 140 collected Playwright tests for API behavior and browser journeys on the running stack.
 
 Coverage includes booking races, idempotency, privacy, photo uploads, listing review, guest/host flows,
 daily pricing, shared holidays, receipts and responsive accessibility. CI also checks formatting, lint,
 types, module boundaries, builds and API-client synchronization.
 
-Run the browser/API suite with both frontend variants:
+Run the browser/API suite against the site on port 3001:
 
 ```bash
-docker compose -f docker-compose.yml -f docker-compose.cinematic.yml \
+docker compose -f docker-compose.yml \
   -f e2e/compose.e2e.yml up -d --build --wait
 cd e2e
 npm ci
@@ -250,8 +264,10 @@ Backend and frontend test commands are in their [backend](backend/README.md) and
 
 | Guide                                                             | Contents                                                                    |
 | ----------------------------------------------------------------- | --------------------------------------------------------------------------- |
-| [Frontend](frontend/README.md)                                    | UI development, localization, sessions, design variants and component tests |
+| [Frontend](frontend/README.md)                                    | UI development, localization, sessions, theme and component tests |
 | [Backend](backend/README.md)                                      | API development, configuration, migrations and quality checks               |
+| [Email code login](docs/email-login.md) | Five-digit codes, SMTP, expiry, rate limits and protected web sessions |
+| [Travel opportunities](docs/travel-opportunities.md) | Budget discovery, ranking, availability, currency and booking hand-off |
 | [Dynamic pricing](docs/dynamic-pricing.md)                        | Rule priority, calendar controls, quotes and saved booking prices           |
 | [End-to-end tests](e2e/README.md)                                 | Compose setup, fixtures, browser journeys and reports                       |
 | [Database](db/README.md)                                          | Schema, constraints, indexes and diagrams                                   |

@@ -34,6 +34,7 @@ SELECT (SELECT id  FROM city WHERE name = 'London')    AS london_id,
        (SELECT idempotency_key FROM bookings ORDER BY id DESC LIMIT 1)        AS any_idempotency_key,
        CURRENT_DATE + 35                               AS check_in,      -- three nights, five weeks ahead
        CURRENT_DATE + 38                               AS check_out,
+       CURRENT_DATE + 79                               AS opportunity_end, -- maximum 30-night stay, +/-7 days
        CURRENT_DATE + 49                               AS check_out_two_weeks, -- past the 7 nights the radius search collects for
        now()                                           AS now,
        now() - interval '1 hour'                       AS hour_ago,

@@ -44,6 +44,7 @@ TableGroup people_and_places [color: #1F6FEB] {
   users
   refresh_tokens
   auth_attempts
+  email_login_codes
   countries
   cities
   listings
@@ -99,8 +100,8 @@ Table refresh_tokens [headercolor: #1F6FEB] {
 
 Table auth_attempts [headercolor: #1F6FEB] {
   id bigint [pk, increment]
-  action text [not null, note: 'login | register | admin_login (admin logins count apart)']
-  identifier text [not null, note: 'lower(email) or client IP']
+  action text [not null, note: 'login | register | admin_login | email_code_request | email_code_verify']
+  identifier text [not null, note: 'password: email/IP; email codes: keyed address digest or IP']
   succeeded boolean [not null]
   attempted_at timestamptz [not null, default: `now()`]
 
@@ -108,7 +109,7 @@ Table auth_attempts [headercolor: #1F6FEB] {
     (action, identifier, attempted_at)
   }
 
-  Note: 'Rate limit for login and registration: one row per attempt.'
+  Note: 'Rate limits for password login, registration and email codes: one row per attempt.'
 }
 
 Table countries [headercolor: #1F6FEB] {
@@ -327,4 +328,21 @@ Table email_outbox [headercolor: #1A7F37] {
   failed_at timestamptz
   last_error text
   Note: 'Transactional outbox; recipient FK cascades. Partial due index: next_attempt_at WHERE sent_at IS NULL AND failed_at IS NULL. Sent and failed cannot both be set.'
+}
+
+
+Table email_login_codes [headercolor: #1F6FEB] {
+  id uuid [pk]
+  email_digest text [not null, note: 'HMAC of normalized email, never the address']
+  user_id bigint [ref: > users.id, note: 'nullable for generic unknown-address challenges; ON DELETE CASCADE']
+  code_hash text [not null, note: 'HMAC of challenge UUID and five-digit code; no plaintext code']
+  created_at timestamptz [not null, default: `now()`]
+  expires_at timestamptz [not null]
+  attempts smallint [not null, default: 0, note: '0 through 5']
+  consumed_at timestamptz
+  indexes {
+    (email_digest, created_at) [name: 'email_login_codes_email_idx', note: 'created_at DESC']
+    expires_at [name: 'email_login_codes_expires_idx']
+  }
+  Note: 'Five-minute lifetime, single use, superseded by resend. Worker purges one day after expiry.'
 }

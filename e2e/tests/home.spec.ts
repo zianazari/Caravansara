@@ -2,11 +2,11 @@ import { expect, test } from "@playwright/test";
 import path from "node:path";
 import { WEB } from "./helpers";
 
-const origin = process.env.BOUTIQUE_WEB ?? WEB;
+const origin = WEB;
 test.use({ extraHTTPHeaders: {} });
 
 for (const locale of ["fa", "en"] as const) {
-  test(`boutique home: ${locale} stays responsive and accessible`, async ({
+  test(`unified home: ${locale} stays responsive and accessible`, async ({
     page,
   }) => {
     test.setTimeout(90_000);
@@ -21,7 +21,7 @@ for (const locale of ["fa", "en"] as const) {
     ).toHaveAttribute("href", `/${locale}/host/new`);
 
     await expect(page.locator("#hero-title")).toContainText(
-      locale === "fa" ? "مقصدی برای کشف" : "Something to discover",
+      locale === "fa" ? "کمی دورتر" : "A little further",
     );
     await expect(
       page.locator("section[aria-labelledby='hero-title'] img"),
@@ -56,7 +56,7 @@ for (const locale of ["fa", "en"] as const) {
       });
       expect(violations, `${locale} at ${width}px`).toEqual([]);
     }
-    if (process.env.BOUTIQUE_SHOTS) {
+    if (process.env.HOME_SHOTS) {
       await footer.scrollIntoViewIfNeeded();
       await page.screenshot({
         path: `/private/tmp/caravansara-${locale}-footer.png`,
@@ -87,8 +87,8 @@ for (const locale of ["fa", "en"] as const) {
       .click();
     await expect(page.getByRole("dialog")).toBeVisible();
     await page.keyboard.press("Escape");
-    await page.locator('a[href*="category=pets#stays"]').click();
-    await expect(page).toHaveURL(/category=pets#stays/);
+    await page.locator('a[href*="category=pets"]').click();
+    await expect(page).toHaveURL(/category=pets/);
     await expect(page.locator('nav a[aria-current="true"]')).toContainText(
       locale === "fa" ? "حیوان خانگی" : "Pets",
     );
@@ -128,7 +128,7 @@ for (const locale of ["fa", "en"] as const) {
       .click();
     await expect(page.getByRole("grid")).toBeVisible();
     await page.keyboard.press("Escape");
-    if (process.env.BOUTIQUE_SHOTS)
+    if (process.env.HOME_SHOTS)
       await page.screenshot({
         path: `/private/tmp/caravansara-${locale}-compact-search.png`,
       });

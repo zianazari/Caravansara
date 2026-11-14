@@ -1,10 +1,12 @@
+import hashlib
 from datetime import datetime, timedelta
+from uuid import UUID
 
-from sqlalchemy import func, literal_column, select, update
+from sqlalchemy import delete, func, literal_column, select, text, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from caravansara.core.pagination import SortOrder
-from caravansara.identity.models import AccountKind, AuthAttempt, RefreshToken, User
+from caravansara.identity.models import AccountKind, AuthAttempt, EmailLoginCode, RefreshToken, User
 from caravansara.identity.schemas import AdminUserSort
 
 
@@ -112,3 +114,38 @@ async def count_attempts(
 
 def window_start(now: datetime, minutes: int) -> datetime:
     return now - timedelta(minutes=minutes)
+
+
+async def lock_email_auth(session: AsyncSession, identifier: str) -> None:
+    """Serialize a rate bucket across API processes; always lock IP before address."""
+    key = int.from_bytes(hashlib.sha256(f"email-auth:{identifier}".encode()).digest()[:8], signed=True)
+    await session.execute(text("SELECT pg_advisory_xact_lock(CAST(:key AS bigint))"), {"key": key})
+
+
+async def latest_email_code(session: AsyncSession, digest: str) -> EmailLoginCode | None:
+    query = (
+        select(EmailLoginCode)
+        .where(EmailLoginCode.email_digest == digest)
+        .order_by(EmailLoginCode.created_at.desc())
+        .limit(1)
+    )
+    return (await session.execute(query)).scalar_one_or_none()
+
+
+async def invalidate_email_codes(session: AsyncSession, digest: str, now: datetime) -> None:
+    await session.execute(
+        update(EmailLoginCode)
+        .where(EmailLoginCode.email_digest == digest, EmailLoginCode.consumed_at.is_(None))
+        .values(consumed_at=now)
+    )
+
+
+async def get_email_code(session: AsyncSession, challenge_id: UUID, *, lock: bool = False) -> EmailLoginCode | None:
+    query = select(EmailLoginCode).where(EmailLoginCode.id == challenge_id).execution_options(populate_existing=True)
+    if lock:
+        query = query.with_for_update()
+    return (await session.execute(query)).scalar_one_or_none()
+
+
+async def delete_old_email_codes(session: AsyncSession, before: datetime) -> None:
+    await session.execute(delete(EmailLoginCode).where(EmailLoginCode.expires_at <= before))

@@ -40,6 +40,7 @@ class Settings(BaseSettings):
     login_max_per_ip: int = 30
     register_max_per_ip: int = 10
     register_window_minutes: int = 60
+    email_code_max_per_ip: int = Field(default=10, ge=1)
 
     # Booking rules
     hold_minutes: int = 15

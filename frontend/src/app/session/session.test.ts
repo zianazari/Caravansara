@@ -13,6 +13,8 @@ import { POST as login } from "./login/route";
 import { POST as logout } from "./logout/route";
 import { POST as refresh } from "./refresh/route";
 import { POST as register } from "./register/route";
+import { POST as requestCode } from "./email-code/request/route";
+import { POST as verifyCode } from "./email-code/verify/route";
 
 const SITE = "http://localhost:3001";
 const post = (path: string, body?: unknown, headers: Record<string, string> = {}) =>
@@ -35,6 +37,46 @@ describe("/session route handlers", () => {
     vi.unstubAllGlobals();
     vi.unstubAllEnvs();
   });
+
+  it("requests an email code with no session cookie and no caching", async () => {
+    const challenge = { challenge_id: "id", expires_in: 300, resend_after: 60 };
+    fetchMock.mockResolvedValue(Response.json(challenge));
+    const response = await requestCode(post("/session/email-code/request", { email: "a@b.c", locale: "fa" }));
+    expect(await response.json()).toEqual(challenge);
+    expect(response.headers.get("cache-control")).toBe("no-store");
+    expect(jar.size).toBe(0);
+    expect(fetchMock.mock.calls[0]![0]).toBe("http://api:8000/api/v1/auth/email-code/request");
+  });
+
+  it("redeems a code into the existing protected refresh cookie", async () => {
+    fetchMock.mockResolvedValue(Response.json(tokens));
+    const response = await verifyCode(
+      post("/session/email-code/verify", { challenge_id: "id", code: "00007" }),
+    );
+    expect(await response.json()).toEqual({ access_token: "acc", expires_in: 900 });
+    expect(jar.get("cv_refresh")!.options).toMatchObject({
+      httpOnly: true,
+      sameSite: "strict",
+      path: "/session",
+    });
+  });
+
+  it.each([requestCode, verifyCode])("rejects a cross-origin email-code action", async (handler) => {
+    const response = await handler(
+      post("/session/email-code/verify", {}, { origin: "https://evil.example" }),
+    );
+    expect(response.status).toBe(403);
+    expect(fetchMock).not.toHaveBeenCalled();
+  });
+
+  it.each([requestCode, verifyCode])(
+    "passes email-code rate limits through without issuing a session",
+    async (handler) => {
+      fetchMock.mockResolvedValue(Response.json({ error: { code: "too_many_attempts" } }, { status: 429 }));
+      expect((await handler(post("/session/email-code/verify", {}))).status).toBe(429);
+      expect(jar.size).toBe(0);
+    },
+  );
 
   it("logs in: the refresh token goes into a protected cookie, never into the body (SC-006)", async () => {
     fetchMock.mockResolvedValue(Response.json(tokens));

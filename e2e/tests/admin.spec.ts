@@ -219,14 +219,46 @@ test("the panel's tabs list bookings by status and find a user by part of the na
   await expect(page.getByRole("row").filter({ hasText: guest.email })).toHaveCount(1);
 });
 
-test("every table column toggles global sorting and keeps filters and pages", async ({ page, request }) => {
+test("every table column toggles global sorting and keeps filters and pages", async ({
+  page,
+  request,
+}) => {
   await page.setViewportSize({ width: 1440, height: 1000 });
-  const listing = await createListing(request, host, { title: "E2E sorting table" });
+  const listing = await createListing(request, host, {
+    title: "E2E sorting table",
+  });
   const guest = await register(request, "sortguest");
   expect((await reserve(request, guest, listing.id)).status()).toBe(201);
   await logIn(page);
+  const firstRows = new Map<string, { id: number; email: string }>();
+  page.on("response", async (response) => {
+    const url = new URL(response.url());
+    if (
+      !/^\/admin-api\/api\/v1\/admin\/(bookings|users)$/.test(url.pathname) ||
+      response.status() !== 200
+    )
+      return;
+    const body = await response.json().catch(() => null);
+    if (!body?.items?.[0]) return;
+    const tab = url.pathname.split("/").at(-1);
+    firstRows.set(
+      `${tab}:${url.searchParams.get("sort_by") ?? (tab === "bookings" ? "id" : "created_at")}:${url.searchParams.get("order") ?? "desc"}`,
+      body.items[0],
+    );
+  });
   for (const [tab, columns] of [
-    ["bookings", ["id", "listing", "guest", "dates", "total_price", "status", "created_at"]],
+    [
+      "bookings",
+      [
+        "id",
+        "listing",
+        "guest",
+        "dates",
+        "total_price",
+        "status",
+        "created_at",
+      ],
+    ],
     ["users", ["full_name", "email", "kind", "created_at"]],
   ] as const) {
     await page.goto(`${ADMIN_WEB}/en/admin?tab=${tab}`);
@@ -235,32 +267,52 @@ test("every table column toggles global sorting and keeps filters and pages", as
       const heading = page.getByRole("columnheader").nth(i);
       for (const order of ["asc", "desc"]) {
         await heading.getByRole("link").click();
-        await expect(page).toHaveURL(new RegExp(`sort_by=${columns[i]}&order=${order}$`));
-        await expect(heading).toHaveAttribute("aria-sort", order === "asc" ? "ascending" : "descending");
-        // Cached sorts need no new UI request; compare the rendered first row with the real API.
-        const response = await page.evaluate(async (url) => {
-          const res = await fetch(url);
-          return { status: res.status, body: await res.json() };
-        }, `/admin-api/api/v1/admin/${tab}?sort_by=${columns[i]}&order=${order}&limit=20&offset=0`);
-        expect(response.status).toBe(200);
-        const first = response.body.items[0];
-        expect(first).toBeTruthy();
-        const row = page.locator("tbody tr").first();
-        if (tab === "bookings") {
-          await expect(row.locator("td").first()).toHaveText(String(first.id));
-        } else {
-          await expect(row.locator("td").nth(1)).toHaveText(first.email);
-        }
+        await expect(page).toHaveURL(
+          new RegExp(`sort_by=${columns[i]}&order=${order}$`),
+        );
+        await expect(heading).toHaveAttribute(
+          "aria-sort",
+          order === "asc" ? "ascending" : "descending",
+        );
+        // Compare with the real response consumed by this view, including cached sorts.
+        // Other tests can register users between rendering and a separate API request.
+        await expect
+          .poll(
+            async () => {
+              const first = firstRows.get(`${tab}:${columns[i]}:${order}`);
+              if (!first) return false;
+              const cell = page
+                .locator("tbody tr")
+                .first()
+                .locator("td")
+                .nth(tab === "bookings" ? 0 : 1);
+              return (
+                (await cell.innerText()) ===
+                String(tab === "bookings" ? first.id : first.email)
+              );
+            },
+            {
+              message: `${tab} ${columns[i]} ${order} renders its server response`,
+            },
+          )
+          .toBe(true);
       }
     }
   }
-  await page.goto(`${ADMIN_WEB}/fa/admin?tab=users&sort_by=email&order=asc&page=2`);
-  await expect(page.getByRole("columnheader").nth(1)).toHaveAttribute("aria-sort", "ascending");
+  await page.goto(
+    `${ADMIN_WEB}/fa/admin?tab=users&sort_by=email&order=asc&page=2`,
+  );
+  await expect(page.getByRole("columnheader").nth(1)).toHaveAttribute(
+    "aria-sort",
+    "ascending",
+  );
   const next = page.getByRole("link", { name: "صفحه‌ی ۳", exact: true });
   await expect(next).toHaveAttribute("href", /sort_by=email&order=asc&page=3/);
   await page.getByRole("searchbox").fill(guest.email.split("@")[0]);
   await expect(page).toHaveURL(/q=.*sort_by=email&order=asc$/);
-  await expect(page.getByRole("row").filter({ hasText: guest.email })).toHaveCount(1);
+  await expect(
+    page.getByRole("row").filter({ hasText: guest.email }),
+  ).toHaveCount(1);
   await page.getByRole("columnheader").nth(1).getByRole("link").click();
   await expect(page).toHaveURL(/q=.*sort_by=email&order=desc$/);
 });

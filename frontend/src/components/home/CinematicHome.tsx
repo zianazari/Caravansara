@@ -5,8 +5,9 @@ import cabin from "@/assets/cinematic-cabin.jpg";
 import { PopularDestinations } from "./PopularDestinations";
 import { HomeSearch } from "./HomeSearch";
 import { HomeRows } from "./HomeRows";
+import { OpportunityInvite } from "@/components/opportunities/OpportunityInvite";
 
-/** An independently selected visual direction; listing data and booking behavior stay shared. */
+/** The cinematic site is the main application on port 3001. */
 export function CinematicHome({ today }: { today: string }) {
   const t = useTranslations("cinematic");
   return (
@@ -40,6 +41,7 @@ export function CinematicHome({ today }: { today: string }) {
         <HomeSearch today={today} />
       </div>
       <PopularDestinations />
+      <OpportunityInvite />
       <section
         id="stays"
         aria-labelledby="stays-title"

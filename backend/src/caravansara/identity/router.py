@@ -1,12 +1,18 @@
-from fastapi import APIRouter, Request, status
+from typing import Annotated
+
+from fastapi import APIRouter, BackgroundTasks, Depends, Request, status
 from starlette.requests import ClientDisconnect
 
 from caravansara.core.db import SessionDep
 from caravansara.core.deps import ClientIp, StorageDep
-from caravansara.core.errors import AppError, error_responses
+from caravansara.core.email import EmailSender, sender_from_settings
+from caravansara.core.errors import AppError, ServiceUnavailable, error_responses
 from caravansara.core.security import CurrentUserId, SettingsDep
 from caravansara.identity import service
 from caravansara.identity.schemas import (
+    EmailCodeChallenge,
+    EmailCodeRequest,
+    EmailCodeVerify,
     LoginIn,
     ProfileUpdate,
     RefreshIn,
@@ -17,6 +23,54 @@ from caravansara.identity.schemas import (
 )
 
 router = APIRouter(tags=["Auth and profile"])
+
+
+def email_login_sender(settings: SettingsDep) -> EmailSender | None:
+    return sender_from_settings(settings)
+
+
+@router.post(
+    "/auth/email-code/request",
+    summary="Request a five-digit email sign-in code",
+    description=(
+        "For existing members only. Always returns the same challenge shape, including unknown/admin addresses. "
+        "Code expires in five minutes. Resend after sixty seconds, at most three per address in fifteen minutes. "
+        "Delivery uses the configured SMTP server after the response; no code is returned or logged."
+    ),
+    responses=error_responses(422, 429, 503),
+)
+async def request_email_code(
+    body: EmailCodeRequest,
+    background: BackgroundTasks,
+    session: SessionDep,
+    settings: SettingsDep,
+    ip: ClientIp,
+    sender: Annotated[EmailSender | None, Depends(email_login_sender)],
+) -> EmailCodeChallenge:
+    if sender is None:
+        raise ServiceUnavailable("Email delivery is not configured.")
+    challenge, message = await service.request_email_code(
+        session, settings, email=body.email, locale=body.locale, ip=ip
+    )
+    if message is not None:
+        background.add_task(service.send_email_code, sender, message)
+    return challenge
+
+
+@router.post(
+    "/auth/email-code/verify",
+    summary="Sign in with an email code",
+    description=(
+        "Redeems a single-use five-digit code. Issues the same member session as password login. "
+        "At most five failed checks per address in fifteen minutes, including across resends. "
+        "Concurrent redemption cannot create two sessions from one code."
+    ),
+    responses=error_responses(401, 422, 429),
+)
+async def verify_email_code(
+    body: EmailCodeVerify, session: SessionDep, settings: SettingsDep, ip: ClientIp
+) -> TokensOut:
+    return await service.verify_email_code(session, settings, challenge_id=body.challenge_id, code=body.code, ip=ip)
 
 
 @router.post(

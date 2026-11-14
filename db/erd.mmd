@@ -5,6 +5,7 @@ erDiagram
     USERS ||--o{ EMAIL_OUTBOX : "receives"
     USERS ||--o{ LISTINGS : "hosts"
     USERS ||--o{ BOOKINGS : "books"
+    USERS |o--o{ EMAIL_LOGIN_CODES : "email signs in"
     USERS ||--o{ REFRESH_TOKENS : "signs in with"
     COUNTRIES ||--o{ CITIES : "has"
     CITIES ||--o{ LISTINGS : "located in"
@@ -39,7 +40,7 @@ erDiagram
     }
     AUTH_ATTEMPTS {
         bigint id PK
-        text action "login | register | admin_login"
+        text action "login | register | admin_login | email_code_*"
         text identifier "email or IP"
         boolean succeeded
         timestamptz attempted_at
@@ -188,4 +189,15 @@ erDiagram
         timestamptz sent_at
         timestamptz failed_at
         text last_error
+    }
+
+    EMAIL_LOGIN_CODES {
+        uuid id PK
+        text email_digest "HMAC address"
+        bigint user_id FK "nullable"
+        text code_hash "keyed HMAC"
+        timestamptz created_at
+        timestamptz expires_at "5 minutes"
+        smallint attempts "0 to 5"
+        timestamptz consumed_at
     }

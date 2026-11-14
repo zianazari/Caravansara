@@ -4,6 +4,46 @@
  */
 
 export interface paths {
+  "/api/v1/auth/email-code/request": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Request a five-digit email sign-in code
+     * @description For existing members only. Always returns the same challenge shape, including unknown/admin addresses. Code expires in five minutes. Resend after sixty seconds, at most three per address in fifteen minutes. Delivery uses the configured SMTP server after the response; no code is returned or logged.
+     */
+    post: operations["request_email_code_api_v1_auth_email_code_request_post"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/auth/email-code/verify": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Sign in with an email code
+     * @description Redeems a single-use five-digit code. Issues the same member session as password login. At most five failed checks per address in fifteen minutes, including across resends. Concurrent redemption cannot create two sessions from one code.
+     */
+    post: operations["verify_email_code_api_v1_auth_email_code_verify_post"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   "/api/v1/auth/register": {
     parameters: {
       query?: never;
@@ -195,6 +235,26 @@ export interface paths {
      * @description Amenities grouped by category.
      */
     get: operations["list_amenities_api_v1_amenities_get"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/search/opportunities": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Find travel opportunities within a total budget
+     * @description Up to three distinct public listings in one country and currency: cheapest, highest reviewed rating, and date-shift savings. Exact dynamic nightly prices plus cleaning must fit the budget. Checks full-stay availability and local booking dates. Savings compare the same listing on available preferred dates. Does not hold inventory or convert currencies.
+     */
+    get: operations["opportunities_api_v1_search_opportunities_get"];
     put?: never;
     post?: never;
     delete?: never;
@@ -1542,6 +1602,45 @@ export interface components {
        */
       review_version: number;
     };
+    /** EmailCodeChallenge */
+    EmailCodeChallenge: {
+      /**
+       * Challenge Id
+       * Format: uuid
+       */
+      challenge_id: string;
+      /** Expires In */
+      expires_in: number;
+      /** Resend After */
+      resend_after: number;
+    };
+    /** EmailCodeRequest */
+    EmailCodeRequest: {
+      /**
+       * Email
+       * Format: email
+       */
+      email: string;
+      /**
+       * Locale
+       * @default fa
+       * @enum {string}
+       */
+      locale: "fa" | "en";
+    };
+    /** EmailCodeVerify */
+    EmailCodeVerify: {
+      /**
+       * Challenge Id
+       * Format: uuid
+       */
+      challenge_id: string;
+      /**
+       * Code
+       * @description Exactly five digits, including leading zeros.
+       */
+      code: string;
+    };
     /** ErrorBody */
     ErrorBody: {
       /** Code */
@@ -1951,6 +2050,13 @@ export interface components {
       source: "base" | "weekend" | "holiday" | "custom";
       /** Label */
       label?: string | null;
+    };
+    /** OpportunityPage */
+    OpportunityPage: {
+      /** Items */
+      items: components["schemas"]["TravelOpportunity"][];
+      /** Matched Listings */
+      matched_listings: number;
     };
     /** PhotoCreate */
     PhotoCreate: {
@@ -2415,6 +2521,39 @@ export interface components {
        */
       expires_in: number;
     };
+    /** TravelOpportunity */
+    TravelOpportunity: {
+      /**
+       * Kind
+       * @enum {string}
+       */
+      kind: "economical" | "experience" | "flexible" | "alternative";
+      listing: components["schemas"]["SearchResult"];
+      /**
+       * Check In
+       * Format: date
+       */
+      check_in: string;
+      /**
+       * Check Out
+       * Format: date
+       */
+      check_out: string;
+      /** Nights */
+      nights: number;
+      /** Stay Total */
+      stay_total: string;
+      /** Cleaning Fee */
+      cleaning_fee: string;
+      /** Total Price */
+      total_price: string;
+      /** Shift Days */
+      shift_days: number;
+      /** Reference Total */
+      reference_total?: string | null;
+      /** Savings */
+      savings?: string | null;
+    };
     /** UploadUrlIn */
     UploadUrlIn: {
       /**
@@ -2515,6 +2654,108 @@ export interface components {
 }
 export type $defs = Record<string, never>;
 export interface operations {
+  request_email_code_api_v1_auth_email_code_request_post: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["EmailCodeRequest"];
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["EmailCodeChallenge"];
+        };
+      };
+      /** @description Invalid input or a broken business rule */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Too many attempts */
+      429: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description A service the request needs is not reachable; nothing was changed */
+      503: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+    };
+  };
+  verify_email_code_api_v1_auth_email_code_verify_post: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["EmailCodeVerify"];
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["TokensOut"];
+        };
+      };
+      /** @description Missing, invalid or expired access token */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Invalid input or a broken business rule */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Too many attempts */
+      429: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+    };
+  };
   register_api_v1_auth_register_post: {
     parameters: {
       query?: never;
@@ -3017,6 +3258,48 @@ export interface operations {
         };
         content: {
           "application/json": components["schemas"]["AmenityCategoryOut"][];
+        };
+      };
+    };
+  };
+  opportunities_api_v1_search_opportunities_get: {
+    parameters: {
+      query: {
+        budget: number | string;
+        currency: string;
+        country?: string;
+        city_id?: number | null;
+        preferred_check_in: string;
+        nights?: number;
+        flex_days?: number;
+        adults?: number;
+        children?: number;
+        /** @description Accepted for the UI; infants don't count. */
+        infants?: number;
+        pets?: number;
+      };
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["OpportunityPage"];
+        };
+      };
+      /** @description Invalid input or a broken business rule */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
         };
       };
     };

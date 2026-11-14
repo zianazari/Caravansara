@@ -80,19 +80,16 @@ describe("home page (US1/AC1)", () => {
   });
 
   it.each([
-    ["fa", "جایی برای مکث، مقصدی برای کشف.", "جستجو", "دسته‌ها", "محبوب در تهران"],
-    ["en", "Somewhere to slow down. Something to discover.", "Search", "Categories", "Popular in Tehran"],
+    ["fa", "کمی دورتر، کمی آرام‌تر.", "جستجو", "دسته‌ها", "محبوب در تهران"],
+    ["en", "A little further. A little quieter.", "Search", "Categories", "Popular in Tehran"],
   ] as const)(
     "in %s: hero, search pill, categories and a row per city",
     async (locale, title, search, categories, firstRow) => {
       const page = await HomePage({ params: Promise.resolve({ locale }) });
       const { container } = renderIn(locale, page);
       expect(screen.getByRole("heading", { level: 1, name: title })).toBeInTheDocument();
-      // Feature 041: the hero's scroll story, hidden from screen readers; the caravansara gate frames the
-      // owner's courtyard photo (027).
-      const scene = container.querySelector("svg[data-hero='scene']")!;
-      expect(scene).toHaveAttribute("aria-hidden");
-      expect(scene.querySelector("image")).not.toBeNull();
+      expect(container.querySelector(".cinematic-cover img")).not.toBeNull();
+      expect(container.querySelector("svg[data-hero='scene']")).toBeNull();
       expect(screen.getByRole("search")).toContainElement(screen.getByRole("button", { name: search }));
       expect(screen.getByRole("navigation", { name: categories })).toBeInTheDocument();
       expect(await screen.findByRole("heading", { name: new RegExp(firstRow) })).toBeInTheDocument();
