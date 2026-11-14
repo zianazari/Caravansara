@@ -99,6 +99,8 @@ heading, card dimensions, spacing and method selector. The admin password submit
 and error state also match the member form. Verified in both languages at 320/1440 px
 with equal computed card styles; 29 related component tests and both real-browser
 admin email sign-in tests passed after the style update. The local web image is current.
+The login page omits the old session-lifetime banner and the redundant admin email introduction;
+the eight-hour admin session policy is documented in the API guide.
 The durable business-email outbox remains separate. The web's
 same-origin `/session/email-code/*` handlers protect refresh tokens as before.
 See `docs/email-login.md`.
@@ -161,6 +163,13 @@ unchanged. See `docs/travel-opportunities.md`. No schema migration or new servic
   `SecItemCopyMatching failed -50`, so no Postman CLI execution is claimed for this extension.
 
 ## Next work
+
+`docs/search-cache.md` records the Redis proposal, not an implemented service. Start with filter
+counts, shared popular-city counts and repeated first-page searches, subject to measured hit rate
+and p95. Popularity currently uses a 600-second process-local cache. Proposed TTLs are initial
+experiments; invalidation must cover pricing, holidays, publication status, bookings and hold expiry,
+including stale cache-fill races. Final booking checks remain in PostgreSQL. No Redis service or
+new configuration was added during documentation work.
 
 `docs/future-work.md` tracks remaining work: server-side listing drafts, optional property categories,
 additional error/race browser coverage, account email verification/password reset, measured caching and only

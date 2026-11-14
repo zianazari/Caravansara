@@ -271,6 +271,7 @@ Backend and frontend test commands are in their [backend](backend/README.md) and
 | [Backend](backend/README.md)                                      | API development, configuration, migrations and quality checks               |
 | [Email code login](docs/email-login.md) | Five-digit codes, SMTP, expiry, rate limits and protected web sessions |
 | [Travel opportunities](docs/travel-opportunities.md) | Budget discovery, ranking, availability, currency and booking hand-off |
+| [Search cache proposal — فارسی](docs/search-cache.md) | Proposed Redis candidates, TTLs, invalidation and correctness checks; not implemented |
 | [Dynamic pricing](docs/dynamic-pricing.md)                        | Rule priority, calendar controls, quotes and saved booking prices           |
 | [End-to-end tests](e2e/README.md)                                 | Compose setup, fixtures, browser journeys and reports                       |
 | [Database](db/README.md)                                          | Schema, constraints, indexes and diagrams                                   |
@@ -289,6 +290,7 @@ project documentation and current README screenshots in `docs/`. Historical spec
 - Email verification, password recovery and server-side listing drafts.
 - Host-blocked dates, automatic holiday imports and a real payment gateway.
 - Remaining browser race/error scenarios and first-time-user usability checks.
-- Caching or service separation when measured performance justifies it.
+- [Redis search caching](docs/search-cache.md) when measured performance justifies it; currently a proposal.
+- Service separation when measured load and operational needs justify it.
 
 See [docs/future-work.md](docs/future-work.md) for the remaining work and dependencies.

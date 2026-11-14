@@ -1,8 +1,8 @@
 # Caravansara Database: Design Overview
 
-Updated November 13, 2026 · Zia
+Updated November 14, 2026 · Zia
 
-Current schema: **17 application tables** on PostgreSQL 16 with PostGIS, through Alembic migration `0012`.
+Current schema: **18 application tables** on PostgreSQL 16 with PostGIS, through Alembic migration `0013`.
 The authoritative history is `backend/migrations/`; `db/schema.sql`, `db/schema.dbml` and the ERD are reference
 snapshots. [Backend design](backend-design.md) and [dynamic pricing](dynamic-pricing.md) document API/service rules.
 The older online overview and Persian slide deck are historical artifacts, not the current schema.
@@ -11,7 +11,7 @@ The older online overview and Persian slide deck are historical artifacts, not t
 
 | Domain | Tables | Role |
 | --- | --- | --- |
-| Identity | `users`, `refresh_tokens`, `auth_attempts` | Members/admins, sessions and rate limits |
+| Identity | `users`, `refresh_tokens`, `auth_attempts`, `email_login_codes` | Members/admins, sessions, rate limits and short-lived hashed email challenges |
 | Catalog | `countries`, `cities`, `amenity_categories`, `amenities`, `holidays` | Destinations, amenities and country holiday dates |
 | Listings | `listings`, `listing_photos`, `listing_amenities` | Properties, host pricing policy, photos and features |
 | Bookings & reviews | `bookings`, `reviews` | No-overlap guarantee, saved nightly prices and ratings |
@@ -38,7 +38,7 @@ Creation locks the listing against concurrent edits and rejects a supplied quote
 ### Search: Where / When / Who
 
 - **Where** is either a city (`countries` → `cities`, for autocomplete) or a centre point plus a radius of 1–100 km.
-- **When** is a check-in/check-out pair. The "±1/2/3/7/14 days" flexible option only widens the query, so it needs no table. "Today" is computed in the city's own time zone (`cities.timezone`).
+- **When** is a check-in/check-out pair. Travel opportunities add a preferred arrival and a flexible window of up to seven days in either direction without another table. "Today" is computed in the city's own time zone (`cities.timezone`).
 - **Who** has four counters: adults, children, infants, pets. The booking stores all four.
   - Adults + children must fit within `max_guests`; infants don't count.
   - Pets need `pets_allowed` and must stay within `max_pets`.
@@ -47,7 +47,7 @@ Creation locks the listing against concurrent edits and rejects a supplied quote
 
 Each listing keeps two points:
 
-- the real `latitude` / `longitude`, shown only to the host and to guests with a confirmed or completed booking;
+- the real `latitude` / `longitude`, shown to the host, guests with a confirmed/completed booking and authenticated admins reviewing a listing; admin address access is recorded;
 - `public_location`, a PostGIS `geography(Point, 4326)` moved about 100–500 m at random when the listing is created and stored once.
 
 Search (`ST_DWithin` with a GiST index), `distance_km` and the map pin use only the public point, so shrinking the radius or averaging many requests can't reveal the address. Airbnb does the same: it shows an approximate area until a booking is confirmed.
@@ -61,10 +61,22 @@ Search (`ST_DWithin` with a GiST index), `distance_km` and the map pin use only 
 ### Photos
 
 The files live in object storage (MinIO in development, S3 or R2 in production) behind a CDN. `listing_photos` keeps only the `storage_key`, `width`, `height`, an optional `room_tag` and `sort_order` (0 = cover). Reordering or swapping the cover works in one transaction, because the order constraint is checked at commit.
+At least five photos are required for resubmission and approval.
 
 ### Amenities
 
 A catalog instead of yes/no columns: 12 categories and 31 amenities, linked to listings through `listing_amenities`. Adding "microwave" is a new row, not a migration. `amenities.icon` holds a key like `wifi` that the frontend maps to an icon. Pets are a listing column, not an amenity.
+
+## Email sign-in and search caching
+
+Migration `0013` adds `email_login_codes`. Members and admins can request single-use five-digit codes,
+valid for five minutes, through separate sign-in routes. Challenges store keyed code/address digests;
+codes are bound to their member/admin purpose and never stored in the business email outbox. Rate-limit
+attempts use `auth_attempts`; session issuance and code consumption commit atomically. The worker removes
+challenges after one day. See [email login](email-login.md) for endpoints, delivery and session boundaries.
+
+Redis search caching is [proposed](search-cache.md), not implemented. It adds no table or migration in this
+documentation update; booking exclusion, idempotency and saved nightly prices remain database concerns.
 
 ## No double booking
 
@@ -94,23 +106,23 @@ Tested on PostgreSQL 16: 20 simultaneous requests for the same nights produced e
 | --- | --- |
 | Rank | Star rating 1–5 plus six sub-ratings, cached on the listing |
 | Comments | Review text only; no host replies, no guest–host messaging |
-| Scope | Simple: no wishlists, messages, host date blocking or per-night prices; payment is simulated |
+| Scope | Wishlists and dynamic nightly prices are implemented; messaging and host date blocking are future work; payment is simulated |
 | Database | PostgreSQL 16 with PostGIS |
 | Table name | `listings` (the offer, Airbnb's own term), not `places` |
 | Map | Radial search on a fuzzed `public_location`; real coordinates stay private |
 | Photos | Object storage behind a CDN; the row keeps `storage_key`, `width`, `height` |
 | Amenity icons | A key in `amenities.icon` mapped by the frontend; left nullable by choice |
 | Pets | `pets_allowed` / `max_pets` on the listing, not an amenity |
-| Sign-in | JWT with refresh-token rotation (`refresh_tokens`); login and registration rate-limited (`auth_attempts`) |
+| Sign-in | Password or purpose-bound five-digit email codes; JWT and refresh rotation (`refresh_tokens`), rate limits (`auth_attempts`) and expiring challenges (`email_login_codes`) |
 | Email | Unique regardless of letter case |
 | Time | `cities.timezone` decides "today" and when a stay ends |
 | Double booking | `EXCLUDE` on active bookings, a 15-minute hold, and an idempotency key |
 
 ## ERD
 
-Twelve tables. `listings` is the hub with five relationships; `bookings` carries the no-overlap constraint and `reviews` hangs off a completed booking.
+Eighteen application tables. `listings` connects properties to their hosts, catalog data, photos, bookings and moderation history; `bookings` carries the no-overlap constraint and `reviews` hangs off a completed booking.
 
-![Current 17-table entity relationship diagram](../db/erd.png)
+![Current 18-table entity relationship diagram](../db/erd.png)
 
 The full column list is in `db/erd.mmd`, `db/schema.sql` and `db/schema.dbml` in `Caravansara`.
 
@@ -131,7 +143,7 @@ All tested on PostgreSQL 16 with PostGIS 3.4.
 | Photo order can be rearranged safely | `(listing_id, sort_order)` unique, checked at commit |
 | Radial search is fast and works across the 180° meridian | GiST index on `public_location`, `ST_DWithin` |
 
-**Left to the service layer:** guest count and pets within capacity, a host can't book their own listing, radius 1–100 km, the booking state machine, payment and expiry as conditional updates, cancellation only before the check-in day, the 14-day review window, and showing the exact address only after a confirmed booking.
+**Left to the service layer:** guest count and pets within capacity, a host can't book their own listing, radius 1–100 km, the booking state machine, payment and expiry as conditional updates, cancellation only before the check-in day, the 14-day review window, and exact-address access for hosts, confirmed/completed guests and authenticated reviewing admins.
 
 ## Out of scope
 
@@ -145,4 +157,5 @@ All tested on PostgreSQL 16 with PostGIS 3.4.
 - `Caravansara/db/`: `schema.sql`, `seed_amenities.sql`, `search_query.sql`, `schema.dbml` (for dbdiagram.io), `erd.mmd` and `erd.png`, and a README
 - `Caravansara/docs/backend-design.md`: backend requirements, API and service rules (source of truth)
 - `Caravansara/docs/future-work.md`: remaining work: listing drafts, additional browser edge cases, account emails, measured caching and any justified service split
-- `Caravansara/frontend/`: the guest/host web site and admin workspace, Persian RTL and English, default and cinematic variants
+- `Caravansara/frontend/`: the guest/host web site and admin workspace, Persian RTL and English, one cinematic frontend on port 3001
+- [Search caching proposal](search-cache.md): candidates, initial TTLs, invalidation, privacy and verification criteria; no Redis service is installed yet
