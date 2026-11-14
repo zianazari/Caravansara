@@ -9,18 +9,27 @@ about any listing comes back, not even whether it exists (FR-020, research R13).
 from datetime import date
 from typing import Annotated, Literal
 
-from fastapi import APIRouter, Depends, Query, Request, status
+from fastapi import APIRouter, BackgroundTasks, Depends, Query, Request, status
 
 from caravansara.bookings.service import BookingStatus
 from caravansara.catalog import service as catalog
 from caravansara.catalog.schemas import CountryOut, HolidayIn, HolidayOut
 from caravansara.core.db import SessionDep
-from caravansara.core.deps import ClientIp, StorageDep
-from caravansara.core.errors import NotFound, error_responses
+from caravansara.core.deps import ClientIp, StorageDep, email_login_sender
+from caravansara.core.email import EmailSender
+from caravansara.core.errors import NotFound, ServiceUnavailable, error_responses
 from caravansara.core.pagination import PageDep, SortOrder
 from caravansara.core.security import CurrentAdminId, SettingsDep
 from caravansara.identity import service as identity
-from caravansara.identity.schemas import AdminTokenOut, AdminUserPage, AdminUserSort, RefreshIn
+from caravansara.identity.schemas import (
+    AdminTokenOut,
+    AdminUserPage,
+    AdminUserSort,
+    EmailCodeChallenge,
+    EmailCodeRequest,
+    EmailCodeVerify,
+    RefreshIn,
+)
 from caravansara.listings.schemas import AdminListingOut, AdminQueuePage
 from caravansara.moderation import service
 from caravansara.moderation.schemas import (
@@ -48,6 +57,54 @@ async def _admin_id(admin_id: CurrentAdminId, session: SessionDep) -> int:
 AdminId = Annotated[int, Depends(_admin_id)]
 
 router = APIRouter(prefix="/admin", tags=["Admin"], dependencies=[Depends(admin_host_guard)])
+
+
+@router.post(
+    "/auth/email-code/request",
+    summary="Request a five-digit admin email sign-in code",
+    description=(
+        "Sends only to enabled administrators created on the server. Unknown, member and disabled addresses "
+        "receive the same challenge response without email. Codes expire after five minutes and are bound "
+        "to admin sign-in. Resend after sixty seconds, at most three per address per fifteen minutes. "
+        "Delivery uses the configured SMTP server after the response; codes are never returned or logged."
+    ),
+    responses=error_responses(422, 429, 503),
+)
+async def request_admin_email_code(
+    body: EmailCodeRequest,
+    background: BackgroundTasks,
+    session: SessionDep,
+    settings: SettingsDep,
+    ip: ClientIp,
+    sender: Annotated[EmailSender | None, Depends(email_login_sender)],
+) -> EmailCodeChallenge:
+    if sender is None:
+        raise ServiceUnavailable("Email delivery is not configured.")
+    challenge, message = await identity.request_admin_email_code(
+        session, settings, email=body.email, locale=body.locale, ip=ip
+    )
+    if message is not None:
+        background.add_task(identity.send_email_code, sender, message)
+    return challenge
+
+
+@router.post(
+    "/auth/email-code/verify",
+    summary="Sign in to administration with an email code",
+    description=(
+        "Redeems a single-use five-digit admin code. Member codes cannot be used here, and admin codes "
+        "cannot create member sessions. Issues the existing fifteen-minute admin token and rotating "
+        "refresh token with an eight-hour session end. At most five failed checks per address in fifteen "
+        "minutes across resends. Disabled accounts are checked again before issuing a session."
+    ),
+    responses=error_responses(401, 422, 429),
+)
+async def verify_admin_email_code(
+    body: EmailCodeVerify, session: SessionDep, settings: SettingsDep, ip: ClientIp
+) -> AdminTokenOut:
+    return await identity.verify_admin_email_code(
+        session, settings, challenge_id=body.challenge_id, code=body.code, ip=ip
+    )
 
 
 @router.get("/countries", summary="Countries for the admin calendar", responses=error_responses(401))

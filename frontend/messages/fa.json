@@ -1,5 +1,6 @@
 {
   "emailLogin": {
+    "adminSent": "اگر این ایمیل متعلق به حساب مدیر فعال باشد، کد ورود برایش ارسال می‌شود.",
     "chooseMethod": "روش ورود",
     "passwordMethod": "ورود با رمز",
     "emailMethod": "ایمیل",

@@ -4,8 +4,8 @@ from fastapi import APIRouter, BackgroundTasks, Depends, Request, status
 from starlette.requests import ClientDisconnect
 
 from caravansara.core.db import SessionDep
-from caravansara.core.deps import ClientIp, StorageDep
-from caravansara.core.email import EmailSender, sender_from_settings
+from caravansara.core.deps import ClientIp, StorageDep, email_login_sender
+from caravansara.core.email import EmailSender
 from caravansara.core.errors import AppError, ServiceUnavailable, error_responses
 from caravansara.core.security import CurrentUserId, SettingsDep
 from caravansara.identity import service
@@ -23,10 +23,6 @@ from caravansara.identity.schemas import (
 )
 
 router = APIRouter(tags=["Auth and profile"])
-
-
-def email_login_sender(settings: SettingsDep) -> EmailSender | None:
-    return sender_from_settings(settings)
 
 
 @router.post(

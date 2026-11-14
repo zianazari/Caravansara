@@ -275,6 +275,7 @@ describe("admin panel (feature 009)", () => {
       Response.json({ error: { code: "invalid_credentials" } }, { status: 401 }),
     );
     renderIn("fa", <AdminLogin />);
+    await userEvent.click(screen.getByRole("button", { name: "ورود با رمز" }));
     await userEvent.type(screen.getByLabelText("ایمیل"), "admin@example.com");
     await userEvent.type(screen.getByLabelText("رمز"), "wrong");
     await userEvent.click(screen.getByRole("button", { name: "ورود" }));
@@ -285,4 +286,47 @@ describe("admin panel (feature 009)", () => {
     expect(adminLogin).toHaveBeenLastCalledWith("admin@example.com", "wrong");
     await expectAccessible(document.body);
   });
+
+  it.each(["fa", "en"])(
+    "defaults to admin email codes in %s and opens the panel after verification",
+    async (locale) => {
+      const fa = locale === "fa";
+      const fetchMock = vi
+        .fn()
+        .mockResolvedValueOnce(Response.json({ challenge_id: "id", expires_in: 300, resend_after: 60 }))
+        .mockResolvedValueOnce(Response.json({ session_expires_in: 28800 }));
+      vi.stubGlobal("fetch", fetchMock);
+      try {
+        renderIn(locale as "fa" | "en", <AdminLogin />);
+        expect(screen.queryByLabelText(fa ? "رمز" : "Password")).not.toBeInTheDocument();
+        await userEvent.type(screen.getByLabelText(fa ? "ایمیل" : "Email"), "admin@example.com");
+        await userEvent.click(
+          screen.getByRole("button", { name: fa ? "ارسال کد ورود" : "Send sign-in code" }),
+        );
+        expect(fetchMock).toHaveBeenNthCalledWith(
+          1,
+          "/admin-api/email-code/request",
+          expect.objectContaining({
+            body: JSON.stringify({ email: "admin@example.com", locale }),
+          }),
+        );
+        await userEvent.type(screen.getByLabelText(fa ? "کد ۵ رقمی" : "5-digit code"), "۰۰۰۰۷");
+        await expectAccessible(document.body);
+        await userEvent.click(
+          screen.getByRole("button", { name: fa ? "تأیید کد و ورود" : "Verify code and sign in" }),
+        );
+        expect(fetchMock).toHaveBeenNthCalledWith(
+          2,
+          "/admin-api/email-code/verify",
+          expect.objectContaining({
+            body: JSON.stringify({ challenge_id: "id", code: "00007" }),
+          }),
+        );
+        await waitFor(() => expect(replace).toHaveBeenCalledWith("/admin"));
+        expect(adminLogin).not.toHaveBeenCalled();
+      } finally {
+        vi.unstubAllGlobals();
+      }
+    },
+  );
 });

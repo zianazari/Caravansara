@@ -25,7 +25,7 @@ def query(**extra: Any) -> dict[str, Any]:
 async def discover(client: AsyncClient, **extra: Any) -> dict[str, Any]:
     response = await client.get("/search/opportunities", params=query(**extra))
     assert response.status_code == 200, response.text
-    return response.json()
+    return dict(response.json())
 
 
 async def test_distinct_rankings_and_exact_totals(client: AsyncClient, db: AsyncEngine) -> None:

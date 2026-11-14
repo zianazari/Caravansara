@@ -89,7 +89,17 @@ redeems it once into the normal member tokens. API background tasks use the exis
 SMTP sender, shared with the worker in compose. Codes last five minutes; resend
 cooldown is sixty seconds, with per-address/IP limits and five failed checks across
 resends. Only keyed HMACs are stored; expired challenges are purged after one day.
-Admin login and the durable business-email outbox remain separate. The web's
+Admin email login uses `/admin/auth/email-code/{request,verify}` with purpose-bound
+codes/address digests and active-admin checks at redemption. It keeps the 15-minute
+admin token and eight-hour rotating session; `/admin-api/email-code/*` stores both
+tokens in HttpOnly panel cookies and exposes only the session lifetime. The panel
+defaults to email and retains a password option. No further migration is needed.
+Admin/member login share `AuthPanel` and `AuthMethods`: the same logo, centered
+heading, card dimensions, spacing and method selector. The admin password submit
+and error state also match the member form. Verified in both languages at 320/1440 px
+with equal computed card styles; 29 related component tests and both real-browser
+admin email sign-in tests passed after the style update. The local web image is current.
+The durable business-email outbox remains separate. The web's
 same-origin `/session/email-code/*` handlers protect refresh tokens as before.
 See `docs/email-login.md`.
 
@@ -128,8 +138,8 @@ unchanged. See `docs/travel-opportunities.md`. No schema migration or new servic
 - Backend: `uv run pytest --cov`, `uv run ruff check src tests migrations`, `uv run ruff format --check src tests migrations`,
   `uv run mypy`, `uv run lint-imports`. Tests start isolated PostgreSQL/PostGIS and MinIO containers.
 - Frontend: `npm run gen:api`, lint, format check, typecheck, `npm test -- --coverage`, build. Coverage gates apply
-  to rules/API, not every component. The current frontend suite has 516 tests; the backend suite has 450.
-- E2E: 140 tests collected. Start base + `e2e/compose.e2e.yml` for the single site and fixture account
+  to rules/API, not every component. The current frontend suite has 524 tests; the backend suite has 461.
+- E2E: 142 tests collected. Start base + `e2e/compose.e2e.yml` for the single site and fixture account
   creation uses test rate limits. See `e2e/README.md`. Restore normal API settings after verification.
 - Latest local frontend verification (055): the original 3011 and new 3001 matched in hero image,
   heading, sections and computed palette in both languages. Port 3011 is closed and its container/
@@ -142,6 +152,13 @@ unchanged. See `docs/travel-opportunities.md`. No schema migration or new servic
   passed on rerun. Coverage was 96.85%. Ruff, format, mypy and all 13 import contracts passed.
 - Test accounts are `e2e.*@caravansara.example.com`; retained fixtures are the E2E convention. Holiday fixtures
   restore previous values in `finally`. Use unique temporary report directories when running Playwright.
+- Admin email-login verification: 65 backend auth/admin/opportunity/contract tests passed;
+  Ruff, formatting, mypy and all 13 import contracts passed. All 524 frontend tests passed with
+  coverage gates; lint, format, types and production images passed. The final response-consumption
+  refinement also passed 35 focused component/handler tests. Fourteen real-browser admin/member
+  tests passed, including SMTP delivery, Persian/English mobile entry, axe, cookie privacy and
+  renewal. The Postman collection was updated and parsed; `postman status` failed locally with
+  `SecItemCopyMatching failed -50`, so no Postman CLI execution is claimed for this extension.
 
 ## Next work
 

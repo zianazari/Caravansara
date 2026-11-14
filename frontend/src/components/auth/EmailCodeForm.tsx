@@ -11,7 +11,12 @@ import { CodeInput } from "./CodeInput";
 
 type PublicSession = { access_token: string; expires_in: number };
 
-export function EmailCodeForm({ onSuccess }: { onSuccess: (session: PublicSession) => Promise<void> }) {
+type EmailCodeFormProps =
+  | { audience?: "member"; onSuccess: (session: PublicSession) => Promise<void> }
+  | { audience: "admin"; onSuccess: () => Promise<void> };
+
+export function EmailCodeForm(props: EmailCodeFormProps) {
+  const audience = props.audience ?? "member";
   const t = useTranslations();
   const locale = useLocale();
   const [email, setEmail] = useState("");
@@ -23,6 +28,7 @@ export function EmailCodeForm({ onSuccess }: { onSuccess: (session: PublicSessio
   const [problem, setProblem] = useState<string>();
   const [busy, setBusy] = useState(false);
   const codeInput = useRef<HTMLInputElement>(null);
+  const endpoint = audience === "admin" ? "/admin-api/email-code" : "/session/email-code";
 
   useEffect(() => {
     if (challenge) codeInput.current?.focus();
@@ -47,7 +53,7 @@ export function EmailCodeForm({ onSuccess }: { onSuccess: (session: PublicSessio
     }
     setBusy(true);
     try {
-      const response = await fetch("/session/email-code/request", {
+      const response = await fetch(`${endpoint}/request`, {
         method: "POST",
         credentials: "same-origin",
         headers: { "content-type": "application/json" },
@@ -83,7 +89,7 @@ export function EmailCodeForm({ onSuccess }: { onSuccess: (session: PublicSessio
     }
     setBusy(true);
     try {
-      const response = await fetch("/session/email-code/verify", {
+      const response = await fetch(`${endpoint}/verify`, {
         method: "POST",
         credentials: "same-origin",
         headers: { "content-type": "application/json" },
@@ -93,7 +99,9 @@ export function EmailCodeForm({ onSuccess }: { onSuccess: (session: PublicSessio
         setProblem(errorMessage(t as unknown as Translate, await readError(response)));
         return;
       }
-      await onSuccess((await response.json()) as PublicSession);
+      const session = await response.json();
+      if (props.audience === "admin") await props.onSuccess();
+      else await props.onSuccess(session as PublicSession);
     } catch {
       setProblem(t("errors.service_unavailable"));
     } finally {
@@ -103,7 +111,9 @@ export function EmailCodeForm({ onSuccess }: { onSuccess: (session: PublicSessio
 
   return (
     <form onSubmit={submit} noValidate className="grid gap-4">
-      {!challenge ? <p className="text-sm leading-7 text-muted-foreground">{t("emailLogin.hint")}</p> : null}
+      {!challenge && audience === "member" ? (
+        <p className="text-sm leading-7 text-muted-foreground">{t("emailLogin.hint")}</p>
+      ) : null}
       {problem ? (
         <p role="alert" className="rounded-xl border border-destructive p-3 text-sm text-destructive">
           {problem}
@@ -126,7 +136,7 @@ export function EmailCodeForm({ onSuccess }: { onSuccess: (session: PublicSessio
       {challenge ? (
         <>
           <div role="status" className="rounded-xl bg-primary/10 p-3 text-sm leading-7">
-            {t("emailLogin.sent")}
+            {t(audience === "admin" ? "emailLogin.adminSent" : "emailLogin.sent")}
           </div>
           <Field label={t("emailLogin.code")} error={error} hint={t("emailLogin.codeHint")}>
             {(p) => <CodeInput {...p} ref={codeInput} value={code} onChange={setCode} />}

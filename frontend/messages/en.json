@@ -1,5 +1,6 @@
 {
   "emailLogin": {
+    "adminSent": "If this email belongs to an active administrator, a sign-in code will be sent.",
     "chooseMethod": "Sign-in method",
     "passwordMethod": "Use password",
     "emailMethod": "Email",

@@ -9,9 +9,9 @@ RTL layouts, Jalali dates and English support.
 
 <p align="center">
   <a href="https://github.com/zianazari/Caravansara/actions/workflows/ci.yml"><img src="https://github.com/zianazari/Caravansara/actions/workflows/ci.yml/badge.svg" alt="CI"></a>
-  <img src="https://img.shields.io/badge/tests-450%20backend-b5651d" alt="450 backend tests">
-  <img src="https://img.shields.io/badge/web-516%20Vitest%20tests-6E9F18" alt="516 frontend tests">
-  <img src="https://img.shields.io/badge/e2e-140%20Playwright%20tests-2EAD33" alt="140 collected end-to-end tests">
+  <img src="https://img.shields.io/badge/tests-461%20backend-b5651d" alt="461 backend tests">
+  <img src="https://img.shields.io/badge/web-524%20Vitest%20tests-6E9F18" alt="524 frontend tests">
+  <img src="https://img.shields.io/badge/e2e-142%20Playwright%20tests-2EAD33" alt="142 collected end-to-end tests">
 </p>
 
 [Features](#features) · [Screenshots](#screenshots) · [Run locally](#run-locally) ·
@@ -182,7 +182,10 @@ docker compose run --rm migrate caravansara seed-demo
 | Host    | `host@example.com`  | `caravansara-demo` |
 | Admin   | `admin@example.com` | `caravansara-demo` |
 
-These are development accounts. Admins sign in through the admin host. To create a separate admin:
+These are development accounts. Admins sign in through the admin host using a five-digit
+email code (the default) or a password. Codes use the current SMTP server and expire after
+five minutes; the panel keeps both tokens in HttpOnly cookies. See [email login](docs/email-login.md).
+To create a separate admin:
 
 ```bash
 docker compose exec -e CARAVANSARA_ADMIN_PASSWORD='your-local-password' api \
@@ -237,9 +240,9 @@ and [design decisions](docs/backend-design.md).
 
 ## Testing
 
-- **Backend:** 450 pytest tests against real PostgreSQL/PostGIS and MinIO using testcontainers.
-- **Frontend:** 516 Vitest tests covering rules, components, Persian/English layouts and axe accessibility.
-- **End to end:** 140 collected Playwright tests for API behavior and browser journeys on the running stack.
+- **Backend:** 461 pytest tests against real PostgreSQL/PostGIS and MinIO using testcontainers.
+- **Frontend:** 524 Vitest tests covering rules, components, Persian/English layouts and axe accessibility.
+- **End to end:** 142 collected Playwright tests for API behavior and browser journeys on the running stack.
 
 Coverage includes booking races, idempotency, privacy, photo uploads, listing review, guest/host flows,
 daily pricing, shared holidays, receipts and responsive accessibility. CI also checks formatting, lint,

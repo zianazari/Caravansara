@@ -3,7 +3,8 @@
 import { useTranslations } from "next-intl";
 import { useState } from "react";
 import { adminLogin } from "@/api/adminClient";
-import { AuthPanel } from "@/components/auth/AuthPanel";
+import { EmailCodeForm } from "@/components/auth/EmailCodeForm";
+import { AuthMethods, AuthPanel } from "@/components/auth/AuthPanel";
 import { Button } from "@/components/ui/button";
 import { Field } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
@@ -14,6 +15,7 @@ import { errorMessage, readError, type Translate } from "@/lib/errors";
 export function AdminLogin() {
   const t = useTranslations();
   const router = useRouter();
+  const [method, setMethod] = useState<"email" | "password">("email");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [problem, setProblem] = useState<string>();
@@ -38,49 +40,59 @@ export function AdminLogin() {
 
   return (
     <AuthPanel title={t("admin.loginTitle")}>
-      <form
-        noValidate
-        className="grid gap-4"
-        onSubmit={(event) => {
-          event.preventDefault();
-          void submit();
-        }}
-      >
-        <Field label={t("admin.email")}>
-          {(props) => (
-            <Input
-              {...props}
-              type="email"
-              autoComplete="username"
-              dir="ltr"
-              required
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-            />
-          )}
-        </Field>
-        <Field label={t("admin.password")}>
-          {(props) => (
-            <Input
-              {...props}
-              type="password"
-              autoComplete="current-password"
-              dir="ltr"
-              required
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-            />
-          )}
-        </Field>
-        {problem ? (
-          <p role="alert" className="rounded-lg border border-destructive p-3 text-sm text-destructive">
-            {problem}
-          </p>
-        ) : null}
-        <Button type="submit" size="lg" disabled={busy || !email || !password}>
-          {busy ? t("admin.loggingIn") : t("admin.login")}
-        </Button>
-      </form>
+      <AuthMethods value={method} onChange={setMethod} />
+      {method === "email" ? (
+        <EmailCodeForm
+          audience="admin"
+          onSuccess={async () => {
+            router.replace("/admin");
+          }}
+        />
+      ) : (
+        <form
+          noValidate
+          className="grid gap-4"
+          onSubmit={(event) => {
+            event.preventDefault();
+            void submit();
+          }}
+        >
+          <Field label={t("admin.email")}>
+            {(props) => (
+              <Input
+                {...props}
+                type="email"
+                autoComplete="username"
+                dir="ltr"
+                required
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+              />
+            )}
+          </Field>
+          <Field label={t("admin.password")}>
+            {(props) => (
+              <Input
+                {...props}
+                type="password"
+                autoComplete="current-password"
+                dir="ltr"
+                required
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+              />
+            )}
+          </Field>
+          {problem ? (
+            <p role="alert" className="rounded-lg border border-destructive p-3 text-sm text-destructive">
+              {problem}
+            </p>
+          ) : null}
+          <Button type="submit" size="lg" disabled={busy || !email || !password}>
+            {busy ? t("admin.loggingIn") : t("admin.login")}
+          </Button>
+        </form>
+      )}
     </AuthPanel>
   );
 }

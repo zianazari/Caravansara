@@ -140,11 +140,14 @@ Run `e2e/tests/home.spec.ts` and `cinematic-home.spec.ts` against `WEB_URL`.
 
 ### Email-code sign-in
 
-The login form offers password and email-code methods. `/session/email-code/request`
+The member login form offers password and email-code methods. `/session/email-code/request`
 forwards the normalized address and language; `/session/email-code/verify` stores
 the refresh token in the same HttpOnly cookie as password login. Persian/Arabic
 digits are normalized without losing leading zeroes. Return-to validation, refresh
 rotation and logout remain shared. See [the email login guide](../docs/email-login.md).
 
-Member and administrator login forms share `AuthPanel` for the same logo, card
-dimensions, typography and spacing.
+Admin login defaults to the same five-cell email input, with a password option.
+`/admin-api/email-code/{request,verify}` uses the separate admin API; verification
+sets both HttpOnly panel cookies and returns only `session_expires_in`.
+`AuthPanel` and `AuthMethods` share the logo, card dimensions, typography, spacing
+and method selector between member and admin login.

@@ -58,7 +58,7 @@ therefore need the `docker` CLI and the compose stack on the same machine.
 
 ## Pricing and unified frontend
 
-The suite collects 140 tests against a single web service on port 3001. All browser
+The suite collects 142 tests against a single web service on port 3001. All browser
 suites use the shared `WEB_URL` (default `http://localhost:3001`) and admin uses
 `ADMIN_WEB_URL` (default `http://admin.localhost:3001`).
 
@@ -78,3 +78,8 @@ WEB_URL=http://localhost:3001 ADMIN_WEB_URL=http://admin.localhost:3001 npx play
 `WEB_URL` and `ADMIN_WEB_URL` choose the origins for all public and host/admin
 flows. `PRICING_SHOTS=1` saves pricing/workspace screenshots under `/private/tmp` during a local run. After testing,
 restore normal API rate limits with `docker compose -f docker-compose.yml up -d --no-deps --wait api worker`.
+
+`admin-email-login.spec.ts` receives real login messages from Mailpit, enters
+five-digit codes in Persian/English, checks mobile layouts and axe, verifies
+HttpOnly admin cookies, and exercises automatic token renewal. It creates enabled
+admins through the existing CLI; no external email delivery is used in tests.

@@ -4,6 +4,7 @@ import json, pathlib
 
 M = {
  "emailLogin": {
+  "adminSent": ("اگر این ایمیل متعلق به حساب مدیر فعال باشد، کد ورود برایش ارسال می‌شود.", "If this email belongs to an active administrator, a sign-in code will be sent."),
   "chooseMethod": ("روش ورود", "Sign-in method"),
   "passwordMethod": ("ورود با رمز", "Use password"),
   "emailMethod": ("ایمیل", "Email"),

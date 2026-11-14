@@ -36,9 +36,10 @@ async function pendingListing(request: Parameters<typeof createListing>[0], titl
 async function logIn(page: Page) {
   await page.goto(`${ADMIN_WEB}/`);
   await page.waitForURL(/\/fa\/admin\/login/);
+  await page.getByRole("button", { name: "ورود با رمز" }).click();
   await page.getByLabel("ایمیل").fill(admin.email);
   await page.getByLabel("رمز").fill(admin.password);
-  await page.getByRole("button", { name: "ورود" }).click();
+  await page.getByRole("button", { name: "ورود", exact: true }).click();
   await expect(page.getByRole("heading", { name: "صف بازبینی" })).toBeVisible();
 }
 

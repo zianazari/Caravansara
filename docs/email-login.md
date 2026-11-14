@@ -1,7 +1,8 @@
 # Email code login (054)
 
 Members can sign in with their existing password or a five-digit email code.
-This does not create accounts or grant access to the separate admin panel.
+Administrators can also sign in by email on the separate admin host, where email
+is the default method and password sign-in remains available. Neither flow creates accounts.
 
 ## API contract
 
@@ -19,6 +20,20 @@ This does not create accounts or grant access to the separate admin panel.
   challenges; a resend does not reset this allowance. Requests have a sixty-second
   cooldown, three per address and ten per IP per fifteen minutes. Verification has
   a separate thirty-per-IP limit. Database locks serialize these checks.
+
+### Administration
+
+- `POST /admin/auth/email-code/request` accepts the same `{email, locale}` and
+  returns the same generic challenge. Only enabled admin accounts receive mail;
+  member, unknown and disabled addresses receive no message. The admin host guard
+  applies before these routes, as it does to the rest of the panel API.
+- `POST /admin/auth/email-code/verify` accepts `{challenge_id, code}` and returns
+  `AdminTokenOut`: a fifteen-minute admin token, a rotating refresh token, and
+  `session_expires_in` with the existing eight-hour session end.
+- Codes and address digests are purpose-bound to admin/member sign-in. Codes
+  cannot cross between the two flows. Resends and failed attempts are counted per
+  purpose/address; IP limits are shared. The account kind and disabled state are
+  checked again at verification. Consumption and session issuance are atomic.
 
 Only a keyed HMAC of the code/challenge is stored, using the configured server
 secret and a separate purpose prefix. Addresses in challenges and rate-limit keys
@@ -41,5 +56,11 @@ Same-origin `/session/email-code/*` handlers forward the visitor IP. Verificatio
 stores refresh tokens in the existing HttpOnly cookie and gives the page only the
 access token. The existing return-to rules, session rotation and sign-out apply.
 Expired challenges are removed by the worker after a one-day retention period.
+
+The panel uses same-origin `/admin-api/email-code/request` and `/verify` handlers.
+Both admin tokens go into the existing HttpOnly, SameSite=Strict cookies scoped
+to `/admin-api`; page scripts receive only the session lifetime. The five-cell
+input, Persian/Arabic digits, cooldown, error messages and autofill are shared
+with member login. No additional migration or SMTP settings are required.
 
 Design reference: [OWASP guidance on emailed tokens, single use and rate limits](https://cheatsheetseries.owasp.org/cheatsheets/Forgot_Password_Cheat_Sheet.html).

@@ -121,4 +121,8 @@ adds short-lived HMAC challenges; the API sends codes as background tasks using 
 same SMTP settings as the worker. Local messages appear in Mailpit at
 <http://localhost:8025>. Missing SMTP returns 503; delivery failures permit a resend
 after sixty seconds. Business emails retain their durable outbox/retry flow.
+Admins use `/admin/auth/email-code/request` and `/verify` on the admin API host.
+Their codes are purpose-bound and issue the existing short admin token and
+eight-hour rotating session; member codes cannot enter the panel. This extension
+uses migration `0013` without a further schema change.
 See [email-login.md](../docs/email-login.md) for contracts, limits and retention.

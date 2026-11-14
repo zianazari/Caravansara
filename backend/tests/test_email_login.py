@@ -2,6 +2,7 @@
 
 import asyncio
 import re
+import secrets
 from collections.abc import Iterator
 from datetime import timedelta
 from typing import Any
@@ -11,10 +12,10 @@ import pytest
 from httpx import AsyncClient
 from sqlalchemy.ext.asyncio import AsyncEngine
 
+from caravansara.core.deps import email_login_sender
 from caravansara.core.email import MemorySender
 from caravansara.core.timeutil import utcnow
 from caravansara.identity import service
-from caravansara.identity.router import email_login_sender
 from tests.helpers import register, sql
 
 
@@ -30,7 +31,7 @@ async def request_code(client: AsyncClient, email: str, **extra: Any) -> dict[st
     response = await client.post("/auth/email-code/request", json={"email": email, **extra})
     assert response.status_code == 200, response.text
     assert set(response.json()) == {"challenge_id", "expires_in", "resend_after"}
-    return response.json()
+    return dict(response.json())
 
 
 def last_code(sender: MemorySender) -> str:
@@ -47,7 +48,7 @@ async def test_email_delivery_issues_the_existing_session(
     client: AsyncClient, db: AsyncEngine, sender: MemorySender, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     user = await register(client)
-    monkeypatch.setattr(service.secrets, "randbelow", lambda _: 7)
+    monkeypatch.setattr(secrets, "randbelow", lambda _: 7)
     challenge = await request_code(client, user.email.upper(), locale="en")
     assert challenge["expires_in"] == 300
     assert challenge["resend_after"] == 60

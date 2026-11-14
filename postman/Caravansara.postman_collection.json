@@ -143,6 +143,14 @@
       "key": "emailCode",
       "value": "",
       "description": "Latest five-digit code from your email/Mailpit. Never commit a real code."
+    },
+    {
+      "key": "adminEmailChallengeId",
+      "value": ""
+    },
+    {
+      "key": "adminEmailCode",
+      "value": ""
     }
   ],
   "item": [
@@ -2044,6 +2052,98 @@
       "name": "Admin (listing review)",
       "description": "An admin account exists only through `caravansara create-admin` on the server (or `admin@example.com` in the demo data). Admin endpoints use their own token; a member token is refused, and an admin token works on no member endpoint (specs/backend (004)).",
       "item": [
+        {
+          "name": "Request admin email sign-in code",
+          "request": {
+            "method": "POST",
+            "auth": {
+              "type": "noauth"
+            },
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/admin/auth/email-code/request",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "admin",
+                "auth",
+                "email-code",
+                "request"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{adminEmail}}\",\n  \"locale\": \"fa\"\n}"
+            },
+            "description": "Admin-only five-digit code, valid for five minutes. Separate purpose from member codes; same rate limits. Unknown/member/disabled addresses receive a generic challenge without mail. Use the admin API host when configured."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Challenge accepted\", () => pm.response.to.have.status(200));",
+                  "if (pm.response.code === 200) { const body = pm.response.json(); pm.collectionVariables.set(\"adminEmailChallengeId\", body.challenge_id); pm.test(\"No code or tokens in response\", () => { pm.expect(body).not.to.have.property(\"code\"); pm.expect(body).not.to.have.property(\"access_token\"); pm.expect(body.expires_in).to.eql(300); }); }"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Verify admin email sign-in code",
+          "request": {
+            "method": "POST",
+            "auth": {
+              "type": "noauth"
+            },
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/admin/auth/email-code/verify",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "admin",
+                "auth",
+                "email-code",
+                "verify"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"challenge_id\": \"{{adminEmailChallengeId}}\",\n  \"code\": \"{{adminEmailCode}}\"\n}"
+            },
+            "description": "Admin-only five-digit code, valid for five minutes. Separate purpose from member codes; same rate limits. Unknown/member/disabled addresses receive a generic challenge without mail. Use the admin API host when configured."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Signed in\", () => pm.response.to.have.status(200));",
+                  "if (pm.response.code === 200) { const body = pm.response.json(); pm.collectionVariables.set(\"adminToken\", body.access_token); pm.collectionVariables.set(\"adminRefreshToken\", body.refresh_token); pm.collectionVariables.unset(\"adminEmailCode\"); }"
+                ]
+              }
+            }
+          ]
+        },
         {
           "name": "Admin log in",
           "request": {

@@ -3609,6 +3609,130 @@
         }
       }
     },
+    "/api/v1/admin/auth/email-code/request": {
+      "post": {
+        "tags": [
+          "Admin"
+        ],
+        "summary": "Request a five-digit admin email sign-in code",
+        "description": "Sends only to enabled administrators created on the server. Unknown, member and disabled addresses receive the same challenge response without email. Codes expire after five minutes and are bound to admin sign-in. Resend after sixty seconds, at most three per address per fifteen minutes. Delivery uses the configured SMTP server after the response; codes are never returned or logged.",
+        "operationId": "request_admin_email_code_api_v1_admin_auth_email_code_request_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/EmailCodeRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EmailCodeChallenge"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Invalid input or a broken business rule",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too many attempts",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "A service the request needs is not reachable; nothing was changed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/admin/auth/email-code/verify": {
+      "post": {
+        "tags": [
+          "Admin"
+        ],
+        "summary": "Sign in to administration with an email code",
+        "description": "Redeems a single-use five-digit admin code. Member codes cannot be used here, and admin codes cannot create member sessions. Issues the existing fifteen-minute admin token and rotating refresh token with an eight-hour session end. At most five failed checks per address in fifteen minutes across resends. Disabled accounts are checked again before issuing a session.",
+        "operationId": "verify_admin_email_code_api_v1_admin_auth_email_code_verify_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/EmailCodeVerify"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AdminTokenOut"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, invalid or expired access token",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Invalid input or a broken business rule",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too many attempts",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/admin/countries": {
       "get": {
         "tags": [
