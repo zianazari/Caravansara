@@ -4,6 +4,7 @@ import { useInfiniteQuery } from "@tanstack/react-query";
 import { useLocale, useTranslations } from "next-intl";
 import type { components } from "@/api/schema";
 import { api } from "@/api/client";
+import { PhoneLink } from "@/components/account/PhoneLink";
 import { CancelDialog } from "@/components/booking/CancelDialog";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -68,7 +69,7 @@ export function HostBookings({ listingId }: { listingId: number }) {
                   {b.guest_contact ? (
                     <div className="grid gap-1 py-2">
                       <p className="font-semibold">{b.guest_contact.full_name}</p>
-
+                      <PhoneLink phone={b.guest_contact.phone_number} name={b.guest_contact.full_name} />
                       <a
                         className="w-fit max-w-full break-all text-sm text-primary underline underline-offset-4"
                         dir="ltr"

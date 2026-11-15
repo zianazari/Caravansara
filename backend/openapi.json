@@ -2983,7 +2983,7 @@
           "Bookings"
         ],
         "summary": "Booking details",
-        "description": "For the guest or host. Guest contact name/email is returned only to the listing owner. The exact address appears once confirmed. can_cancel follows the listing city date and current status.",
+        "description": "For the guest or host. Guest contact name/email/mobile is returned only to the listing owner. The booking guest receives the host name and optional mobile, not the host email. The exact address appears once confirmed. can_cancel follows the listing city date and current status.",
         "operationId": "get_booking_api_v1_bookings__booking_id__get",
         "security": [
           {
@@ -5170,6 +5170,17 @@
       },
       "AdminBookingOut": {
         "properties": {
+          "host_contact": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/HostContact"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Host name and mobile number; only visible to the guest of this booking."
+          },
           "guest_contact": {
             "anyOf": [
               {
@@ -5179,7 +5190,7 @@
                 "type": "null"
               }
             ],
-            "description": "Guest name and email, only when the viewer owns this booking's listing."
+            "description": "Guest name, email and optional mobile number, only when the viewer owns this booking's listing."
           },
           "can_cancel": {
             "type": "boolean",
@@ -6088,6 +6099,17 @@
       },
       "BookingOut": {
         "properties": {
+          "host_contact": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/HostContact"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Host name and mobile number; only visible to the guest of this booking."
+          },
           "guest_contact": {
             "anyOf": [
               {
@@ -6097,7 +6119,7 @@
                 "type": "null"
               }
             ],
-            "description": "Guest name and email, only when the viewer owns this booking's listing."
+            "description": "Guest name, email and optional mobile number, only when the viewer owns this booking's listing."
           },
           "can_cancel": {
             "type": "boolean",
@@ -6475,6 +6497,17 @@
       },
       "GuestContact": {
         "properties": {
+          "phone_number": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Phone Number"
+          },
           "full_name": {
             "type": "string",
             "title": "Full Name"
@@ -6562,6 +6595,30 @@
           "day"
         ],
         "title": "HolidayOut"
+      },
+      "HostContact": {
+        "properties": {
+          "full_name": {
+            "type": "string",
+            "title": "Full Name"
+          },
+          "phone_number": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Phone Number"
+          }
+        },
+        "type": "object",
+        "required": [
+          "full_name"
+        ],
+        "title": "HostContact"
       },
       "HostOut": {
         "properties": {
@@ -8073,6 +8130,18 @@
       },
       "ProfileUpdate": {
         "properties": {
+          "phone_number": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Phone Number",
+            "description": "Private contact number, shared with the counterpart of a booking. Null clears it; this is not an SMS-verified number."
+          },
           "full_name": {
             "anyOf": [
               {
@@ -8130,6 +8199,17 @@
       },
       "RegisterIn": {
         "properties": {
+          "phone_number": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Phone Number"
+          },
           "email": {
             "type": "string",
             "format": "email",
@@ -8931,6 +9011,17 @@
       },
       "UserOut": {
         "properties": {
+          "phone_number": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Phone Number"
+          },
           "id": {
             "type": "integer",
             "title": "Id"

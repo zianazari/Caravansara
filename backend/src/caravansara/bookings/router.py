@@ -81,7 +81,8 @@ async def my_bookings(
 @router.get(
     "/bookings/{booking_id}",
     summary="Booking details",
-    description="For the guest or host. Guest contact name/email is returned only to the listing owner. "
+    description="For the guest or host. Guest contact name/email/mobile is returned only to the listing owner. "
+    "The booking guest receives the host name and optional mobile, not the host email. "
     "The exact address appears once confirmed. can_cancel follows the listing city date and current status.",
     responses=error_responses(401, 404),
 )

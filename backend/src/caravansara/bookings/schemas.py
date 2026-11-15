@@ -56,15 +56,24 @@ class BookingAddress(BaseModel):
     check_out_time: str
 
 
+class HostContact(BaseModel):
+    full_name: str
+    phone_number: str | None = None
+
+
 class GuestContact(BaseModel):
+    phone_number: str | None = None
     full_name: str
     email: str
 
 
 class BookingOut(BaseModel):
+    host_contact: HostContact | None = Field(
+        default=None, description="Host name and mobile number; only visible to the guest of this booking."
+    )
     guest_contact: GuestContact | None = Field(
         default=None,
-        description="Guest name and email, only when the viewer owns this booking's listing.",
+        description="Guest name, email and optional mobile number, only when the viewer owns this booking's listing.",
     )
     can_cancel: bool = Field(
         default=False,

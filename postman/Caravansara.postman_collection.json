@@ -151,6 +151,10 @@
     {
       "key": "adminEmailCode",
       "value": ""
+    },
+    {
+      "key": "phoneNumber",
+      "value": ""
     }
   ],
   "item": [
@@ -545,6 +549,55 @@
                 "exec": [
                   "pm.test(\"Signed in\", () => pm.response.to.have.status(200));",
                   "if (pm.response.code === 200) { const body = pm.response.json(); pm.collectionVariables.set(\"accessToken\", body.access_token); pm.collectionVariables.set(\"refreshToken\", body.refresh_token); pm.collectionVariables.unset(\"emailCode\"); }"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Set or clear my mobile number",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/me",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "me"
+              ]
+            },
+            "description": "Optional private contact number. Iranian 09 and Unicode digits normalize to +country form. Empty clears it; shared only with the booking counterpart, not SMS-verified.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"phone_number\": \"{{phoneNumber}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Mobile profile updated\", () => pm.response.to.have.status(200));",
+                  "if (pm.response.code === 200) { pm.test(\"Phone field returned\", () => pm.expect(pm.response.json()).to.have.property(\"phone_number\")); }"
                 ]
               }
             }
@@ -1285,7 +1338,7 @@
                 "{{listingId}}"
               ]
             },
-            "description": "Listings are never deleted: `is_active: false` hides them and keeps their bookings.",
+            "description": "Listings can be archived with DELETE; `is_active: false` hides them and keeps their bookings.",
             "body": {
               "mode": "raw",
               "raw": "{\n  \"price_per_night\": 110,\n  \"is_active\": true\n}",
@@ -1888,7 +1941,7 @@
                 "{{bookingId}}"
               ]
             },
-            "description": "For the guest or the host. The exact address appears once the booking is confirmed."
+            "description": "For the guest or the host. The exact address appears once the booking is confirmed. Guest name/email in guest_contact is visible only to the listing owner. can_cancel follows status and city-local date. Responses are no-store."
           }
         },
         {
@@ -1986,7 +2039,7 @@
                 }
               ]
             },
-            "description": "Bookings of my listing\n\nSent with `hostToken`: only the listing's host may see its bookings.",
+            "description": "Bookings of my listing\n\nSent with `hostToken`: only the listing's host may see its bookings. Guest name/email in guest_contact is visible only to the listing owner. can_cancel follows status and city-local date. Responses are no-store.",
             "auth": {
               "type": "bearer",
               "bearer": [

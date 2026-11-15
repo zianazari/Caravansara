@@ -7,6 +7,7 @@ import { useCallback, useState } from "react";
 import { toast } from "sonner";
 import type { components } from "@/api/schema";
 import { api, serverSkewMs } from "@/api/client";
+import { PhoneLink } from "@/components/account/PhoneLink";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useMoney } from "@/hooks/useMoney";
@@ -151,6 +152,19 @@ export function TripDetail({
         </p>
       ) : null}
 
+      {b.host_contact ? (
+        <section aria-labelledby="host-contact" className="grid gap-2 rounded-lg border p-4">
+          <h2 id="host-contact" className="font-semibold">
+            {t("booking.hostContact")}
+          </h2>
+          <p className="break-words">{b.host_contact.full_name}</p>
+          {b.host_contact.phone_number ? (
+            <PhoneLink phone={b.host_contact.phone_number} name={b.host_contact.full_name} />
+          ) : (
+            <p className="text-sm text-muted-foreground">{t("account.noPhone")}</p>
+          )}
+        </section>
+      ) : null}
       {b.address ? (
         <section aria-labelledby="where" className="grid gap-2 rounded-lg border p-4">
           <h2 id="where" className="flex items-center gap-2 font-semibold">

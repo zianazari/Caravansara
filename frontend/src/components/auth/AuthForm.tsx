@@ -9,6 +9,7 @@ import { Field } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
 import { Link, useRouter } from "@/i18n/navigation";
 import { errorMessage, fieldErrors, readError, type Translate } from "@/lib/errors";
+import { normalizePhone } from "@/lib/phone";
 import { safeReturnTo } from "@/lib/returnTo";
 import { setSession } from "@/lib/session";
 import { EmailCodeForm } from "./EmailCodeForm";
@@ -27,7 +28,7 @@ export function AuthForm({ mode }: { mode: Mode }) {
   const router = useRouter();
   const queryClient = useQueryClient();
   const returnTo = useSearchParams().get("returnTo");
-  const [values, setValues] = useState({ email: "", password: "", full_name: "" });
+  const [values, setValues] = useState({ email: "", password: "", full_name: "", phone_number: "" });
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [problem, setProblem] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
@@ -49,6 +50,13 @@ export function AuthForm({ mode }: { mode: Mode }) {
     if (mode === "register" && (values.full_name.trim().length < 1 || values.full_name.trim().length > 100)) {
       found.full_name = t("validation.nameLength");
     }
+    if (mode === "register") {
+      try {
+        normalizePhone(values.phone_number);
+      } catch {
+        found.phone_number = t("validation.phoneNumber");
+      }
+    }
     return found;
   }
 
@@ -62,7 +70,14 @@ export function AuthForm({ mode }: { mode: Mode }) {
     const body =
       mode === "login"
         ? { email: values.email.trim(), password: values.password }
-        : { ...values, email: values.email.trim() };
+        : {
+            email: values.email.trim(),
+            password: values.password,
+            full_name: values.full_name,
+            ...(normalizePhone(values.phone_number)
+              ? { phone_number: normalizePhone(values.phone_number) }
+              : {}),
+          };
     try {
       const response = await fetch(`/session/${mode}`, {
         method: "POST",
@@ -113,6 +128,21 @@ export function AuthForm({ mode }: { mode: Mode }) {
             <Field label={t("auth.fullName")} error={errors.full_name}>
               {(p) => (
                 <Input {...p} autoComplete="name" value={values.full_name} onChange={set("full_name")} />
+              )}
+            </Field>
+          ) : null}
+          {mode === "register" ? (
+            <Field label={t("account.phoneNumber")} error={errors.phone_number} hint={t("account.phoneHint")}>
+              {(p) => (
+                <Input
+                  {...p}
+                  type="tel"
+                  dir="ltr"
+                  autoComplete="tel"
+                  maxLength={64}
+                  value={values.phone_number}
+                  onChange={set("phone_number")}
+                />
               )}
             </Field>
           ) : null}

@@ -1,6 +1,6 @@
 from typing import Annotated
 
-from fastapi import APIRouter, BackgroundTasks, Depends, Request, status
+from fastapi import APIRouter, BackgroundTasks, Depends, Request, Response, status
 from starlette.requests import ClientDisconnect
 
 from caravansara.core.db import SessionDep
@@ -78,7 +78,13 @@ async def verify_email_code(
 )
 async def register(body: RegisterIn, session: SessionDep, settings: SettingsDep, ip: ClientIp) -> RegisterOut:
     user, tokens = await service.register(
-        session, settings, email=body.email, password=body.password, full_name=body.full_name, ip=ip
+        session,
+        settings,
+        email=body.email,
+        password=body.password,
+        full_name=body.full_name,
+        ip=ip,
+        phone_number=body.phone_number,
     )
     return RegisterOut(user=UserOut.model_validate(user), tokens=tokens)
 
@@ -118,7 +124,8 @@ async def logout(body: RefreshIn, session: SessionDep) -> None:
 
 
 @router.get("/me", summary="My profile", responses=error_responses(401))
-async def get_me(user_id: CurrentUserId, session: SessionDep) -> UserOut:
+async def get_me(user_id: CurrentUserId, session: SessionDep, response: Response) -> UserOut:
+    response.headers["Cache-Control"] = "no-store"
     return UserOut.model_validate(await service.get_me(session, user_id))
 
 

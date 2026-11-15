@@ -209,6 +209,7 @@
     "wishlist_full": "Your wishlist is full (500 listings). Remove one first."
   },
   "validation": {
+    "phoneNumber": "Enter a valid 09 mobile number or an international number with country code.",
     "invalid": "This value is not valid.",
     "required": "Please fill in this field.",
     "missing": "Please fill in this field.",
@@ -696,6 +697,11 @@
     "working": "Please wait…"
   },
   "account": {
+    "phoneNumber": "Mobile number (optional)",
+    "phoneHint": "For example 09121234567 or an international number with country code. Your booking counterpart can see this number.",
+    "profileSaved": "Profile saved.",
+    "callPerson": "Call {name}",
+    "noPhone": "No mobile number provided.",
     "title": "My account",
     "profile": "Profile",
     "nameSaved": "Name saved.",
@@ -714,6 +720,7 @@
     "email": "Email: {email}"
   },
   "booking": {
+    "hostContact": "Contact your host",
     "title": "Booking",
     "successTitle": "Payment successful",
     "successText": "Your booking is confirmed. Your receipt is below, and you can print it.",

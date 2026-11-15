@@ -20,7 +20,8 @@ _STANDARD_ATTRS = set(vars(logging.makeLogRecord({}))) | {"message", "asctime", 
 _EMAIL = re.compile(r"[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}")
 _JWT = re.compile(r"eyJ[A-Za-z0-9_-]{5,}\.[A-Za-z0-9_-]{5,}\.[A-Za-z0-9_-]{5,}")
 _BEARER = re.compile(r"(?i)\bbearer\s+[A-Za-z0-9._~+/=-]+")
-_SECRET_FIELD = re.compile(r"(?i)password|secret|token|authorization|cookie|address|email")
+_SECRET_FIELD = re.compile(r"(?i)password|secret|token|authorization|cookie|address|email|phone|mobile")
+_PHONE = re.compile(r"(?<![\w])(?:\+[1-9][0-9]{6,14}|09[0-9]{9})(?![\w])")
 
 # The OTLP exporter retries and logs on every failed batch. When the collector is not
 # running (the observability profile is off), that would flood the log; tracing is best effort.
@@ -31,7 +32,7 @@ def redact(text: str) -> str:
     """Mask bearer tokens, JWTs and email addresses that slipped into a message."""
     text = _BEARER.sub("Bearer [redacted]", text)
     text = _JWT.sub("[token]", text)
-    return _EMAIL.sub("[email]", text)
+    return _PHONE.sub("[phone]", _EMAIL.sub("[email]", text))
 
 
 def _context() -> dict[str, str]:

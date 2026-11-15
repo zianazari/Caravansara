@@ -215,6 +215,7 @@ M = {
   "wishlist_full": ("فهرست علاقه‌مندی‌ها پر است (۵۰۰ آگهی). یکی را بردارید.", "Your wishlist is full (500 listings). Remove one first."),
  },
  "validation": {
+  "phoneNumber": ("شمارهٔ موبایل معتبر با ۰۹ یا کد کشور وارد کن.", "Enter a valid 09 mobile number or an international number with country code."),
   "invalid": ("این مقدار درست نیست.", "This value is not valid."),
   "required": ("این خانه را پر کنید.", "Please fill in this field."),
   "missing": ("این خانه را پر کنید.", "Please fill in this field."),
@@ -713,6 +714,11 @@ M = {
   "working": ("لطفاً صبر کنید…", "Please wait…"),
  },
  "account": {
+  "phoneNumber": ("شمارهٔ موبایل (اختیاری)", "Mobile number (optional)"),
+  "phoneHint": ("مثلاً ۰۹۱۲۱۲۳۴۵۶۷ یا شمارهٔ بین‌المللی با کد کشور. طرف رزرو شما می‌تواند این شماره را ببیند.", "For example 09121234567 or an international number with country code. Your booking counterpart can see this number."),
+  "profileSaved": ("اطلاعات حساب ذخیره شد.", "Profile saved."),
+  "callPerson": ("تماس با {name}", "Call {name}"),
+  "noPhone": ("شمارهٔ موبایل ثبت نشده است.", "No mobile number provided."),
   "title": ("حساب من", "My account"),
   "profile": ("مشخصات", "Profile"),
   "nameSaved": ("نام ذخیره شد.", "Name saved."),
@@ -731,6 +737,7 @@ M = {
   "email": ("ایمیل: {email}", "Email: {email}"),
  },
  "booking": {
+  "hostContact": ("تماس با میزبان", "Contact your host"),
   "title": ("رزرو", "Booking"),
   # 047: the payment's success page and its printable receipt
   "successTitle": ("پرداخت با موفقیت انجام شد", "Payment successful"),

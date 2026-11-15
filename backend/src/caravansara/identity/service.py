@@ -72,7 +72,14 @@ async def _issue_tokens(session: AsyncSession, settings: Settings, user_id: int)
 
 
 async def register(
-    session: AsyncSession, settings: Settings, *, email: str, password: str, full_name: str, ip: str
+    session: AsyncSession,
+    settings: Settings,
+    *,
+    email: str,
+    password: str,
+    full_name: str,
+    ip: str,
+    phone_number: str | None = None,
 ) -> tuple[User, TokensOut]:
     since = repo.window_start(utcnow(), settings.register_window_minutes)
     if await repo.count_attempts(session, "register", ip, since) >= settings.register_max_per_ip:
@@ -83,7 +90,9 @@ async def register(
 
     if await repo.get_user_by_email(session, email) is not None:
         raise Conflict("email_taken", "An account with this email already exists.")
-    user = User(email=email, password_hash=hash_password(password), full_name=full_name.strip())
+    user = User(
+        email=email, password_hash=hash_password(password), full_name=full_name.strip(), phone_number=phone_number
+    )
     session.add(user)
     try:
         await session.flush()
@@ -338,6 +347,8 @@ async def update_me(
         await _check_avatar_file(storage, settings, new_key)
     if "full_name" in data and data["full_name"] is not None:
         user.full_name = data["full_name"].strip()
+    if "phone_number" in data:
+        user.phone_number = data["phone_number"]
     if "avatar_url" in data:
         return await _replace_avatar(session, storage, user, new_key)
     await session.commit()
@@ -502,11 +513,12 @@ class UserContact:
     id: int
     full_name: str
     email: str
+    phone_number: str | None = None
 
 
 async def user_contacts(session: AsyncSession, user_ids: set[int]) -> dict[int, UserContact]:
     users = await repo.get_users(session, user_ids)
-    return {uid: UserContact(u.id, u.full_name, u.email) for uid, u in users.items()}
+    return {uid: UserContact(u.id, u.full_name, u.email, u.phone_number) for uid, u in users.items()}
 
 
 async def admin_users(

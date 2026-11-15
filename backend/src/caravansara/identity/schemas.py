@@ -5,9 +5,11 @@ from uuid import UUID
 from pydantic import AnyHttpUrl, BaseModel, ConfigDict, EmailStr, Field
 
 from caravansara.identity.models import AccountKind
+from caravansara.identity.phone import PhoneNumber
 
 
 class RegisterIn(BaseModel):
+    phone_number: PhoneNumber = None
     email: EmailStr
     password: str = Field(min_length=8, max_length=128)
     full_name: str = Field(min_length=1, max_length=100)
@@ -79,6 +81,7 @@ class AdminTokenOut(BaseModel):
 
 
 class UserOut(BaseModel):
+    phone_number: str | None = None
     model_config = ConfigDict(from_attributes=True)
 
     id: int
@@ -94,6 +97,13 @@ class RegisterOut(BaseModel):
 
 
 class ProfileUpdate(BaseModel):
+    phone_number: PhoneNumber = Field(
+        default=None,
+        description=(
+            "Private contact number, shared with the counterpart of a booking. "
+            "Null clears it; this is not an SMS-verified number."
+        ),
+    )
     full_name: str | None = Field(default=None, min_length=1, max_length=100)
     avatar_url: AnyHttpUrl | None = Field(
         default=None,

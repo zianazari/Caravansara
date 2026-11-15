@@ -590,7 +590,7 @@ export interface paths {
     };
     /**
      * Booking details
-     * @description For the guest or host. Guest contact name/email is returned only to the listing owner. The exact address appears once confirmed. can_cancel follows the listing city date and current status.
+     * @description For the guest or host. Guest contact name/email/mobile is returned only to the listing owner. The booking guest receives the host name and optional mobile, not the host email. The exact address appears once confirmed. can_cancel follows the listing city date and current status.
      */
     get: operations["get_booking_api_v1_bookings__booking_id__get"];
     put?: never;
@@ -1129,7 +1129,9 @@ export interface components {
      *     guest is, so the admin can answer a question about it.
      */
     AdminBookingOut: {
-      /** @description Guest name and email, only when the viewer owns this booking's listing. */
+      /** @description Host name and mobile number; only visible to the guest of this booking. */
+      host_contact?: components["schemas"]["HostContact"] | null;
+      /** @description Guest name, email and optional mobile number, only when the viewer owns this booking's listing. */
       guest_contact?: components["schemas"]["GuestContact"] | null;
       /**
        * Can Cancel
@@ -1549,7 +1551,9 @@ export interface components {
     };
     /** BookingOut */
     BookingOut: {
-      /** @description Guest name and email, only when the viewer owns this booking's listing. */
+      /** @description Host name and mobile number; only visible to the guest of this booking. */
+      host_contact?: components["schemas"]["HostContact"] | null;
+      /** @description Guest name, email and optional mobile number, only when the viewer owns this booking's listing. */
       guest_contact?: components["schemas"]["GuestContact"] | null;
       /**
        * Can Cancel
@@ -1729,6 +1733,8 @@ export interface components {
     };
     /** GuestContact */
     GuestContact: {
+      /** Phone Number */
+      phone_number?: string | null;
       /** Full Name */
       full_name: string;
       /** Email */
@@ -1762,6 +1768,13 @@ export interface components {
        * Format: date
        */
       day: string;
+    };
+    /** HostContact */
+    HostContact: {
+      /** Full Name */
+      full_name: string;
+      /** Phone Number */
+      phone_number?: string | null;
     };
     /** HostOut */
     HostOut: {
@@ -2339,6 +2352,11 @@ export interface components {
     };
     /** ProfileUpdate */
     ProfileUpdate: {
+      /**
+       * Phone Number
+       * @description Private contact number, shared with the counterpart of a booking. Null clears it; this is not an SMS-verified number.
+       */
+      phone_number?: string | null;
       /** Full Name */
       full_name?: string | null;
       /**
@@ -2366,6 +2384,8 @@ export interface components {
      *     }
      */
     RegisterIn: {
+      /** Phone Number */
+      phone_number?: string | null;
       /**
        * Email
        * Format: email
@@ -2656,6 +2676,8 @@ export interface components {
     };
     /** UserOut */
     UserOut: {
+      /** Phone Number */
+      phone_number?: string | null;
       /** Id */
       id: number;
       /** Email */

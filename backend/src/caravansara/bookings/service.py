@@ -21,6 +21,7 @@ from caravansara.bookings.schemas import (
     BookingOut,
     BookingPage,
     GuestContact,
+    HostContact,
     ListingAvailability,
 )
 from caravansara.core.config import Settings
@@ -274,7 +275,9 @@ async def render(
 ) -> BookingOut:
     covers = await listings.cover_urls(session, storage, [info.id])
     out = to_out(booking, info, covers.get(info.id), viewer_id)
-    ids = {booking.guest_id} if viewer_id == info.host_id else set()
+    ids = (
+        {booking.guest_id} if viewer_id == info.host_id else {info.host_id} if viewer_id == booking.guest_id else set()
+    )
     contacts = await identity.user_contacts(session, ids)
     _attach_contacts(out, contacts, viewer_id)
     return out
@@ -283,7 +286,12 @@ async def render(
 def _attach_contacts(out: BookingOut, contacts: dict[int, identity.UserContact], viewer_id: int) -> None:
     if viewer_id == out.host_id and out.guest_id in contacts:
         contact = contacts[out.guest_id]
-        out.guest_contact = GuestContact(full_name=contact.full_name, email=contact.email)
+        out.guest_contact = GuestContact(
+            full_name=contact.full_name, email=contact.email, phone_number=contact.phone_number
+        )
+    if viewer_id == out.guest_id and out.host_id in contacts:
+        contact = contacts[out.host_id]
+        out.host_contact = HostContact(full_name=contact.full_name, phone_number=contact.phone_number)
 
 
 async def _render_page(
@@ -293,7 +301,11 @@ async def _render_page(
     infos = {lid: await listings.get_listing_info(session, lid) for lid in listing_ids}
     covers = await listings.cover_urls(session, storage, listing_ids)
     items = [to_out(b, infos[b.listing_id], covers.get(b.listing_id), viewer_id) for b in bookings]
-    ids = {b.guest_id for b in bookings if viewer_id == infos[b.listing_id].host_id}
+    ids = {
+        b.guest_id if infos[b.listing_id].host_id == viewer_id else infos[b.listing_id].host_id
+        for b in bookings
+        if viewer_id in (b.guest_id, infos[b.listing_id].host_id)
+    }
     contacts = await identity.user_contacts(session, ids)
     for out in items:
         _attach_contacts(out, contacts, viewer_id)
