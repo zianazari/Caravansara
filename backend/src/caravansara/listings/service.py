@@ -87,6 +87,8 @@ async def _get_owned(session: AsyncSession, listing_id: int, user_id: int) -> Li
     listing = await _get(session, listing_id, for_update=True)
     if listing.host_id != user_id:
         raise Forbidden("Only the host of this listing can do this.", code="not_listing_host")
+    if listing.deleted_at is not None:
+        raise NotFound("Listing not found.")
     return listing
 
 
@@ -98,6 +100,8 @@ def _is_public(listing: Listing) -> bool:
 async def _visible_to(session: AsyncSession, listing: Listing, viewer_id: int | None) -> bool:
     """Who may open a listing's page: everyone if it is public, else its host, and a guest with a
     live booking, who must still find the place they paid for (FR-002, FR-019)."""
+    if listing.deleted_at is not None:
+        return viewer_id is not None and await repo.has_live_booking(session, listing.id, viewer_id)
     if _is_public(listing) or (viewer_id is not None and viewer_id == listing.host_id):
         return True
     return viewer_id is not None and await repo.has_live_booking(session, listing.id, viewer_id)
@@ -242,6 +246,19 @@ async def get_listing(session: AsyncSession, storage: Storage, listing_id: int, 
     if not await _visible_to(session, listing, viewer_id):
         raise NotFound("Listing not found.")
     return await _detail(session, storage, listing, viewer_id)
+
+
+async def delete_listing(session: AsyncSession, listing_id: int, user_id: int) -> None:
+    listing = await _get(session, listing_id, for_update=True)
+    if listing.host_id != user_id:
+        raise Forbidden("Only the host of this listing can do this.", code="not_listing_host")
+    if listing.deleted_at is not None:
+        return
+    if await repo.has_unfinished_bookings(session, listing_id):
+        raise Conflict("listing_has_bookings", "Resolve existing reservations before deleting this listing.")
+    listing.is_active = False
+    listing.deleted_at = utcnow()
+    await session.commit()
 
 
 async def update_listing(

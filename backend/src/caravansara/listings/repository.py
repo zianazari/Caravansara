@@ -1,7 +1,7 @@
 from datetime import datetime
 
 from geoalchemy2 import Geometry
-from sqlalchemy import cast, delete, func, select, text, update
+from sqlalchemy import and_, cast, delete, func, select, text, update
 from sqlalchemy.dialects.postgresql import distinct_on
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -35,10 +35,16 @@ async def pins(session: AsyncSession, listing_ids: list[int]) -> dict[int, tuple
 
 async def host_listings(session: AsyncSession, host_id: int, limit: int, offset: int) -> tuple[list[Listing], int]:
     total = (
-        await session.execute(select(func.count()).select_from(Listing).where(Listing.host_id == host_id))
+        await session.execute(
+            select(func.count()).select_from(Listing).where(Listing.host_id == host_id, Listing.deleted_at.is_(None))
+        )
     ).scalar_one()
     rows = await session.execute(
-        select(Listing).where(Listing.host_id == host_id).order_by(Listing.id.desc()).limit(limit).offset(offset)
+        select(Listing)
+        .where(Listing.host_id == host_id, Listing.deleted_at.is_(None))
+        .order_by(Listing.id.desc())
+        .limit(limit)
+        .offset(offset)
     )
     return list(rows.scalars()), int(total)
 
@@ -156,6 +162,7 @@ async def decide(
         .where(
             Listing.id == listing_id,
             Listing.review_status == ReviewStatus.pending,
+            Listing.deleted_at.is_(None),
             Listing.review_version == version,
         )
         .values(review_status=status, rejection_reason=reason)
@@ -184,7 +191,7 @@ async def review_queue(
     Newest first reverses both keys, so Postgres reads the same (submitted_at, id) index backwards
     and no second index is needed.
     """
-    pending = Listing.review_status == ReviewStatus.pending
+    pending = and_(Listing.review_status == ReviewStatus.pending, Listing.deleted_at.is_(None))
     total = (await session.execute(select(func.count()).select_from(Listing).where(pending))).scalar_one()
     order = (Listing.submitted_at.desc(), Listing.id.desc()) if newest_first else (Listing.submitted_at, Listing.id)
     rows = await session.execute(select(Listing).where(pending).order_by(*order).limit(limit).offset(offset))
@@ -195,7 +202,9 @@ async def review_queue_stats(session: AsyncSession) -> tuple[int, datetime | Non
     """Size of the queue and its oldest entry, for the worker's gauges (research R10)."""
     row = (
         await session.execute(
-            select(func.count(), func.min(Listing.submitted_at)).where(Listing.review_status == ReviewStatus.pending)
+            select(func.count(), func.min(Listing.submitted_at)).where(
+                Listing.review_status == ReviewStatus.pending, Listing.deleted_at.is_(None)
+            )
         )
     ).one()
     return int(row[0]), row[1]
@@ -205,7 +214,21 @@ async def pending_by_ids(session: AsyncSession, ids: list[int]) -> list[Listing]
     if not ids:
         return []
     rows = await session.execute(
-        select(Listing).where(Listing.id.in_(ids), Listing.review_status == ReviewStatus.pending)
+        select(Listing).where(
+            Listing.id.in_(ids), Listing.review_status == ReviewStatus.pending, Listing.deleted_at.is_(None)
+        )
     )
     by_id = {listing.id: listing for listing in rows.scalars()}
     return [by_id[listing_id] for listing_id in ids if listing_id in by_id]
+
+
+async def has_unfinished_bookings(session: AsyncSession, listing_id: int) -> bool:
+    return bool(
+        await session.scalar(
+            text("""
+        SELECT EXISTS (SELECT 1 FROM bookings WHERE listing_id = :id
+          AND (status = 'confirmed' OR (status = 'pending' AND hold_expires_at > now())))
+    """),
+            {"id": listing_id},
+        )
+    )

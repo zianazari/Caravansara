@@ -1,11 +1,14 @@
-import { screen, within } from "@testing-library/react";
+import { screen, within, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { vi } from "vitest";
 import { expectAccessible, renderIn } from "@/test/render";
 import { hostListing } from "./fixtures";
 
 const GET = vi.fn();
-vi.mock("@/api/client", () => ({ api: { GET: (...a: unknown[]) => GET(...a) } }));
+const DELETE = vi.fn();
+vi.mock("@/api/client", () => ({
+  api: { GET: (...a: unknown[]) => GET(...a), DELETE: (...a: unknown[]) => DELETE(...a) },
+}));
 vi.mock("@/i18n/navigation", () => ({
   Link: ({ href, children, ...rest }: { href: string; children: React.ReactNode }) => (
     <a href={href} {...rest}>
@@ -46,6 +49,7 @@ function serve(items: ReturnType<typeof summary>[], total = items.length, fewFor
 describe("HostListings (specs/008-host-pages, US3)", () => {
   beforeEach(() => {
     GET.mockReset();
+    DELETE.mockReset();
   });
 
   it("shows each listing with cover, title, city, price and a status in words and icon", async () => {
@@ -90,6 +94,42 @@ describe("HostListings (specs/008-host-pages, US3)", () => {
     await userEvent.click(await screen.findByRole("button", { name: "آگهی‌های بیشتر" }));
     expect(await screen.findByText("آگهی 99")).toBeInTheDocument();
     expect(screen.queryByRole("button", { name: "آگهی‌های بیشتر" })).toBeNull();
+  });
+
+  it.each(["fa", "en"])("confirms deletion in %s and refreshes the host list", async (locale) => {
+    const fa = locale === "fa";
+    serve([summary(1, "approved")]);
+    DELETE.mockImplementation(async () => {
+      serve([]);
+      return { response: new Response(null, { status: 204 }) };
+    });
+    renderIn(locale as "fa" | "en", <HostListings />);
+    await userEvent.click(await screen.findByRole("button", { name: fa ? "حذف آگهی" : "Delete listing" }));
+    let dialog = screen.getByRole("dialog");
+    await expectAccessible(document.body);
+    await userEvent.click(within(dialog).getByRole("button", { name: fa ? "انصراف" : "Cancel" }));
+    expect(DELETE).not.toHaveBeenCalled();
+    await userEvent.click(screen.getByRole("button", { name: fa ? "حذف آگهی" : "Delete listing" }));
+    dialog = screen.getByRole("dialog");
+    await userEvent.click(within(dialog).getByRole("button", { name: fa ? "حذف آگهی" : "Delete listing" }));
+    expect(DELETE).toHaveBeenCalledWith("/api/v1/listings/{listing_id}", {
+      params: { path: { listing_id: 1 } },
+    });
+    await waitFor(() => expect(screen.queryByRole("dialog")).not.toBeInTheDocument());
+    expect(screen.queryByRole("article")).not.toBeInTheDocument();
+  });
+
+  it("keeps a booked listing and explains why deletion failed", async () => {
+    serve([summary(1, "approved")]);
+    DELETE.mockResolvedValue({
+      response: new Response(null, { status: 409 }),
+      error: { error: { code: "listing_has_bookings" } },
+    });
+    renderIn("fa", <HostListings />);
+    await userEvent.click(await screen.findByRole("button", { name: "حذف آگهی" }));
+    await userEvent.click(within(screen.getByRole("dialog")).getByRole("button", { name: "حذف آگهی" }));
+    expect(await screen.findByRole("alert")).toHaveTextContent("تعیین تکلیف");
+    expect(screen.getAllByRole("article", { hidden: true })).toHaveLength(1);
   });
 
   it("is accessible", async () => {

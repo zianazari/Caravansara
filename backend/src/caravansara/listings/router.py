@@ -80,7 +80,7 @@ async def create_listing(
 @router.get(
     "/me/listings",
     summary="My listings",
-    description="Active and inactive, each with its review state and, when rejected, the admin's reason.",
+    description="Active and inactive, excluding archived listings; includes review state and rejection reason.",
     responses=error_responses(401),
 )
 async def my_listings(user_id: CurrentUserId, session: SessionDep, storage: StorageDep, page: PageDep) -> ListingPage:
@@ -92,7 +92,8 @@ async def my_listings(user_id: CurrentUserId, session: SessionDep, storage: Stor
     summary="Listing details",
     description=(
         "Public when the listing is active and approved. Otherwise only its host and a guest with a "
-        "booking there see it; everyone else gets 404. `private_location` and `review` are only for the host."
+        "booking there see it; everyone else gets 404. Archived listings are visible only to guests with retained "
+        "bookings, not their former host. `private_location` and `review` are only for the host."
     ),
     responses=error_responses(401, 404),
 )
@@ -102,11 +103,25 @@ async def get_listing(
     return await service.get_listing(session, storage, listing_id, viewer_id)
 
 
+@router.delete(
+    "/listings/{listing_id}",
+    status_code=204,
+    summary="Delete my listing",
+    description="Owner-only archival. Removes the listing from host lists, public results and review queues. "
+    "Preserves past bookings, reviews and photos. Confirmed bookings and unexpired pending holds block "
+    "deletion with 409 listing_has_bookings. Archived listings cannot be edited or reactivated. "
+    "Repeating the owner's delete returns 204.",
+    responses=error_responses(401, 403, 404, 409),
+)
+async def delete_listing(listing_id: int, user_id: CurrentUserId, session: SessionDep) -> None:
+    await service.delete_listing(session, listing_id, user_id)
+
+
 @router.patch(
     "/listings/{listing_id}",
     summary="Edit or deactivate a listing",
     description=(
-        "Listings are never deleted: `is_active: false` hides them and keeps their bookings. Changing what "
+        "Use DELETE to archive a listing; `is_active: false` temporarily hides it. Changing what "
         "guests read (title, description, type, city, neighbourhood, address, location) sends an approved "
         "listing back to review; price, capacity, times, pets and `is_active` do not."
     ),

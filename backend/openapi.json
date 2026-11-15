@@ -1841,7 +1841,7 @@
           "Listings"
         ],
         "summary": "My listings",
-        "description": "Active and inactive, each with its review state and, when rejected, the admin's reason.",
+        "description": "Active and inactive, excluding archived listings; includes review state and rejection reason.",
         "operationId": "my_listings_api_v1_me_listings_get",
         "security": [
           {
@@ -1917,7 +1917,7 @@
           "Listings"
         ],
         "summary": "Listing details",
-        "description": "Public when the listing is active and approved. Otherwise only its host and a guest with a booking there see it; everyone else gets 404. `private_location` and `review` are only for the host.",
+        "description": "Public when the listing is active and approved. Otherwise only its host and a guest with a booking there see it; everyone else gets 404. Archived listings are visible only to guests with retained bookings, not their former host. `private_location` and `review` are only for the host.",
         "operationId": "get_listing_api_v1_listings__listing_id__get",
         "security": [
           {
@@ -1978,12 +1978,91 @@
           }
         }
       },
+      "delete": {
+        "tags": [
+          "Listings"
+        ],
+        "summary": "Delete my listing",
+        "description": "Owner-only archival. Removes the listing from host lists, public results and review queues. Preserves past bookings, reviews and photos. Confirmed bookings and unexpired pending holds block deletion with 409 listing_has_bookings. Archived listings cannot be edited or reactivated. Repeating the owner's delete returns 204.",
+        "operationId": "delete_listing_api_v1_listings__listing_id__delete",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "listing_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Listing Id"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "401": {
+            "description": "Missing, invalid or expired access token",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Not allowed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict with the current state",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
       "patch": {
         "tags": [
           "Listings"
         ],
         "summary": "Edit or deactivate a listing",
-        "description": "Listings are never deleted: `is_active: false` hides them and keeps their bookings. Changing what guests read (title, description, type, city, neighbourhood, address, location) sends an approved listing back to review; price, capacity, times, pets and `is_active` do not.",
+        "description": "Use DELETE to archive a listing; `is_active: false` temporarily hides it. Changing what guests read (title, description, type, city, neighbourhood, address, location) sends an approved listing back to review; price, capacity, times, pets and `is_active` do not.",
         "operationId": "update_listing_api_v1_listings__listing_id__patch",
         "security": [
           {

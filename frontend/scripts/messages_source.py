@@ -168,6 +168,7 @@ M = {
   "wishlists": ("علاقه‌مندی‌ها", "Wishlists"),
  },
  "errors": {
+  "listing_has_bookings": ("این آگهی رزرو تأییدشده یا در انتظار پرداخت دارد. ابتدا رزروها را تعیین تکلیف کن.", "This listing has confirmed reservations or pending payment holds. Resolve them before deleting it."),
   "price_changed": ("قیمت تغییر کرده است. مبلغ تازه را بررسی کنید و دوباره تأیید کنید.", "The price changed. Review the updated amount and confirm again."),
   "unknown_country": ("کشور را از فهرست انتخاب کنید.", "Choose a country from the list."),
   "unknown": ("مشکلی پیش آمد. لطفاً دوباره امتحان کنید.", "Something went wrong. Please try again."),
@@ -448,6 +449,10 @@ M = {
   "holidayNote": ("تعطیلات به‌صورت خودکار اضافه نمی‌شوند؛ تقویم ثبت‌شده مبنای محاسبه است.", "Holidays are managed here; dates are not imported automatically."),
  },
  "host": {
+  "deleteListing": ("حذف آگهی", "Delete listing"),
+  "deleteTitle": ("حذف «{title}»؟", "Delete “{title}”?"),
+  "deleteDescription": ("آگهی از فهرست شما و جستجو حذف می‌شود. سابقهٔ رزروها نگه داشته می‌شود. آگهی دارای رزرو تأییدشده یا نگه‌داشت معتبر قابل حذف نیست.", "This listing will be removed from your listings and search. Booking history is retained. Confirmed reservations or valid pending holds must be resolved first."),
+  "deleted": ("آگهی حذف شد.", "Listing deleted."),
   "title": ("آگهی‌های من", "My listings"),
   "workspace": ("فضای میزبانی شما", "Your hosting workspace"),
   "workspaceIntro": ("اقامتگاه‌ها، رزروها و قیمت هر شب را از یک‌جا مدیریت کنید.", "Manage your places, reservations and nightly prices in one place."),

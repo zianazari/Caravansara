@@ -162,6 +162,7 @@
     "wishlists": "Wishlists"
   },
   "errors": {
+    "listing_has_bookings": "This listing has confirmed reservations or pending payment holds. Resolve them before deleting it.",
     "price_changed": "The price changed. Review the updated amount and confirm again.",
     "unknown_country": "Choose a country from the list.",
     "unknown": "Something went wrong. Please try again.",
@@ -434,6 +435,10 @@
     "holidayNote": "Holidays are managed here; dates are not imported automatically."
   },
   "host": {
+    "deleteListing": "Delete listing",
+    "deleteTitle": "Delete “{title}”?",
+    "deleteDescription": "This listing will be removed from your listings and search. Booking history is retained. Confirmed reservations or valid pending holds must be resolved first.",
+    "deleted": "Listing deleted.",
     "title": "My listings",
     "workspace": "Your hosting workspace",
     "workspaceIntro": "Manage your places, reservations and nightly prices in one place.",

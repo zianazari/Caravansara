@@ -9,6 +9,7 @@ import { useMoney } from "@/hooks/useMoney";
 import { Link } from "@/i18n/navigation";
 import { MIN_PHOTOS, statusOf } from "@/lib/listingStatus";
 import { cityName } from "@/lib/names";
+import { DeleteListing } from "./DeleteListing";
 import { FewPhotosBadge, StatusBadge } from "./StatusBadge";
 
 type Summary = components["schemas"]["ListingSummary"];
@@ -56,6 +57,7 @@ export function HostListingCard({ listing }: { listing: Summary }) {
               {t("host.pricingAction")}
             </Link>
           </Button>
+          <DeleteListing id={listing.id} title={listing.title} />
         </div>
         {few ? (
           <Button asChild variant="soft" size="sm" className="justify-self-start">

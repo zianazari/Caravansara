@@ -377,7 +377,7 @@ export interface paths {
     };
     /**
      * My listings
-     * @description Active and inactive, each with its review state and, when rejected, the admin's reason.
+     * @description Active and inactive, excluding archived listings; includes review state and rejection reason.
      */
     get: operations["my_listings_api_v1_me_listings_get"];
     put?: never;
@@ -397,17 +397,21 @@ export interface paths {
     };
     /**
      * Listing details
-     * @description Public when the listing is active and approved. Otherwise only its host and a guest with a booking there see it; everyone else gets 404. `private_location` and `review` are only for the host.
+     * @description Public when the listing is active and approved. Otherwise only its host and a guest with a booking there see it; everyone else gets 404. Archived listings are visible only to guests with retained bookings, not their former host. `private_location` and `review` are only for the host.
      */
     get: operations["get_listing_api_v1_listings__listing_id__get"];
     put?: never;
     post?: never;
-    delete?: never;
+    /**
+     * Delete my listing
+     * @description Owner-only archival. Removes the listing from host lists, public results and review queues. Preserves past bookings, reviews and photos. Confirmed bookings and unexpired pending holds block deletion with 409 listing_has_bookings. Archived listings cannot be edited or reactivated. Repeating the owner's delete returns 204.
+     */
+    delete: operations["delete_listing_api_v1_listings__listing_id__delete"];
     options?: never;
     head?: never;
     /**
      * Edit or deactivate a listing
-     * @description Listings are never deleted: `is_active: false` hides them and keeps their bookings. Changing what guests read (title, description, type, city, neighbourhood, address, location) sends an approved listing back to review; price, capacity, times, pets and `is_active` do not.
+     * @description Use DELETE to archive a listing; `is_active: false` temporarily hides it. Changing what guests read (title, description, type, city, neighbourhood, address, location) sends an approved listing back to review; price, capacity, times, pets and `is_active` do not.
      */
     patch: operations["update_listing_api_v1_listings__listing_id__patch"];
     trace?: never;
@@ -3728,6 +3732,71 @@ export interface operations {
       };
       /** @description Not found */
       404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  delete_listing_api_v1_listings__listing_id__delete: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        listing_id: number;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      204: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Missing, invalid or expired access token */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Not allowed */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Not found */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Conflict with the current state */
+      409: {
         headers: {
           [name: string]: unknown;
         };

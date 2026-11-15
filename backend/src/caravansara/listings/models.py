@@ -76,6 +76,7 @@ class Listing(Base):
     avg_rating: Mapped[Decimal | None] = mapped_column(Numeric(3, 2))
     review_count: Mapped[int] = mapped_column(Integer, server_default="0")
     is_active: Mapped[bool] = mapped_column(server_default="true")
+    deleted_at: Mapped[datetime | None]
     created_at: Mapped[datetime] = mapped_column(server_default=func.now())
     # Review by an admin (specs/backend (004)). Public = is_active AND approved (FR-002).
     # The database default is pending, so a listing never skips the queue (migration 0006).

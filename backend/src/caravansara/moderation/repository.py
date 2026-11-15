@@ -64,7 +64,7 @@ async def sorted_queue_ids(
     }[sort_by]
     direction = "ASC" if order == "asc" else "DESC"
     query = text(
-        f"SELECT l.id FROM listings l{join} WHERE l.review_status = 'pending' "  # noqa: S608 -- fixed allowlisted expressions; values are bound
+        f"SELECT l.id FROM listings l{join} WHERE l.review_status = 'pending' AND l.deleted_at IS NULL "  # noqa: S608 -- fixed allowlisted expressions; values are bound
         f"ORDER BY {expression} {direction}, l.id {direction} LIMIT :limit OFFSET :offset"
     )
     return list((await session.execute(query, {"limit": limit, "offset": offset})).scalars())

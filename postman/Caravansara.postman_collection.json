@@ -1401,6 +1401,46 @@
             },
             "description": "The nights taken in [start, end) by a confirmed or completed stay, or by an unpaid hold still running, for the calendar on the listing page. No guest data."
           }
+        },
+        {
+          "name": "Delete my listing",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/listings/{{listingId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "listings",
+                "{{listingId}}"
+              ]
+            },
+            "description": "Owner-only archive. Returns 204; confirmed reservations and valid pending holds return 409 listing_has_bookings. Retains booking history and photos; cannot reactivate afterward."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Listing archived\", () => pm.response.to.have.status(204));"
+                ]
+              }
+            }
+          ]
         }
       ]
     },
