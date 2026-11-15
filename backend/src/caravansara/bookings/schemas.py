@@ -56,7 +56,20 @@ class BookingAddress(BaseModel):
     check_out_time: str
 
 
+class GuestContact(BaseModel):
+    full_name: str
+    email: str
+
+
 class BookingOut(BaseModel):
+    guest_contact: GuestContact | None = Field(
+        default=None,
+        description="Guest name and email, only when the viewer owns this booking's listing.",
+    )
+    can_cancel: bool = Field(
+        default=False,
+        description="Participant may cancel before check-in day in the listing city; checked again when cancelling.",
+    )
     nightly_prices: list[NightlyPrice] = Field(
         default_factory=list, description="Saved at booking time; never recalculated."
     )

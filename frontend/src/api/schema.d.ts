@@ -590,7 +590,7 @@ export interface paths {
     };
     /**
      * Booking details
-     * @description For the guest or the host. The exact address appears once the booking is confirmed.
+     * @description For the guest or host. Guest contact name/email is returned only to the listing owner. The exact address appears once confirmed. can_cancel follows the listing city date and current status.
      */
     get: operations["get_booking_api_v1_bookings__booking_id__get"];
     put?: never;
@@ -648,7 +648,10 @@ export interface paths {
       path?: never;
       cookie?: never;
     };
-    /** Bookings of my listing */
+    /**
+     * Bookings of my listing
+     * @description Owner-only list with guest contact name/email and the current cancellation eligibility.
+     */
     get: operations["listing_bookings_api_v1_listings__listing_id__bookings_get"];
     put?: never;
     post?: never;
@@ -1126,6 +1129,14 @@ export interface components {
      *     guest is, so the admin can answer a question about it.
      */
     AdminBookingOut: {
+      /** @description Guest name and email, only when the viewer owns this booking's listing. */
+      guest_contact?: components["schemas"]["GuestContact"] | null;
+      /**
+       * Can Cancel
+       * @description Participant may cancel before check-in day in the listing city; checked again when cancelling.
+       * @default false
+       */
+      can_cancel: boolean;
       /**
        * Nightly Prices
        * @description Saved at booking time; never recalculated.
@@ -1538,6 +1549,14 @@ export interface components {
     };
     /** BookingOut */
     BookingOut: {
+      /** @description Guest name and email, only when the viewer owns this booking's listing. */
+      guest_contact?: components["schemas"]["GuestContact"] | null;
+      /**
+       * Can Cancel
+       * @description Participant may cancel before check-in day in the listing city; checked again when cancelling.
+       * @default false
+       */
+      can_cancel: boolean;
       /**
        * Nightly Prices
        * @description Saved at booking time; never recalculated.
@@ -1707,6 +1726,13 @@ export interface components {
       total: number;
       /** Amenities */
       amenities: components["schemas"]["AmenityCount"][];
+    };
+    /** GuestContact */
+    GuestContact: {
+      /** Full Name */
+      full_name: string;
+      /** Email */
+      email: string;
     };
     /** HTTPValidationError */
     HTTPValidationError: {

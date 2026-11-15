@@ -435,6 +435,8 @@
     "holidayNote": "Holidays are managed here; dates are not imported automatically."
   },
   "host": {
+    "emailGuest": "Email {name}",
+    "cancelBookingNote": "Cancelling releases these dates. Contact the guest by email to let them know and coordinate.",
     "deleteListing": "Delete listing",
     "deleteTitle": "Delete “{title}”?",
     "deleteDescription": "This listing will be removed from your listings and search. Booking history is retained. Confirmed reservations or valid pending holds must be resolved first.",

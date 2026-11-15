@@ -449,6 +449,8 @@ M = {
   "holidayNote": ("تعطیلات به‌صورت خودکار اضافه نمی‌شوند؛ تقویم ثبت‌شده مبنای محاسبه است.", "Holidays are managed here; dates are not imported automatically."),
  },
  "host": {
+  "emailGuest": ("ارسال ایمیل به {name}", "Email {name}"),
+  "cancelBookingNote": ("با لغو رزرو، تاریخ‌ها آزاد می‌شوند. برای هماهنگی، از طریق ایمیل مهمان به او اطلاع بده.", "Cancelling releases these dates. Contact the guest by email to let them know and coordinate."),
   "deleteListing": ("حذف آگهی", "Delete listing"),
   "deleteTitle": ("حذف «{title}»؟", "Delete “{title}”?"),
   "deleteDescription": ("آگهی از فهرست شما و جستجو حذف می‌شود. سابقهٔ رزروها نگه داشته می‌شود. آگهی دارای رزرو تأییدشده یا نگه‌داشت معتبر قابل حذف نیست.", "This listing will be removed from your listings and search. Booking history is retained. Confirmed reservations or valid pending holds must be resolved first."),

@@ -20,6 +20,7 @@ from caravansara.bookings.schemas import (
     BookingListing,
     BookingOut,
     BookingPage,
+    GuestContact,
     ListingAvailability,
 )
 from caravansara.core.config import Settings
@@ -29,6 +30,7 @@ from caravansara.core.metrics import BOOKING_CONFLICTS, BOOKING_EVENTS
 from caravansara.core.pagination import SortOrder
 from caravansara.core.storage import Storage
 from caravansara.core.timeutil import today_in, utcnow
+from caravansara.identity import service as identity
 from caravansara.listings import service as listings
 from caravansara.listings.service import ListingInfo
 from caravansara.notifications import service as notifications
@@ -224,6 +226,9 @@ def to_out(booking: Booking, info: ListingInfo, cover_url: str | None, viewer_id
     show_address = booking.status in (S.confirmed, S.completed) and viewer_id in (booking.guest_id, info.host_id)
     return BookingOut(
         id=booking.id,
+        can_cancel=viewer_id in (booking.guest_id, info.host_id)
+        and booking.status in (S.pending, S.confirmed)
+        and today_in(info.city.timezone) < booking.check_in,
         status=booking.status,
         listing=BookingListing(
             id=info.id,
@@ -268,7 +273,17 @@ async def render(
     session: AsyncSession, storage: Storage, booking: Booking, info: ListingInfo, viewer_id: int
 ) -> BookingOut:
     covers = await listings.cover_urls(session, storage, [info.id])
-    return to_out(booking, info, covers.get(info.id), viewer_id)
+    out = to_out(booking, info, covers.get(info.id), viewer_id)
+    ids = {booking.guest_id} if viewer_id == info.host_id else set()
+    contacts = await identity.user_contacts(session, ids)
+    _attach_contacts(out, contacts, viewer_id)
+    return out
+
+
+def _attach_contacts(out: BookingOut, contacts: dict[int, identity.UserContact], viewer_id: int) -> None:
+    if viewer_id == out.host_id and out.guest_id in contacts:
+        contact = contacts[out.guest_id]
+        out.guest_contact = GuestContact(full_name=contact.full_name, email=contact.email)
 
 
 async def _render_page(
@@ -278,6 +293,10 @@ async def _render_page(
     infos = {lid: await listings.get_listing_info(session, lid) for lid in listing_ids}
     covers = await listings.cover_urls(session, storage, listing_ids)
     items = [to_out(b, infos[b.listing_id], covers.get(b.listing_id), viewer_id) for b in bookings]
+    ids = {b.guest_id for b in bookings if viewer_id == infos[b.listing_id].host_id}
+    contacts = await identity.user_contacts(session, ids)
+    for out in items:
+        _attach_contacts(out, contacts, viewer_id)
     return BookingPage(items=items, total=total)
 
 

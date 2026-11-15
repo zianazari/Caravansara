@@ -4,6 +4,7 @@ import { useInfiniteQuery } from "@tanstack/react-query";
 import { useLocale, useTranslations } from "next-intl";
 import type { components } from "@/api/schema";
 import { api } from "@/api/client";
+import { CancelDialog } from "@/components/booking/CancelDialog";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useMoney } from "@/hooks/useMoney";
@@ -64,6 +65,20 @@ export function HostBookings({ listingId }: { listingId: number }) {
                       to: formatDate(b.check_out, locale),
                     })}
                   </p>
+                  {b.guest_contact ? (
+                    <div className="grid gap-1 py-2">
+                      <p className="font-semibold">{b.guest_contact.full_name}</p>
+
+                      <a
+                        className="w-fit max-w-full break-all text-sm text-primary underline underline-offset-4"
+                        dir="ltr"
+                        href={`mailto:${encodeURIComponent(b.guest_contact.email)}`}
+                        aria-label={t("host.emailGuest", { name: b.guest_contact.full_name })}
+                      >
+                        {b.guest_contact.email}
+                      </a>
+                    </div>
+                  ) : null}
                   <p className="text-sm text-muted-foreground">
                     {t("booking.guestsLine", { count: b.adults + b.children + b.infants })}
                   </p>
@@ -71,6 +86,7 @@ export function HostBookings({ listingId }: { listingId: number }) {
                     <span className="font-medium">{t(`booking.status_${b.status}`)}</span> ·{" "}
                     {money(b.total_price, b.currency)}
                   </p>
+                  <CancelDialog booking={b} audience="host" />
                 </li>
               ))}
             </ul>

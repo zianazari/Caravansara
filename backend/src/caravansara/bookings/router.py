@@ -2,7 +2,7 @@ import uuid
 from datetime import date
 from typing import Annotated
 
-from fastapi import APIRouter, Header, Query, Response, status
+from fastapi import APIRouter, Depends, Header, Query, Response, status
 
 from caravansara.bookings import service
 from caravansara.bookings.models import BookingStatus
@@ -26,7 +26,11 @@ async def _one(session: SessionDep, booking: BookingOut) -> BookingOut:
     return booking.model_copy(update={"has_review": bool(await reviews.reviewed(session, [booking.id]))})
 
 
-router = APIRouter(tags=["Bookings"])
+def _no_store(response: Response) -> None:
+    response.headers["Cache-Control"] = "no-store"
+
+
+router = APIRouter(tags=["Bookings"], dependencies=[Depends(_no_store)])
 
 StatusFilter = Annotated[BookingStatus | None, Query(description="Only bookings in this status.")]
 
@@ -77,7 +81,8 @@ async def my_bookings(
 @router.get(
     "/bookings/{booking_id}",
     summary="Booking details",
-    description="For the guest or the host. The exact address appears once the booking is confirmed.",
+    description="For the guest or host. Guest contact name/email is returned only to the listing owner. "
+    "The exact address appears once confirmed. can_cancel follows the listing city date and current status.",
     responses=error_responses(401, 404),
 )
 async def get_booking(booking_id: int, user_id: CurrentUserId, session: SessionDep, storage: StorageDep) -> BookingOut:
@@ -112,6 +117,7 @@ async def cancel(booking_id: int, user_id: CurrentUserId, session: SessionDep, s
 @router.get(
     "/listings/{listing_id}/bookings",
     summary="Bookings of my listing",
+    description="Owner-only list with guest contact name/email and the current cancellation eligibility.",
     tags=["Listings"],
     responses=error_responses(401, 403, 404),
 )

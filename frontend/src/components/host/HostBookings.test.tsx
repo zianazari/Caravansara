@@ -4,7 +4,10 @@ import { vi } from "vitest";
 import { expectAccessible, renderIn } from "@/test/render";
 
 const GET = vi.fn();
-vi.mock("@/api/client", () => ({ api: { GET: (...a: unknown[]) => GET(...a) } }));
+const POST = vi.fn();
+vi.mock("@/api/client", () => ({
+  api: { GET: (...a: unknown[]) => GET(...a), POST: (...a: unknown[]) => POST(...a) },
+}));
 
 import { HostBookings } from "./HostBookings";
 
@@ -43,6 +46,7 @@ function serve(items: ReturnType<typeof booking>[], total = items.length) {
 describe("HostBookings (specs/008-host-pages, US4)", () => {
   beforeEach(() => {
     GET.mockReset();
+    POST.mockReset();
   });
 
   it("shows upcoming first, then past, with guests, status and toman", async () => {
@@ -66,7 +70,7 @@ describe("HostBookings (specs/008-host-pages, US4)", () => {
   it("writes dates in the Persian calendar in Persian and the Gregorian in English", async () => {
     serve([booking(2, "confirmed", "2099-05-01", "2099-05-03")]);
     const fa = renderIn("fa", <HostBookings listingId={5} />);
-    expect(await screen.findByText(/اردیبهشت/)).toBeInTheDocument();
+    expect((await screen.findAllByText(/اردیبهشت/)).length).toBeGreaterThan(0);
     fa.unmount();
     renderIn("en", <HostBookings listingId={5} />);
     expect(await screen.findByText(/1 May 2099/)).toBeInTheDocument();
@@ -81,6 +85,40 @@ describe("HostBookings (specs/008-host-pages, US4)", () => {
     serve([]);
     renderIn("fa", <HostBookings listingId={5} />);
     expect(await screen.findByText("هنوز رزروی برای این آگهی نیست.")).toBeInTheDocument();
+  });
+
+  it.each(["fa", "en"])("shows guest contact and confirms host cancellation (%s)", async (locale) => {
+    const fa = locale === "fa";
+    const active = {
+      ...booking(2, "confirmed", "2099-05-01", "2099-05-03"),
+      can_cancel: true,
+      guest_contact: { full_name: "Sara Guest", email: "sara@example.com" },
+    };
+    serve([active]);
+    POST.mockImplementation(async () => {
+      const cancelled = { ...active, status: "cancelled", can_cancel: false };
+      serve([cancelled]);
+      return { data: cancelled };
+    });
+    renderIn(locale as "fa" | "en", <HostBookings listingId={5} />);
+    const email = await screen.findByRole("link", {
+      name: fa ? "ارسال ایمیل به Sara Guest" : "Email Sara Guest",
+    });
+    expect(email).toHaveAttribute("href", "mailto:sara%40example.com");
+    await userEvent.click(screen.getByRole("button", { name: fa ? "لغو رزرو" : "Cancel booking" }));
+    const dialog = screen.getByRole("dialog");
+    await expectAccessible(document.body);
+    await userEvent.click(within(dialog).getByRole("button", { name: fa ? "بله، لغو شود" : "Yes, cancel" }));
+    expect(await screen.findByText(fa ? "لغوشده" : "Cancelled")).toBeInTheDocument();
+    expect(POST).toHaveBeenCalledWith("/api/v1/bookings/{booking_id}/cancel", {
+      params: { path: { booking_id: 2 } },
+    });
+    expect(
+      screen.getByRole("link", { name: fa ? "ارسال ایمیل به Sara Guest" : "Email Sara Guest" }),
+    ).toBeInTheDocument();
+    expect(
+      screen.queryByRole("button", { name: fa ? "لغو رزرو" : "Cancel booking" }),
+    ).not.toBeInTheDocument();
   });
 
   it("is accessible", async () => {
