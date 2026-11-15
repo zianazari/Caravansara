@@ -1,8 +1,8 @@
 # Caravansara Database: Design Overview
 
-Updated November 14, 2026 · Zia
+Updated November 15, 2026 · Zia
 
-Current schema: **18 application tables** on PostgreSQL 16 with PostGIS, through Alembic migration `0013`.
+Current schema: **18 application tables** on PostgreSQL 16 with PostGIS, through Alembic migration `0015`.
 The authoritative history is `backend/migrations/`; `db/schema.sql`, `db/schema.dbml` and the ERD are reference
 snapshots. [Backend design](backend-design.md) and [dynamic pricing](dynamic-pricing.md) document API/service rules.
 The older online overview and Persian slide deck are historical artifacts, not the current schema.
@@ -17,6 +17,20 @@ The older online overview and Persian slide deck are historical artifacts, not t
 | Bookings & reviews | `bookings`, `reviews` | No-overlap guarantee, saved nightly prices and ratings |
 | Moderation | `listing_review_events`, `admin_address_views` | Append-only decisions and recorded exact-address access |
 | Saved places & email | `wishlist_items`, `email_outbox` | Member favourites and transactional delivery |
+
+## Private mobile contact
+
+Migration `0015` adds optional `users.phone_number` with a canonical international-number check.
+Members can provide it during signup or edit/clear it in their profile. Booking hosts see the guest's
+number and booking guests see the host's number; public listing/review/search models exclude it.
+Numbers are user-supplied contact information, not SMS-verified login identifiers. See [phone contact](phone-contact.md).
+
+## Host listing archival
+
+Migration `0014` adds `listings.deleted_at` and enforces inactive archived listings. Owner-only DELETE
+retains photos and booking/review history, but removes the property from host lists and review queues.
+Confirmed reservations and unexpired pending holds block deletion. The listing lock serializes archival
+with booking creation; subsequent host edits and reactivation are refused. See [the deletion guide](listing-deletion.md).
 
 ## Daily prices and saved reservations
 

@@ -58,7 +58,7 @@ therefore need the `docker` CLI and the compose stack on the same machine.
 
 ## Pricing and unified frontend
 
-The suite collects 142 tests against a single web service on port 3001. All browser
+The suite collects 148 tests against a single web service on port 3001. All browser
 suites use the shared `WEB_URL` (default `http://localhost:3001`) and admin uses
 `ADMIN_WEB_URL` (default `http://admin.localhost:3001`).
 
@@ -83,3 +83,5 @@ restore normal API rate limits with `docker compose -f docker-compose.yml up -d 
 five-digit codes in Persian/English, checks mobile layouts and axe, verifies
 HttpOnly admin cookies, and exercises automatic token renewal. It creates enabled
 admins through the existing CLI; no external email delivery is used in tests.
+
+`admin-user-detail.spec.ts` covers mobile numbers in the users table, account drill-down, bookings in both guest/host roles and retained archived listings, in Persian and English with mobile layout and axe checks.

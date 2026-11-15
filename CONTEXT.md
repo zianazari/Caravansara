@@ -1,6 +1,6 @@
 # Caravansara: project context
 
-Last updated: 2026-11-14 (Europe/Helsinki).
+Last updated: 2026-11-15 (Europe/Helsinki).
 
 Caravansara (کاروانسرا) is a Persian/English place reservation site. This is the handoff for continuing work
 in `/Users/zia/Caravansara`. Read `README.md`, `docs/backend-design.md` and `docs/dynamic-pricing.md` for current
@@ -20,6 +20,10 @@ behavior. `specs/` records historical features 001–008; its old scope/defaults
 - Admins review listings (exact address access is recorded), manage users/bookings lists and the shared holiday
   calendar. Every table column sorts across all matching records before pagination. Review queue sorting
   supports submission time, title, city and host; newest submissions are the default.
+
+## Admin user details
+
+Active admins see optional mobile numbers for every account kind, including disabled accounts, in the sortable users table. Clicking a name opens `/admin/users/{id}` with account details, bookings in both guest/host roles and all owned listings (including archived). New admin-only APIs: `GET /admin/users/{id}`, `GET /admin/users/{id}/listings`; `/admin/bookings?user_id={id}` scopes filtering/sorting/pagination to both roles. All these private responses and the user list use `Cache-Control: no-store`. No new migration beyond `0015`; see `docs/phone-contact.md`.
 
 ## Local frontend (055: unified)
 
@@ -70,7 +74,7 @@ IRR calendar cells use one captioned toman unit; exact money remains in summarie
 Iranian Thursday/Friday price text is accented even with weekend adjustments disabled, based on the
 listing's country code rather than page language or currency. Calendar identification does not reprice stays.
 
-- Current schema is Alembic head `0013`: **18 application tables**, excluding PostGIS/Alembic system tables.
+- Current schema is Alembic head `0015`: **18 application tables**, excluding PostGIS/Alembic system tables.
 - `db/schema.sql`, `db/schema.dbml`, `db/erd.mmd` and `db/erd.png` are maintained reference snapshots; migrations
   are authoritative. Migration 0001 is an embedded historical copy, not a live read of `db/schema.sql`.
 - PostgreSQL excludes overlapping active booking ranges `[check_in, check_out)` and uniquely stores idempotency
@@ -140,8 +144,8 @@ unchanged. See `docs/travel-opportunities.md`. No schema migration or new servic
 - Backend: `uv run pytest --cov`, `uv run ruff check src tests migrations`, `uv run ruff format --check src tests migrations`,
   `uv run mypy`, `uv run lint-imports`. Tests start isolated PostgreSQL/PostGIS and MinIO containers.
 - Frontend: `npm run gen:api`, lint, format check, typecheck, `npm test -- --coverage`, build. Coverage gates apply
-  to rules/API, not every component. The current frontend suite has 524 tests; the backend suite has 461.
-- E2E: 142 tests collected. Start base + `e2e/compose.e2e.yml` for the single site and fixture account
+  to rules/API, not every component. The current frontend suite has 551 tests; the backend suite has 493.
+- E2E: 148 tests collected. Start base + `e2e/compose.e2e.yml` for the single site and fixture account
   creation uses test rate limits. See `e2e/README.md`. Restore normal API settings after verification.
 - Latest local frontend verification (055): the original 3011 and new 3001 matched in hero image,
   heading, sections and computed palette in both languages. Port 3011 is closed and its container/
@@ -155,7 +159,7 @@ unchanged. See `docs/travel-opportunities.md`. No schema migration or new servic
 - Test accounts are `e2e.*@caravansara.example.com`; retained fixtures are the E2E convention. Holiday fixtures
   restore previous values in `finally`. Use unique temporary report directories when running Playwright.
 - Admin email-login verification: 65 backend auth/admin/opportunity/contract tests passed;
-  Ruff, formatting, mypy and all 13 import contracts passed. All 524 frontend tests passed with
+  Ruff, formatting, mypy and all 13 import contracts passed. All 546 frontend tests passed with
   coverage gates; lint, format, types and production images passed. The final response-consumption
   refinement also passed 35 focused component/handler tests. Fourteen real-browser admin/member
   tests passed, including SMTP delivery, Persian/English mobile entry, axe, cookie privacy and
@@ -175,3 +179,45 @@ new configuration was added during documentation work.
 additional error/race browser coverage, account email verification/password reset, measured caching and only
 then any evidence-based service split. Real payments/refunds, host blackout dates and reservation date edits
 remain outside the implemented flow. Current pricing and modern workspaces are complete, not future work.
+
+## Host listing deletion (0014)
+
+Owner-only DELETE /listings/{id} archives with deleted_at and is_active=false; repeated deletion
+is idempotent. Confirmed bookings and valid pending holds block it with listing_has_bookings.
+The listing row lock serializes deletion with booking creation. Archived listings leave host
+lists and all admin queue sorts; edits/reactivation/resubmission are refused. Completed guest
+booking history remains available. The card confirmation UI refreshes the host list after success.
+See docs/listing-deletion.md. No physical listing/photo/history deletion or restoration UI.
+
+## Host cancellation and guest contact
+
+HostBookings uses the existing participant cancellation route, before the city-local check-in day.
+BookingOut.can_cancel is computed server-side; guest_contact (name/email) is populated only for
+the listing owner in details and host list responses. Guest views receive null. Booking routes
+return Cache-Control: no-store. Contacts are batch-loaded for lists. The shared CancelDialog
+refreshes host-bookings after success and handles network/state errors. Email links open a mail
+client; no automatic cancellation message or new migration is introduced. Phone numbers are optional profile contacts from migration 0015. Private booking-scoped chat is explicitly future work; see docs/host-guest-contact.md.
+
+Verification: 39 related backend tests passed, followed by seven contact/contract checks after
+adding no-store responses. Eighteen host/guest cancellation component tests and both real-browser
+host cancellation flows passed; the browser checks include guest privacy, contact retention,
+mobile layouts and axe. Lint, types, format and all 13 import contracts passed.
+
+## Mutual booking mobile contacts (0015)
+
+Optional users.phone_number can be supplied at registration or edited/cleared in PATCH /me.
+Iranian 09 and Persian/Arabic digits normalize to international +country syntax; foreign numbers
+require country code. This is format validation, not SMS verification or phone login. Host-only
+guest_contact adds phone_number; guest-only host_contact exposes host name/mobile without email.
+Both follow the booking relationship across statuses and read current profile values, not snapshots.
+Public listing/review/search user models exclude the number. Booking responses and GET /me are
+no-store; phone fields and canonical values are redacted from logs. See docs/phone-contact.md.
+
+Phone verification: 38 initial profile/contact/migration tests and 48 account/logging/contract
+checks passed; 48 related frontend tests passed, including 14 normalization cases and three
+profile-phone editing cases. Both Persian/English browser flows verified host profile saving,
+guest/host tel links in separate sessions and contact privacy. Static checks, module contracts
+and production images passed. No automated calls, SMS verification or phone-based login.
+
+Admin user drill-down verification: 15 backend account/list/contract tests and 26 admin component tests passed, including active-admin-only phone visibility, stable sorting with null numbers last, both booking roles and retained listings. Two Persian/English real-browser drill-down tests passed with reload, mobile overflow and axe checks.
+Final admin verification after the shared phone link accessibility correction: 44 related frontend tests and six real-browser tests passed, including all user/booking column sort toggles and WCAG checks across the panel. Lint, formatting, frontend/E2E types, Ruff, mypy, the OpenAPI contract and all 13 import boundaries passed. The normal local compose profile was restored after browser checks.

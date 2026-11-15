@@ -9,9 +9,9 @@ RTL layouts, Jalali dates and English support.
 
 <p align="center">
   <a href="https://github.com/zianazari/Caravansara/actions/workflows/ci.yml"><img src="https://github.com/zianazari/Caravansara/actions/workflows/ci.yml/badge.svg" alt="CI"></a>
-  <img src="https://img.shields.io/badge/tests-461%20backend-b5651d" alt="461 backend tests">
-  <img src="https://img.shields.io/badge/web-524%20Vitest%20tests-6E9F18" alt="524 frontend tests">
-  <img src="https://img.shields.io/badge/e2e-142%20Playwright%20tests-2EAD33" alt="142 collected end-to-end tests">
+  <img src="https://img.shields.io/badge/tests-493%20backend-b5651d" alt="493 backend tests">
+  <img src="https://img.shields.io/badge/web-551%20Vitest%20tests-6E9F18" alt="551 frontend tests">
+  <img src="https://img.shields.io/badge/e2e-148%20Playwright%20tests-2EAD33" alt="148 collected end-to-end tests">
 </p>
 
 [Features](#features) · [Screenshots](#screenshots) · [Run locally](#run-locally) ·
@@ -49,6 +49,7 @@ See the [dynamic pricing guide](docs/dynamic-pricing.md).
 - Review new and edited listings, approve them or return them with a rejection reason.
 - Sort the review queue by submission time, title, city or host; newest submissions appear first by default.
 - Sort every user and booking table column in ascending or descending order across all matching records before pagination.
+- View all users’ optional mobile numbers; open a user’s account details, bookings as guest/host and all owned listings, including retained deleted listings. See [private contact and admin access](docs/phone-contact.md).
 - Maintain shared holidays by country and date; hosts choose the adjustment for their own properties.
 - Work in a dark/orange panel on a separate admin host, with overview counts and recorded exact-address views.
 
@@ -240,9 +241,9 @@ and [design decisions](docs/backend-design.md).
 
 ## Testing
 
-- **Backend:** 461 pytest tests against real PostgreSQL/PostGIS and MinIO using testcontainers.
-- **Frontend:** 524 Vitest tests covering rules, components, Persian/English layouts and axe accessibility.
-- **End to end:** 142 collected Playwright tests for API behavior and browser journeys on the running stack.
+- **Backend:** 493 pytest tests against real PostgreSQL/PostGIS and MinIO using testcontainers.
+- **Frontend:** 551 Vitest tests covering rules, components, Persian/English layouts and axe accessibility.
+- **End to end:** 148 collected Playwright tests for API behavior and browser journeys on the running stack.
 
 Coverage includes booking races, idempotency, privacy, photo uploads, listing review, guest/host flows,
 daily pricing, shared holidays, receipts and responsive accessibility. CI also checks formatting, lint,
@@ -272,6 +273,9 @@ Backend and frontend test commands are in their [backend](backend/README.md) and
 | [Email code login](docs/email-login.md) | Five-digit codes, SMTP, expiry, rate limits and protected web sessions |
 | [Travel opportunities](docs/travel-opportunities.md) | Budget discovery, ranking, availability, currency and booking hand-off |
 | [Search cache proposal — فارسی](docs/search-cache.md) | Proposed Redis candidates, TTLs, invalidation and correctness checks; not implemented |
+| [Mobile contact — فارسی](docs/phone-contact.md) | Optional profile phone numbers and private two-way booking contacts |
+| [Host cancellation and guest contact — فارسی](docs/host-guest-contact.md) | Host cancellation, guest email and access boundaries |
+| [Host listing deletion — فارسی](docs/listing-deletion.md) | Owner archival, confirmation and reservation protection |
 | [Dynamic pricing](docs/dynamic-pricing.md)                        | Rule priority, calendar controls, quotes and saved booking prices           |
 | [End-to-end tests](e2e/README.md)                                 | Compose setup, fixtures, browser journeys and reports                       |
 | [Database](db/README.md)                                          | Schema, constraints, indexes and diagrams                                   |
@@ -286,6 +290,8 @@ project documentation and current README screenshots in `docs/`. Historical spec
 `specs/`. The [project constitution](.specify/memory/constitution.md) records development principles.
 
 ## Roadmap
+
+- Private booking-scoped chat between the host and guest.
 
 - Email verification, password recovery and server-side listing drafts.
 - Host-blocked dates, automatic holiday imports and a real payment gateway.

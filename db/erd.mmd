@@ -25,6 +25,7 @@ erDiagram
         text email UK "unique on lower(email)"
         text password_hash
         text full_name
+        text phone_number "private optional contact"
         text avatar_url
         timestamptz created_at
         account_kind kind "member | admin (create-admin only)"
@@ -83,6 +84,7 @@ erDiagram
         numeric avg_rating "rank, cached"
         int review_count
         boolean is_active
+        timestamptz deleted_at "archive; must be inactive"
         timestamptz created_at
         listing_review_status review_status "public = active and approved"
         timestamptz submitted_at "queue order"

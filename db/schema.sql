@@ -38,6 +38,7 @@ CREATE TABLE users (
     email          TEXT        NOT NULL,
     password_hash  TEXT        NOT NULL,                -- argon2
     full_name      TEXT        NOT NULL,
+    phone_number   TEXT CONSTRAINT users_phone_number_check CHECK (phone_number IS NULL OR phone_number ~ '^\+[1-9][0-9]{6,14}$'),
     avatar_url     TEXT,
     created_at     TIMESTAMPTZ NOT NULL DEFAULT now(),
     -- Admins live here too, so the email index below keeps one email to one account of either
@@ -146,6 +147,7 @@ CREATE TABLE listings (
     review_count     INT           NOT NULL DEFAULT 0,
 
     is_active        BOOLEAN       NOT NULL DEFAULT true,
+    deleted_at       TIMESTAMPTZ CONSTRAINT listings_deleted_inactive CHECK (deleted_at IS NULL OR NOT is_active),
     created_at       TIMESTAMPTZ   NOT NULL DEFAULT now(),
 
     -- review by an admin. Public = is_active AND review_status = 'approved' (no stored column).

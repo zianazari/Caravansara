@@ -72,6 +72,7 @@ Table users [headercolor: #1F6FEB] {
   email text [not null]
   password_hash text [not null, note: 'argon2']
   full_name text [not null]
+  phone_number text [note: 'Optional private contact, canonical +countrycode; booking counterpart only, not SMS-verified']
   avatar_url text
   created_at timestamptz [not null, default: `now()`]
   kind account_kind [not null, default: 'member', note: 'admins share this table so one email is one account of either kind; no API input has this field']
@@ -156,6 +157,7 @@ Table listings [headercolor: #1F6FEB] {
   avg_rating "numeric(3,2)" [note: 'rank, cached by trigger on reviews']
   review_count int [not null, default: 0]
   is_active boolean [not null, default: true]
+  deleted_at timestamptz [note: 'Owner archive timestamp; archived listings must be inactive']
   created_at timestamptz [not null, default: `now()`]
   review_status listing_review_status [not null, default: 'pending', note: 'public = is_active AND approved; new listings wait for an admin']
   submitted_at timestamptz [default: `now()`, note: 'entered the review queue; required while pending']
