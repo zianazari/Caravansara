@@ -1002,7 +1002,7 @@ export interface paths {
     };
     /**
      * Users
-     * @description Every account, newest first. `q` finds any part of an email or a name (at least 3 characters, ignoring case). Never shows a password.
+     * @description Every account, newest first. `q` finds any part of an email or a name (at least 3 characters, ignoring case). Includes optional mobile numbers for all account kinds, including disabled users. Missing phone numbers sort last in both directions. Never shows a password.
      */
     get: operations["users_list_api_v1_admin_users_get"];
     put?: never;
@@ -1025,6 +1025,40 @@ export interface paths {
      * @description Every booking, newest first, optionally one status: `pending` (held, not paid), `confirmed`, `completed`, `cancelled` or `expired` (not paid in time). With the guest's name and email; never the address. `has_more` says whether a next page exists; the totals are in `GET /admin/summary`.
      */
     get: operations["bookings_list_api_v1_admin_bookings_get"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/admin/users/{user_id}": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** Account details, including mobile number */
+    get: operations["user_detail_api_v1_admin_users__user_id__get"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/admin/users/{user_id}/listings": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** All listings owned by a user, including archived listings */
+    get: operations["user_listings_api_v1_admin_users__user_id__listings_get"];
     put?: never;
     post?: never;
     delete?: never;
@@ -1377,6 +1411,34 @@ export interface components {
        */
       session_expires_in: number;
     };
+    /** AdminUserListing */
+    AdminUserListing: {
+      /** Id */
+      id: number;
+      /** Title */
+      title: string;
+      /** City */
+      city: string;
+      /** Price Per Night */
+      price_per_night: string;
+      /** Currency */
+      currency: string;
+      /** Review Status */
+      review_status: string;
+      /** Is Active */
+      is_active: boolean;
+      /** Deleted At */
+      deleted_at: string | null;
+      /** Created At */
+      created_at: string;
+    };
+    /** AdminUserListingPage */
+    AdminUserListingPage: {
+      /** Items */
+      items: components["schemas"]["AdminUserListing"][];
+      /** Total */
+      total: number;
+    };
     /**
      * AdminUserOut
      * @description One account in the admin's users list (feature 051). Never the password hash.
@@ -1388,6 +1450,8 @@ export interface components {
       email: string;
       /** Full Name */
       full_name: string;
+      /** Phone Number */
+      phone_number?: string | null;
       /** @description `member` (guest or host) or `admin`. */
       kind: components["schemas"]["AccountKind"];
       /**
@@ -5590,7 +5654,7 @@ export interface operations {
     parameters: {
       query?: {
         /** @description Column to sort across the entire filtered result; ties use ID. */
-        sort_by?: "full_name" | "email" | "kind" | "created_at";
+        sort_by?: "full_name" | "email" | "phone_number" | "kind" | "created_at";
         /** @description Ascending or descending; applied before pagination. */
         order?: "asc" | "desc";
         /** @description Part of an email or a name, at least 3 characters. */
@@ -5644,6 +5708,8 @@ export interface operations {
         order?: "asc" | "desc";
         /** @description Only bookings in this status. */
         status?: components["schemas"]["BookingStatus"] | null;
+        /** @description Bookings as guest or host for this user. */
+        user_id?: number | null;
         /** @description Items per page. */
         limit?: number;
         /** @description Items to skip. */
@@ -5666,6 +5732,120 @@ export interface operations {
       };
       /** @description Missing, invalid or expired access token */
       401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Not found */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Invalid input or a broken business rule */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+    };
+  };
+  user_detail_api_v1_admin_users__user_id__get: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        user_id: number;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["AdminUserOut"];
+        };
+      };
+      /** @description Missing, invalid or expired access token */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Not found */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  user_listings_api_v1_admin_users__user_id__listings_get: {
+    parameters: {
+      query?: {
+        sort_by?: "id" | "title" | "city" | "price_per_night" | "review_status" | "created_at";
+        order?: "asc" | "desc";
+        /** @description Items per page. */
+        limit?: number;
+        /** @description Items to skip. */
+        offset?: number;
+      };
+      header?: never;
+      path: {
+        user_id: number;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["AdminUserListingPage"];
+        };
+      };
+      /** @description Missing, invalid or expired access token */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Not found */
+      404: {
         headers: {
           [name: string]: unknown;
         };

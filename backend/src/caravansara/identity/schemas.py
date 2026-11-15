@@ -121,6 +121,7 @@ class AdminUserOut(BaseModel):
     id: int
     email: str
     full_name: str
+    phone_number: str | None = None
     kind: AccountKind = Field(description="`member` (guest or host) or `admin`.")
     created_at: datetime
     disabled_at: datetime | None = Field(description="Set when an admin account was disabled.")
@@ -131,4 +132,4 @@ class AdminUserPage(BaseModel):
     total: int
 
 
-AdminUserSort = Literal["full_name", "email", "kind", "created_at"]
+AdminUserSort = Literal["full_name", "email", "phone_number", "kind", "created_at"]

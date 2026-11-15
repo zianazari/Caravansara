@@ -62,12 +62,15 @@ async def admin_users(
     column = {
         "full_name": func.lower(User.full_name),
         "email": func.lower(User.email),
+        "phone_number": User.phone_number,
         "kind": User.kind,
         "created_at": User.created_at,
     }[sort_by]
     ordered = column.asc() if order == "asc" else column.desc()
     tie = User.id.asc() if order == "asc" else User.id.desc()
-    rows = await session.execute(select(User).where(*where).order_by(ordered, tie).limit(limit).offset(offset))
+    rows = await session.execute(
+        select(User).where(*where).order_by(ordered.nulls_last(), tie).limit(limit).offset(offset)
+    )
     return list(rows.scalars()), int(total)
 
 

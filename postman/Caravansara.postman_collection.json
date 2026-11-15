@@ -155,6 +155,11 @@
     {
       "key": "phoneNumber",
       "value": ""
+    },
+    {
+      "key": "adminUserId",
+      "value": "1",
+      "type": "string"
     }
   ],
   "item": [
@@ -2597,7 +2602,7 @@
                 {
                   "key": "sort_by",
                   "value": "created_at",
-                  "description": "full_name, email, kind, created_at"
+                  "description": "full_name, email, phone_number, kind, created_at"
                 },
                 {
                   "key": "order",
@@ -2614,7 +2619,7 @@
                 }
               ]
             },
-            "description": "Sorting applies to all matching records before pagination, with ID breaking ties in the same direction. Search with q (at least 3 characters). Names and email ignore case; roles order member then admin."
+            "description": "Sorting applies to all matching records before pagination, with ID breaking ties in the same direction. Search with q (at least 3 characters). Names and email ignore case; roles order member then admin. Includes optional mobile numbers for all account kinds and disabled users. Missing numbers sort last in both directions; responses are no-store."
           },
           "event": [
             {
@@ -2831,6 +2836,117 @@
               ]
             }
           }
+        },
+        {
+          "name": "Admin user details",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{adminToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "url": "{{baseUrl}}/api/v1/admin/users/{{adminUserId}}",
+            "description": "Private account details and optional mobile number. Active administrators only; no password or session material."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Admin request succeeds\", () => pm.response.to.have.status(200));",
+                  "pm.test(\"Private response is not cached\", () => pm.expect(pm.response.headers.get(\"Cache-Control\")).to.eql(\"no-store\"));",
+                  "pm.test(\"Private profile\", () => { pm.expect(pm.response.json()).to.have.property(\"phone_number\"); pm.expect(pm.response.json()).not.to.have.property(\"password_hash\"); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Listings owned by a user",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{adminToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "url": "{{baseUrl}}/api/v1/admin/users/{{adminUserId}}/listings?sort_by=created_at&order=desc&limit=20&offset=0",
+            "description": "Every owned listing, including pending, rejected, inactive and archived records. Global allowlisted sorting before pagination; no exact address."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Admin request succeeds\", () => pm.response.to.have.status(200));",
+                  "pm.test(\"Private response is not cached\", () => pm.expect(pm.response.headers.get(\"Cache-Control\")).to.eql(\"no-store\"));",
+                  "pm.test(\"Paginated listings\", () => pm.expect(pm.response.json().items).to.be.an(\"array\"));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Bookings as guest or host",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{adminToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "url": "{{baseUrl}}/api/v1/admin/bookings?user_id={{adminUserId}}&sort_by=id&order=desc&limit=20&offset=0",
+            "description": "Only bookings where this user is guest or listing owner, including all terminal states. Admin view omits the exact address and participant contact DTOs."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Admin request succeeds\", () => pm.response.to.have.status(200));",
+                  "pm.test(\"Private response is not cached\", () => pm.expect(pm.response.headers.get(\"Cache-Control\")).to.eql(\"no-store\"));",
+                  "pm.test(\"Paginated bookings\", () => pm.expect(pm.response.json().items).to.be.an(\"array\"));"
+                ]
+              }
+            }
+          ]
         },
         {
           "name": "End the admin session",

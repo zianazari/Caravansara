@@ -8,7 +8,7 @@ export const BOOKING_SORTS = [
   "status",
   "created_at",
 ] as const;
-export const USER_SORTS = ["full_name", "email", "kind", "created_at"] as const;
+export const USER_SORTS = ["full_name", "email", "phone_number", "kind", "created_at"] as const;
 export const QUEUE_SORTS = ["submitted_at", "title", "city", "host"] as const;
 
 /** Only valid columns reach the API; sorting stays in the URL across pagination and filtering. */

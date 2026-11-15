@@ -31,7 +31,7 @@ async def test_users_newest_first_with_paging_and_no_password(client: AsyncClien
     body = r.json()
     assert body["total"] == 4  # three members and the admin
     assert [u["id"] for u in body["items"]] == [made[2].id, made[1].id]
-    assert set(body["items"][0]) == {"id", "email", "full_name", "kind", "created_at", "disabled_at"}
+    assert set(body["items"][0]) == {"id", "email", "full_name", "phone_number", "kind", "created_at", "disabled_at"}
     rest = (await client.get("/admin/users", params={"limit": 2, "offset": 2}, headers=admin.auth)).json()
     assert [u["id"] for u in rest["items"]] == [made[0].id, admin.id]
     assert rest["items"][1]["kind"] == "admin"

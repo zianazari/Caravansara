@@ -34,6 +34,7 @@ vi.mock("next/image", () => ({
   default: (p: { src: string; alt: string }) => <img src={p.src} alt={p.alt} />,
 }));
 
+import { AdminUserDetail } from "./AdminUserDetail";
 import { AdminPanel } from "./AdminPanel";
 import { adminHref, parseTab } from "./adminHref";
 
@@ -79,6 +80,7 @@ const user = (id: number, kind = "member") => ({
   email: `user${id}@example.com`,
   full_name: `User ${id}`,
   kind,
+  phone_number: id === 21 ? "+989123456789" : null,
   created_at: "2026-10-01T08:00:00Z",
   disabled_at: null,
 });
@@ -229,10 +231,105 @@ describe("admin panel tabs (feature 051)", () => {
       "href",
       "/admin?tab=users&q=user&sort_by=full_name&order=desc&page=3",
     );
-    expect(screen.getAllByRole("columnheader")).toHaveLength(4);
+    expect(screen.getAllByRole("columnheader")).toHaveLength(5);
+    expect(screen.getByRole("link", { name: "User 21" })).toHaveAttribute("href", "/admin/users/21");
+    expect(screen.getByRole("link", { name: "Call User 21 +989123456789" })).toHaveAttribute(
+      "href",
+      "tel:+989123456789",
+    );
     await userEvent.type(screen.getByRole("searchbox"), "z");
     await waitFor(() =>
       expect(replace).toHaveBeenCalledWith("/admin?tab=users&q=userz&sort_by=full_name&order=desc"),
     );
+  });
+});
+
+describe("admin user details", () => {
+  beforeEach(() => {
+    GET.mockReset();
+    replace.mockReset();
+    query = "";
+  });
+  for (const locale of ["fa", "en"] as const) {
+    it(`shows private profile and scopes booking filters and pagination (${locale})`, async () => {
+      query = "status=completed&page=2&sort_by=total_price&order=asc";
+      GET.mockImplementation((path: string) =>
+        Promise.resolve(
+          ok(
+            path === "/api/v1/admin/users/{user_id}"
+              ? { ...user(5), phone_number: "+989123456789" }
+              : { items: [booking(7, "completed")], has_more: true },
+          ),
+        ),
+      );
+      renderIn(locale, <AdminUserDetail id={5} />);
+      expect(await screen.findByRole("heading", { name: "User 5" })).toBeInTheDocument();
+      expect(await screen.findByText("Place 7")).toBeInTheDocument();
+      expect(
+        screen.getByRole("link", {
+          name: locale === "fa" ? "تماس با User 5 +989123456789" : "Call User 5 +989123456789",
+        }),
+      ).toHaveAttribute("href", "tel:+989123456789");
+      expect(screen.getByText(locale === "fa" ? "به‌عنوان میزبان" : "As host")).toBeInTheDocument();
+      expect(callsTo("/api/v1/admin/bookings")[0]).toMatchObject({
+        user_id: 5,
+        status: "completed",
+        offset: 20,
+        sort_by: "total_price",
+        order: "asc",
+      });
+      const total = screen.getByRole("columnheader", { name: locale === "fa" ? /مبلغ/ : /Total/ });
+      expect(within(total).getByRole("link")).toHaveAttribute(
+        "href",
+        "/admin/users/5?status=completed&sort_by=total_price&order=desc",
+      );
+      expect(GET.mock.calls.some((c) => c[0] === "/api/v1/admin/summary")).toBe(false);
+      await expectAccessible(document.body);
+    });
+    it(`shows archived listings with globally sorted page links (${locale})`, async () => {
+      query = "section=listings&sort_by=title&order=asc&page=2";
+      GET.mockImplementation((path: string) =>
+        Promise.resolve(
+          ok(
+            path === "/api/v1/admin/users/{user_id}"
+              ? user(5)
+              : {
+                  items: [
+                    {
+                      id: 9,
+                      title: "Old house",
+                      city: "Tehran",
+                      price_per_night: "45000000",
+                      currency: "IRR",
+                      review_status: "approved",
+                      is_active: false,
+                      deleted_at: "2026-11-15T12:00:00Z",
+                      created_at: "2026-10-01T00:00:00Z",
+                    },
+                  ],
+                  total: 45,
+                },
+          ),
+        ),
+      );
+      renderIn(locale, <AdminUserDetail id={5} />);
+      expect(await screen.findByText("Old house")).toBeInTheDocument();
+      expect(screen.getByRole("link", { name: "Old house" })).toHaveAttribute("href", "/admin/listings/9");
+      expect(screen.getByText(locale === "fa" ? "حذف‌شده" : "Deleted")).toBeInTheDocument();
+      expect(callsTo("/api/v1/admin/users/{user_id}/listings")[0]).toEqual({
+        limit: 20,
+        offset: 20,
+        sort_by: "title",
+        order: "asc",
+      });
+      expect(GET.mock.calls.some((c) => c[0] === "/api/v1/admin/bookings")).toBe(false);
+      await expectAccessible(document.body);
+    });
+  }
+  it("shows not-found without requesting another user's history", async () => {
+    GET.mockResolvedValue({ response: new Response(null, { status: 404 }), error: {} });
+    renderIn("en", <AdminUserDetail id={999999} />);
+    expect(await screen.findByRole("alert")).toHaveTextContent("User not found");
+    expect(GET).toHaveBeenCalledTimes(1);
   });
 });

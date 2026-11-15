@@ -7,10 +7,11 @@ import { useEffect, useId, useState } from "react";
 import { useLocale, useTranslations } from "next-intl";
 import type { components } from "@/api/schema";
 import { adminApi } from "@/api/adminClient";
+import { PhoneLink } from "@/components/account/PhoneLink";
 import { Input } from "@/components/ui/input";
 import { Pager } from "@/components/ui/Pager";
 import { Skeleton } from "@/components/ui/skeleton";
-import { useRouter } from "@/i18n/navigation";
+import { Link, useRouter } from "@/i18n/navigation";
 import { formatDate } from "@/lib/calendar";
 import { cn } from "@/lib/cn";
 import { lastPage, parsePage } from "@/lib/pageWindow";
@@ -113,6 +114,7 @@ export function AdminUsers() {
                   [
                     ["full_name", "colName"],
                     ["email", "colEmail"],
+                    ["phone_number", "colPhone"],
                     ["kind", "colKind"],
                     ["created_at", "colJoined"],
                   ] as const
@@ -134,9 +136,20 @@ export function AdminUsers() {
             <tbody className="divide-y">
               {list.data.items.map((u) => (
                 <tr key={u.id} className="hover:bg-muted/40">
-                  <td className="max-w-56 truncate px-3 py-2 font-medium">{u.full_name}</td>
+                  <td className="max-w-56 px-3 py-2 font-medium">
+                    <Link
+                      className="block break-words text-primary underline underline-offset-4"
+                      href={`/admin/users/${u.id}`}
+                    >
+                      {u.full_name}
+                    </Link>
+                  </td>
                   <td className="max-w-72 truncate px-3 py-2" dir="ltr">
                     {u.email}
+                  </td>
+                  <td className="whitespace-nowrap px-3 py-2">
+                    <PhoneLink phone={u.phone_number} name={u.full_name} />
+                    {!u.phone_number ? t("account.noPhone") : null}
                   </td>
                   <td className="whitespace-nowrap px-3 py-2">
                     <span

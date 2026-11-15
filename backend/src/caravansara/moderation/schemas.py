@@ -64,3 +64,23 @@ class AdminSummary(BaseModel):
 
 AdminBookingSort = Literal["id", "listing", "guest", "dates", "total_price", "status", "created_at"]
 AdminQueueSort = Literal["submitted_at", "title", "city", "host"]
+
+
+class AdminUserListing(BaseModel):
+    id: int
+    title: str
+    city: str
+    price_per_night: str
+    currency: str
+    review_status: str
+    is_active: bool
+    deleted_at: str | None
+    created_at: str
+
+
+class AdminUserListingPage(BaseModel):
+    items: list[AdminUserListing]
+    total: int
+
+
+AdminUserListingSort = Literal["id", "title", "city", "price_per_night", "review_status", "created_at"]

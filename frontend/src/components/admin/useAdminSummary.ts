@@ -12,8 +12,9 @@ export type AdminSummary = components["schemas"]["AdminSummary"];
  * booking takes a moment on a large database, so this is asked once when the panel opens and kept for a minute,
  * not on every page or tab change.
  */
-export function useAdminSummary() {
+export function useAdminSummary(enabled = true) {
   return useQuery({
+    enabled,
     queryKey: ["admin", "summary"],
     retry: false,
     staleTime: 60_000,

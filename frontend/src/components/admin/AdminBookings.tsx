@@ -41,7 +41,7 @@ function parseStatus(raw: string | null): Status | undefined {
  * Every booking, newest first, one status at a time (feature 051): a compact table of 20 rows with numbered
  * pages, so little scrolling is needed. The totals come from the panel's numbers, asked once.
  */
-export function AdminBookings() {
+export function AdminBookings({ userId }: { userId?: number } = {}) {
   const t = useTranslations();
   const locale = useLocale();
   const params = useSearchParams();
@@ -49,15 +49,21 @@ export function AdminBookings() {
   const page = parsePage(params.get("page"));
   const { sortBy, order, hasSort } = readAdminSort(params, BOOKING_SORTS, "id");
   const sorting = sortValues(sortBy, order, hasSort);
-  const summary = useAdminSummary();
+  const summary = useAdminSummary(userId === undefined);
   const list = useQuery({
-    queryKey: ["admin", "bookings", status ?? "all", page, sortBy, order],
+    queryKey: ["admin", "bookings", userId, status ?? "all", page, sortBy, order],
     retry: false,
     placeholderData: keepPreviousData,
     queryFn: async (): Promise<BookingPage> => {
       const { data, error, response } = await adminApi.GET("/api/v1/admin/bookings", {
         params: {
-          query: { limit: PAGE, offset: (page - 1) * PAGE, ...(status ? { status } : {}), ...sorting },
+          query: {
+            ...(userId ? { user_id: userId } : {}),
+            limit: PAGE,
+            offset: (page - 1) * PAGE,
+            ...(status ? { status } : {}),
+            ...sorting,
+          },
         },
       });
       if (!data) throw new AdminRequestError(response.status, error);
@@ -66,13 +72,21 @@ export function AdminBookings() {
   });
   useAdminGate(list.error instanceof AdminRequestError ? list.error.status : undefined);
 
-  const counts = summary.data?.bookings;
+  const counts = userId === undefined ? summary.data?.bookings : undefined;
   const all = counts ? STATUSES.reduce((sum, s) => sum + counts[s], 0) : undefined;
   const total = counts ? (status ? counts[status] : all) : undefined;
   // Before the numbers arrive, the page knows only whether a next one exists.
   const last =
     total !== undefined ? Math.max(lastPage(total, PAGE), page) : list.data?.has_more ? page + 1 : page;
-  const href = (s: Status | undefined, n = 1) => adminHref("bookings", { status: s, ...sorting, page: n });
+  const listHref = (values: Record<string, string | number | undefined>) =>
+    userId
+      ? `/admin/users/${userId}?${new URLSearchParams(
+          Object.entries(values)
+            .filter(([, v]) => v !== undefined)
+            .map(([k, v]) => [k, String(v)]),
+        )}`
+      : adminHref("bookings", values);
+  const href = (s: Status | undefined, n = 1) => listHref({ status: s, ...sorting, page: n });
   const money = (amount: string, currency: string) =>
     formatMoney(amount, currency, locale, t("common.toman"));
   const day = (iso: string) => formatDate(iso.slice(0, 10), locale, "short");
@@ -131,7 +145,7 @@ export function AdminBookings() {
                     label={t(`admin.${label}`)}
                     sortBy={sortBy}
                     order={order}
-                    href={adminHref("bookings", {
+                    href={listHref({
                       status,
                       ...sortValues(column, sortBy === column && order === "asc" ? "desc" : "asc"),
                     })}
@@ -148,11 +162,26 @@ export function AdminBookings() {
                     {formatInteger(b.id, locale)}
                   </td>
                   <td className="max-w-56 px-3 py-1.5">
-                    <div className="truncate font-medium">{b.listing.title}</div>
+                    <Link
+                      className="block break-words font-medium text-primary underline underline-offset-4"
+                      href={`/admin/listings/${b.listing.id}`}
+                    >
+                      {b.listing.title}
+                    </Link>
                     <div className="text-xs text-muted-foreground">{cityName(t, b.listing.city)}</div>
                   </td>
                   <td className="max-w-56 px-3 py-1.5">
-                    <div className="truncate">{b.guest_name}</div>
+                    <Link
+                      className="block break-words text-primary underline underline-offset-4"
+                      href={`/admin/users/${b.guest_id}`}
+                    >
+                      {b.guest_name}
+                    </Link>
+                    {userId ? (
+                      <p className="text-xs text-muted-foreground">
+                        {t(b.guest_id === userId ? "admin.asGuest" : "admin.asHost")}
+                      </p>
+                    ) : null}
                     <div className="truncate text-xs text-muted-foreground" dir="ltr">
                       {b.guest_email}
                     </div>

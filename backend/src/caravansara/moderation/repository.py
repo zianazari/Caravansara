@@ -1,3 +1,5 @@
+from typing import Any
+
 from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -33,21 +35,21 @@ async def sorted_booking_ids(
     *,
     sort_by: AdminBookingSort,
     order: SortOrder,
+    user_id: int | None = None,
 ) -> tuple[list[int], bool]:
     """Admin-only cross-module read; sort before LIMIT and render through the bookings service."""
     direction = "ASC" if order == "asc" else "DESC"
     expressions = (*_BOOKING_ORDER[sort_by], "b.id")
     ordering = ", ".join(f"{expression} {direction}" for expression in expressions)
-    join = (
-        " JOIN listings l ON l.id = b.listing_id"
-        if sort_by == "listing"
-        else " JOIN users u ON u.id = b.guest_id"
-        if sort_by == "guest"
-        else ""
-    )
-    where = " WHERE b.status = :status" if status else ""
+    join = " JOIN listings l ON l.id = b.listing_id JOIN users u ON u.id = b.guest_id"
+    conditions = []
+    if status:
+        conditions.append("b.status = :status")
+    if user_id is not None:
+        conditions.append("(b.guest_id = :user_id OR l.host_id = :user_id)")
+    where = " WHERE " + " AND ".join(conditions) if conditions else ""
     query = text(f"SELECT b.id FROM bookings b{join}{where} ORDER BY {ordering} LIMIT :limit OFFSET :offset")  # noqa: S608 -- fixed allowlisted identifiers; values are bound
-    rows = await session.execute(query, {"status": status, "limit": limit + 1, "offset": offset})
+    rows = await session.execute(query, {"status": status, "user_id": user_id, "limit": limit + 1, "offset": offset})
     ids = list(rows.scalars())
     return ids[:limit], len(ids) > limit
 
@@ -68,3 +70,29 @@ async def sorted_queue_ids(
         f"ORDER BY {expression} {direction}, l.id {direction} LIMIT :limit OFFSET :offset"
     )
     return list((await session.execute(query, {"limit": limit, "offset": offset})).scalars())
+
+
+async def user_listings(
+    session: AsyncSession, user_id: int, limit: int, offset: int, *, sort_by: str, order: SortOrder
+) -> tuple[list[dict[str, Any]], int]:
+    column = {
+        "id": "l.id",
+        "title": "lower(l.title)",
+        "city": "lower(c.name)",
+        "price_per_night": "l.currency, l.price_per_night",
+        "review_status": "l.review_status",
+        "created_at": "l.created_at",
+    }[sort_by]
+    direction = "ASC" if order == "asc" else "DESC"
+    ordering = ", ".join(f"{part} {direction}" for part in column.split(", "))
+    rows = await session.execute(
+        text(
+            "SELECT l.id, l.title, c.name AS city, l.price_per_night::text, l.currency, "  # noqa: S608 -- fixed allowlisted SQL expressions; values are bound
+            "l.review_status::text, l.is_active, l.deleted_at::text, l.created_at::text "
+            "FROM listings l JOIN cities c ON c.id = l.city_id WHERE l.host_id = :user_id "
+            f"ORDER BY {ordering}, l.id {direction} LIMIT :limit OFFSET :offset"
+        ),
+        {"user_id": user_id, "limit": limit, "offset": offset},
+    )
+    total = await session.scalar(text("SELECT count(*) FROM listings WHERE host_id = :id"), {"id": user_id})
+    return [dict(row) for row in rows.mappings()], int(total or 0)

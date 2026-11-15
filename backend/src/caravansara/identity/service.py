@@ -636,3 +636,10 @@ async def disable_admin(session: AsyncSession, *, email: str) -> int:
     await repo.revoke_all_tokens(session, user.id, user.disabled_at)  # its sessions end now (feature 011)
     await session.commit()
     return user.id
+
+
+async def admin_user(session: AsyncSession, user_id: int) -> AdminUserOut:
+    user = await repo.get_user(session, user_id)
+    if user is None:
+        raise NotFound()
+    return AdminUserOut.model_validate(user, from_attributes=True)

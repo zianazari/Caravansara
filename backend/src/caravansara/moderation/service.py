@@ -22,6 +22,9 @@ from caravansara.moderation.schemas import (
     AdminBookingSort,
     AdminQueueSort,
     AdminSummary,
+    AdminUserListing,
+    AdminUserListingPage,
+    AdminUserListingSort,
     BookingCounts,
 )
 
@@ -104,11 +107,16 @@ async def all_bookings(
     *,
     sort_by: AdminBookingSort = "id",
     order: SortOrder = "desc",
+    user_id: int | None = None,
 ) -> AdminBookingPage:
-    if sort_by == "id":
+    if user_id is not None:
+        await identity.admin_user(session, user_id)
+    if sort_by == "id" and user_id is None:
         items, has_more = await bookings.admin_bookings(session, storage, status, limit, offset, order=order)
     else:
-        ids, has_more = await repo.sorted_booking_ids(session, status, limit, offset, sort_by=sort_by, order=order)
+        ids, has_more = await repo.sorted_booking_ids(
+            session, status, limit, offset, sort_by=sort_by, order=order, user_id=user_id
+        )
         items = await bookings.admin_bookings_by_ids(session, storage, ids)
     guests = await identity.user_contacts(session, {b.guest_id for b in items})
     return AdminBookingPage(
@@ -131,3 +139,10 @@ async def summary(session: AsyncSession) -> AdminSummary:
         users=accounts.total,
         bookings=BookingCounts(**{status.value: n for status, n in counts.items()}),
     )
+
+
+async def user_listings(
+    session: AsyncSession, user_id: int, limit: int, offset: int, *, sort_by: AdminUserListingSort, order: SortOrder
+) -> AdminUserListingPage:
+    rows, total = await repo.user_listings(session, user_id, limit, offset, sort_by=sort_by, order=order)
+    return AdminUserListingPage(items=[AdminUserListing.model_validate(row) for row in rows], total=total)

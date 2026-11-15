@@ -9,7 +9,7 @@ about any listing comes back, not even whether it exists (FR-020, research R13).
 from datetime import date
 from typing import Annotated, Literal
 
-from fastapi import APIRouter, BackgroundTasks, Depends, Query, Request, status
+from fastapi import APIRouter, BackgroundTasks, Depends, Query, Request, Response, status
 
 from caravansara.bookings.service import BookingStatus
 from caravansara.catalog import service as catalog
@@ -23,6 +23,7 @@ from caravansara.core.security import CurrentAdminId, SettingsDep
 from caravansara.identity import service as identity
 from caravansara.identity.schemas import (
     AdminTokenOut,
+    AdminUserOut,
     AdminUserPage,
     AdminUserSort,
     EmailCodeChallenge,
@@ -38,6 +39,8 @@ from caravansara.moderation.schemas import (
     AdminLoginIn,
     AdminQueueSort,
     AdminSummary,
+    AdminUserListingPage,
+    AdminUserListingSort,
     DecisionIn,
     RejectIn,
 )
@@ -274,11 +277,13 @@ async def panel_summary(admin_id: AdminId, session: SessionDep) -> AdminSummary:
     summary="Users",
     description=(
         "Every account, newest first. `q` finds any part of an email or a name (at least 3 characters, "
-        "ignoring case). Never shows a password."
+        "ignoring case). Includes optional mobile numbers for all account kinds, including disabled users. "
+        "Missing phone numbers sort last in both directions. Never shows a password."
     ),
     responses=error_responses(401, 422),
 )
 async def users_list(
+    response: Response,
     admin_id: AdminId,
     session: SessionDep,
     page: PageDep,
@@ -291,6 +296,7 @@ async def users_list(
         Query(min_length=3, max_length=100, description="Part of an email or a name, at least 3 characters."),
     ] = None,
 ) -> AdminUserPage:
+    response.headers["Cache-Control"] = "no-store"
     return await service.users(session, q.strip() if q else None, page.limit, page.offset, sort_by=sort_by, order=order)
 
 
@@ -302,9 +308,10 @@ async def users_list(
         "`completed`, `cancelled` or `expired` (not paid in time). With the guest's name and email; never the "
         "address. `has_more` says whether a next page exists; the totals are in `GET /admin/summary`."
     ),
-    responses=error_responses(401, 422),
+    responses=error_responses(401, 404, 422),
 )
 async def bookings_list(
+    response: Response,
     admin_id: AdminId,
     session: SessionDep,
     storage: StorageDep,
@@ -321,5 +328,34 @@ async def bookings_list(
     ] = "id",
     order: Annotated[SortOrder, Query(description="Ascending or descending across all matching bookings.")] = "desc",
     status: Annotated[BookingStatus | None, Query(description="Only bookings in this status.")] = None,
+    user_id: Annotated[int | None, Query(ge=1, description="Bookings as guest or host for this user.")] = None,
 ) -> AdminBookingPage:
-    return await service.all_bookings(session, storage, status, page.limit, page.offset, sort_by=sort_by, order=order)
+    response.headers["Cache-Control"] = "no-store"
+    return await service.all_bookings(
+        session, storage, status, page.limit, page.offset, sort_by=sort_by, order=order, user_id=user_id
+    )
+
+
+@router.get("/users/{user_id}", summary="Account details, including mobile number", responses=error_responses(401, 404))
+async def user_detail(user_id: int, admin_id: AdminId, session: SessionDep, response: Response) -> AdminUserOut:
+    response.headers["Cache-Control"] = "no-store"
+    return await identity.admin_user(session, user_id)
+
+
+@router.get(
+    "/users/{user_id}/listings",
+    summary="All listings owned by a user, including archived listings",
+    responses=error_responses(401, 404, 422),
+)
+async def user_listings(
+    user_id: int,
+    admin_id: AdminId,
+    session: SessionDep,
+    response: Response,
+    page: PageDep,
+    sort_by: AdminUserListingSort = "created_at",
+    order: SortOrder = "desc",
+) -> AdminUserListingPage:
+    response.headers["Cache-Control"] = "no-store"
+    await identity.admin_user(session, user_id)
+    return await service.user_listings(session, user_id, page.limit, page.offset, sort_by=sort_by, order=order)
