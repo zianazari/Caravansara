@@ -58,16 +58,16 @@ avatars, Persian notifications use Vazirmatn, and map price markers keep their p
 
 ## Screenshots
 
-All application screenshots were captured on **13–14 November 2026**, at **1440 px desktop** and **390 px
-mobile** widths. Host/admin screens use development demo accounts;
-the pricing rules and sample holiday are demonstration settings. Home covers are generated decorative
-illustrations. [Demo data and image provenance](db/demo/README.md); map data ©
+All application screenshots show the **English interface** and were captured on **16 November 2026**, at
+**1440 px desktop** and **390 px mobile** widths. Host/admin screens use development demo accounts;
+pricing rules are demonstration settings. Listing titles and map labels retain their source languages.
+Home covers are generated decorative illustrations. [Demo data and image provenance](db/demo/README.md); map data ©
 [OpenStreetMap contributors](https://www.openstreetmap.org/copyright).
 
 ### Unified home
 
 <p align="center">
-  <img src="docs/images/readme/site-cinematic.jpg" alt="Cinematic Persian home with a forest cabin cover, orange search action and popular destinations" width="100%">
+  <img src="docs/images/readme/site-cinematic.jpg" alt="Cinematic English home with a forest cabin cover, orange search action and popular destinations" width="100%">
 </p>
 
 <details>
@@ -76,7 +76,7 @@ illustrations. [Demo data and image provenance](db/demo/README.md); map data ©
 City search, filters, accommodation cards and approximate price pins in Isfahan.
 
 <p align="center">
-  <img src="docs/images/readme/site-search.jpg" alt="Persian Isfahan search results with accommodation photos, toman prices, filters and a map" width="100%">
+  <img src="docs/images/readme/site-search.jpg" alt="English Isfahan search results with accommodation photos, toman prices, filters and a map" width="100%">
 </p>
 
 </details>
@@ -88,7 +88,7 @@ Daily prices reflect the property's saved rules. Booked nights are marked, check
 nightly charge, and the selected dates are applied only after confirmation.
 
 <p align="center">
-  <img src="docs/images/readme/guest-price-calendar.jpg" alt="Persian guest booking calendar with prices below each day, a selected date range and an exact nightly subtotal, cleaning fee and total" width="100%">
+  <img src="docs/images/readme/guest-price-calendar.jpg" alt="English guest booking calendar with prices below each day, a selected date range and an exact nightly subtotal, cleaning fee and total" width="100%">
 </p>
 
 </details>
@@ -99,7 +99,7 @@ nightly charge, and the selected dates are applied only after confirmation.
 The email method uses the existing SMTP configuration and the same protected session as password login. Codes expire after five minutes and are single use.
 
 <p align="center">
-  <img src="docs/images/readme/email-code-login.jpg" alt="Persian email-code login with method selection, a five-digit input, expiry hint and resend countdown" width="100%">
+  <img src="docs/images/readme/email-code-login.jpg" alt="English email-code login with method selection, a five-digit input, expiry hint and resend countdown" width="100%">
 </p>
 
 </details>
@@ -110,7 +110,7 @@ The email method uses the existing SMTP configuration and the same protected ses
 An optional discovery page compares available stays in one country and currency. Each suggestion carries its dates and guests into the existing booking flow.
 
 <p align="center">
-  <img src="docs/images/readme/travel-opportunities.jpg" alt="Persian travel opportunities with a total budget, flexible arrival dates and three real Isfahan accommodation suggestions" width="100%">
+  <img src="docs/images/readme/travel-opportunities.jpg" alt="English travel opportunities with a total budget, flexible arrival dates and three real Isfahan accommodation suggestions" width="100%">
 </p>
 
 </details>
@@ -123,8 +123,8 @@ pricing editor combines recurring rules, custom date ranges and a nightly price 
 
 <p align="center">
   <img src="docs/images/readme/host-dashboard.jpg" alt="Host dashboard with listing cards and direct pricing, editing and photo links" width="100%">
-  <img src="docs/images/readme/host-wizard.jpg" alt="Persian listing wizard with property-type choices, progress and desktop step navigation" width="100%">
-  <img src="docs/images/readme/host-pricing.jpg" alt="Jalali price calendar with plus 30 percent weekends, plus 100 percent holidays and a minus 20 percent custom range" width="100%">
+  <img src="docs/images/readme/host-wizard.jpg" alt="English listing wizard with property-type choices, progress and desktop step navigation" width="100%">
+  <img src="docs/images/readme/host-pricing.jpg" alt="Gregorian nightly price calendar with a 30 percent weekend adjustment and holiday and custom date-range controls" width="100%">
 </p>
 
 </details>
@@ -135,7 +135,7 @@ pricing editor combines recurring rules, custom date ranges and a nightly price 
 Overview counts and country/month controls for the shared calendar.
 
 <p align="center">
-  <img src="docs/images/readme/admin-holidays.jpg" alt="Persian admin overview and Iranian holiday calendar with a labelled sample holiday" width="100%">
+  <img src="docs/images/readme/admin-holidays.jpg" alt="English admin overview and shared holiday calendar with country and month controls" width="100%">
 </p>
 
 </details>
